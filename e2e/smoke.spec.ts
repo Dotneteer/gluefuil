@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("the smoke app renders all workspace packages in a real browser", async ({ page }) => {
+test("the smoke app loads all workspace packages and runs the markup parser in a real browser", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
@@ -15,5 +15,8 @@ test("the smoke app renders all workspace packages in a real browser", async ({ 
     "@patchfuil/runtime",
     "@patchfuil/components",
   ]);
+  await expect(page.getByLabel("Parser output")).toHaveText(
+    "root <App> with 2 child elements, 0 diagnostics",
+  );
   expect(errors).toEqual([]);
 });

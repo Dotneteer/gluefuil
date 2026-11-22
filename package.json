@@ -1,5 +1,6 @@
 {
   "name": "patchfuil",
+  "description": "patchfuil (pfui): a compiled, declarative UI framework in the spirit of XMLUI",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -13,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "bench": "vitest bench --run --reporter=verbose",
     "typecheck": "tsc -p packages/compiler && tsc -p packages/runtime && tsc -p packages/components && tsc -p tools && tsc -p test-apps/smoke && tsc -p e2e",
     "check": "npm run typecheck && npm test && npm run test:e2e"
   },

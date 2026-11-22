@@ -5,8 +5,9 @@ truth for AI agents; `CLAUDE.md` only imports it.
 
 ## What this project is
 
-A **re-invention of the XMLUI framework**: a declarative, reactive UI framework
-where applications are written as XML markup (`.xmlui`-style files), with
+**patchfuil** (short name **pfui**) is a **re-invention of the XMLUI
+framework**: a declarative, reactive UI framework where applications are
+written as XML markup (`.pfui` files, using XMLUI's markup syntax), with
 spreadsheet-like reactive expressions in `{...}` and no manual state wiring.
 
 We are not forking XMLUI. We learn from its design, its documented behavior and
@@ -38,7 +39,10 @@ The short version:
   `packages/components` (`./metadata` is React-free). Package boundaries are
   enforced by `tools/boundaries.test.ts`.
 - `npm run check` runs the typecheck, the unit tests (Vitest) and the E2E
-  tests (Playwright); it must pass before a step is done.
+  tests (Playwright); it must pass before a step is done. `npm run bench`
+  runs the benchmarks.
+- Subsystems have their own documents in `.ai/docs/` (for example
+  `markup-parser.md`), linked from `code-structure.md`.
 - Every step adds unit tests; E2E tests are added when a claim can only be
   proven in a real browser. Language behavior goes into data-driven
   conformance tables (`test.each`).
@@ -88,6 +92,11 @@ Architectural decisions (stack, divergences from XMLUI, naming) are recorded
 here as one line each, with a link to the plan that justified them:
 
 - **Rendering target is React.** Existing React components must be wrappable with lightweight code and usable directly from markup. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § Area 1.
+- **Naming.** The project and product are **patchfuil**, short name **pfui**; XMLUI is only the origin and reference.
+  - The npm scope is `@patchfuil/*`.
+  - Markup files use `.pfui` (`Main.pfui`, `components/Name.pfui`).
+  - The short name `pfui` is used for the CSS custom-property prefix (`--pfui-*`), the standalone browser global, the CLI command and the docs code-fence language.
+  - In prose, say "XMLUI" only when referring to the original framework.
 - **Toolchain:** TypeScript 7, npm workspaces, Vite 8, Vitest 5 (jsdom for React packages), Playwright, React 19. Packages: `compiler`, `runtime`, `components` (see [.ai/docs/code-structure.md](.ai/docs/code-structure.md)). See [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) step 0.
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
