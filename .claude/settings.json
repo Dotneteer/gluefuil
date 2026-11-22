@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "additionalDirectories": ["/Users/dotneteer/source/xmlui"],
+    "allow": [
+      "Read(//Users/dotneteer/source/xmlui/**)"
+    ],
+    "deny": [
+      "Edit(//Users/dotneteer/source/xmlui/**)",
+      "Write(//Users/dotneteer/source/xmlui/**)"
+    ]
+  }
+}
