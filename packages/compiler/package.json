@@ -1,0 +1,13 @@
+{
+  "name": "@patchfuil/compiler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Markup and script compiler. Pure TypeScript: no React, no DOM.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@patchfuil/components": "0.0.0"
+  }
+}

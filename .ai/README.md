@@ -8,6 +8,7 @@ for the humans steering them). Project source code never lives here.
 | Folder | Purpose |
 |--------|---------|
 | [`plan/`](plan/) | Plans: proposals, designs and implementation plans. See [`plan/README.md`](plan/README.md). |
+| [`docs/`](docs/) | Development documentation of the code as it is. **The cornerstone is [`docs/code-structure.md`](docs/code-structure.md)**, updated after every step. See [`docs/README.md`](docs/README.md). |
 
 More folders will be added as needs appear.
 

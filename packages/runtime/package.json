@@ -1,0 +1,14 @@
+{
+  "name": "@patchfuil/runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What compiled code calls into: reactivity, scheduling, theming engine, wrapping API.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
