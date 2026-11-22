@@ -4,7 +4,7 @@
 > code as it is. Design rationale and XMLUI comparison:
 > [`../plan/poc-01-markup-parser.md`](../plan/poc-01-markup-parser.md).
 >
-> **Last updated:** step 1.
+> **Last updated:** step 2 (attribute values are now entity-decoded).
 
 ## Role
 
@@ -28,7 +28,8 @@ Exported from `@patchfuil/compiler`:
 | `parseMarkup(text)` | function | Returns `{ document, diagnostics }`. Never throws. |
 | `DocumentNode`, `ElementNode`, `AttributeNode`, `AttributeValue`, `TextNode`, `CommentNode`, `CDataNode`, `ScriptNode`, `ContentNode`, `MarkupNode`, `Name`, `Span` | types | The syntax tree |
 | `MarkupDiagnostics`, `MarkupDiagnosticCode` | const, type | Diagnostic codes and their message builders |
-| `decodeEntities(raw)` | function | The text-content entity decoder |
+| `decodeEntities(raw)` | function | The entity decoder (text content and attribute values) |
+| `decodeEntitiesWithOffsets(raw, start)` | function | Decodes and records the file offset of each decoded character, for mapping script positions back into the raw markup |
 | `LineMap`, `Position` | class, type | Offset ↔ 0-based line/column (`src/source/line-map.ts`) |
 | `Diagnostic`, `Severity`, `formatDiagnostic` | types, function | Shared diagnostic shape and 1-based `file:line:col` formatting (`src/source/diagnostic.ts`) |
 
@@ -54,7 +55,7 @@ column; `formatDiagnostic` prints them 1-based.
 | `DocumentNode` | `children: ContentNode[]` (top level may hold several elements and text) |
 | `ElementNode` | `name: Name`, `attributes`, `children`, `selfClosing`, `openTag: Span`, `closeTag?: Span` (absent when self-closing or never closed), `tagComments?: CommentNode[]` (comments inside the start tag) |
 | `AttributeNode` | `name: Name`, `value?: AttributeValue` (absent for a valueless attribute) |
-| `AttributeValue` | `text` (raw, entities **not** decoded), `quote` (`"`, `'` or `` ` ``), `inner: Span` (inside the quotes; expression positions start here) |
+| `AttributeValue` | `value` (entities decoded), `raw` (as written), `quote` (`"`, `'` or `` ` ``), `inner: Span` (inside the quotes; expression positions start here) |
 | `TextNode` | `value` (entities decoded), `raw` (as written). Whitespace-only text between elements is kept. |
 | `CommentNode` | `value` (between `<!--` and `-->`) |
 | `CDataNode` | `value` (between `<![CDATA[` and `]]>`) |
@@ -66,9 +67,10 @@ column; `formatDiagnostic` prints them 1-based.
 | Construct | Rule |
 |-----------|------|
 | Names | Start: ASCII letter, `_`, `$`. Continue: also digits, `-`, `.`. Optional `prefix:` |
-| Attribute values | Quoted with `"`, `'` or `` ` ``; no escape sequences; may span lines; entities not decoded |
+| Attribute values | Quoted with `"`, `'` or `` ` ``; no escape sequences; may span lines. Entities are decoded, as in XMLUI's `transform.ts` (`parseEscapeCharactersInAttrValues`), so `when="{a &amp;&amp; b}"` works. |
 | Valueless attributes | Allowed: `<Component receivesContextVars>` |
-| Text content | Runs up to the next `<`. Entities decoded: `&amp; &lt; &gt; &quot; &apos; &nbsp;`. Unknown `&…;` is kept literally, with no diagnostic. |
+| Text content | Runs up to the next `<`. |
+| Entities (text and attribute values) | Decoded: `&amp; &lt; &gt; &quot; &apos; &nbsp;`. Unknown `&…;` is kept literally, with no diagnostic. No numeric references. |
 | Comments | `<!-- … -->` as content, and also **inside a start tag** between attributes |
 | CDATA | `<![CDATA[ … ]]>` |
 | Script | Exactly `<script>` … `</script>`; the content is raw |

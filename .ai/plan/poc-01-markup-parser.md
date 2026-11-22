@@ -1,6 +1,6 @@
 # Step 1: Markup parser
 
-**Status:** Done; awaiting review
+**Status:** Done
 
 Part of [poc-steps.md](poc-steps.md).
 
@@ -130,6 +130,12 @@ mode.
   Vitest's module runner, which adds roughly 15–20%.
 - **Vitest 5** changed its benchmark API: benchmarks are tests that use the
   `bench` fixture.
+
+**Correction (step 2):** the background above said entities are not
+decoded in attribute values. That was wrong. XMLUI decodes them in
+`transform.ts` (`parseEscapeCharactersInAttrValues`), and real XMLUI files
+use `&amp;&amp;` in attribute expressions. `AttributeValue` now has `value`
+(decoded) and `raw`.
 
 ## Open questions
 

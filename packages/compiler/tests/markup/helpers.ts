@@ -37,7 +37,7 @@ function summarizeChildren(children: ContentNode[], keepWhitespace: boolean): Su
       case "element": {
         const attributes: Record<string, string | true> = {};
         for (const attribute of node.attributes) {
-          attributes[attribute.name.full] = attribute.value ? attribute.value.text : true;
+          attributes[attribute.name.full] = attribute.value ? attribute.value.value : true;
         }
         result.push([node.name.full, attributes, ...summarizeChildren(node.children, keepWhitespace)]);
         break;

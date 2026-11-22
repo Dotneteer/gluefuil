@@ -76,7 +76,7 @@ relative to `/Users/dotneteer/source/xmlui`.
   - E2E: Playwright opens a static page served by the test server.
 - **Done when:** `npm test` and `npm run test:e2e` both run from the root.
 
-### Step 1: Markup parser ✅ (awaiting review)
+### Step 1: Markup parser ✅
 
 - **Outcome:** see [poc-01-markup-parser.md](poc-01-markup-parser.md) and
   [`../docs/markup-parser.md`](../docs/markup-parser.md).
@@ -97,7 +97,15 @@ relative to `/Users/dotneteer/source/xmlui`.
   - Benchmark: parse a large markup file (performance baseline).
 - **Reference:** `xmlui/src/parsers/`, `.ai/xmlui/parsers.md`.
 
-### Step 2: Expression and statement parser (the JS subset)
+### Step 2: Expression and statement parser (the JS subset) ✅
+
+- **Outcome:** see [poc-02-expression-parser.md](poc-02-expression-parser.md)
+  and [`../docs/script-parser.md`](../docs/script-parser.md).
+  - It is an ESTree-subset parser with file offsets.
+  - It parses all script in XMLUI's `.xmlui` and `.xs` files.
+  - Typical bindings parse in about 2 µs.
+  - The step found that XMLUI decodes entities in attribute values (a
+    step-1 correction).
 
 - **Subject:** attribute values are split into literal and `{expression}`
   segments; expressions, statements and arrow functions are parsed into an

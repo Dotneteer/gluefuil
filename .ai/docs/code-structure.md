@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 1 (markup parser).
+> **Last updated:** step 2 (script parser).
 
 ## What this repository is
 
@@ -17,8 +17,9 @@ components). The design rationale is in
 Current state:
 
 - The workspace and the test infrastructure exist.
-- The compiler has its first stage, the **markup parser** (see
-  [markup-parser.md](markup-parser.md)).
+- The compiler has its two parsing stages: the **markup parser**
+  ([markup-parser.md](markup-parser.md)) and the **script parser** for
+  expressions, handlers and code-behind ([script-parser.md](script-parser.md)).
 - The runtime and components packages are still placeholders.
 
 ## Subsystem documents
@@ -26,6 +27,7 @@ Current state:
 | Document | Subsystem |
 |----------|-----------|
 | [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.pfui` markup text to a syntax tree with positions and diagnostics |
+| [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
 
 ## Repository layout
 
@@ -35,6 +37,7 @@ Current state:
 │   ├── compiler/        @patchfuil/compiler    markup + script compiler
 │   │   ├── src/source/      positions (LineMap) and diagnostics, shared by all stages
 │   │   ├── src/markup/      markup parser: text -> syntax tree
+│   │   ├── src/script/      script parser: expressions, statements, interpolation
 │   │   ├── tests/           unit tests (mirrors src/)
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
@@ -66,7 +69,7 @@ version `0.0.0`.
 
 | File | Exports |
 |------|---------|
-| `packages/compiler/src/index.ts` | The markup parser API: `parseMarkup`, the syntax-tree types, `MarkupDiagnostics`, `decodeEntities`, `LineMap`, `Diagnostic`, `formatDiagnostic` (details in [markup-parser.md](markup-parser.md)) |
+| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
 | `packages/runtime/src/index.ts` | `runtimeInfo` (`{ name }`), a placeholder |
 | `packages/components/src/index.ts` | `componentsInfo` (`{ name, runtime }`), a placeholder; re-exports `componentMetadata` |
 | `packages/components/src/metadata.ts` | `componentMetadata` (empty object) |
@@ -77,10 +80,21 @@ version `0.0.0`.
 |--------|----------|
 | `src/source/` | Stage-independent source utilities: `LineMap` (offset ↔ 0-based line and column) and the `Diagnostic` shape plus `formatDiagnostic`. Every compiler stage reports positions and problems through these. |
 | `src/markup/` | The markup parser ([markup-parser.md](markup-parser.md)) |
+| `src/script/` | The script parser ([script-parser.md](script-parser.md)) |
 
-Positions everywhere in the compiler are **UTF-16 offsets** into the source
-text, converted to line and column only when needed (diagnostics, and later
-source maps).
+Positions everywhere in the compiler are **UTF-16 offsets** into the `.pfui`
+file, converted to line and column only when needed (diagnostics, and later
+source maps). Script inside markup is parsed with its offset in the file
+(`offset`, or `offsets` for entity-decoded text), so script nodes point
+straight into the markup.
+
+**How the stages connect:** `parseMarkup` produces elements, attributes and
+text. Attribute values and text are entity-decoded with
+`decodeEntitiesWithOffsets`, then passed to `parseInterpolation` (values) or
+`parseStatements` (handlers, `<script>`). Deciding which attribute is which
+is not built yet: it is the job of the semantic stage, which needs component
+metadata. Until then, `tools/xmlui-corpus.test.ts` shows the wiring with a
+heuristic (`on*` and `method.*` are handlers).
 
 ### No build step (yet)
 
@@ -200,13 +214,18 @@ Conventions:
 | Test file | Covers |
 |-----------|--------|
 | `packages/compiler/tests/markup/*.test.ts` | The markup parser: valid markup, positions, diagnostics, recovery, entities (see [markup-parser.md](markup-parser.md#tests)) |
+| `packages/compiler/tests/script/*.test.ts` | The script parser: expressions, statements and ASI, diagnostics and recovery, positions, interpolation (see [script-parser.md](script-parser.md#tests)) |
 | `packages/compiler/tests/source/line-map.test.ts` | `LineMap` and `formatDiagnostic` |
 | `packages/runtime/tests/smoke.test.tsx` | Package loads; React 19 renders in jsdom |
 | `packages/components/tests/smoke.test.ts` | Package loads and resolves the runtime; the metadata entry point loads on its own |
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
-| `tools/xmlui-corpus.test.ts` | Compatibility: every `.xmlui` file in the XMLUI repo parses with zero diagnostics (105 files). Uses `$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent. |
+| `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses. All with zero diagnostics. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 
-Count after step 1: 253 unit tests in 10 files.
+Count after step 2: 702 unit tests in 15 files.
+
+- Compiler: 454, of which markup 115, script 331 and source 8.
+- Tools: 244, of which the corpus is 221 and the boundaries 23.
+- Runtime and components: 2 each.
 
 ### Benchmarks (Vitest 5)
 
@@ -222,7 +241,8 @@ Count after step 1: 253 unit tests in 10 files.
 
 | Benchmark | Measures |
 |-----------|----------|
-| `packages/compiler/bench/markup.bench.ts` | `parseMarkup` on generated realistic markup: 10 KiB, 100 KiB, 1 MiB |
+| `packages/compiler/bench/markup.bench.ts` | `parseMarkup` on generated realistic markup: 10 KiB, 100 KiB, 1 MiB (about 120 MB/s) |
+| `packages/compiler/bench/script.bench.ts` | `parseInterpolation` on typical bindings (about 2 µs each), `parseStatements` on a 15-line handler (about 15 µs) |
 
 ### E2E tests (Playwright)
 

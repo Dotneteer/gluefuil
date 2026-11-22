@@ -33,7 +33,7 @@ const cases: [description: string, markup: string, expected: Summary[]][] = [
   ["valueless attribute last", `<A flag/>`, [["A", { flag: true }]]],
   ["multi-line value", `<A x="line1\nline2"/>`, [["A", { x: "line1\nline2" }]]],
   ["'<' and '>' inside a value", `<A when="{a < b && c > d}"/>`, [["A", { when: "{a < b && c > d}" }]]],
-  ["entities are NOT decoded in values", `<A x="a &amp; b &lt;"/>`, [["A", { x: "a &amp; b &lt;" }]]],
+  ["entities are decoded in values (as XMLUI's transform does)", `<A when="{a &amp;&amp; b &lt; c}"/>`, [["A", { when: "{a && b < c}" }]]],
   ["object literal value", `<Form data='{{ a: "x", b: [1, 2] }}'/>`, [["Form", { data: '{{ a: "x", b: [1, 2] }}' }]]],
   ["attributes separated by newlines", `<A\n  x="1"\n  y="2"\n/>`, [["A", { x: "1", y: "2" }]]],
 
@@ -124,6 +124,13 @@ describe("parseMarkup: node details", () => {
       [" one ", "<!-- one -->"],
       [" two ", "<!-- two -->"],
     ]);
+  });
+
+  test("attribute value keeps both the decoded value and the raw text", () => {
+    const { document } = parseMarkup(`<A x="a &amp; b"/>`);
+    const element = document.children[0];
+    if (element?.kind !== "element") throw new Error("expected element");
+    expect(element.attributes[0]!.value).toMatchObject({ value: "a & b", raw: "a &amp; b" });
   });
 
   test("attribute value records its quote", () => {

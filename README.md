@@ -9,7 +9,7 @@ concepts and markup syntax, and replaces the implementation. Expressions and
 handlers are compiled instead of interpreted, there is no runtime change
 detection, and startup is fast.
 
-**Status:** early proof-of-concept. Only the markup parser exists so far.
+**Status:** early proof-of-concept. The markup parser and the script (expression and statement) parser exist so far.
 
 ## Development
 
