@@ -7,6 +7,7 @@ on this repository. Plans (what we intend to build) live in
 | Document | Contents |
 |----------|----------|
 | [code-structure.md](code-structure.md) | **Start here.** The cornerstone: packages, entry points, dependency rules, tooling, tests, conventions. |
+| [markup-parser.md](markup-parser.md) | The markup parser: API, syntax tree, lexical rules, diagnostics, recovery, tests, measurements. |
 
 ## Rules
 

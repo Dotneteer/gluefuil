@@ -45,7 +45,7 @@ relative to `/Users/dotneteer/source/xmlui`.
 
 ## Phase A: Foundation
 
-### Step 0: Workspace and test harness ✅ (awaiting review)
+### Step 0: Workspace and test harness ✅
 
 - **Outcome:**
   - Packages are named `@patchfuil/*` and export their TypeScript source
@@ -76,9 +76,15 @@ relative to `/Users/dotneteer/source/xmlui`.
   - E2E: Playwright opens a static page served by the test server.
 - **Done when:** `npm test` and `npm run test:e2e` both run from the root.
 
-### Step 1: Markup parser
+### Step 1: Markup parser ✅ (awaiting review)
 
-- **Subject:** `.xmlui` text becomes an AST of elements, attributes and
+- **Outcome:** see [poc-01-markup-parser.md](poc-01-markup-parser.md) and
+  [`../docs/markup-parser.md`](../docs/markup-parser.md).
+  - All 105 `.xmlui` files in the XMLUI repo parse without diagnostics.
+  - Throughput is about 120 MB/s.
+  - Helper-tag recognition moved to the later semantic stage. The parser is
+    purely syntactic, as XMLUI's is.
+- **Subject:** `.pfui` markup text becomes an AST of elements, attributes and
   text, with exact source positions (line, column, offset) on every node.
   Includes error recovery and diagnostics with locations, and helper tags
   (`<property>`, `<event>`, `<variable>`, `<method>`, `<script>`) recognized
@@ -186,7 +192,7 @@ relative to `/Users/dotneteer/source/xmlui`.
 
 ### Step 9: Source maps
 
-- **Subject:** compiled modules carry source maps back to the `.xmlui` file
+- **Subject:** compiled modules carry source maps back to the `.pfui` file
   (attributes, handlers and code-behind).
 - **Tests:**
   - Unit: map generated positions back and assert the original line and
@@ -211,7 +217,7 @@ relative to `/Users/dotneteer/source/xmlui`.
 
 ### Step 11: Standalone mode
 
-- **Subject:** one HTML file plus one JS file. Fetches `Main.xmlui` and the
+- **Subject:** one HTML file plus one JS file. Fetches `Main.pfui` and the
   components, compiles them in the browser, caches the result in
   `localStorage` (keyed by content hash), and watches markup files for
   changes.
@@ -222,7 +228,7 @@ relative to `/Users/dotneteer/source/xmlui`.
 
 ### Step 12: Build-time compilation
 
-- **Subject:** a Vite plugin compiles `.xmlui` files at build time; the
+- **Subject:** a Vite plugin compiles `.pfui` files at build time; the
   shipped bundle contains no parser or compiler.
 - **Tests:**
   - Unit: the plugin's transform output.
@@ -249,7 +255,7 @@ relative to `/Users/dotneteer/source/xmlui`.
   private variables, `emitEvent`, methods and `$self`, the default and
   named slots, slot props flowing back as `$item`, scope isolation (a
   parent variable referenced inside is a compile error), inline
-  `<Component>` in `Main.xmlui`, and code-behind.
+  `<Component>` in `Main.pfui`, and code-behind.
 - **Tests:**
   - Unit: one test per feature.
   - E2E: the examples from `pages/user-defined-components.md`.

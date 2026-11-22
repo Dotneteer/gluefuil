@@ -3,18 +3,29 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 0 (workspace and test harness).
+> **Last updated:** step 1 (markup parser).
 
 ## What this repository is
 
-A re-invention of the XMLUI framework: XML markup plus a JavaScript subset,
+**patchfuil** (short name **pfui**) is a re-invention of the XMLUI framework:
+XML markup (`.pfui` files, using XMLUI's markup syntax) plus a JavaScript subset,
 **compiled** to JavaScript that renders with React (and Mantine for most
 components). The design rationale is in
 [`../plan/architecture.md`](../plan/architecture.md); the build order is in
 [`../plan/poc-steps.md`](../plan/poc-steps.md).
 
-Current state: the workspace, the three framework packages (placeholders) and
-the test infrastructure exist. There is no framework functionality yet.
+Current state:
+
+- The workspace and the test infrastructure exist.
+- The compiler has its first stage, the **markup parser** (see
+  [markup-parser.md](markup-parser.md)).
+- The runtime and components packages are still placeholders.
+
+## Subsystem documents
+
+| Document | Subsystem |
+|----------|-----------|
+| [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.pfui` markup text to a syntax tree with positions and diagnostics |
 
 ## Repository layout
 
@@ -22,13 +33,18 @@ the test infrastructure exist. There is no framework functionality yet.
 .
 ├── packages/
 │   ├── compiler/        @patchfuil/compiler    markup + script compiler
+│   │   ├── src/source/      positions (LineMap) and diagnostics, shared by all stages
+│   │   ├── src/markup/      markup parser: text -> syntax tree
+│   │   ├── tests/           unit tests (mirrors src/)
+│   │   └── bench/           benchmarks (npm run bench)
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
-├── tools/               repository tooling (package-boundary checker)
+├── tools/               repository tooling: package-boundary checker, XMLUI corpus test
 ├── test-apps/
 │   └── smoke/           @patchfuil/smoke-app   E2E fixture app
 ├── e2e/                 Playwright specs
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
+├── README.md            product overview and quick start
 ├── package.json         workspace root: scripts, pinned dev dependencies
 ├── tsconfig.base.json   shared TypeScript settings
 ├── vitest.config.ts     unit-test projects
@@ -42,18 +58,29 @@ version `0.0.0`.
 
 | Package | Role | Entry points (`exports`) | Runs in |
 |---------|------|--------------------------|---------|
-| `@patchfuil/compiler` | Turns `.xmlui` markup and scripts into JS modules. | `.` → `src/index.ts` | Node (build tools, static generation, editor) **and** the browser (standalone mode) |
+| `@patchfuil/compiler` | Turns `.pfui` markup and scripts into JS modules. | `.` → `src/index.ts` | Node (build tools, static generation, editor) **and** the browser (standalone mode) |
 | `@patchfuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts` | Browser; Node for server rendering |
 | `@patchfuil/components` | Built-in components (own and Mantine-wrapped). | `.` → `src/index.ts`; `./metadata` → `src/metadata.ts` | Browser; Node for server rendering |
 
-**Current contents** (placeholders proving the wiring):
+**Current contents:**
 
 | File | Exports |
 |------|---------|
-| `packages/compiler/src/index.ts` | `compilerInfo` (`{ name }`) |
-| `packages/runtime/src/index.ts` | `runtimeInfo` (`{ name }`) |
-| `packages/components/src/index.ts` | `componentsInfo` (`{ name, runtime }`), re-exports `componentMetadata` |
+| `packages/compiler/src/index.ts` | The markup parser API: `parseMarkup`, the syntax-tree types, `MarkupDiagnostics`, `decodeEntities`, `LineMap`, `Diagnostic`, `formatDiagnostic` (details in [markup-parser.md](markup-parser.md)) |
+| `packages/runtime/src/index.ts` | `runtimeInfo` (`{ name }`), a placeholder |
+| `packages/components/src/index.ts` | `componentsInfo` (`{ name, runtime }`), a placeholder; re-exports `componentMetadata` |
 | `packages/components/src/metadata.ts` | `componentMetadata` (empty object) |
+
+### Compiler source layout
+
+| Folder | Contents |
+|--------|----------|
+| `src/source/` | Stage-independent source utilities: `LineMap` (offset ↔ 0-based line and column) and the `Diagnostic` shape plus `formatDiagnostic`. Every compiler stage reports positions and problems through these. |
+| `src/markup/` | The markup parser ([markup-parser.md](markup-parser.md)) |
+
+Positions everywhere in the compiler are **UTF-16 offsets** into the source
+text, converted to line and column only when needed (diagnostics, and later
+source maps).
 
 ### No build step (yet)
 
@@ -103,7 +130,7 @@ conscious decision.
 | npm workspaces | npm 10 | `workspaces: ["packages/*", "test-apps/*"]` in the root `package.json` |
 | TypeScript | 7.0.2 | `tsconfig.base.json` plus one `tsconfig.json` per package or folder |
 | Vite | 8.3.8 | `test-apps/smoke/vite.config.ts` (with `@vitejs/plugin-react`) |
-| Vitest | 5.1.1 | `vitest.config.ts` |
+| Vitest | 5.1.1 | `vitest.config.ts` (tests and benchmarks) |
 | Playwright | 1.65.1 | `playwright.config.ts` |
 | React / React DOM | 19.3.1 | peer dependencies `^19.2.0` of runtime and components |
 
@@ -122,7 +149,7 @@ All dev dependencies are pinned to exact versions in the root `package.json`.
 
 | tsconfig | Differs from the base |
 |----------|-----------------------|
-| `packages/compiler` | `lib: ["ES2023"]` (no DOM) |
+| `packages/compiler` | `lib: ["ES2023"]` (no DOM); includes `src`, `tests` and `bench` |
 | `packages/runtime`, `packages/components`, `test-apps/smoke` | none |
 | `tools` | `lib: ["ES2023"]`, `types: ["node"]` |
 | `e2e` | `types: ["node"]`; also covers `playwright.config.ts` |
@@ -137,6 +164,7 @@ Run from the repository root.
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Playwright; starts the Vite dev server for `test-apps/smoke` on port 5173 |
+| `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
 | `npm run typecheck` | `tsc -p` for each package and folder, each with its own settings |
 | `npm run check` | typecheck, then unit tests, then E2E. Must pass before a step is done. |
 
@@ -150,7 +178,7 @@ One-time machine setup for E2E: `npx playwright install chromium`.
 
 | Project | Root | Environment | Files |
 |---------|------|-------------|-------|
-| `compiler` | `packages/compiler` | `node` (no DOM, matching the compiler's constraint) | `tests/**/*.test.ts` |
+| `compiler` | `packages/compiler` | `node` (no DOM, matching the compiler's constraint) | `tests/**/*.test.ts`; benchmarks: `bench/**/*.bench.ts` |
 | `runtime` | `packages/runtime` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
 | `components` | `packages/components` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
 | `tools` | `tools` | `node` | `**/*.test.ts` |
@@ -163,13 +191,38 @@ Conventions:
 - React tests use `@testing-library/react` (`render`, `screen`).
 - Behavior that defines the language goes into data-driven conformance
   tables (`test.each`), which act as the written spec.
+- Compiler tests mirror `src/` (`tests/markup/`, `tests/source/`). Shared
+  test helpers live next to the tests that use them (for example
+  `tests/markup/helpers.ts`).
+- Positions are asserted through the source text they cover
+  (`markup.slice(start, end)`), not raw numbers, so tables stay readable.
 
 | Test file | Covers |
 |-----------|--------|
-| `packages/compiler/tests/smoke.test.ts` | Package loads; no `document` in its environment |
+| `packages/compiler/tests/markup/*.test.ts` | The markup parser: valid markup, positions, diagnostics, recovery, entities (see [markup-parser.md](markup-parser.md#tests)) |
+| `packages/compiler/tests/source/line-map.test.ts` | `LineMap` and `formatDiagnostic` |
 | `packages/runtime/tests/smoke.test.tsx` | Package loads; React 19 renders in jsdom |
 | `packages/components/tests/smoke.test.ts` | Package loads and resolves the runtime; the metadata entry point loads on its own |
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
+| `tools/xmlui-corpus.test.ts` | Compatibility: every `.xmlui` file in the XMLUI repo parses with zero diagnostics (105 files). Uses `$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent. |
+
+Count after step 1: 253 unit tests in 10 files.
+
+### Benchmarks (Vitest 5)
+
+- Files: `packages/<pkg>/bench/*.bench.ts`, selected by the project's
+  `benchmark.include`. Only `npm run bench` runs them.
+- Vitest 5 API: a benchmark is a test that uses the `bench` fixture:
+  `test("…", async ({ bench }) => { await bench("name", fn).run(); })`.
+  There is no top-level `bench` export.
+- `suppressExportGetterWarnings` is on: Vitest's dev module runner adds
+  roughly 15–20% overhead through export getters, which bundled production
+  code doesn't have, so the results are slightly pessimistic (rationale in
+  `vitest.config.ts`).
+
+| Benchmark | Measures |
+|-----------|----------|
+| `packages/compiler/bench/markup.bench.ts` | `parseMarkup` on generated realistic markup: 10 KiB, 100 KiB, 1 MiB |
 
 ### E2E tests (Playwright)
 
@@ -182,14 +235,20 @@ Conventions:
 
 | Spec | Covers |
 |------|--------|
-| `e2e/smoke.spec.ts` | The smoke app renders the names of all three packages in a real browser, with no page or console errors |
+| `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
 
 ## Conventions
+
+- **Naming:** the product is **patchfuil**, short name **pfui**. The npm
+  scope is `@patchfuil/*` and markup files are `.pfui`. "XMLUI" refers only
+  to the original framework (the reference implementation, compatibility
+  tests and research notes). See *Decisions* in `AGENTS.md`.
 
 - **Branches:** each proof-of-concept step is developed on `poc/NN-topic`,
   reviewed by the user, then merged.
 - **Commits:** only when the user asks.
 - **Placeholders:** the `*Info` exports exist only to prove the wiring. They
-  are removed once a package has real exports.
+  are removed once a package has real exports (`compilerInfo` was removed in
+  step 1).
 - **Documentation:** every step ends by updating this file (see
   [README.md](README.md)).

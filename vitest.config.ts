@@ -12,6 +12,15 @@ export default defineConfig({
           root: "packages/compiler",
           environment: "node",
           include: ["tests/**/*.test.ts"],
+          benchmark: {
+            // Benchmarks run only via `npm run bench` (vitest bench).
+            include: ["bench/**/*.bench.ts"],
+            // Vitest's dev module runner wraps cross-module exports in getters;
+            // bundled production code has none. Measured on step 1: the getters
+            // make the parser benchmark ~15-20% slower, so the reported numbers
+            // are slightly pessimistic. Suppressed to keep the output readable.
+            suppressExportGetterWarnings: true,
+          },
         },
       },
       {
