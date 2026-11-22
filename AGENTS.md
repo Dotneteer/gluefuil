@@ -15,11 +15,33 @@ from XMLUI, record the decision and the reason (see *Decisions* below).
 
 ## Status
 
-Greenfield; there is no source code yet. React (rendering) and Mantine
-(base components) are chosen (see *Decisions*); nothing else is. Do not assume any other part of the
-stack (bundler, signals library, etc.) until it is recorded here or in an
-accepted plan. When a task depends on such a choice, propose options in a plan
-instead of picking silently.
+Early proof-of-concept phase. The framework is being built step by step
+following [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md). **Stop after each
+step so the user can review it.** Each step is developed on its own branch
+(`poc/NN-topic`).
+
+Only what is recorded under *Decisions* is chosen. Do not assume anything
+else (for example the signals library) until it is recorded here or in an
+accepted plan; propose options in a plan instead of picking silently.
+
+**Read [.ai/docs/code-structure.md](.ai/docs/code-structure.md) before
+changing code.** It is the cornerstone development document and describes the
+code as it is. Every step ends by updating it in the same change as the code.
+
+## Essentials
+
+The full description (layout, packages, dependency rules, tooling, tests,
+conventions) is in [.ai/docs/code-structure.md](.ai/docs/code-structure.md).
+The short version:
+
+- Packages: `packages/compiler` (no React, no DOM), `packages/runtime`,
+  `packages/components` (`./metadata` is React-free). Package boundaries are
+  enforced by `tools/boundaries.test.ts`.
+- `npm run check` runs the typecheck, the unit tests (Vitest) and the E2E
+  tests (Playwright); it must pass before a step is done.
+- Every step adds unit tests; E2E tests are added when a claim can only be
+  proven in a real browser. Language behavior goes into data-driven
+  conformance tables (`test.each`).
 
 ## The reference implementation (read-only)
 
@@ -66,6 +88,7 @@ Architectural decisions (stack, divergences from XMLUI, naming) are recorded
 here as one line each, with a link to the plan that justified them:
 
 - **Rendering target is React.** Existing React components must be wrappable with lightweight code and usable directly from markup. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § Area 1.
+- **Toolchain:** TypeScript 7, npm workspaces, Vite 8, Vitest 5 (jsdom for React packages), Playwright, React 19. Packages: `compiler`, `runtime`, `components` (see [.ai/docs/code-structure.md](.ai/docs/code-structure.md)). See [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) step 0.
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

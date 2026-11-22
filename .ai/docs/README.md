@@ -1,0 +1,23 @@
+# Development documentation
+
+Documentation of **the code as it is**, for developers and AI agents working
+on this repository. Plans (what we intend to build) live in
+[`../plan/`](../plan/); this folder describes what exists.
+
+| Document | Contents |
+|----------|----------|
+| [code-structure.md](code-structure.md) | **Start here.** The cornerstone: packages, entry points, dependency rules, tooling, tests, conventions. |
+
+## Rules
+
+- **Accurate or absent.** Every statement here must match the current code.
+  A stale document misleads more than a missing one.
+- **Updated with every step.** Each proof-of-concept step (see
+  [`../plan/poc-steps.md`](../plan/poc-steps.md)) ends by updating
+  `code-structure.md`, and any other document here it affects, in the same
+  change as the code.
+- **Describe, don't plan.** Intentions and open questions belong in plans;
+  link to them instead of repeating them.
+- When a subsystem grows large enough to need its own document (for example
+  the parser or the reactivity core), add it here, link it from
+  `code-structure.md`, and list it in the table above.

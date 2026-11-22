@@ -32,6 +32,11 @@ if it's architectural, under *Decisions* in the root `AGENTS.md`.
    pass, and the step's checklist is ticked.
 4. **Record what was learned** in architecture.md (decisions, surprises,
    divergences from XMLUI).
+5. **Update the development documentation:**
+   [`../docs/code-structure.md`](../docs/code-structure.md) (the
+   cornerstone) and any other `.ai/docs/` document the step affects, so they
+   describe the code as it now is.
+6. **Stop for review** before starting the next step.
 
 The XMLUI reference for each step is listed under *Reference*. Paths are
 relative to `/Users/dotneteer/source/xmlui`.
@@ -40,7 +45,16 @@ relative to `/Users/dotneteer/source/xmlui`.
 
 ## Phase A: Foundation
 
-### Step 0: Workspace and test harness
+### Step 0: Workspace and test harness ✅ (awaiting review)
+
+- **Outcome:**
+  - Packages are named `@patchfuil/*` and export their TypeScript source
+    directly (no build step yet).
+  - The boundary rules are enforced by `tools/boundaries.test.ts`, which
+    also tests the checker itself on fixtures.
+  - The compiler's tsconfig has no DOM lib, verified by a probe file that
+    used `document` and failed the typecheck.
+  - One-time machine setup: `npx playwright install chromium`.
 
 - **Subject:** repository layout, toolchain and test infrastructure.
 - **Proposed toolchain (to confirm):** TypeScript, npm workspaces, Vite,
