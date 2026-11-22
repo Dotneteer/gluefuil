@@ -341,8 +341,10 @@ class MarkupParser {
     const innerEnd = close < 0 ? this.text.length : close;
     if (close < 0) this.report("M002", { start, end: start + 1 });
     this.pos = close < 0 ? this.text.length : close + 1;
+    const raw = this.text.slice(start + 1, innerEnd);
     return {
-      text: this.text.slice(start + 1, innerEnd),
+      value: decodeEntities(raw),
+      raw,
       quote,
       inner: { start: start + 1, end: innerEnd },
       start,

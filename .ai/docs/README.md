@@ -8,6 +8,7 @@ on this repository. Plans (what we intend to build) live in
 |----------|----------|
 | [code-structure.md](code-structure.md) | **Start here.** The cornerstone: packages, entry points, dependency rules, tooling, tests, conventions. |
 | [markup-parser.md](markup-parser.md) | The markup parser: API, syntax tree, lexical rules, diagnostics, recovery, tests, measurements. |
+| [script-parser.md](script-parser.md) | The script parser: entry points, positions, the supported language, ASI, implementation, interpolation, diagnostics, tests. |
 
 ## Rules
 

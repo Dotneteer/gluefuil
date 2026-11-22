@@ -46,8 +46,10 @@ export interface AttributeNode extends Span {
 }
 
 export interface AttributeValue extends Span {
-  /** The raw text between the quotes. Entities are NOT decoded (XMLUI semantics). */
-  text: string;
+  /** The text between the quotes, with entities decoded (XMLUI decodes them in attribute values too). */
+  value: string;
+  /** The text between the quotes exactly as written. */
+  raw: string;
   quote: '"' | "'" | "`";
   /** Span of the text inside the quotes. Expression positions start here. */
   inner: Span;
