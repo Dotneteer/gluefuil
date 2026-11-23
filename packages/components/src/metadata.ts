@@ -11,6 +11,13 @@ export interface ComponentMetadata {
   events?: Record<string, { description: string }>;
   /** What `id` exposes: values and methods (`textBox.value`, `textBox.setValue(v)`). */
   api?: Record<string, { description: string }>;
+  /**
+   * Template props (`<property name="itemTemplate">…</property>`) and the
+   * context variables each template's content can read (`$item`).
+   */
+  templates?: Record<string, { description: string; contextVars: string[] }>;
+  /** The template the element's children are, when given as plain children (`Items`: itemTemplate). */
+  childrenTemplate?: string;
 }
 
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
@@ -47,6 +54,20 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       setValue: { description: "Replaces the text." },
       focus: { description: "Moves the keyboard focus to the input." },
     },
+  },
+  Items: {
+    description: "Renders `data` through its item template, without a wrapper element.",
+    props: {
+      data: { description: "The array of items." },
+      reverse: { description: "Render the items in reverse order." },
+    },
+    templates: {
+      itemTemplate: {
+        description: "The markup for one item.",
+        contextVars: ["$item", "$itemIndex", "$isFirst", "$isLast"],
+      },
+    },
+    childrenTemplate: "itemTemplate",
   },
   Stack: {
     description: "Lays out its children in a column or a row.",

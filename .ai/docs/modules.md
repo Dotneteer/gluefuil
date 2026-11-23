@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 9 (source maps).
+> **Last updated:** step 10 (when, templates, lifecycle).
 
 ## Role
 
@@ -57,6 +57,7 @@ use file offsets.
 | `Button` | `label`; event `click` | `<button type="button" class="pfui-Button">`, showing `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
 | `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="pfui-Stack">` |
 | `TextBox` | `initialValue`, `placeholder`; event `didChange`; API `value`, `setValue`, `focus` | `<input class="pfui-TextBox">` ([scoping.md](scoping.md)) |
+| `Items` | `data`, `reverse`; template `itemTemplate` (or children) with `$item`, `$itemIndex`, `$isFirst`, `$isLast` | One template instance per item, no wrapper ([visibility-templates.md](visibility-templates.md)) |
 
 `componentMetadata` (in the React-free `./metadata` entry) lists them as a
 `ComponentMetadata` (`description`, `props`, `events`). The compiler resolves element
@@ -105,6 +106,11 @@ export default Main;
   - A nested container gets `{ $$p: $$c }`.
   - `$$empty` is a shared frozen `{}` for elements that have handlers but
     no bindings.
+  - **Everything `Bound` keys on is hoisted** (bindings, handlers,
+    policies, timeouts, templates, lifecycle), so it is stable across
+    renders. This matters inside templates, which re-render with their
+    data: an inline object would recreate handler slots and abort running
+    handlers.
 
 ## Compilation rules
 
@@ -121,7 +127,10 @@ export default Main;
 | `handlerPolicy="…"`, `handlerPolicy:onClick="…"`, `handlerTimeoutMs`, `handlerTimeoutMs:onClick` | `policies: { onClick: "queue" }`, `timeouts: { onClick: 500 }` on the `Bound` element. The per-handler form wins. Constants only; unknown policy or non-numeric timeout: E009. |
 | `<event name="click">…</event>` | The same. Text or CDATA content, not whitespace-collapsed; components inside are E002. |
 | `id="x"` | A file-scoped component ID ([scoping.md](scoping.md)): `Main` creates a file scope (`$$useFileScope`), and the element is a `Bound` with `id: "x"`, so the component receives `registerApi` |
-| `method.*`, `event.*`, `when` | E002 (steps 10, 14) |
+| `when`, `when-xs` … `when-xxl` | A `When` wrapper, or nothing for a constant false ([visibility-templates.md](visibility-templates.md)) |
+| `onMount`, `onUnmount` (`onInit`, `onCleanup`); `<event name="mount">` | `lifecycle: $$lN` on any element |
+| `<property name="tpl">markup</property>`; children of an element with a `childrenTemplate` | A template function `$$TN`, given as `templates: $$tN` |
+| `method.*`, `event.*` | E002 (step 14) |
 | Whitespace-only text | Dropped (trivia) |
 | Other text | Interpolated. Whitespace runs in literal parts collapse to one space (U+00A0 is kept); expressions are not collapsed. With expressions, it becomes a `Bound` `TextNode`. |
 | CDATA | Literal text, without interpolation or collapsing |
@@ -144,6 +153,9 @@ export default Main;
 | E010 | Duplicate `id` in the file |
 | E011 | Invalid `id` |
 | E012 | A variable named like a component ID |
+| E013 | Unknown template property, non-template `<property>`, content besides an explicit children template |
+| E014 | `id` inside a template |
+| E015 | Unknown `when-*` breakpoint |
 
 ## Build-time integration (fixture only)
 

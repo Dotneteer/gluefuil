@@ -13,6 +13,9 @@ export const ModuleDiagnostics = {
   E010: (id: string) => `The id '${id}' is already used in this file`,
   E011: (id: string) => `'${id}' is not a valid id: use a name starting with a letter or '_'`,
   E012: (name: string) => `The variable '${name}' has the same name as a component id`,
+  E013: (detail: string) => detail,
+  E014: () => "An id inside a template is not supported yet",
+  E015: (name: string) => `'${name}': use when-xs, when-sm, when-md, when-lg, when-xl or when-xxl`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

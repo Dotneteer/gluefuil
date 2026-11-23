@@ -223,7 +223,9 @@ Plan and findings: [poc-09-source-maps.md](poc-09-source-maps.md).
     (through the Chrome DevTools Protocol).
 - **Reference:** `.plan/source-maps-for-compiled-scripts.md`.
 
-### Step 10: Conditional rendering and templates
+### Step 10: Conditional rendering and templates ✅
+
+Plan and findings: [poc-10-conditionals-templates.md](poc-10-conditionals-templates.md).
 
 - **Subject:** `when`, responsive `when-*`, `Items` with `$item` and
   `$itemIndex`, template properties (`<property name="…Template">`), and

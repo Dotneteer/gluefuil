@@ -6,13 +6,15 @@
 //
 // Components themselves are plain React components that receive values.
 
-import { createElement, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { createElement, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { scheduleMicrotask } from "../errors";
 import { useComputed } from "../reactivity/react";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 import { variable } from "../reactivity/variable";
 import { assertBindingValue } from "../script/load";
 import { apiRegistrar } from "./component-api";
 import { HandlerSlot, type HandlerFunction, type HandlerPolicy } from "./handlers";
+import { templateRenderer, type TemplateFunction } from "./templates";
 
 /** A compiled binding: `($$s) => value`. */
 export type BindingFunction = (scope: object) => unknown;
@@ -35,6 +37,10 @@ export interface BoundProps {
   timeouts?: Record<string, number> | null;
   /** The element's `id`: the component receives a `registerApi` prop to publish its API. */
   id?: string;
+  /** Template props (`itemTemplate`): compiled templates, given to the component as renderers. */
+  templates?: Record<string, TemplateFunction> | null;
+  /** `onMount` / `onUnmount` handlers (any element). */
+  lifecycle?: { mount?: HandlerFactory; unmount?: HandlerFactory } | null;
   /** The scope the bindings read and the handlers write. */
   scope: object;
   children?: ReactNode;
@@ -44,7 +50,7 @@ export interface BoundProps {
  * Renders `type` with its constant props and the current values of its
  * bindings. It re-renders only when one of those values changes.
  */
-export function Bound({ type, props, bindings, handlers, policies, timeouts, id, scope, children }: BoundProps) {
+export function Bound({ type, props, bindings, handlers, policies, timeouts, id, templates, lifecycle, scope, children }: BoundProps) {
   const values = useComputed(() => {
     const result: Record<string, unknown> = {};
     for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
@@ -74,7 +80,43 @@ export function Bound({ type, props, bindings, handlers, policies, timeouts, id,
   }, [slots]);
   const registerApi = useMemo(() => (id === undefined ? undefined : apiRegistrar(scope, id)), [id, scope]);
   const extra = registerApi ? { registerApi } : undefined;
-  return createElement(type, { ...props, ...values, ...handlerProps, ...extra }, children);
+  const templateProps = useMemo(() => {
+    const result: Record<string, unknown> = {};
+    for (const name in templates) result[name] = templateRenderer(scope, templates[name]!);
+    return result;
+  }, [templates, scope]);
+  useLifecycle(lifecycle, scope);
+  return createElement(type, { ...props, ...values, ...handlerProps, ...templateProps, ...extra }, children);
+}
+
+/**
+ * Runs `onMount` after the element is rendered and `onUnmount` when it goes
+ * away (including through `when`). React StrictMode simulates an unmount and a
+ * remount in development: the unmount is deferred by a microtask and cancelled
+ * by an immediate remount, so each handler fires once per real transition.
+ */
+function useLifecycle(lifecycle: BoundProps["lifecycle"], scope: object): void {
+  const slots = useMemo(
+    () => ({
+      mount: lifecycle?.mount ? new HandlerSlot(lifecycle.mount(scope)) : undefined,
+      unmount: lifecycle?.unmount ? new HandlerSlot(lifecycle.unmount(scope)) : undefined,
+    }),
+    [lifecycle, scope],
+  );
+  const pendingUnmount = useRef(false);
+  useEffect(() => {
+    if (!slots.mount && !slots.unmount) return undefined;
+    if (pendingUnmount.current) pendingUnmount.current = false; // StrictMode remount: not a new mount
+    else slots.mount?.invoke([]);
+    return () => {
+      pendingUnmount.current = true;
+      scheduleMicrotask(() => {
+        if (!pendingUnmount.current) return;
+        pendingUnmount.current = false;
+        slots.unmount?.invoke([]);
+      });
+    };
+  }, [slots]);
 }
 
 /** How a container declares one variable: an initializer binding or a constant. */

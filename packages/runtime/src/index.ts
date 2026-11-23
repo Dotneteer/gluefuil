@@ -58,6 +58,18 @@ export {
   type RegisterApi,
 } from "./render/component-api";
 export { reportRuntimeError, setErrorReporter, type ErrorReporter } from "./errors";
+export {
+  BREAKPOINT_NAMES,
+  BREAKPOINTS,
+  breakpoint,
+  breakpointIndex,
+  resolveVisibility,
+  When,
+  type BreakpointName,
+  type Condition,
+  type WhenProps,
+} from "./render/visibility";
+export { TemplateInstance, templateRenderer, type TemplateFunction, type TemplateRenderer } from "./render/templates";
 export { loadModule, type ModuleImports, type ModuleSourceMap } from "./render/module";
 // Compiled code creates elements through the runtime, never through React directly.
 export { createElement, Fragment } from "react";
