@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 9 (source maps).
+> **Last updated:** step 10 (conditional rendering, templates).
 
 ## What this repository is
 
@@ -40,6 +40,10 @@ Current state:
 - **Source maps:** every compiled module maps back to its `.pfui` file
   (expressions, statements, handlers, elements), on both the Vite and the
   standalone path ([source-maps.md](source-maps.md)).
+- **Conditional rendering and templates:** `when`/`when-*`,
+  `onMount`/`onUnmount`, template properties and `Items` with
+  component-injected context variables
+  ([visibility-templates.md](visibility-templates.md)).
 
 ## Subsystem documents
 
@@ -49,6 +53,7 @@ Current state:
 | [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
+| [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle, templates and context variables, `Items` |
 | [source-maps.md](source-maps.md) | Source markers, Source Map v3, delivery through Vite and `loadModule`, the evidence |
 | [scoping.md](scoping.md) | Name resolution (compile time), the scope chain (runtime), component IDs and APIs |
 | [async-handlers.md](async-handlers.md) | Handlers at runtime: implicit await, segments (batching across `await`), the watchdog, `$cancel`, policies, timeouts, async-aware array methods, app globals |
@@ -75,7 +80,8 @@ Current state:
 │   │   └── bench/           benchmarks (npm run bench)
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 │       ├── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
-│       └── src/text-box.tsx TextBox (the first component with an API)
+│       ├── src/text-box.tsx TextBox (the first component with an API)
+│       └── src/items.tsx    Items (templates with $item)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test
 ├── test-apps/
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
@@ -105,9 +111,9 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
-| `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`, `TextBox`; re-exports the metadata |
-| `packages/components/src/metadata.ts` | `componentMetadata` (the five components: props, events, API), `ComponentMetadata` |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
+| `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`, `TextBox`, `Items`; re-exports the metadata |
+| `packages/components/src/metadata.ts` | `componentMetadata` (six components: props, events, API, templates), `ComponentMetadata` |
 
 ### Compiler source layout
 
@@ -281,17 +287,18 @@ Conventions:
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 9: 1,491 unit tests in 44 files.
+Count after step 10: 1,548 unit tests in 47 files.
 
-- Compiler: 779, of which markup 115, script 331, codegen 207, module 104
-  and source (positions, source maps) 22.
-- Runtime: 315, of which the script sandbox and async arrays are 210,
-  reactivity 65, rendering, handlers, component APIs and source maps 38,
-  and the smoke test 2.
+- Compiler: 803, of which markup 115, script 331, codegen 207, module 128
+  and source 22.
+- Runtime: 342, of which the script sandbox and async arrays are 210,
+  reactivity 65, rendering (handlers, component APIs, source maps,
+  visibility, templates, lifecycle) 65, and the smoke test 2.
 - Tools: 355, of which the corpus is 327, the boundaries 23 and the
   sandbox drift test 5.
-- Components: 42, of which IDs and scoping are 5, async handlers 9,
-  variables and handlers 12, the first app 14 and the smoke test 2.
+- Components: 48, of which conditionals and templates are 6, IDs and
+  scoping 5, async handlers 9, variables and handlers 12, the first app 14
+  and the smoke test 2.
 
 ### Benchmarks (Vitest 5)
 
@@ -326,6 +333,7 @@ Count after step 9: 1,491 unit tests in 44 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |
 | `e2e/source-maps.spec.ts` | Through CDP: a handler's exception resolves to its `throw` line in `Main.pfui` |
 | `e2e/ids.spec.ts` | Reading and writing another component through its id |
 | `e2e/async-handlers.spec.ts` | A slow handler's progress, responsiveness while waiting, double-click under each handler policy |

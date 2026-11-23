@@ -38,6 +38,21 @@
         throw new Error('thrown in Main.pfui: ' + reason);
       "/>
 
+    <!-- Step 10: responsive when -->
+    <Text when-md="false">Layout: compact</Text>
+    <Text when="false" when-md="true">Layout: wide</Text>
+
+    <!-- Step 10: Items with $item / $itemIndex -->
+    <Stack var.todos="{['Write tests']}" gap="4px">
+      <Button label="Add todo" onClick="todos.push('Todo ' + (todos.length + 1))"/>
+      <Items data="{todos}">
+        <Stack orientation="horizontal" gap="4px">
+          <Text>Todo #{$itemIndex + 1}: {$item}</Text>
+          <Button label="{'Remove ' + $item}" onClick="todos.splice($itemIndex, 1)"/>
+        </Stack>
+      </Items>
+    </Stack>
+
     <!-- Step 7: a slow handler (implicit await) -->
     <Stack orientation="horizontal" gap="4px">
       <Button label="Save" onClick="status = 'Saving…'; delay(300); status = 'Saved'"/>

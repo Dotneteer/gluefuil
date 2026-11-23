@@ -96,12 +96,15 @@ describe("async handlers (step 7)", () => {
     const code = lines(
       '<App var.n="{0}"><Button handlerPolicy="queue" handlerTimeoutMs:onClick="500" onClick="n++"/></App>',
     );
-    expect(code.some((l) => l.includes('policies: { "onClick": "queue" }, timeouts: { "onClick": 500 }'))).toBe(true);
+    // Hoisted, so they are stable across renders.
+    expect(code).toContain('const $$q2 = { "onClick": "queue" };');
+    expect(code).toContain('const $$q3 = { "onClick": 500 };');
+    expect(code.some((l) => l.includes("policies: $$q2, timeouts: $$q3"))).toBe(true);
   });
 
   test("a per-handler setting wins over the element-wide one", () => {
     const code = lines('<App var.n="{0}"><Button handlerPolicy="queue" handlerPolicy:onClick="single-flight" onClick="n++"/></App>');
-    expect(code.some((l) => l.includes('policies: { "onClick": "single-flight" }'))).toBe(true);
+    expect(code.some((l) => l.includes('= { "onClick": "single-flight" };'))).toBe(true);
   });
 
   test("app globals: delay is visible, readable, and awaited implicitly", () => {

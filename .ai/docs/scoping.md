@@ -4,7 +4,7 @@
 > and how component IDs expose APIs. Describes the code as it is. Design
 > and XMLUI comparison: [`../plan/poc-08-scoping-ids.md`](../plan/poc-08-scoping-ids.md).
 >
-> **Last updated:** step 8.
+> **Last updated:** step 10 (template context variables).
 
 ## Name resolution (compile time)
 
@@ -14,13 +14,15 @@ A name in a binding or handler resolves to the first match:
 |---|------|-------------|----------------------|
 | 1 | Local | Parameters, `let`/`const`, functions, catch and `for` heads; handler locals `$param`, `$params`, `$cancel` | Yes (plain JavaScript) |
 | 2 | Variable | `var.x` / `<variable>` / `global.x` / `<global>` on the element or an ancestor; the innermost declaration wins | Yes (through scope setters and path helpers) |
+| 2a | Context variable | A template the code is inside (`$item`, `$itemIndex`, …: from the component's metadata). They start with `$`, which variable names can't, so the two never collide. | No (C012) |
 | 3 | Component ID | `id="x"` **anywhere in the file** | No (C012); use API methods |
 | 4 | App global | The runtime (`delay`) | No (C012) |
 | 5 | Sandbox global | `Math`, `JSON`, … ([codegen.md](codegen.md)) | No (C010) |
 
 - **Anything else is a compile error:**
   - a known platform global: C002;
-  - a `$`-name: C014 ("context variable … is not available here");
+  - a `$`-name: C014 ("context variable … is not available here"); context
+    variables exist only inside the template that provides them;
   - otherwise: C001.
 - **Variables flow downward:** they are visible to the declaring element
   (its own attributes too) and its descendants, not to its siblings.
@@ -41,6 +43,8 @@ app scope (createAppScope: delay)
   └─ file scope (useFileScope: one getter per ID)        — only when the file has IDs
        └─ container scope (useScope: variables, getters + setters)
             └─ nested container scope …
+                 └─ template instance scope (TemplateInstance: $item, … as signals)
+                      └─ …
 ```
 
 - **Every scope object is frozen.**

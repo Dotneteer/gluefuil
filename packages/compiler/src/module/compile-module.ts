@@ -68,6 +68,8 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["createAppScope", "$$createAppScope"],
   ["useScope", "$$useScope"],
   ["useFileScope", "$$useFileScope"],
+  ["When", "$$When"],
+  ["Fragment", "$$Fragment"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
 ];
@@ -77,9 +79,22 @@ function unsupportedAttribute(name: string): string | undefined {
   for (const prefix of ["method.", "event."]) {
     if (name.startsWith(prefix)) return `The '${prefix}' attribute '${name}'`;
   }
-  if (name === "when") return `The '${name}' attribute`;
   return undefined;
 }
+
+/** Breakpoints of the responsive `when-*` attributes (runtime BREAKPOINT_NAMES). */
+const BREAKPOINTS = ["xs", "sm", "md", "lg", "xl", "xxl"];
+
+/** Lifecycle events every element accepts (aliases as in XMLUI). */
+const LIFECYCLE: Readonly<Record<string, "mount" | "unmount">> = {
+  onMount: "mount",
+  onInit: "mount",
+  onUnmount: "unmount",
+  onCleanup: "unmount",
+};
+
+/** Helper tags handled inside an element (not rendered as children). */
+const HELPER_TAGS = new Set(["event", "variable", "global", "property"]);
 
 /** Handler policies (runtime HANDLER_POLICIES). */
 const HANDLER_POLICIES = new Set(["parallel", "single-flight", "queue", "drop-while-running"]);
@@ -116,6 +131,8 @@ class ModuleCompiler {
   private readonly hoisted: string[] = [];
   /** Variables declared by the enclosing containers, innermost last. */
   private readonly frames: Set<string>[] = [];
+  /** Context variables of the enclosing templates (readable, not writable). */
+  private readonly contextFrames: Set<string>[] = [];
   /** The component IDs of the file (collected before compiling: their order doesn't matter). */
   private readonly ids = new Set<string>();
   private counter = 0;
@@ -147,6 +164,7 @@ class ModuleCompiler {
   private visibleNames(): Set<string> {
     const names = new Set<string>([...APP_GLOBALS, ...this.ids]);
     for (const frame of this.frames) for (const name of frame) names.add(name);
+    for (const frame of this.contextFrames) for (const name of frame) names.add(name);
     return names;
   }
 
@@ -218,6 +236,48 @@ class ModuleCompiler {
     return lines.join("\n");
   }
 
+  /** Hoists a ready-made expression; returns its name. */
+  private hoistRaw(prefix: string, expression: string): string {
+    const name = `${prefix}${this.counter++}`;
+    this.hoisted.push(`const ${name} = ${expression};`);
+    return name;
+  }
+
+  /**
+   * Compiles template content to a module-level function `$$Tn($$c)` that
+   * renders it in the scope `$$c` (a TemplateInstance's scope, holding the
+   * context variables).
+   */
+  private template(content: ContentNode[], contextVars: readonly string[]): string {
+    this.contextFrames.push(new Set(contextVars));
+    const parts: string[] = [];
+    for (const child of content) {
+      const compiled = this.child(child, "$$c");
+      if (compiled !== undefined) parts.push(compiled);
+    }
+    this.contextFrames.pop();
+    const body = parts.length === 0 ? "null" : parts.length === 1 ? parts[0]! : `$$h($$Fragment, null, ${parts.join(", ")})`;
+    const name = `$$T${this.counter++}`;
+    this.hoisted.push(`function ${name}($$c) {\n  return ${body};\n}`);
+    return name;
+  }
+
+  /** `<property name="itemTemplate">markup</property>`: a template prop (E013 otherwise). */
+  private propertyTag(tag: ElementNode, metadata: ComponentMetadata, component: string): [string, string] | undefined {
+    const nameAttribute = tag.attributes.find((a) => a.name.full === "name");
+    const property = nameAttribute?.value?.value;
+    if (property === undefined || property.includes("{")) {
+      this.report(tag.name, "E008", "<property> needs a constant 'name'");
+      return undefined;
+    }
+    const template = metadata.templates?.[property];
+    if (!template) {
+      this.report(nameAttribute!.value!, "E013", `'${component}' has no template property '${property}'`);
+      return undefined;
+    }
+    return [property, this.template(tag.children, template.contextVars)];
+  }
+
   /** Hoists an object of compiled values; returns its name. */
   private hoist(prefix: string, entries: [name: string, code: string][]): string {
     const name = `${prefix}${this.counter++}`;
@@ -242,10 +302,15 @@ class ModuleCompiler {
       : { binding: result.code, dependencies: result.dependencies };
   }
 
-  /** Collects the file's IDs (E010 duplicate, E011 invalid). */
-  private collectIds(node: ElementNode): void {
+  /**
+   * Collects the file's IDs (E010 duplicate, E011 invalid). IDs inside templates
+   * are E014 (one ID per rendered item needs its own design).
+   */
+  private collectIds(node: ElementNode, inTemplate = false): void {
     const attribute = node.attributes.find((a) => a.name.full === "id");
-    if (attribute) {
+    if (attribute && inTemplate) {
+      this.report(attribute.name, "E014");
+    } else if (attribute) {
       const value = attribute.value?.value;
       if (value === undefined || !VARIABLE_NAME.test(value)) {
         this.report(attribute.value ?? attribute.name, "E011", value ?? "");
@@ -255,7 +320,13 @@ class ModuleCompiler {
         this.ids.add(value);
       }
     }
-    for (const child of node.children) if (child.kind === "element") this.collectIds(child);
+    const childrenAreTemplate = Boolean(this.components[node.name.full]?.childrenTemplate);
+    for (const child of node.children) {
+      if (child.kind !== "element") continue;
+      const isProperty = child.name.full === "property";
+      const isHelper = HELPER_TAGS.has(child.name.full);
+      this.collectIds(child, inTemplate || isProperty || (childrenAreTemplate && !isHelper));
+    }
   }
 
   // --- Elements -------------------------------------------------------------------------
@@ -271,10 +342,59 @@ class ModuleCompiler {
       this.report(node.name, "E001", name);
       return "null";
     }
+    // `when` / `when-*` are evaluated in the enclosing scope, before the element exists.
+    const visibility = this.visibility(node);
+    if (visibility === "never") return "null";
     const declarations = this.declarations(node, isRoot);
     // A source marker at the element's start: render errors map to the tag.
-    if (declarations.length === 0) return this.mark(node.start, this.element(node, scopeVar));
-    return this.mark(node.start, this.container(node, declarations, scopeVar));
+    const element = this.mark(
+      node.start,
+      declarations.length === 0 ? this.element(node, scopeVar) : this.container(node, declarations, scopeVar),
+    );
+    if (!visibility) return element;
+    return this.mark(node.start, `$$h($$When, { test: ${visibility}.test, responsive: ${visibility}.responsive, scope: ${scopeVar} }, ${element})`);
+  }
+
+  /**
+   * Compiles `when` and `when-xs` … `when-xxl`: "never" for a constant false
+   * `when` without responsive rules, undefined when the element is always
+   * rendered, else the name of a hoisted `{ test, responsive }` object.
+   */
+  private visibility(node: ElementNode): "never" | string | undefined {
+    let test: string | undefined;
+    const responsive: [string, string][] = [];
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name !== "when" && !name.startsWith("when-")) continue;
+      const breakpoint = name === "when" ? undefined : name.slice(5);
+      if (breakpoint !== undefined && !BREAKPOINTS.includes(breakpoint)) {
+        this.report(attribute.name, "E015", name);
+        continue;
+      }
+      let code: string;
+      if (!attribute.value) {
+        code = "true";
+      } else {
+        const value = this.value(this.segments(attribute as ValuedAttribute));
+        if ("constant" in value) {
+          // Constant text: "false" and "" are false (as in XMLUI); anything else is true.
+          const text = JSON.parse(value.constant) as string;
+          code = text.trim() === "false" || text.trim() === "" ? "false" : "true";
+        } else {
+          code = value.binding;
+        }
+      }
+      if (breakpoint === undefined) test = code;
+      else responsive.push([breakpoint, code]);
+    }
+    if (responsive.length === 0) {
+      if (test === undefined || test === "true") return undefined;
+      if (test === "false") return "never";
+    }
+    const entries: [string, string][] = [];
+    if (test !== undefined) entries.push(["test", test]);
+    if (responsive.length > 0) entries.push(["responsive", `{ ${responsive.map(([k, v]) => `${JSON.stringify(k)}: ${v}`).join(", ")} }`]);
+    return this.hoist("$$w", entries);
   }
 
   /** `var.*` / `global.*` attributes and `<variable>` / `<global>` children of an element. */
@@ -387,6 +507,7 @@ class ModuleCompiler {
       const attributeName = attribute.name.full;
       if (attributeName.startsWith("var.") || attributeName.startsWith("global.")) continue;
       if (attributeName === "id") continue; // collected by collectIds; passed to Bound below
+      if (attributeName === "when" || attributeName.startsWith("when-")) continue; // see visibility()
       const concurrency = attribute.name.prefix ?? attribute.name.local;
       if (concurrency === "handlerPolicy" || concurrency === "handlerTimeoutMs") {
         this.concurrencyAttribute(attribute, metadata, name, concurrency === "handlerPolicy" ? policies : timeouts);
@@ -415,6 +536,8 @@ class ModuleCompiler {
     }
 
     const children: string[] = [];
+    const templates: [string, string][] = [];
+    const content: ContentNode[] = [];
     for (const child of node.children) {
       if (child.kind === "element" && child.name.full === "event") {
         const handler = this.eventTag(child, metadata, name);
@@ -422,8 +545,36 @@ class ModuleCompiler {
         continue;
       }
       if (child.kind === "element" && (child.name.full === "variable" || child.name.full === "global")) continue;
-      const compiled = this.child(child, scopeVar);
-      if (compiled !== undefined) children.push(compiled);
+      if (child.kind === "element" && child.name.full === "property") {
+        const template = this.propertyTag(child, metadata, name);
+        if (template) templates.push(template);
+        continue;
+      }
+      content.push(child);
+    }
+    // Children as the template (Items): unless the template is also given as a <property>.
+    const childrenTemplate = metadata.childrenTemplate;
+    const meaningful = content.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
+    if (childrenTemplate && meaningful.length > 0) {
+      if (templates.some(([template]) => template === childrenTemplate)) {
+        this.report(meaningful[0]!, "E013", `Content besides <property name="${childrenTemplate}">`);
+      } else {
+        templates.push([childrenTemplate, this.template(content, metadata.templates![childrenTemplate]!.contextVars)]);
+      }
+    } else {
+      for (const child of content) {
+        const compiled = this.child(child, scopeVar);
+        if (compiled !== undefined) children.push(compiled);
+      }
+    }
+    // onMount / onUnmount (any element): not component props.
+    const lifecycle: [string, string][] = [];
+    for (let i = handlers.length - 1; i >= 0; i--) {
+      const kind = LIFECYCLE[handlers[i]![0]];
+      if (kind) {
+        lifecycle.unshift([kind, handlers[i]![1]]);
+        handlers.splice(i, 1);
+      }
     }
 
     const component = `$$C_${name}`;
@@ -431,7 +582,9 @@ class ModuleCompiler {
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
     const id = idValue !== undefined && this.ids.has(idValue) ? idValue : undefined;
-    if (bindings.length === 0 && handlers.length === 0 && id === undefined) return `$$h(${component}, ${props}${args})`;
+    if (bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
+      return `$$h(${component}, ${props}${args})`;
+    }
     const bindingsName = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
     let handlersPart = "";
     if (handlers.length > 0) {
@@ -441,13 +594,16 @@ class ModuleCompiler {
           .map(([prop]) => [prop, settings.get(prop) ?? settings.get("*")] as const)
           .filter(([, value]) => value !== undefined)
           .map(([prop, value]) => `${JSON.stringify(prop)}: ${JSON.stringify(value)}`);
+      // Hoisted, so they are stable across renders (Bound keys its handler slots on them).
       const policyEntries = perHandler(policies);
       const timeoutEntries = perHandler(timeouts);
-      if (policyEntries.length > 0) handlersPart += `, policies: { ${policyEntries.join(", ")} }`;
-      if (timeoutEntries.length > 0) handlersPart += `, timeouts: { ${timeoutEntries.join(", ")} }`;
+      if (policyEntries.length > 0) handlersPart += `, policies: ${this.hoistRaw("$$q", `{ ${policyEntries.join(", ")} }`)}`;
+      if (timeoutEntries.length > 0) handlersPart += `, timeouts: ${this.hoistRaw("$$q", `{ ${timeoutEntries.join(", ")} }`)}`;
     }
     const idPart = id === undefined ? "" : `, id: ${JSON.stringify(id)}`;
-    return `$$h($$Bound, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}, scope: ${scopeVar} }${args})`;
+    const templatesPart = templates.length > 0 ? `, templates: ${this.hoistRaw("$$t", `{ ${templates.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }`)}` : "";
+    const lifecyclePart = lifecycle.length > 0 ? `, lifecycle: ${this.hoist("$$l", lifecycle)}` : "";
+    return `$$h($$Bound, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`;
   }
 
   /**
@@ -493,6 +649,7 @@ class ModuleCompiler {
   }
 
   private checkEvent(metadata: ComponentMetadata, component: string, event: string, span: Span): boolean {
+    if (`on${event[0]!.toUpperCase()}${event.slice(1)}` in LIFECYCLE) return true;
     if (metadata.events && Object.hasOwn(metadata.events, event)) return true;
     this.report(span, "E004", event, component);
     return false;
