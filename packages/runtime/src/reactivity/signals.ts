@@ -10,7 +10,10 @@
 // checking the versions of their dependencies. A computed is linked to its
 // sources only while it has observers, so an unobserved one (a render that
 // never committed) leaks nothing: it revalidates by version when read.
-// Design: .ai/plan/poc-04-reactivity.md
+// Design: .ai/plan/poc-04-reactivity.md; batching across `await`:
+// .ai/plan/poc-07-async-handlers.md
+
+import { reportRuntimeError, scheduleMicrotask } from "../errors";
 
 export type Equals<T> = (a: T, b: T) => boolean;
 
@@ -247,13 +250,76 @@ export function batch<T>(fn: () => T): T {
   }
 }
 
+let batchGeneration = 0;
+
+/**
+ * Opens a batch that `endBatch()` closes: for code that cannot wrap its work
+ * in one function call (a handler segment, opened when the handler resumes
+ * after an `await` and closed before its next `await`).
+ *
+ * Such a batch must close within the synchronous run that opened it. If one
+ * is still open when the microtask queue runs, it was leaked (a bug): the
+ * store force-closes it, delivers the notifications and reports a
+ * ReactivityError, so the UI can never stay frozen.
+ */
+export function startBatch(): void {
+  if (batchDepth++ > 0) return;
+  const generation = ++batchGeneration;
+  scheduleMicrotask(() => {
+    if (batchDepth > 0 && batchGeneration === generation) {
+      batchDepth = 0;
+      reportRuntimeError(new ReactivityError("A batch was left open past the end of a synchronous run; it was closed"));
+      flush();
+    }
+  });
+}
+
+/** Closes a batch opened by `startBatch()`. An unbalanced call is ignored. */
+export function endBatch(): void {
+  if (batchDepth === 0) return;
+  batchDepth--;
+  if (batchDepth === 0) flush();
+}
+
+/** True while a batch is open (for tests and diagnostics). */
+export function isBatching(): boolean {
+  return batchDepth > 0;
+}
+
+/** Watchers notifying each other this many rounds in a row are a runaway cycle. */
+const MAX_FLUSH_ROUNDS = 100;
+let flushing = false;
+
+/**
+ * Delivers pending notifications. Every watcher is called even if another
+ * throws (errors are reported afterwards). A watcher may write again: the
+ * loop continues until nothing is pending, or stops a runaway cycle.
+ */
 function flush(): void {
-  // A callback may write again: keep going until nothing is pending.
-  while (pending.size > 0) {
-    const watchers = [...pending];
-    pending.clear();
-    for (const watcher of watchers) watcher.callback();
+  if (flushing) return; // a write inside a watcher: the running loop picks it up
+  flushing = true;
+  const errors: unknown[] = [];
+  try {
+    for (let round = 0; pending.size > 0; round++) {
+      if (round === MAX_FLUSH_ROUNDS) {
+        pending.clear();
+        errors.push(new ReactivityError(`Watchers kept changing state for ${MAX_FLUSH_ROUNDS} rounds; stopped`));
+        break;
+      }
+      const watchers = [...pending];
+      pending.clear();
+      for (const watcher of watchers) {
+        try {
+          watcher.callback();
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+    }
+  } finally {
+    flushing = false;
   }
+  for (const error of errors) reportRuntimeError(error);
 }
 
 /**

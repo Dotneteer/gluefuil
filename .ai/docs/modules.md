@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 6 (variables, handlers).
+> **Last updated:** step 7 (async handlers, app scope).
 
 ## Role
 
@@ -38,7 +38,8 @@ use file offsets.
 
 | Export | What it does |
 |--------|--------------|
-| `Bound` | Renders `type` with constant `props`, the current values of `bindings` (evaluated against `scope` in one `useComputed`), and `handlers` (each factory instantiated once per scope, each call run in `batch()`). Re-renders only when a value changes. |
+| `Bound` | Renders `type` with constant `props`, the current values of `bindings` (evaluated against `scope` in one `useComputed`), and `handlers`: one `HandlerSlot` per handler, with its `policies`/`timeouts`, disposed on unmount (see [async-handlers.md](async-handlers.md)). Re-renders only when a value changes. |
+| `createAppScope()` | The root scope: app globals |
 | `useScope(parent, definitions)` | A container's scope: creates its variables (`{ init }` binding or `{ value }` constant) once per instance |
 | `TextNode` | Text content with bindings: `null`/`undefined` render nothing, other values as text |
 | `loadModule(code, { components })` | Instantiates the `"function"` format with `new Function`, passing the runtime itself and `components` |
@@ -83,7 +84,8 @@ export default Main;
   - text without `{…}` is a string child;
   - each element with bindings gets **one hoisted bindings object**
     (stable across renders) and a `Bound` wrapper.
-- **The root scope** is empty (`$$createScope({})`).
+- **The root scope** is the app scope (`$$createAppScope()`): the app
+  globals, `delay` for now.
 - **Containers.** An element that declares variables compiles to its own
   component:
 
@@ -112,7 +114,8 @@ export default Main;
 | `attr` with no value | The string `"true"` (as XMLUI) |
 | `var.x="…"`, `<variable name="x" value="…"/>` | A variable of the element (which becomes a container). Its value is interpolated: constant or binding. A key-only `var.x` is `"true"`; `<variable>` without `value` is `undefined`. |
 | `global.x`, `<global>` | The same, allowed only on the root element (E006). Global visibility in user-defined components is step 14. |
-| `onClick="…"` | A handler (`compileHandler`, statements). The event must be in the component's metadata `events` (E004). |
+| `onClick="…"` | A handler (`compileHandler`, statements, async: see [async-handlers.md](async-handlers.md)). The event must be in the component's metadata `events` (E004). |
+| `handlerPolicy="…"`, `handlerPolicy:onClick="…"`, `handlerTimeoutMs`, `handlerTimeoutMs:onClick` | `policies: { onClick: "queue" }`, `timeouts: { onClick: 500 }` on the `Bound` element. The per-handler form wins. Constants only; unknown policy or non-numeric timeout: E009. |
 | `<event name="click">…</event>` | The same. Text or CDATA content, not whitespace-collapsed; components inside are E002. |
 | `method.*`, `event.*`, `when`, `id` | E002 (steps 8, 10, 14) |
 | Whitespace-only text | Dropped (trivia) |
@@ -133,6 +136,7 @@ export default Main;
 | E006 | A global declared below the root element |
 | E007 | A variable declared twice on one element |
 | E008 | Invalid variable name; `<variable>`/`<global>`/`<event>` without a constant `name` |
+| E009 | Invalid `handlerPolicy` / `handlerTimeoutMs` |
 
 ## Build-time integration (fixture only)
 
@@ -164,7 +168,9 @@ packages as external, and Node cannot load their TypeScript source
 | `compiler/tests/module/variables-handlers.test.ts` | Containers, `<variable>`/`<global>`, nesting, handlers and `<event>`, E004–E008, handler and binding diagnostics in markup |
 | `compiler/tests/module/compile-module.test.ts` | Module shape (both formats); elements, attributes, constants and bindings; text and whitespace rules; every E code; binding and syntax diagnostics in file positions; extra metadata |
 | `runtime/tests/render/elements.test.tsx` | `Bound` (props, re-rendering only on change, children, the promise check); `TextNode`; `loadModule` |
+| `components/tests/async-handlers.test.tsx` | Async handlers from markup (see [async-handlers.md](async-handlers.md#tests)) |
 | `components/tests/variables-handlers.test.tsx` | Clicks in jsdom: counter, source/mirror, order independence, shadowing, `<variable>`/`<global>`/`<event>`, deep writes, `push`, paths, alias mutation throws, lone arrow and `$param`, batching, per-instance state |
 | `components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM, for the first app and a table of constructs |
+| `e2e/async-handlers.spec.ts` | `test-apps/hello`: a slow handler, responsiveness, double-click under each policy |
 | `e2e/variables.spec.ts` | `test-apps/hello`: counter and source/mirror with real clicks in Chromium |
 | `e2e/first-app.spec.ts` | `test-apps/hello`: `Main.pfui` compiled by the Vite plugin renders in Chromium without errors, with a horizontal `Stack` laid out in a row |

@@ -22,9 +22,9 @@ describe("module shape", () => {
   test("esm: imports from the runtime and the components package, exports Main", () => {
     const { code } = compileModule(markup);
     expect(code.split("\n")).toEqual([
-      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createScope as $$createScope, useScope as $$useScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@patchfuil/runtime";',
+      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@patchfuil/runtime";',
       'import { App as $$C_App, Text as $$C_Text } from "@patchfuil/components";',
-      "const $$scope = $$createScope({});",
+      "const $$scope = $$createAppScope();",
       'const $$b0 = { "value": ($$s) => 1 + 2 };',
       "function Main() {",
       "  return $$h($$C_App, null, $$h($$Bound, { type: $$C_Text, props: null, bindings: $$b0, scope: $$scope }));",
@@ -43,7 +43,7 @@ describe("module shape", () => {
   test("function: reads $$imports and returns Main; valid as a function body", () => {
     const { code } = compileModule(markup, { format: "function" });
     expect(code.split("\n").slice(0, 2)).toEqual([
-      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createScope: $$createScope, useScope: $$useScope, scriptGlobals: $$g, scriptRuntime: $$r } = $$imports.runtime;",
+      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, scriptGlobals: $$g, scriptRuntime: $$r } = $$imports.runtime;",
       "const { App: $$C_App, Text: $$C_Text } = $$imports.components;",
     ]);
     expect(code.trimEnd().endsWith("return Main;")).toBe(true);

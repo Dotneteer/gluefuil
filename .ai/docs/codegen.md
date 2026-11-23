@@ -5,7 +5,7 @@
 > rationale and XMLUI comparison:
 > [`../plan/poc-03-codegen.md`](../plan/poc-03-codegen.md).
 >
-> **Last updated:** step 6 (handlers).
+> **Last updated:** step 7 (async handlers).
 
 ## Role
 
@@ -15,8 +15,9 @@ the binding's scope and a closed allowlist of globals, which makes **the
 compiler the sandbox**. The runtime turns the source into a function and
 supplies the few objects the code may touch.
 
-**Handlers** (step 6) compile the same way, in *handler mode*, where
-variables can be written (see § Handlers). Implicit `await` is step 7.
+**Handlers** compile the same way, in *handler mode*: variables can be
+written (§ Handlers), and calls are awaited implicitly. The async side is
+described in [async-handlers.md](async-handlers.md).
 
 ## API
 
@@ -43,7 +44,7 @@ interface CompileResult {
 |--------|------------|
 | `loadBinding(code)` | `new Function` around `code`, bound to the globals and helpers. Returns `(scope) => value`. Throws `BindingError` when the result is a promise or other thenable. |
 | `scriptGlobals` | `$$g`: the frozen globals object |
-| `scriptRuntime` | `$$r`: the helpers `key`, `obj`, `str`, and the path writes `setIn`, `deleteIn`, `updateIn`, `mutate` |
+| `scriptRuntime` | `$$r`: the helpers `key`, `obj`, `str`, `th` (is it a thenable?), `arr` (async-aware array methods), and the path writes `setIn`, `deleteIn`, `updateIn`, `mutate` |
 | `BANNED_MEMBERS`, `SandboxError` | The runtime copy of the member denylist; the error the helpers throw |
 
 `loadBinding` needs `new Function`, so it does not work under a CSP without
@@ -92,15 +93,21 @@ cases:
 
 ## Handlers
 
-`compileHandler` returns `($$s) => handlerFunction`:
+`compileHandler` returns `($$s) => ($$x) => async handlerFunction`, where
+`$$x` is the runtime's invocation context (see
+[async-handlers.md](async-handlers.md)):
 
 | Source | Function |
 |--------|----------|
-| A lone arrow or function expression | That function |
-| A lone reference (`save`, `api.save`) | `(...$params) => save?.(...$params)` |
-| Statements | `(...$params) => { const $param = $params[0]; … }` |
+| A lone arrow or function expression | That function, made `async` |
+| A lone reference (`save`, `api.save`) | `async (...$params) => { save(...$params) }` |
+| Statements | `async (...$params) => { const $param = $params[0]; … }` |
 
-`$param` and `$params` are locals (XMLUI `context-variables.md`).
+Every call in the handler body is awaited implicitly when it returns a
+thenable. Nested functions stay synchronous unless they contain `await`.
+
+`$param`, `$params` and `$cancel` are locals (XMLUI `context-variables.md`,
+`managed-react/cooperative-concurrency.md`).
 
 **Writes in handler mode:**
 
@@ -204,7 +211,7 @@ All are errors.
 | C006 | A binding cannot change a scope name |
 | C007 | `var` inside a function |
 | C008 | `import`/`export` in a function body; `delete` of a variable |
-| C009 | `async`/`await` (the parser reports S030 first) |
+| C009 | `async`; `await` outside handler code (a binding, a getter or setter). In `compileModule`, a C009 at the same place as the parser's S030 is dropped. |
 | C010 | Modifying a built-in |
 | C011 | A member left out of a curated global |
 | C012 | A handler can only change variables |
@@ -218,7 +225,7 @@ All are errors.
 | `compiler/tests/codegen/diagnostics.test.ts` | Each C code with the source it points at |
 | `compiler/tests/codegen/dependencies.test.ts` | Dependency sets, including shadowing and block scope |
 | `compiler/tests/codegen/interpolation.test.ts` | `compileInterpolation` shapes and constants |
-| `compiler/tests/codegen/handler.test.ts` | Handler shapes, every kind of write, C012/C013 and other handler diagnostics |
+| `compiler/tests/codegen/handler.test.ts` | Handler shapes, implicit and explicit await, nested async functions, every kind of write, handler diagnostics |
 | `runtime/tests/script/semantics.test.ts` | Conformance table: a binding plus a scope gives a value (operators, optional chaining, calls, callbacks with statements, globals, regex freshness, interpolation, the promise check) |
 | `runtime/tests/script/native-equivalence.test.ts` | More than 3,000 operator combinations: the compiled value equals native JavaScript's |
 | `runtime/tests/script/sandbox.test.ts` | Escape attempts in jsdom: rejected at compile time, rejected at runtime, or harmless; frozen globals; no shared prototype polluted afterwards |

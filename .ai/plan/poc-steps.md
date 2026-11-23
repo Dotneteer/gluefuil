@@ -183,7 +183,9 @@ Plan and findings: [poc-06-variables-handlers.md](poc-06-variables-handlers.md).
   - E2E: counter and mirror examples.
 - **Reference:** `pages/markup.md` § Variables, `pages/reactive-intro.md`.
 
-### Step 7: Async handlers (smart sync/async) and concurrency basics
+### Step 7: Async handlers (smart sync/async) and concurrency basics ✅
+
+Plan, design of the async batching, and findings: [poc-07-async-handlers.md](poc-07-async-handlers.md).
 
 - **Subject:** handlers that implicitly await promise-returning calls,
   including async-aware array methods (`map` sequential; `filter`/`some`/…

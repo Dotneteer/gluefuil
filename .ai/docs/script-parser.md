@@ -4,7 +4,7 @@
 > code as it is. Design rationale and XMLUI comparison:
 > [`../plan/poc-02-expression-parser.md`](../plan/poc-02-expression-parser.md).
 >
-> **Last updated:** step 2.
+> **Last updated:** step 7 (`await` in statement code).
 
 ## Role
 
@@ -77,8 +77,13 @@ function declarations, default, namespace and side-effect imports,
 dynamic `import()`, `new.target`, `for await`, tagged templates, private
 `#names`.
 
-`async`/`await` are also reported (S030), but still parsed into the tree
-(`async: true`, `AwaitExpression`) so tooling keeps working.
+`async` is also reported (S030), but still parsed into the tree
+(`async: true`) so tooling keeps working.
+
+`await` is accepted in statement code (`parseStatements`, which sets
+`allowAwait: true`: handlers are async, step 7), and reported as S030 in
+`parseExpression`/`parseInterpolation` (bindings are synchronous). The
+option `ScriptSourceOptions.allowAwait` controls it.
 
 **Divergences from JavaScript:**
 

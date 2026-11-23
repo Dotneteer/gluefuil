@@ -4,7 +4,7 @@
 //
 // Output shape:
 //   header (imports, or destructuring of $$imports for the "function" format)
-//   const $$scope = $$createScope({});
+//   const $$scope = $$createAppScope();            // the root scope: app globals
 //   const $$b0 = { "value": ($$s) => … };          // bindings of one element
 //   const $$e0 = { "onClick": ($$s) => (…) => … };  // handlers of one element
 //   const $$v0 = { "count": { init: ($$s) => 0 } }; // variables of one container
@@ -17,6 +17,7 @@
 
 import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
 import { compileHandler, compileInterpolation } from "../codegen/compile";
+import { APP_GLOBALS } from "../codegen/names";
 import type { AttributeNode, ContentNode, ElementNode, Span } from "../markup/ast";
 import { decodeEntitiesWithOffsets } from "../markup/entities";
 import { parseMarkup } from "../markup/parser";
@@ -50,7 +51,7 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["createElement", "$$h"],
   ["Bound", "$$Bound"],
   ["TextNode", "$$TextNode"],
-  ["createScope", "$$createScope"],
+  ["createAppScope", "$$createAppScope"],
   ["useScope", "$$useScope"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
@@ -64,6 +65,9 @@ function unsupportedAttribute(name: string): string | undefined {
   if (name === "when" || name === "id") return `The '${name}' attribute`;
   return undefined;
 }
+
+/** Handler policies (runtime HANDLER_POLICIES). */
+const HANDLER_POLICIES = new Set(["parallel", "single-flight", "queue", "drop-while-running"]);
 
 /** Variable names: a letter or `_`, then letters, digits and `_` (XMLUI markup.md § Variables). */
 const VARIABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -113,8 +117,15 @@ class ModuleCompiler {
     this.diagnostics.push({ code, severity: "error", message, start: span.start, end: span.end });
   }
 
-  /** Every name visible at this point. All of them are variables until ids arrive (step 8). */
+  /** Every name visible at this point: the app globals and the variables in scope. */
   private visibleNames(): Set<string> {
+    const names = new Set<string>(APP_GLOBALS);
+    for (const frame of this.frames) for (const name of frame) names.add(name);
+    return names;
+  }
+
+  /** The names a handler may write: the variables in scope. */
+  private visibleVariables(): Set<string> {
     const names = new Set<string>();
     for (const frame of this.frames) for (const name of frame) names.add(name);
     return names;
@@ -127,7 +138,7 @@ class ModuleCompiler {
     const body = root ? this.node(root, "$$scope", true) : "null";
     const code = [
       this.header(),
-      "const $$scope = $$createScope({});",
+      "const $$scope = $$createAppScope();",
       ...(this.usesEmpty ? ["const $$empty = Object.freeze({});"] : []),
       ...this.hoisted,
       `function Main() {\n  return ${body};\n}`,
@@ -135,7 +146,10 @@ class ModuleCompiler {
       "",
     ].join("\n");
     this.diagnostics.sort((a, b) => a.start - b.start);
-    return { code, diagnostics: this.diagnostics };
+    // `await`/`async` in a binding: the parser's S030 already says it; drop the code generator's C009.
+    const unsupported = new Set(this.diagnostics.filter((d) => d.code === "S030").map((d) => d.start));
+    const diagnostics = this.diagnostics.filter((d) => !(d.code === "C009" && unsupported.has(d.start)));
+    return { code, diagnostics };
   }
 
   private findRoot(nodes: ContentNode[], document: { start: number; end: number }): ElementNode | undefined {
@@ -313,9 +327,17 @@ class ModuleCompiler {
     const constants: [string, string][] = [];
     const bindings: [string, string][] = [];
     const handlers: [string, string][] = [];
+    // `handlerPolicy` / `handlerTimeoutMs`, for all handlers ("*") or one (`:onClick`).
+    const policies = new Map<string, string>();
+    const timeouts = new Map<string, number>();
     for (const attribute of node.attributes) {
       const attributeName = attribute.name.full;
       if (attributeName.startsWith("var.") || attributeName.startsWith("global.")) continue;
+      const concurrency = attribute.name.prefix ?? attribute.name.local;
+      if (concurrency === "handlerPolicy" || concurrency === "handlerTimeoutMs") {
+        this.concurrencyAttribute(attribute, metadata, name, concurrency === "handlerPolicy" ? policies : timeouts);
+        continue;
+      }
       if (/^on[A-Z]/.test(attributeName)) {
         const event = attributeName[2]!.toLowerCase() + attributeName.slice(3);
         if (!this.checkEvent(metadata, name, event, attribute.name) || !attribute.value) continue;
@@ -355,8 +377,57 @@ class ModuleCompiler {
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     if (bindings.length === 0 && handlers.length === 0) return `$$h(${component}, ${props}${args})`;
     const bindingsName = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
-    const handlersPart = handlers.length > 0 ? `, handlers: ${this.hoist("$$e", handlers)}` : "";
+    let handlersPart = "";
+    if (handlers.length > 0) {
+      handlersPart = `, handlers: ${this.hoist("$$e", handlers)}`;
+      const perHandler = (settings: Map<string, unknown>) =>
+        handlers
+          .map(([prop]) => [prop, settings.get(prop) ?? settings.get("*")] as const)
+          .filter(([, value]) => value !== undefined)
+          .map(([prop, value]) => `${JSON.stringify(prop)}: ${JSON.stringify(value)}`);
+      const policyEntries = perHandler(policies);
+      const timeoutEntries = perHandler(timeouts);
+      if (policyEntries.length > 0) handlersPart += `, policies: { ${policyEntries.join(", ")} }`;
+      if (timeoutEntries.length > 0) handlersPart += `, timeouts: { ${timeoutEntries.join(", ")} }`;
+    }
     return `$$h($$Bound, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}, scope: ${scopeVar} }${args})`;
+  }
+
+  /**
+   * `handlerPolicy="queue"`, `handlerPolicy:onClick="single-flight"`,
+   * `handlerTimeoutMs="5000"`, `handlerTimeoutMs:onClick="0"`: constants only (E009).
+   * The key is the handler prop (`onClick`), or "*" for all handlers of the element.
+   */
+  private concurrencyAttribute(attribute: AttributeNode, metadata: ComponentMetadata, component: string, into: Map<string, unknown>): void {
+    const kind = attribute.name.prefix ?? attribute.name.local;
+    let key = "*";
+    if (attribute.name.prefix !== undefined) {
+      const prop = attribute.name.local;
+      if (!/^on[A-Z]/.test(prop)) {
+        this.report(attribute.name, "E009", `'${attribute.name.full}': expected ${kind}:on<Event>`);
+        return;
+      }
+      if (!this.checkEvent(metadata, component, prop[2]!.toLowerCase() + prop.slice(3), attribute.name)) return;
+      key = prop;
+    }
+    const value = attribute.value?.value;
+    if (value === undefined || value.includes("{")) {
+      this.report(attribute.value ?? attribute.name, "E009", `'${attribute.name.full}' needs a constant value`);
+      return;
+    }
+    if (kind === "handlerPolicy") {
+      if (!HANDLER_POLICIES.has(value)) {
+        this.report(attribute.value!, "E009", `Unknown handler policy '${value}' (use ${[...HANDLER_POLICIES].join(", ")})`);
+        return;
+      }
+      into.set(key, value);
+    } else {
+      if (!/^\d+$/.test(value)) {
+        this.report(attribute.value!, "E009", `'${attribute.name.full}' must be a whole number of milliseconds`);
+        return;
+      }
+      into.set(key, Number(value));
+    }
   }
 
   private empty(): string {
@@ -374,8 +445,7 @@ class ModuleCompiler {
   private handler(source: string, position: { offsets?: number[]; offset?: number }): string {
     const parsed = parseStatements(source, position);
     this.diagnostics.push(...parsed.diagnostics);
-    const names = this.visibleNames();
-    const result = compileHandler(parsed.program, { scope: names, variables: names });
+    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables() });
     this.diagnostics.push(...result.diagnostics);
     return result.code;
   }

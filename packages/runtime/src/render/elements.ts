@@ -6,18 +6,18 @@
 //
 // Components themselves are plain React components that receive values.
 
-import { createElement, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { createElement, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useComputed } from "../reactivity/react";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
-import { batch } from "../reactivity/signals";
 import { variable } from "../reactivity/variable";
 import { assertBindingValue } from "../script/load";
+import { HandlerSlot, type HandlerFunction, type HandlerPolicy } from "./handlers";
 
 /** A compiled binding: `($$s) => value`. */
 export type BindingFunction = (scope: object) => unknown;
 
-/** A compiled handler: `($$s) => handler function`. */
-export type HandlerFactory = (scope: object) => (...args: unknown[]) => unknown;
+/** A compiled handler: `($$s) => ($$x) => handler function` (see ./handlers.ts). */
+export type HandlerFactory = (scope: object) => HandlerFunction;
 
 export interface BoundProps {
   /** The component to render. */
@@ -28,6 +28,10 @@ export interface BoundProps {
   bindings: Record<string, BindingFunction>;
   /** Event handler props (`onClick`). Hoisted by the compiler: the object is stable. */
   handlers?: Record<string, HandlerFactory> | null;
+  /** Handler policies by handler prop (`handlerPolicy`, `handlerPolicy:onClick`). Default: parallel. */
+  policies?: Record<string, HandlerPolicy> | null;
+  /** Handler timeouts in ms by handler prop (`handlerTimeoutMs`); 0 disables. Default: the runtime default. */
+  timeouts?: Record<string, number> | null;
   /** The scope the bindings read and the handlers write. */
   scope: object;
   children?: ReactNode;
@@ -37,21 +41,34 @@ export interface BoundProps {
  * Renders `type` with its constant props and the current values of its
  * bindings. It re-renders only when one of those values changes.
  */
-export function Bound({ type, props, bindings, handlers, scope, children }: BoundProps) {
+export function Bound({ type, props, bindings, handlers, policies, timeouts, scope, children }: BoundProps) {
   const values = useComputed(() => {
     const result: Record<string, unknown> = {};
     for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
     return result;
   }, [bindings, scope]);
-  // Each handler runs in a batch: the components it affects re-render once.
-  const handlerProps = useMemo(() => {
-    const result: Record<string, (...args: unknown[]) => unknown> = {};
+  // One slot per handler: it applies the policy, the timeout, and batching
+  // (one batch per synchronous segment of each call).
+  const slots = useMemo(() => {
+    const result: Record<string, HandlerSlot> = {};
     for (const name in handlers) {
-      const handler = handlers[name]!(scope);
-      result[name] = (...args) => batch(() => handler(...args));
+      result[name] = new HandlerSlot(handlers[name]!(scope), policies?.[name], timeouts?.[name]);
     }
     return result;
-  }, [handlers, scope]);
+  }, [handlers, policies, timeouts, scope]);
+  // Unmounting aborts running handlers ("unmount"). StrictMode re-mounts:
+  // activate() undoes the simulated unmount.
+  useEffect(() => {
+    for (const name in slots) slots[name]!.activate();
+    return () => {
+      for (const name in slots) slots[name]!.dispose();
+    };
+  }, [slots]);
+  const handlerProps = useMemo(() => {
+    const result: Record<string, (...args: unknown[]) => void> = {};
+    for (const name in slots) result[name] = (...args) => slots[name]!.invoke(args);
+    return result;
+  }, [slots]);
   return createElement(type, { ...props, ...values, ...handlerProps }, children);
 }
 

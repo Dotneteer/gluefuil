@@ -187,7 +187,9 @@ parser skips to the next statement boundary and continues.
 ## Open questions
 
 1. ~~ASI strictness~~: confirmed (see Findings).
-2. **Tolerate `await` in handlers?** Handlers are implicitly async, so
+2. ~~**Tolerate `await` in handlers?**~~ Decided in step 7: yes, in
+   statement code (handlers); it behaves like the implicit await. See
+   [poc-07-async-handlers.md](poc-07-async-handlers.md). Original question: Handlers are implicitly async, so
    `await` is redundant there. Accepting it as a no-op would be friendlier
    to JavaScript habits and to AI-generated code. It would remain an error
    in bindings, which are synchronous. Today: S030 everywhere, matching

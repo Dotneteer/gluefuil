@@ -48,6 +48,27 @@ const ARRAY_MUTATORS: ReadonlySet<string> = new Set([
 
 const LOGICAL_ASSIGNMENT = new Set(["&&=", "||=", "??="]);
 
+/** Array methods compiled to `$$r.arr` in handler code: async-aware (runtime ASYNC_ARRAY_METHODS). */
+const ASYNC_ARRAY_METHODS: ReadonlySet<string> = new Set(["map", "forEach", "filter", "every", "some", "find", "findIndex", "flatMap"]);
+
+const FUNCTION_TYPES = new Set(["FunctionExpression", "ArrowFunctionExpression", "FunctionDeclaration"]);
+
+/** Whether `node` contains an `await`, not counting nested functions. */
+function containsAwait(node: unknown): boolean {
+  if (node === null || typeof node !== "object") return false;
+  if (Array.isArray(node)) return node.some(containsAwait);
+  const record = node as { type?: unknown };
+  if (record.type === "AwaitExpression") return true;
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "start" || key === "end" || value === null || typeof value !== "object") continue;
+    if (!Array.isArray(value) && FUNCTION_TYPES.has((value as { type?: string }).type ?? "")) continue;
+    if (Array.isArray(value)) {
+      if (value.some((v) => v && typeof v === "object" && !FUNCTION_TYPES.has((v as { type?: string }).type ?? "") && containsAwait(v))) return true;
+    } else if (containsAwait(value)) return true;
+  }
+  return false;
+}
+
 /** A member chain rooted at a variable: `settings.items[i].done`. */
 interface VariablePath {
   root: A.Identifier;
@@ -125,6 +146,12 @@ export class Emitter {
   private readonly handlerMode: boolean;
   private readonly variables: ReadonlySet<string>;
   private tempCount = 0;
+  /**
+   * Handler mode: the function being emitted is async, so calls are awaited
+   * implicitly when they return a thenable (the handler body, a lone handler
+   * function, and nested functions that contain `await`).
+   */
+  private asyncFunction = false;
 
   constructor(scope: ScopeNames, options: EmitterOptions = {}) {
     this.isScopeName = typeof scope === "function" ? scope : (name) => scope.has(name);
@@ -238,9 +265,16 @@ export class Emitter {
         return this.emit(node.expression);
       case "SequenceExpression":
         return { text: node.expressions.map((e) => this.expression(e, P.assign)).join(", "), prec: P.sequence };
-      case "AwaitExpression":
-        this.report(node, "C009", "await");
-        return { text: "undefined", prec: P.primary };
+      case "AwaitExpression": {
+        if (!this.handlerMode || !this.asyncFunction) {
+          this.report(node, "C009", "await");
+          return { text: "undefined", prec: P.primary };
+        }
+        // Same as an implicit await: suspends only for a thenable.
+        const argument = node.argument.type === "ChainExpression" ? node.argument.expression : node.argument;
+        if (argument.type === "CallExpression") return { text: this.expression(argument), prec: P.primary };
+        return { text: this.awaitText(this.expression(node.argument, P.assign)), prec: P.primary };
+      }
     }
   }
 
@@ -294,8 +328,10 @@ export class Emitter {
       if (p.kind === "get" || p.kind === "set" || p.method) {
         const fn = p.value as A.FunctionExpression;
         if (fn.async) this.report(fn, "C009", "async");
-        const prefix = p.kind === "init" ? "" : `${p.kind} `;
-        return `${prefix}${key}${this.functionTail(fn.params, fn.body)}`;
+        // Getters and setters cannot be async; an `await` in one is C009.
+        const isAsync = p.kind === "init" && this.isAsync(fn.body);
+        const prefix = p.kind === "init" ? (isAsync ? "async " : "") : `${p.kind} `;
+        return `${prefix}${key}${this.functionTail(fn.params, fn.body, isAsync)}`;
       }
       return `${key}: ${this.expression(p.value, P.assign)}`;
     });
@@ -331,30 +367,58 @@ export class Emitter {
 
   // --- Functions -------------------------------------------------------------------
 
+  /** Handler mode: a nested function is async when it contains an explicit `await`. */
+  private isAsync(body: A.Node): boolean {
+    return this.handlerMode && containsAwait(body);
+  }
+
   private functionExpression(node: A.FunctionExpression): string {
     if (node.async) this.report(node, "C009", "async");
+    const isAsync = this.isAsync(node.body);
     // A named function expression sees its own name.
     const names = node.id ? [node.id.name] : [];
     return this.withScope(names, () => {
       if (node.id) this.declare(node.id);
-      return `function${node.id ? ` ${node.id.name}` : ""}${this.functionTail(node.params, node.body)}`;
+      return `${isAsync ? "async " : ""}function${node.id ? ` ${node.id.name}` : ""}${this.functionTail(node.params, node.body, isAsync)}`;
     });
   }
 
-  private arrow(node: A.ArrowFunctionExpression): string {
+  private arrow(node: A.ArrowFunctionExpression, forceAsync = false, prologue = "", locals: string[] = []): string {
     if (node.async) this.report(node, "C009", "async");
-    return this.withScope([], () => {
-      const params = this.params(node.params);
-      if (node.body.type === "BlockStatement") return `${params} => ${this.functionBody(node.body)}`;
-      let body = this.expression(node.body, P.assign);
+    const isAsync = forceAsync || this.isAsync(node.body);
+    return this.withScope(locals, () => {
+      const params = this.withFunction(false, () => this.params(node.params));
+      const prefix = isAsync ? "async " : "";
+      if (node.body.type === "BlockStatement") {
+        return `${prefix}${params} => ${this.withFunction(isAsync, () => this.functionBody(node.body as A.BlockStatement, isAsync, prologue))}`;
+      }
+      const expressionBody = node.body;
+      if (isAsync) {
+        // An async arrow with an expression body becomes `{ return …; }` inside the segment brackets.
+        return `${prefix}${params} => ${this.withFunction(true, () => this.asyncBody(`return ${this.expression(expressionBody)};`, prologue))}`;
+      }
+      let body = this.withFunction(false, () => this.expression(expressionBody, P.assign));
       if (body.startsWith("{")) body = `(${body})`;
       return `${params} => ${body}`;
     });
   }
 
   /** `(params) { body }`, in a new function scope. */
-  private functionTail(params: A.Pattern[], body: A.BlockStatement): string {
-    return this.withScope([], () => `${this.params(params)} ${this.functionBody(body)}`);
+  private functionTail(params: A.Pattern[], body: A.BlockStatement, isAsync = false, prologue = ""): string {
+    return this.withScope([], () => {
+      const list = this.withFunction(false, () => this.params(params));
+      return `${list} ${this.withFunction(isAsync, () => this.functionBody(body, isAsync, prologue))}`;
+    });
+  }
+
+  private withFunction<T>(isAsync: boolean, body: () => T): T {
+    const outer = this.asyncFunction;
+    this.asyncFunction = isAsync;
+    try {
+      return body();
+    } finally {
+      this.asyncFunction = outer;
+    }
   }
 
   private params(params: A.Pattern[]): string {
@@ -364,9 +428,30 @@ export class Emitter {
   }
 
   /** A function body shares the parameters' scope for hoisting purposes. */
-  private functionBody(body: A.BlockStatement): string {
+  private functionBody(body: A.BlockStatement, isAsync = false, prologue = ""): string {
     this.hoist(body.body);
-    return this.blockContents(body.body);
+    if (!isAsync) return prologue ? `{ ${prologue}${body.body.map((s) => this.statement(s)).join(" ")} }` : this.blockContents(body.body);
+    return this.asyncBody(body.body.map((s) => this.statement(s)).join(" "), prologue);
+  }
+
+  /**
+   * The body of an async function: segment brackets (see runtime render/handlers.ts).
+   * `$$t` holds a call's result; `$$o` records whether this activation opened
+   * the current segment (it resumed after an `await`), so it closes only what
+   * it opened: before its next suspension, or when it finishes.
+   */
+  private asyncBody(inner: string, prologue = ""): string {
+    return `{ ${prologue}let $$t, $$o = false; try {${inner ? ` ${inner}` : ""} } finally { $$o && $$x.close(); } }`;
+  }
+
+  /**
+   * Implicit await of a call result (or an explicit `await`): suspends only
+   * for a thenable. Before suspending, the segment this activation opened is
+   * closed; after resuming, `$$x.open()` stops a cancelled handler, then opens
+   * the next segment.
+   */
+  private awaitText(inner: string): string {
+    return `($$r.th($$t = ${inner}) ? ($$o && ($$o = false, $$x.close()), $$t = await $$t, $$x.open(), $$o = true, $$t) : $$t)`;
   }
 
   // --- Operators -------------------------------------------------------------------
@@ -460,6 +545,16 @@ export class Emitter {
         const list = `[${node.arguments.map((a) => this.spreadable(a)).join(", ")}]`;
         return this.withPath(path, (args) => `$$r.mutate(${args}, ${method}, ${list})`);
       }
+    }
+    const text = this.plainCall(node, callee);
+    return this.handlerMode && this.asyncFunction ? this.awaitText(text) : text;
+  }
+
+  private plainCall(node: A.CallExpression, callee: A.Expression): string {
+    // Handler code: `items.map(cb)` and friends await promise-returning callbacks.
+    if (this.handlerMode && callee.type === "MemberExpression" && !callee.computed && ASYNC_ARRAY_METHODS.has((callee.property as A.Identifier).name)) {
+      const list = `[${node.arguments.map((a) => this.spreadable(a)).join(", ")}]`;
+      return `$$r.arr(${this.expression(callee.object, P.assign)}, ${JSON.stringify((callee.property as A.Identifier).name)}, ${list})`;
     }
     const args = `(${node.arguments.map((a) => this.spreadable(a)).join(", ")})`;
     if (callee.type === "Identifier") {
@@ -632,35 +727,51 @@ export class Emitter {
   // --- Handlers --------------------------------------------------------------------------
 
   /**
-   * The function a handler compiles to (handler mode):
-   *   - a lone arrow or function expression: that function;
-   *   - a lone reference (`save`, `api.save`): `(...$params) => save(...$params)`;
-   *   - statements: `(...$params) => { const $param = $params[0]; … }`.
+   * The function a handler compiles to (handler mode), as `($$x) => async …`
+   * where `$$x` is the runtime's invocation context:
+   *   - a lone arrow or function expression: that function, made async;
+   *   - a lone reference (`save`, `api.save`): calls it with the event arguments;
+   *   - statements: `async (...$params) => { const $param = $params[0]; … }`.
+   * `$cancel` is a local in all of them. Calls are awaited implicitly.
    */
   handlerFunction(program: A.Program): string {
     const body = program.body;
     const only = body.length === 1 && body[0]!.type === "ExpressionStatement" ? body[0].expression : undefined;
     const lone = only?.type === "ChainExpression" ? only.expression : only;
-    if (lone?.type === "ArrowFunctionExpression" || lone?.type === "FunctionExpression") {
-      return this.expression(lone, P.assign);
+    const cancel = "const $cancel = $$x.cancel; ";
+    if (lone?.type === "ArrowFunctionExpression") {
+      return `($$x) => ${this.arrow(lone, true, cancel, ["$cancel"])}`;
     }
+    if (lone?.type === "FunctionExpression") {
+      return `($$x) => ${this.withScope(["$cancel"], () => this.functionExpressionWithPrologue(lone, cancel))}`;
+    }
+    let statements = body;
     if (lone?.type === "Identifier" || lone?.type === "MemberExpression") {
-      return this.withScope(["$params"], () => {
-        const at = { start: lone.start, end: lone.end };
-        const call: A.CallExpression = {
-          type: "CallExpression",
-          callee: lone,
-          arguments: [{ type: "SpreadElement", argument: { type: "Identifier", name: "$params", ...at }, ...at }],
-          optional: false,
-          ...at,
-        };
-        return `(...$params) => ${this.expression(call, P.assign)}`;
-      });
+      const at = { start: lone.start, end: lone.end };
+      const call: A.CallExpression = {
+        type: "CallExpression",
+        callee: lone,
+        arguments: [{ type: "SpreadElement", argument: { type: "Identifier", name: "$params", ...at }, ...at }],
+        optional: false,
+        ...at,
+      };
+      statements = [{ type: "ExpressionStatement", expression: call, ...at }];
     }
-    return this.withScope(["$param", "$params"], () => {
-      this.hoist(body);
-      const statements = body.map((s) => this.statement(s)).join(" ");
-      return `(...$params) => { const $param = $params[0];${statements ? ` ${statements}` : ""} }`;
+    return this.withScope(["$param", "$params", "$cancel"], () =>
+      this.withFunction(true, () => {
+        this.hoist(statements);
+        const inner = statements.map((s) => this.statement(s)).join(" ");
+        return `($$x) => async (...$params) => ${this.asyncBody(inner, `const $param = $params[0]; ${cancel}`)}`;
+      }),
+    );
+  }
+
+  private functionExpressionWithPrologue(node: A.FunctionExpression, prologue: string): string {
+    if (node.async) this.report(node, "C009", "async");
+    const names = node.id ? [node.id.name] : [];
+    return this.withScope(names, () => {
+      if (node.id) this.declare(node.id);
+      return `async function${node.id ? ` ${node.id.name}` : ""}${this.functionTail(node.params, node.body, true, prologue)}`;
     });
   }
 
@@ -707,9 +818,11 @@ export class Emitter {
         return ";";
       case "VariableDeclaration":
         return `${this.declaration(node, false)};`;
-      case "FunctionDeclaration":
+      case "FunctionDeclaration": {
         if (node.async) this.report(node, "C009", "async");
-        return `function ${node.id.name}${this.functionTail(node.params, node.body)}`;
+        const isAsync = this.isAsync(node.body);
+        return `${isAsync ? "async " : ""}function ${node.id.name}${this.functionTail(node.params, node.body, isAsync)}`;
+      }
       case "IfStatement":
         return `if (${this.expression(node.test)}) ${this.body(node.consequent)}${node.alternate ? ` else ${this.body(node.alternate)}` : ""}`;
       case "WhileStatement":

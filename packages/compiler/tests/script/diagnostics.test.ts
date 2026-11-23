@@ -113,8 +113,9 @@ describe("error recovery in statement lists", () => {
   });
 
   test("unsupported-but-parsed constructs still yield a tree", () => {
+    // `await` is allowed in statement code (handlers, step 7); `async` is not.
     const { program, diagnostics } = parseStatements("async function f() { await g() }");
-    expect(diagnostics.map((d) => d.code)).toEqual(["S030", "S030"]);
+    expect(diagnostics.map((d) => d.code)).toEqual(["S030"]);
     expect(program.body[0]).toMatchObject({ type: "FunctionDeclaration", async: true });
   });
 
