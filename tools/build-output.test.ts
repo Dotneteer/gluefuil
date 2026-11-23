@@ -1,8 +1,11 @@
 // Build-time compilation (step 12): a production build of test-apps/hello
 // ships no compiler, needs no eval, and maps back to Main.pfui when asked to.
+// Static generation (step 13): its index.html contains the prerendered app.
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, type Rolldown } from "vite";
-import { beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const configFile = fileURLToPath(new URL("../test-apps/hello/vite.config.ts", import.meta.url));
@@ -65,6 +68,23 @@ describe("a production build (no source maps)", () => {
     expect(ids).not.toContain("packages/runtime/src/script/load.ts");
   });
 
+  test("the prerender stays in the build: no react-dom/server, no runtime/server", () => {
+    const ids = chunks(output).flatMap(renderedIds);
+    expect(ids.filter((id) => /react-dom[/\\](cjs[/\\]react-dom-server|server)/.test(id))).toEqual([]);
+    expect(ids).not.toContain("packages/runtime/src/server.ts");
+  });
+
+  test("index.html contains the prerendered app, marked for takeover at xs", () => {
+    const html = output.find((o) => o.fileName === "index.html") as Rolldown.OutputAsset;
+    const source = String(html.source);
+    expect(source).toContain('<div id="root" data-pfui-prerendered="xs"><div class="pfui-App">');
+    expect(source).toContain('<span class="pfui-Text">Count: 0</span>');
+    expect(source).toContain('<span class="pfui-Text">Todo #1: Write tests</span>');
+    // Rendered for xs: the compact text, not the wide one.
+    expect(source).toContain("Layout: compact");
+    expect(source).not.toContain("Layout: wide");
+  });
+
   test("contains no source-map marker characters and no source map", () => {
     for (const chunk of chunks(output)) {
       expect(chunk.code).not.toMatch(/[\uE000\uE001]/);
@@ -82,5 +102,39 @@ describe("a production build with build.sourcemap", () => {
     expect(sources.some((s) => s.endsWith("src/Main.pfui"))).toBe(true);
     const index = sources.findIndex((s) => s.endsWith("src/Main.pfui"));
     expect(chunk.map!.sourcesContent?.[index]).toContain("<App");
+  }, 60_000);
+});
+
+describe("prerender failures fail the build", () => {
+  // A throwaway app inside the repo, so it resolves the workspace packages.
+  const app = join(repoRoot, ".tmp", "prerender-failure");
+  beforeAll(() => {
+    mkdirSync(join(app, "src"), { recursive: true });
+    writeFileSync(join(app, "index.html"), '<div id="root"></div><script type="module" src="/src/main.ts"></script>');
+    writeFileSync(join(app, "src", "main.ts"), 'import Main from "./Main.pfui";\nconsole.log(Main);\n');
+  });
+  afterAll(() => rmSync(app, { recursive: true, force: true }));
+
+  async function buildApp(markup: string, html?: string) {
+    writeFileSync(join(app, "src", "Main.pfui"), markup);
+    if (html) writeFileSync(join(app, "index.html"), html);
+    const { pfui } = await import("../packages/vite-plugin/src/index");
+    return build({
+      configFile: false,
+      root: app,
+      logLevel: "silent",
+      plugins: [pfui({ prerender: true })],
+      build: { write: false },
+    });
+  }
+
+  test("an error while rendering", async () => {
+    await expect(buildApp('<App><Text>{[].reduce((a, b) => a)}</Text></App>')).rejects.toThrow(/Reduce of empty array/);
+  }, 60_000);
+
+  test("no root element", async () => {
+    await expect(buildApp("<App/>", '<div id="app"></div><script type="module" src="/src/main.ts"></script>')).rejects.toThrow(
+      'index.html has no element with id="root"',
+    );
   }, 60_000);
 });

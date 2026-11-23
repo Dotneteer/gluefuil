@@ -4,7 +4,7 @@
 > during a Vite build or dev session. Describes the code as it is. Design and
 > XMLUI comparison: [`../plan/poc-12-build-time.md`](../plan/poc-12-build-time.md).
 >
-> **Last updated:** step 12.
+> **Last updated:** step 13 (the `prerender` option).
 
 ## Using it
 
@@ -38,6 +38,7 @@ extensionless imports.
 |--------|---------|---------|
 | `components` | the built-in metadata | The components markup may use (`Record<string, ComponentMetadata>`) |
 | `sourceMap` | `"auto"` | `"auto"`: on while serving; in a build, on only when `build.sourcemap` is set. `true` / `false` force it |
+| `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint }` ([ssg.md](ssg.md)) |
 
 With source maps off, the compiler emits no position markers. The code is
 identical either way (tested). The transform then returns
@@ -83,14 +84,17 @@ build of `test-apps/hello`:
   `load.ts` contributes nothing.
 - **No markers and no map** unless `build.sourcemap` is set. With it, the
   map's sources include `src/Main.pfui` with its content.
-- **Size:** the hello app (all step demos) is 243 KB, 76 KB gzipped. React
-  and ReactDOM are most of it.
+- **No server rendering code:** `react-dom/server` and
+  `@patchfuil/runtime/server` stay in the build (the prerender).
+- **Size:** the hello app (all step demos) is 244 KB, 76 KB gzipped; React
+  and ReactDOM are most of it. Its `index.html` (2.9 KB) holds the
+  prerendered app.
 
 The E2E project `hello-build` serves this build with
 `Content-Security-Policy: script-src 'self'` (`preview.headers` in the hello
 app's config):
 
-- every hello spec passes there;
+- every hello spec passes there, after a takeover of the prerendered HTML;
 - `e2e/build.spec.ts` checks that the app raises no CSP violations, that
   a page-level eval *is* blocked (the control), and that no `.pfui` file is
   fetched.
@@ -100,6 +104,7 @@ app's config):
 | File | Contents |
 |------|----------|
 | `vite-plugin/src/index.ts` | `pfui(options)`, `pfuiFilePath`, `formatErrors`, `PfuiPluginOptions` |
+| `vite-plugin/src/prerender.ts` | Static generation ([ssg.md](ssg.md)) |
 | `compiler/src/source/diagnostic.ts` | `codeFrame` (with `formatDiagnostic`) |
 | `test-apps/hello/vite.config.ts` | The plugin in use; `preview.headers` sets the CSP |
 

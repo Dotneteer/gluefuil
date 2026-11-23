@@ -3,6 +3,7 @@
 
 import type { ReactNode } from "react";
 import { useComputed } from "../reactivity/react";
+import { isServerView } from "../reactivity/server-view";
 import { signal, type ReadonlySignal, type Signal } from "../reactivity/signals";
 import { assertBindingValue } from "../script/binding-value";
 import type { BindingFunction } from "./elements";
@@ -45,6 +46,30 @@ export function breakpoint(): ReadonlySignal<number> {
     current = signalNode;
   }
   return current;
+}
+
+/** The breakpoint index for a name (`"md"` → 2); undefined for an unknown name. */
+export function breakpointFromName(name: string): number | undefined {
+  const index = BREAKPOINT_NAMES.indexOf(name as BreakpointName);
+  return index < 0 ? undefined : index;
+}
+
+let serverBreakpoint = 0;
+
+/**
+ * The breakpoint static HTML is rendered for (default 0 = xs). The prerender
+ * sets it before rendering; `mountApp` sets it, from the HTML, before hydrating.
+ */
+export function setServerBreakpoint(index: number): void {
+  serverBreakpoint = index;
+}
+
+/**
+ * The breakpoint `When` evaluates against: the server breakpoint in the server
+ * view (server rendering and hydration), else the live, tracked signal.
+ */
+export function currentBreakpoint(): number {
+  return isServerView() ? serverBreakpoint : breakpoint().get();
 }
 
 /**
@@ -93,7 +118,7 @@ export function When({ test, responsive, scope, children }: WhenProps) {
         const condition = responsive[name];
         if (condition !== undefined) rules[name] = evaluate(condition);
       }
-      return resolveVisibility(breakpoint().get(), base, rules);
+      return resolveVisibility(currentBreakpoint(), base, rules);
     },
     [test, responsive, scope],
     Object.is,

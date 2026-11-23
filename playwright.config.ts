@@ -22,8 +22,9 @@ export default defineConfig({
     },
     {
       // Production build served under a strict CSP (step 12): no compiler, no eval.
+      // Prerendered (step 13): every hello spec here runs after a takeover.
       name: "hello-build",
-      testMatch: [HELLO_SPECS, /build\.spec\.ts/],
+      testMatch: [HELLO_SPECS, /build\.spec\.ts/, /ssg\.spec\.ts/],
       use: { ...chrome, baseURL: "http://localhost:5176" },
     },
     { name: "standalone", testMatch: /standalone\.spec\.ts/, use: chrome },

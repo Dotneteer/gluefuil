@@ -5,7 +5,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
-  plugins: [pfui(), react()],
+  // prerender: a build renders Main.pfui into index.html (step 13).
+  plugins: [pfui({ prerender: true }), react()],
   // `vite preview` serves the built app under a strict CSP: build-time
   // compilation must need no eval (step 12). The dev server is unaffected.
   preview: {
