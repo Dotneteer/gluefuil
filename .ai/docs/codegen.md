@@ -5,7 +5,7 @@
 > rationale and XMLUI comparison:
 > [`../plan/poc-03-codegen.md`](../plan/poc-03-codegen.md).
 >
-> **Last updated:** step 3.
+> **Last updated:** step 6 (handlers).
 
 ## Role
 
@@ -15,9 +15,8 @@ the binding's scope and a closed allowlist of globals, which makes **the
 compiler the sandbox**. The runtime turns the source into a function and
 supplies the few objects the code may touch.
 
-Handlers (state writes, implicit `await`) are not compiled yet. Statements
-are compiled only where they appear inside a binding: in the bodies of
-arrow functions and function expressions.
+**Handlers** (step 6) compile the same way, in *handler mode*, where
+variables can be written (see § Handlers). Implicit `await` is step 7.
 
 ## API
 
@@ -26,6 +25,7 @@ arrow functions and function expressions.
 ```ts
 compileExpression(expression, { scope }): CompileResult   // a value that is exactly {expr}
 compileInterpolation(segments, { scope }): CompileResult  // segments from parseInterpolation
+compileHandler(program, { scope, variables }): CompileResult  // from parseStatements
 // scope: ReadonlySet<string> | ((name: string) => boolean)
 
 interface CompileResult {
@@ -43,7 +43,7 @@ interface CompileResult {
 |--------|------------|
 | `loadBinding(code)` | `new Function` around `code`, bound to the globals and helpers. Returns `(scope) => value`. Throws `BindingError` when the result is a promise or other thenable. |
 | `scriptGlobals` | `$$g`: the frozen globals object |
-| `scriptRuntime` | `$$r`: the helpers `key`, `obj` and `str` |
+| `scriptRuntime` | `$$r`: the helpers `key`, `obj`, `str`, and the path writes `setIn`, `deleteIn`, `updateIn`, `mutate` |
 | `BANNED_MEMBERS`, `SandboxError` | The runtime copy of the member denylist; the error the helpers throw |
 
 `loadBinding` needs `new Function`, so it does not work under a CSP without
@@ -90,6 +90,39 @@ cases:
 - an object literal as an arrow body or at the start of a statement;
 - a `for` initializer that contains `in`.
 
+## Handlers
+
+`compileHandler` returns `($$s) => handlerFunction`:
+
+| Source | Function |
+|--------|----------|
+| A lone arrow or function expression | That function |
+| A lone reference (`save`, `api.save`) | `(...$params) => save?.(...$params)` |
+| Statements | `(...$params) => { const $param = $params[0]; … }` |
+
+`$param` and `$params` are locals (XMLUI `context-variables.md`).
+
+**Writes in handler mode:**
+
+| Source | Compiles to |
+|--------|-------------|
+| `count = v`, `count += v`, `count++`, `[a, b] = [b, a]` | `$$s.count = v`, …: the scope's setter (native JavaScript semantics, short-circuits included) |
+| `settings.size = v` | `$$r.setIn($$s, "settings", ["size"], v)` |
+| `settings.size op= v` | `$$r.setIn(…, $$s.settings?.["size"] op v)` |
+| `settings.title ??= v` (and `||=`, `&&=`) | `($$s.settings?.["title"] ?? $$r.setIn(…, v))` |
+| `settings.count++` | `$$r.updateIn($$s, "settings", ["count"], 1, false)` |
+| `delete settings.old` | `$$r.deleteIn($$s, "settings", ["old"])` |
+| `items.push(x)` (and `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`, `copyWithin`) | `$$r.mutate($$s, "items", [], "push", [x])` |
+
+- A computed key is evaluated once (bound to a `$$kN` temporary) and
+  checked by `$$r.key()`.
+- The path helpers copy each node along the path and assign the new root
+  through the setter (`runtime/src/script/paths.ts`).
+- Handler mode also applies inside callbacks within the handler
+  (`items.forEach(i => total += i)`).
+- **Errors:** writing a scope name that is not a variable is C012;
+  destructuring or a `for` target into a variable's member is C013.
+
 ## Name resolution
 
 Resolution is static and follows block scoping. In order:
@@ -117,7 +150,7 @@ banned name (a variable called `top` is fine).
 | `new` with anything that runs code | The callee must be statically one of `CONSTRUCTIBLE` (C004) |
 | Changing built-ins | C010 for a direct write. `Math`, `JSON`, `Intl` and `console` are frozen copies; `Object` is a frozen curated function. |
 | Setting properties on shared functions (`hasOwnProperty.call = …` would hijack host code) | Every member write goes through `$$r.obj()`, which refuses functions; the curated `Object.assign` does the same |
-| Binding side effects | Assignment, `++`/`--` and `delete` on a scope name are C006 |
+| Binding side effects | Assignment, `++`/`--` and `delete` on a scope name are C006 (bindings); handlers may write variables only (C012) |
 
 Constructors such as `Array` and `Date` are shared with the host by identity,
 so `instanceof` works. Writes to them are refused, because they are
@@ -150,10 +183,11 @@ dependencies.
 | File | Contents |
 |------|----------|
 | `compiler/src/codegen/names.ts` | The tables: `ALLOWED_GLOBALS`, `LITERAL_GLOBALS`, `CONSTRUCTIBLE`, `BANNED_GLOBALS` (with hints), `BANNED_MEMBERS`, `RESTRICTED_GLOBAL_MEMBERS`, `RESERVED_PREFIX` |
-| `compiler/src/codegen/emitter.ts` | `Emitter`: resolution, sandbox checks, dependency collection and printing in one pass; `boundIdentifiers` |
-| `compiler/src/codegen/compile.ts` | `compileExpression`, `compileInterpolation` |
+| `compiler/src/codegen/emitter.ts` | `Emitter`: resolution, sandbox checks, dependency collection and printing in one pass; binding and handler modes (`handlerFunction`, variable-path writes); `boundIdentifiers` |
+| `compiler/src/codegen/compile.ts` | `compileExpression`, `compileInterpolation`, `compileHandler` |
 | `compiler/src/codegen/diagnostics.ts` | `CodegenDiagnostics` |
 | `runtime/src/script/sandbox.ts` | `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError` |
+| `runtime/src/script/paths.ts` | `setIn`, `deleteIn`, `updateIn`, `mutate`, `ARRAY_MUTATORS` |
 | `runtime/src/script/load.ts` | `loadBinding`, `BindingError`, `Binding` |
 
 ## Diagnostics
@@ -173,6 +207,8 @@ All are errors.
 | C009 | `async`/`await` (the parser reports S030 first) |
 | C010 | Modifying a built-in |
 | C011 | A member left out of a curated global |
+| C012 | A handler can only change variables |
+| C013 | Destructuring or `for` target into a variable's member |
 
 ## Tests
 
@@ -182,6 +218,7 @@ All are errors.
 | `compiler/tests/codegen/diagnostics.test.ts` | Each C code with the source it points at |
 | `compiler/tests/codegen/dependencies.test.ts` | Dependency sets, including shadowing and block scope |
 | `compiler/tests/codegen/interpolation.test.ts` | `compileInterpolation` shapes and constants |
+| `compiler/tests/codegen/handler.test.ts` | Handler shapes, every kind of write, C012/C013 and other handler diagnostics |
 | `runtime/tests/script/semantics.test.ts` | Conformance table: a binding plus a scope gives a value (operators, optional chaining, calls, callbacks with statements, globals, regex freshness, interpolation, the promise check) |
 | `runtime/tests/script/native-equivalence.test.ts` | More than 3,000 operator combinations: the compiled value equals native JavaScript's |
 | `runtime/tests/script/sandbox.test.ts` | Escape attempts in jsdom: rejected at compile time, rejected at runtime, or harmless; frozen globals; no shared prototype polluted afterwards |

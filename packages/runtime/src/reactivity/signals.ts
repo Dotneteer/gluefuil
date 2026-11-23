@@ -30,6 +30,17 @@ export interface SignalOptions<T> {
   equals?: Equals<T>;
 }
 
+/**
+ * Wrappers around a store node (such as variables) expose it under this key,
+ * so `watch` and `observerCount` accept them like signals.
+ */
+export const SIGNAL_NODE: unique symbol = Symbol("pfui.signalNode");
+
+function nodeOf(source: ReadonlySignal<unknown>): Source {
+  const wrapped = (source as { [SIGNAL_NODE]?: ReadonlySignal<unknown> })[SIGNAL_NODE];
+  return (wrapped ?? source) as unknown as Source;
+}
+
 /** Thrown when a computation (a binding) writes state. */
 export class ReactivityError extends Error {
   override name = "ReactivityError";
@@ -252,7 +263,7 @@ function flush(): void {
  * Returns the function that stops watching.
  */
 export function watch(source: ReadonlySignal<unknown>, callback: () => void): () => void {
-  const node = source as unknown as Source;
+  const node = nodeOf(source);
   const watcher = new WatcherNode(callback);
   node.addObserver(watcher);
   // Evaluate now, so a computed knows (and links) its dependencies. An error is
@@ -281,5 +292,5 @@ export function untracked<T>(fn: () => T): T {
 
 /** The number of observers of a signal or computed (for tests and diagnostics). */
 export function observerCount(source: ReadonlySignal<unknown>): number {
-  return (source as unknown as Source).observers.size;
+  return nodeOf(source).observers.size;
 }

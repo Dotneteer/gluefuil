@@ -31,9 +31,16 @@ export { parseExpression, parseStatements, type ParseExpressionResult, type Pars
 export type { ScriptSourceOptions } from "./script/parser";
 
 // --- Code generation (bindings) ---------------------------------------------------
-export { compileExpression, compileInterpolation, type CompileOptions, type CompileResult } from "./codegen/compile";
+export {
+  compileExpression,
+  compileHandler,
+  compileInterpolation,
+  type CompileHandlerOptions,
+  type CompileOptions,
+  type CompileResult,
+} from "./codegen/compile";
 export { CodegenDiagnostics, type CodegenDiagnosticCode } from "./codegen/diagnostics";
-export type { ScopeNames } from "./codegen/emitter";
+export type { EmitterOptions, ScopeNames } from "./codegen/emitter";
 export {
   ALLOWED_GLOBALS,
   BANNED_GLOBALS,

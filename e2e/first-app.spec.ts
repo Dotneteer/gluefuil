@@ -12,8 +12,9 @@ test("the first compiled pfui app renders in a real browser", async ({ page }) =
   await page.goto("http://localhost:5174/");
 
   const texts = page.locator(".pfui-Text");
-  await expect(texts).toHaveText(["3", "Hello, PFUI!", "1 + 4 + 9 = 14"]);
-  await expect(page.getByRole("button")).toHaveText(["First", "Second"]);
+  await expect(texts.first()).toHaveText("3");
+  await expect(texts.nth(1)).toHaveText("Hello, PFUI!");
+  await expect(texts.nth(2)).toHaveText("1 + 4 + 9 = 14");
   // The horizontal Stack lays its buttons out in a row.
   const [first, second] = await Promise.all([
     page.getByRole("button", { name: "First" }).boundingBox(),

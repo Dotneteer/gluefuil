@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 5.
+> **Last updated:** step 6 (variables, handlers).
 
 ## Role
 
@@ -38,7 +38,8 @@ use file offsets.
 
 | Export | What it does |
 |--------|--------------|
-| `Bound` | Renders `type` with constant `props` plus the current values of `bindings` (evaluated against `scope` in one `useComputed`). Re-renders only when a value changes. |
+| `Bound` | Renders `type` with constant `props`, the current values of `bindings` (evaluated against `scope` in one `useComputed`), and `handlers` (each factory instantiated once per scope, each call run in `batch()`). Re-renders only when a value changes. |
+| `useScope(parent, definitions)` | A container's scope: creates its variables (`{ init }` binding or `{ value }` constant) once per instance |
 | `TextNode` | Text content with bindings: `null`/`undefined` render nothing, other values as text |
 | `loadModule(code, { components })` | Instantiates the `"function"` format with `new Function`, passing the runtime itself and `components` |
 | `assertBindingValue` | The shared check: a promise as a binding value throws a `BindingError` |
@@ -50,11 +51,11 @@ use file offsets.
 |-----------|-------|---------|
 | `App` | | `<div class="pfui-App">` |
 | `Text` | `value` | `<span class="pfui-Text">`, showing `value` or the children |
-| `Button` | `label` | `<button type="button" class="pfui-Button">`, showing `label` or the children |
+| `Button` | `label`; event `click` | `<button type="button" class="pfui-Button">`, showing `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
 | `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="pfui-Stack">` |
 
 `componentMetadata` (in the React-free `./metadata` entry) lists them as a
-`ComponentMetadata` (`description`, `props`). The compiler resolves element
+`ComponentMetadata` (`description`, `props`, `events`). The compiler resolves element
 names against it.
 
 ## Generated code
@@ -82,8 +83,23 @@ export default Main;
   - text without `{…}` is a string child;
   - each element with bindings gets **one hoisted bindings object**
     (stable across renders) and a `Bound` wrapper.
-- **The scope** is empty for now (`$$createScope({})`); variables arrive in
-  step 6.
+- **The root scope** is empty (`$$createScope({})`).
+- **Containers.** An element that declares variables compiles to its own
+  component:
+
+  ```js
+  const $$v0 = { "count": { init: ($$s) => 0 }, "title": { value: "Hello" } };
+  const $$e1 = { "onClick": ($$s) => (...$params) => { const $param = $params[0]; $$s.count++; } };
+  function $$K2({ $$p }) {
+    const $$c = $$useScope($$p, $$v0);
+    return $$h($$C_App, null, $$h($$Bound, { type: $$C_Button, props: null, bindings: $$empty, handlers: $$e1, scope: $$c }));
+  }
+  ```
+
+  - Elements inside a container use `scope: $$c`.
+  - A nested container gets `{ $$p: $$c }`.
+  - `$$empty` is a shared frozen `{}` for elements that have handlers but
+    no bindings.
 
 ## Compilation rules
 
@@ -94,7 +110,11 @@ export default Main;
 | `attr="text"` | A constant string prop. Entities are decoded and `\{` is a literal brace. |
 | `attr="…{expr}…"` | A binding (step 3 interpolation rules) |
 | `attr` with no value | The string `"true"` (as XMLUI) |
-| `on*`, `var.*`, `global.*`, `method.*`, `event.*`, `when`, `id` | E002 (steps 6, 8, 10) |
+| `var.x="…"`, `<variable name="x" value="…"/>` | A variable of the element (which becomes a container). Its value is interpolated: constant or binding. A key-only `var.x` is `"true"`; `<variable>` without `value` is `undefined`. |
+| `global.x`, `<global>` | The same, allowed only on the root element (E006). Global visibility in user-defined components is step 14. |
+| `onClick="…"` | A handler (`compileHandler`, statements). The event must be in the component's metadata `events` (E004). |
+| `<event name="click">…</event>` | The same. Text or CDATA content, not whitespace-collapsed; components inside are E002. |
+| `method.*`, `event.*`, `when`, `id` | E002 (steps 8, 10, 14) |
 | Whitespace-only text | Dropped (trivia) |
 | Other text | Interpolated. Whitespace runs in literal parts collapse to one space (U+00A0 is kept); expressions are not collapsed. With expressions, it becomes a `Bound` `TextNode`. |
 | CDATA | Literal text, without interpolation or collapsing |
@@ -108,6 +128,11 @@ export default Main;
 | E001 | Unknown component |
 | E002 | Not supported yet |
 | E003 | Not exactly one root element, or content outside it |
+| E004 | Unknown event |
+| E005 | Reactive cycle between one container's variables (from the bindings' dependencies; shadowing applies to a variable's own initializer, so `var.t="{t + 1}"` is a cycle) |
+| E006 | A global declared below the root element |
+| E007 | A variable declared twice on one element |
+| E008 | Invalid variable name; `<variable>`/`<global>`/`<event>` without a constant `name` |
 
 ## Build-time integration (fixture only)
 
@@ -136,7 +161,10 @@ packages as external, and Node cannot load their TypeScript source
 
 | File | Covers |
 |------|--------|
+| `compiler/tests/module/variables-handlers.test.ts` | Containers, `<variable>`/`<global>`, nesting, handlers and `<event>`, E004–E008, handler and binding diagnostics in markup |
 | `compiler/tests/module/compile-module.test.ts` | Module shape (both formats); elements, attributes, constants and bindings; text and whitespace rules; every E code; binding and syntax diagnostics in file positions; extra metadata |
 | `runtime/tests/render/elements.test.tsx` | `Bound` (props, re-rendering only on change, children, the promise check); `TextNode`; `loadModule` |
+| `components/tests/variables-handlers.test.tsx` | Clicks in jsdom: counter, source/mirror, order independence, shadowing, `<variable>`/`<global>`/`<event>`, deep writes, `push`, paths, alias mutation throws, lone arrow and `$param`, batching, per-instance state |
 | `components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM, for the first app and a table of constructs |
+| `e2e/variables.spec.ts` | `test-apps/hello`: counter and source/mirror with real clicks in Chromium |
 | `e2e/first-app.spec.ts` | `test-apps/hello`: `Main.pfui` compiled by the Vite plugin renders in Chromium without errors, with a horizontal `Stack` laid out in a row |

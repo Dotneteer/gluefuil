@@ -18,9 +18,19 @@ export {
 } from "./reactivity/signals";
 export { shallowEqual, useComputed, useSignal } from "./reactivity/react";
 export { createScope, type ScopeEntry } from "./reactivity/scope";
+export { freezeDeep, variable, type Variable } from "./reactivity/variable";
 
 // --- Rendering compiled modules ---------------------------------------------------------
-export { Bound, TextNode, type BindingFunction, type BoundProps } from "./render/elements";
+export {
+  Bound,
+  TextNode,
+  useScope,
+  type BindingFunction,
+  type BoundProps,
+  type HandlerFactory,
+  type VariableDefinition,
+} from "./render/elements";
+export { ARRAY_MUTATORS, type PathKey } from "./script/paths";
 export { loadModule, type ModuleImports } from "./render/module";
 // Compiled code creates elements through the runtime, never through React directly.
 export { createElement, Fragment } from "react";

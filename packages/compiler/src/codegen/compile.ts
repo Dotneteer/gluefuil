@@ -1,6 +1,6 @@
 // Public entry points for compiling bindings. See .ai/plan/poc-03-codegen.md.
 
-import type { Expression } from "../script/ast";
+import type { Expression, Program } from "../script/ast";
 import type { InterpolationSegment } from "../script/interpolation";
 import type { Diagnostic } from "../source/diagnostic";
 import { Emitter, type ScopeNames } from "./emitter";
@@ -80,4 +80,20 @@ export function compileInterpolation(segments: InterpolationSegment[], options: 
     constant: false,
     diagnostics: emitter.diagnostics,
   };
+}
+
+export interface CompileHandlerOptions extends CompileOptions {
+  /** The scope names a handler may write (variables). */
+  variables: ReadonlySet<string>;
+}
+
+/**
+ * Compiles an event handler (`onClick="…"`, `<event>` content) from
+ * `parseStatements` output. The code is `($$s) => handlerFunction`; see
+ * Emitter.handlerFunction for the shapes.
+ */
+export function compileHandler(program: Program, options: CompileHandlerOptions): CompileResult {
+  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables });
+  const fn = emitter.handlerFunction(program);
+  return { code: `($$s) => ${fn}`, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
 }
