@@ -1,0 +1,5 @@
+<Component name="Greeting">
+  <Text>{greet($props.name)}</Text>
+  <Button label="{'Waves: ' + waves}" onClick="wave()"/>
+  <Slot/>
+</Component>

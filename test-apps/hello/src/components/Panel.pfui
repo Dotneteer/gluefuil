@@ -1,0 +1,9 @@
+<!-- The default slot, with a fallback -->
+<Component name="Panel">
+  <Stack gap="2px">
+    <Text>Panel: {$props.title}</Text>
+    <Slot>
+      <Text>(empty panel)</Text>
+    </Slot>
+  </Stack>
+</Component>

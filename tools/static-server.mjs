@@ -20,7 +20,7 @@ rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
 cpSync(resolve(args.site), work, { recursive: true });
 
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".map": "application/json", ".pfui": "text/plain", ".json": "application/json" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".map": "application/json", ".pfui": "text/plain", ".xs": "text/plain", ".json": "application/json" };
 
 createServer((request, response) => {
   const path = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);

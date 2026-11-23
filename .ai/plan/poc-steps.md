@@ -279,7 +279,9 @@ Plan and findings: [poc-13-ssg.md](poc-13-ssg.md).
 
 ## Phase D: Component model
 
-### Step 14: User-defined components
+### Step 14: User-defined components ✅
+
+Plan and findings: [poc-14-user-components.md](poc-14-user-components.md).
 
 - **Subject:** one file compiles to one React component. Covers `$props`,
   private variables, `emitEvent`, methods and `$self`, the default and

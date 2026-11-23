@@ -139,7 +139,8 @@ export type HandlerFunction = (invocation: Invocation) => (...args: unknown[]) =
  */
 export class HandlerSlot {
   private readonly running = new Set<Invocation>();
-  private readonly queued: (() => void)[] = [];
+  /** Queued calls (policy "queue"): `drop` settles a call that will never run. */
+  private readonly queued: { run: () => void; drop: () => void }[] = [];
   private disposed = false;
 
   constructor(
@@ -148,26 +149,46 @@ export class HandlerSlot {
     private readonly timeoutMs?: number,
   ) {}
 
-  /** Called by the component on each event. */
+  /** Called by the component on each event. Errors are reported (`reportRuntimeError`). */
   invoke(args: unknown[]): void {
-    if (this.disposed) return;
+    this.dispatch(args);
+  }
+
+  /**
+   * Like `invoke`, but resolves with the handler's result (`emitEvent`,
+   * component methods). It resolves to `undefined` when the policy drops the
+   * call, or the call is cancelled. A handler error rejects the promise and is
+   * not reported here: the caller receives it.
+   */
+  call(args: unknown[]): Promise<unknown> {
+    return new Promise((resolve, reject) => this.dispatch(args, { resolve, reject }));
+  }
+
+  private dispatch(args: unknown[], settle?: Settle): void {
+    if (this.disposed) {
+      settle?.resolve(undefined);
+      return;
+    }
     switch (this.policy) {
       case "drop-while-running":
-        if (this.running.size > 0) return;
+        if (this.running.size > 0) {
+          settle?.resolve(undefined);
+          return;
+        }
         break;
       case "single-flight":
         for (const invocation of [...this.running]) invocation.abort("supersede");
         break;
       case "queue":
         if (this.running.size > 0 || this.queued.length > 0) {
-          this.queued.push(() => this.start(args));
+          this.queued.push({ run: () => this.start(args, settle), drop: () => settle?.resolve(undefined) });
           return;
         }
         break;
       case "parallel":
         break;
     }
-    this.start(args);
+    this.start(args, settle);
   }
 
   /** The element (re)mounted: accept invocations. */
@@ -178,7 +199,7 @@ export class HandlerSlot {
   /** The element unmounted: abort everything, drop the queue. */
   dispose(): void {
     this.disposed = true;
-    this.queued.length = 0;
+    for (const entry of this.queued.splice(0)) entry.drop();
     for (const invocation of [...this.running]) invocation.abort("unmount");
   }
 
@@ -187,20 +208,23 @@ export class HandlerSlot {
     return this.running.size;
   }
 
-  private start(args: unknown[]): void {
+  private start(args: unknown[], settle?: Settle): void {
     const invocation = new Invocation();
     this.running.add(invocation);
     const timeoutMs = this.timeoutMs ?? defaultTimeout;
     const timer = timeoutMs > 0 ? setTimeout(() => invocation.abort("timeout"), timeoutMs) : undefined;
     let settled = false;
-    const done = (error?: unknown) => {
+    const done = (failed: boolean, value: unknown) => {
       if (settled) return;
       settled = true;
       if (timer !== undefined) clearTimeout(timer);
       this.running.delete(invocation);
-      if (error !== undefined && !(error instanceof HandlerCancelledError)) reportRuntimeError(error);
+      if (!failed) settle?.resolve(value);
+      else if (value instanceof HandlerCancelledError) settle?.resolve(undefined);
+      else if (settle) settle.reject(value);
+      else reportRuntimeError(value);
       const next = this.queued.shift();
-      if (next) scheduleMicrotask(next);
+      if (next) scheduleMicrotask(next.run);
     };
     let result: unknown;
     // The first synchronous run is one batch; later runs batch themselves.
@@ -209,20 +233,25 @@ export class HandlerSlot {
       current = invocation;
       result = batch(() => this.handler(invocation)(...args));
     } catch (error) {
-      done(error ?? new Error("A handler threw undefined"));
+      done(true, error ?? new Error("A handler threw undefined"));
       return;
     } finally {
       current = outer;
     }
     if (isThenable(result)) {
       result.then(
-        () => done(),
-        (error: unknown) => done(error ?? new Error("A handler rejected with undefined")),
+        (value) => done(false, value),
+        (error: unknown) => done(true, error ?? new Error("A handler rejected with undefined")),
       );
     } else {
-      done();
+      done(false, result);
     }
   }
+}
+
+interface Settle {
+  resolve(value: unknown): void;
+  reject(error: unknown): void;
 }
 
 /** `delay(ms)`: resolves after `ms`; rejects at once if the calling handler is cancelled. */

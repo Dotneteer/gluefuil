@@ -5,7 +5,7 @@
 > as it is. Design and XMLUI comparison:
 > [`../plan/poc-11-standalone.md`](../plan/poc-11-standalone.md).
 >
-> **Last updated:** step 11.
+> **Last updated:** step 14 (component files and code-behind).
 
 ## Using it
 
@@ -47,20 +47,31 @@ build-time compilation ([build-time.md](build-time.md)).
 
 ## How a load works (`StandaloneApp`)
 
-1. **Fetch** the entry file (`cache: "no-cache"`: HTTP revalidates).
+1. **Fetch** the entry file (`cache: "no-cache"`: HTTP revalidates), with
+   its code-behind `<file>.xs` (a 404 means none). Then
+   `analyzeModule` gives the component names it uses. Each one that is
+   neither built-in nor inline is fetched as `components/<Name>.pfui`
+   (next to the entry file), with code-behind, transitively. A missing file
+   is left to the compiler (E001).
 2. **Hash** it with `hashText` (cyrb53, 53 bits). This is not a security
    measure: it only decides whether to recompile, and `crypto.subtle`
    needs a secure context that plain `http://` hosts don't have.
-3. **Cache lookup** with the key `pfui:<buildId>:<file>`:
+3. **Cache lookup**, per file, with the key `pfui:<buildId>:<file>`. The
+   hash covers the markup, the code-behind and the interfaces of the
+   components the file uses (they change what it compiles to):
    - **hit:** use the stored code;
-   - **miss:** `compileModule(…, { format: "function", fileName })`. On
-     compile errors, show the overlay and don't cache. Otherwise store
+   - **miss:** `compileModule(…, { format: "function", fileName, userComponents, codeBehind })`.
+     On errors in the file or its code-behind, show the overlay for that
+     file and don't cache. Otherwise store
      `{ hash, code, map without sourcesContent }`.
-4. **Load and mount:** `loadModule(code, { components, map, sourceURL })`,
-   with the map's `sourcesContent` restored from the fetched text, then
-   `root.render(<Main/>)`.
+4. **Load and mount:** `loadModule(code, { components, map, sourceURL })`
+   for each file, with the map's `sourcesContent` restored from the fetched
+   text. One shared `components` record holds the built-ins and the loaded
+   user components; compiled code looks user components up in it at render
+   time. Then `root.render(<Main/>)`.
 5. **Status:** `status = { file, source: "compiled" | "cache" | "error",
-   compileMs?, loads }`.
+   compileMs?, loads, components? }`. `"compiled"` means at least one file
+   compiled.
 
 **The build ID** (`__PFUI_BUILD_ID__`, set by the bundle build) is new for
 every build of `pfui.js`. A new engine never runs code compiled by another
@@ -79,8 +90,10 @@ build, and the cache removes other builds' entries when it writes.
 ## Watching
 
 - **Polling** (`setTimeout` chain, no overlapping requests): `refresh()`
-  fetches with `cache: "no-store"` and compares the hash. On a change it
-  loads again (through the cache) and renders the new root component.
+  fetches every file again with `cache: "no-store"` (entry, components,
+  code-behind, and the names that were 404, so a new component file is
+  noticed) and compares a fingerprint of all of them. On a change it loads
+  again (through the cache) and renders the new root component.
   This is a full app reload without a page reload, so app state is lost.
 - **Errors** (network, compile) show the **error overlay**: every
   diagnostic as `file:line:col: error CODE: message`, with the source line
@@ -100,9 +113,9 @@ build, and the cache removes other builds' entries when it writes.
 
 ## Not yet
 
-Component files (`components/Name.pfui`) arrive with user-defined
-components (step 14): the loader will fetch unknown component names on
-demand, through the same cache.
+- Polling costs one request per file, plus one per code-behind, per
+  interval.
+- A dev server with push (WebSocket or SSE) could replace polling.
 
 ## Files
 
@@ -115,12 +128,12 @@ demand, through the same cache.
 | `standalone/src/overlay.tsx` | `ErrorOverlay` |
 | `standalone/vite.config.ts` | The bundle build |
 | `tools/static-server.mjs` | The E2E static server: serves a temp copy of a fixture site plus the bundle |
-| `e2e/fixtures/standalone-site/` | `index.html` (one script tag) and `Main.pfui` |
+| `e2e/fixtures/standalone-site/` | `index.html` (one script tag), `Main.pfui`, `components/Greeting.pfui` with code-behind |
 
 ## Tests
 
 | File | Covers |
 |------|--------|
 | `standalone/tests/cache.test.ts` | Hash; hit and miss; invalidation by content and by build; other apps' keys; corrupted entries; quota eviction; entries too big to fit; throwing or absent storage |
-| `standalone/tests/loader.test.tsx` | With a mocked server: compiled, then cached; recompiled on change; `cache: false`; entry file and fetch modes; the compile-error overlay (nothing cached); a missing file; `refresh()` (change, error, recovery); polling |
+| `standalone/tests/loader.test.tsx` | With a mocked server: compiled, then cached; recompiled on change; `cache: false`; entry file and fetch modes; the compile-error overlay (nothing cached); a missing file; `refresh()` (change, error, recovery); polling; component files and code-behind (fetched transitively, cached per file, errors naming their file, watched, a new component noticed) |
 | `e2e/standalone.spec.ts` | Chromium against the real bundle: compile on the first load, cache on reload (and the app works); editing `Main.pfui` on the server updates the open app; an error shows the overlay and fixing it recovers |

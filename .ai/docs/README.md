@@ -13,6 +13,7 @@ on this repository. Plans (what we intend to build) live in
 | [modules.md](modules.md) | Compiled modules: `compileModule`, generated code, compilation rules, `Bound`/`TextNode`/`loadModule`, built-in components, build-time integration. |
 | [build-time.md](build-time.md) | Build-time compilation: the Vite plugin, its options and errors, what a production build contains (no compiler, no eval). |
 | [ssg.md](ssg.md) | Static generation and takeover: the prerender, `mountApp`, the server view, what matches and what doesn't. |
+| [user-components.md](user-components.md) | User-defined components: definitions and files, `$props`, events, methods, slots, isolation, code-behind; compiling, runtime, delivery. |
 | [standalone.md](standalone.md) | Standalone mode: `pfui.js`, loading, the compile cache, watching, the error overlay, the bundle. |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle handlers, templates, `Items`. |
 | [source-maps.md](source-maps.md) | Source maps: markers, encoding, delivery (Vite, `loadModule`), evidence. |

@@ -21,6 +21,7 @@ function transform(
   (plugin.configResolved as (c: unknown) => void)({ command: config.command, build: { sourcemap: config.sourcemap ?? false } });
   const reported: Reported = { warnings: [] };
   const context = {
+    addWatchFile: () => undefined,
     warn: (warning: unknown) => reported.warnings.push(warning),
     error: (error: Record<string, unknown>) => {
       reported.error = error;

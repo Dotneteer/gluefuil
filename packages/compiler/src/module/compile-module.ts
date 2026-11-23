@@ -19,16 +19,18 @@
 //   footer (export default, or return)
 
 import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
-import { compileHandler, compileInterpolation } from "../codegen/compile";
+import { compileExpression, compileFunction, compileHandler, compileInterpolation } from "../codegen/compile";
 import { extractMarkers, jsString, mark } from "../codegen/markers";
 import { APP_GLOBALS } from "../codegen/names";
 import type { AttributeNode, ContentNode, ElementNode, Span } from "../markup/ast";
 import { decodeEntitiesWithOffsets } from "../markup/entities";
 import { parseMarkup } from "../markup/parser";
 import { parseInterpolation, type InterpolationSegment } from "../script/interpolation";
+import type { Expression, FunctionDeclaration } from "../script/ast";
 import { parseStatements } from "../script/parse";
 import type { Diagnostic } from "../source/diagnostic";
 import { buildSourceMap, type SourceMap } from "../source/source-map";
+import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, type UserComponentInfo } from "./analyze";
 import { ModuleDiagnostics, type ModuleDiagnosticCode } from "./diagnostics";
 
 export interface CompileModuleOptions {
@@ -47,6 +49,16 @@ export interface CompileModuleOptions {
   fileName?: string;
   /** Produce a source map (default true). */
   sourceMap?: boolean;
+  /**
+   * User-defined components of other files (from `analyzeModule`), by name.
+   * Components defined in this file are found by the compiler itself.
+   */
+  userComponents?: Readonly<Record<string, UserComponentInfo>>;
+  /**
+   * The file's code-behind (`Main.pfui.xs`, `components/X.pfui.xs`): top-level
+   * `var` and `function` declarations for the app root, or for the file's component.
+   */
+  codeBehind?: string;
 }
 
 export interface CompileModuleResult {
@@ -58,6 +70,8 @@ export interface CompileModuleResult {
   map?: SourceMap;
   /** Markup (M), script (S), binding (C) and module (E) diagnostics, in file positions. */
   diagnostics: Diagnostic[];
+  /** Diagnostics of the code-behind, in positions of the code-behind source (when given). */
+  codeBehindDiagnostics?: Diagnostic[];
 }
 
 /** The runtime names compiled code uses, as `[export, local]`. */
@@ -69,6 +83,9 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["useScope", "$$useScope"],
   ["useFileScope", "$$useFileScope"],
   ["When", "$$When"],
+  ["BoundUser", "$$BoundUser"],
+  ["Slot", "$$Slot"],
+  ["useComponent", "$$useComponent"],
   ["Fragment", "$$Fragment"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
@@ -94,7 +111,19 @@ const LIFECYCLE: Readonly<Record<string, "mount" | "unmount">> = {
 };
 
 /** Helper tags handled inside an element (not rendered as children). */
-const HELPER_TAGS = new Set(["event", "variable", "global", "property"]);
+const HELPER_TAGS = new Set(["event", "variable", "global", "property", "method"]);
+
+/** Names every component body sees (runtime useComponent); readable, not writable. */
+const COMPONENT_NAMES = ["$props", "$self", "emitEvent", "hasEventHandler"];
+
+/** A user component known to this compilation; `inline`: defined in this file. */
+type UserComponent = UserComponentInfo & { inline: boolean };
+
+/** A parsed code-behind file (top-level declarations only). */
+interface CodeBehind {
+  variables: { name: string; init: Expression | null; start: number; end: number }[];
+  functions: FunctionDeclaration[];
+}
 
 /** Handler policies (runtime HANDLER_POLICIES). */
 const HANDLER_POLICIES = new Set(["parallel", "single-flight", "queue", "drop-while-running"]);
@@ -137,6 +166,16 @@ class ModuleCompiler {
   private readonly ids = new Set<string>();
   private counter = 0;
   private usesEmpty = false;
+  /** User components: other files' (options) and this file's own. */
+  private readonly userComponents = new Map<string, UserComponent>();
+  /** External user components used, for the "esm" imports. */
+  private readonly usedExternal = new Set<string>();
+  /** True while compiling a `<Component>` body (`<Slot>` is allowed). */
+  private inComponent = false;
+  /** The parsed code-behind, and the element it belongs to (the app root or the `<Component>`). */
+  private codeBehind: CodeBehind | undefined;
+  private codeBehindTarget: ElementNode | undefined;
+  private readonly codeBehindDiagnostics: Diagnostic[] = [];
 
   /** Source markers on (a source map is wanted). */
   private readonly markers: boolean;
@@ -178,18 +217,39 @@ class ModuleCompiler {
   compile(markup: string): CompileModuleResult {
     const parsed = parseMarkup(markup);
     this.diagnostics.push(...parsed.diagnostics);
-    const root = this.findRoot(parsed.document.children, parsed.document);
-    if (root) this.collectIds(root);
-    const fileScope = this.ids.size > 0 ? "$$f" : "$$scope";
-    const body = root ? this.node(root, fileScope, true) : "null";
-    const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids])});\n` : "";
+    const { definitions, app } = this.topLevel(parsed.document.children, parsed.document);
+    this.registerComponents(definitions, analyzeDocument(parsed.document).components);
+    if (this.options.codeBehind !== undefined) {
+      this.codeBehind = this.parseCodeBehind(this.options.codeBehind);
+      this.codeBehindTarget = app ?? (definitions.length === 1 ? definitions[0] : undefined);
+    }
+    // Component definitions first (hoisted functions); then the app.
+    const defined: string[] = [];
+    for (const definition of definitions) {
+      const name = this.definitionName(definition);
+      if (name !== undefined) defined.push(this.componentDefinition(definition, name));
+    }
+    let exported = "Main";
+    let main = "";
+    if (app) {
+      this.collectIds(app);
+      const fileScope = this.ids.size > 0 ? "$$f" : "$$scope";
+      const body = this.node(app, fileScope, true);
+      const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids])});\n` : "";
+      main = `function Main() {\n${prologue}  return ${body};\n}`;
+    } else if (definitions.length === 1 && defined.length === 1) {
+      exported = defined[0]!;
+      this.checkFileName(definitions[0]!);
+    } else {
+      main = "function Main() {\n  return null;\n}";
+    }
     const marked = [
       this.header(),
       "const $$scope = $$createAppScope();",
       ...(this.usesEmpty ? ["const $$empty = Object.freeze({});"] : []),
       ...this.hoisted,
-      `function Main() {\n${prologue}  return ${body};\n}`,
-      this.options.format === "function" ? "return Main;" : "export default Main;",
+      ...(main ? [main] : []),
+      this.options.format === "function" ? `return ${exported};` : `export default ${exported};`,
       "",
     ].join("\n");
     const { code, pairs } = extractMarkers(marked);
@@ -199,22 +259,259 @@ class ModuleCompiler {
     // `await`/`async` in a binding: the parser's S030 already says it; drop the code generator's C009.
     const unsupported = new Set(this.diagnostics.filter((d) => d.code === "S030").map((d) => d.start));
     const diagnostics = this.diagnostics.filter((d) => !(d.code === "C009" && unsupported.has(d.start)));
-    return { code, ...(map ? { map } : {}), diagnostics };
+    return {
+      code,
+      ...(map ? { map } : {}),
+      diagnostics,
+      ...(this.options.codeBehind !== undefined ? { codeBehindDiagnostics: this.codeBehindDiagnostics.sort((a, b) => a.start - b.start) } : {}),
+    };
   }
 
-  private findRoot(nodes: ContentNode[], document: { start: number; end: number }): ElementNode | undefined {
-    let root: ElementNode | undefined;
+  /**
+   * The top level: `<Component>` definitions, and at most one app element.
+   * A file with no app element must be exactly one `<Component>` (a component file).
+   */
+  private topLevel(nodes: ContentNode[], document: { start: number; end: number }): { definitions: ElementNode[]; app?: ElementNode } {
+    const definitions: ElementNode[] = [];
+    let app: ElementNode | undefined;
     for (const node of nodes) {
       if (node.kind === "comment") continue;
       if (node.kind === "text" && node.value.trim() === "") continue;
-      if (node.kind === "element" && !root) {
-        root = node;
+      if (node.kind === "element" && node.name.full === "Component") {
+        definitions.push(node);
+        continue;
+      }
+      if (node.kind === "element" && !app) {
+        app = node;
         continue;
       }
       this.report(node, "E003", node.kind === "element" ? "a second root element" : "content outside the root element");
     }
-    if (!root) this.report(document, "E003", "the document has none");
-    return root;
+    if (!app && definitions.length === 0) this.report(document, "E003", "the document has none");
+    if (!app && definitions.length > 1) {
+      this.report(definitions[1]!.name, "E003", "a file without app markup must define exactly one <Component>");
+    }
+    return { definitions, ...(app ? { app } : {}) };
+  }
+
+  /** Registers other files' components (options) and this file's definitions, reporting conflicts (E016). */
+  private registerComponents(definitions: ElementNode[], analyzed: UserComponentInfo[]): void {
+    for (const [name, info] of Object.entries(this.options.userComponents ?? {})) {
+      this.userComponents.set(name, { ...info, name, inline: false });
+    }
+    const own = new Set<string>();
+    for (const definition of definitions) {
+      const nameAttribute = definition.attributes.find((a) => a.name.full === "name");
+      const name = nameAttribute?.value?.value;
+      const span = nameAttribute?.value ?? definition.name;
+      if (name === undefined || !COMPONENT_NAME.test(name)) {
+        this.report(span, "E016", "<Component> needs a constant 'name': an uppercase letter, then letters, digits, '_' or '$'");
+        continue;
+      }
+      if (own.has(name)) {
+        this.report(span, "E016", `The component '${name}' is defined twice in this file`);
+        continue;
+      }
+      own.add(name);
+      if (Object.hasOwn(this.components, name)) {
+        this.report(span, "E016", `'${name}' is a built-in component; choose another name`);
+        continue;
+      }
+      if (this.userComponents.has(name)) {
+        this.report(span, "E016", `The component '${name}' is also defined in components/${name}.pfui`);
+        continue;
+      }
+      const info = analyzed.find((c) => c.name === name)!;
+      this.userComponents.set(name, { ...info, inline: true });
+    }
+  }
+
+  /** The name of a definition registered by registerComponents (undefined if it was rejected). */
+  private definitionName(definition: ElementNode): string | undefined {
+    const name = definition.attributes.find((a) => a.name.full === "name")?.value?.value;
+    const known = name === undefined ? undefined : this.userComponents.get(name);
+    return known?.inline ? name : undefined;
+  }
+
+  /** A component file's name must match its component (`components/X.pfui` holds `X`). */
+  private checkFileName(definition: ElementNode): void {
+    const fileName = this.options.fileName;
+    if (fileName === undefined) return;
+    const base = fileName.split(/[\\/]/).pop()!.replace(/\.pfui$/, "");
+    const name = definition.attributes.find((a) => a.name.full === "name")!.value!;
+    if (base !== name.value) {
+      this.report(name, "E016", `The file '${fileName}' must define '${base}', not '${name.value}'`);
+    }
+  }
+
+  // --- User-defined components ----------------------------------------------------------
+
+  /**
+   * Compiles `<Component name="X">` to a hoisted function component `$$U_X`
+   * (see the runtime's useComponent). Its body has its own IDs and variables
+   * and sees nothing of the file it is used from (isolation).
+   */
+  private componentDefinition(definition: ElementNode, name: string): string {
+    const saved = { ids: new Set(this.ids), frames: [...this.frames], contextFrames: [...this.contextFrames], inComponent: this.inComponent };
+    this.ids.clear();
+    this.frames.length = 0;
+    this.contextFrames.length = 0;
+    this.inComponent = true;
+
+    for (const attribute of definition.attributes) {
+      const full = attribute.name.full;
+      if (full === "name" || full.startsWith("var.") || full.startsWith("global.") || full.startsWith("method.")) continue;
+      this.report(attribute.name, "E016", `<Component> does not take '${full}': use var.*, method.* or <variable>/<method> children`);
+    }
+    const body: ElementNode[] = [];
+    const content: ContentNode[] = [];
+    for (const child of definition.children) {
+      if (child.kind === "element" && ["variable", "global", "method"].includes(child.name.full)) continue;
+      if (child.kind === "element") body.push(child);
+      content.push(child);
+    }
+    for (const element of body) this.collectIds(element);
+    const declarations = this.declarations(definition, false);
+    const codeBehind = definition === this.codeBehindTarget ? this.codeBehind : undefined;
+    // Pushes one frame each onto `frames` and `contextFrames`; restored below.
+    const definitions = this.scopeEntries(declarations, codeBehind, COMPONENT_NAMES);
+
+    const methods: [string, string][] = [];
+    for (const attribute of definition.attributes) {
+      if (!attribute.name.full.startsWith("method.")) continue;
+      const method = attribute.name.full.slice("method.".length);
+      if (!VARIABLE_NAME.test(method)) {
+        this.report(attribute.name, "E016", `'${method}' is not a valid method name`);
+        continue;
+      }
+      const decoded = attribute.value ? decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start) : { value: "", offsets: [attribute.end] };
+      methods.push([method, this.handler(decoded.value, { offsets: decoded.offsets })]);
+    }
+    for (const child of definition.children) {
+      if (child.kind !== "element" || child.name.full !== "method") continue;
+      const method = this.methodTag(child);
+      if (method) methods.push(method);
+    }
+    const methodsName = methods.length > 0 ? this.hoist("$$m", methods) : this.empty();
+
+    const parts: string[] = [];
+    for (const child of content) {
+      const compiled = this.child(child, "$$c");
+      if (compiled !== undefined) parts.push(compiled);
+    }
+    const rendered = parts.length === 0 ? "null" : parts.length === 1 ? parts[0]! : `$$h($$Fragment, null, ${parts.join(", ")})`;
+    const ids = JSON.stringify([...this.ids]);
+
+    this.frames.length = 0;
+    this.frames.push(...saved.frames);
+    this.contextFrames.length = 0;
+    this.contextFrames.push(...saved.contextFrames);
+    this.ids.clear();
+    for (const id of saved.ids) this.ids.add(id);
+    this.inComponent = saved.inComponent;
+
+    const fn = `$$U_${name}`;
+    this.hoisted.push(
+      `function ${fn}({ input: $$in }) {\n  const $$c = $$useComponent($$in, $$scope, ${definitions}, ${methodsName}, ${ids});\n  return ${rendered};\n}\n${fn}.displayName = ${JSON.stringify(name)};`,
+    );
+    return fn;
+  }
+
+  /**
+   * The names of a container or component: its markup variables, and its
+   * code-behind variables and functions. Pushes a writable frame (variables)
+   * and a read-only frame (functions, `readonlyNames`): the caller pops both.
+   * Returns the hoisted definitions object (runtime VariableDefinition).
+   */
+  private scopeEntries(declarations: Declaration[], codeBehind: CodeBehind | undefined, readonlyNames: readonly string[] = []): string {
+    const own = new Set(declarations.map((d) => d.name));
+    const codeVariables: CodeBehind["variables"] = [];
+    const functions: FunctionDeclaration[] = [];
+    const functionNames = new Set<string>();
+    const clash = (name: string) => own.has(name) || functionNames.has(name) || this.ids.has(name);
+    for (const variable of codeBehind?.variables ?? []) {
+      if (clash(variable.name)) {
+        this.reportCodeBehind(variable, `'${variable.name}' is declared twice (in the markup or the code-behind), or is a component id`);
+        continue;
+      }
+      own.add(variable.name);
+      codeVariables.push(variable);
+    }
+    for (const fn of codeBehind?.functions ?? []) {
+      if (clash(fn.id.name)) {
+        this.reportCodeBehind(fn.id, `'${fn.id.name}' is declared twice (in the markup or the code-behind), or is a component id`);
+        continue;
+      }
+      functionNames.add(fn.id.name);
+      functions.push(fn);
+    }
+    this.frames.push(own);
+    this.contextFrames.push(new Set([...readonlyNames, ...functionNames]));
+
+    const entries: [string, string][] = [];
+    const graph = new Map<string, string[]>();
+    for (const declaration of declarations) {
+      if (!declaration.value) {
+        entries.push([declaration.name, `{ value: ${declaration.keyOnly ? '"true"' : "undefined"} }`]);
+        continue;
+      }
+      const value = this.value(this.segments(declaration.value));
+      if ("constant" in value) {
+        entries.push([declaration.name, `{ value: ${value.constant} }`]);
+      } else {
+        entries.push([declaration.name, `{ init: ${value.binding} }`]);
+        graph.set(declaration.name, value.dependencies.filter((d) => own.has(d)));
+      }
+    }
+    for (const variable of codeVariables) {
+      if (!variable.init) {
+        entries.push([variable.name, "{ value: undefined }"]);
+        continue;
+      }
+      const result = compileExpression(variable.init, { scope: this.visibleNames(), markers: false });
+      this.codeBehindDiagnostics.push(...result.diagnostics);
+      entries.push([variable.name, `{ init: ${result.code} }`]);
+      graph.set(variable.name, result.dependencies.filter((d) => own.has(d)));
+    }
+    for (const fn of functions) {
+      const result = compileFunction(fn, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: false });
+      this.codeBehindDiagnostics.push(...result.diagnostics);
+      entries.push([fn.id.name, `{ fn: ${result.code} }`]);
+    }
+    this.reportCycles(graph, (name, cycle) => {
+      const declaration = declarations.find((d) => d.name === name);
+      if (declaration) this.report(declaration.span, "E005", cycle);
+      else this.reportCodeBehind(codeVariables.find((v) => v.name === name)!, ModuleDiagnostics.E005(cycle), "E005");
+    });
+    return entries.length > 0 ? this.hoist("$$v", entries) : this.empty();
+  }
+
+  /** A code-behind diagnostic (positions in the code-behind source). */
+  private reportCodeBehind(span: { start: number; end: number }, message: string, code: ModuleDiagnosticCode = "E019"): void {
+    this.codeBehindDiagnostics.push({ code, severity: "error", message, start: span.start, end: span.end });
+  }
+
+  /** Parses code-behind: top-level `var` and `function` declarations only (E019). */
+  private parseCodeBehind(source: string): CodeBehind {
+    const parsed = parseStatements(source, { offset: 0 });
+    this.codeBehindDiagnostics.push(...parsed.diagnostics);
+    const result: CodeBehind = { variables: [], functions: [] };
+    for (const statement of parsed.program.body) {
+      if (statement.type === "FunctionDeclaration") {
+        result.functions.push(statement);
+      } else if (statement.type === "VariableDeclaration" && statement.kind === "var") {
+        for (const declarator of statement.declarations) {
+          if (declarator.id.type !== "Identifier") {
+            this.reportCodeBehind(declarator.id, "A code-behind 'var' declares one name: destructuring is not supported");
+            continue;
+          }
+          result.variables.push({ name: declarator.id.name, init: declarator.init, start: declarator.id.start, end: declarator.id.end });
+        }
+      } else {
+        this.reportCodeBehind(statement, "Only 'var' and 'function' declarations are allowed at the top level of a code-behind file");
+      }
+    }
+    return result;
   }
 
   private header(): string {
@@ -232,6 +529,9 @@ class ModuleCompiler {
     if (components.length > 0) {
       const specifiers = components.map((c) => `${c} as $$C_${c}`).join(", ");
       lines.push(`import { ${specifiers} } from ${JSON.stringify(this.options.componentsModule ?? "@patchfuil/components")};`);
+    }
+    for (const name of [...this.usedExternal].sort()) {
+      lines.push(`import $$U_${name} from ${JSON.stringify(this.userComponents.get(name)!.module)};`);
     }
     return lines.join("\n");
   }
@@ -270,7 +570,7 @@ class ModuleCompiler {
       this.report(tag.name, "E008", "<property> needs a constant 'name'");
       return undefined;
     }
-    const template = metadata.templates?.[property];
+    const template = property.startsWith("$") ? undefined : metadata.templates?.[property];
     if (!template) {
       this.report(nameAttribute!.value!, "E013", `'${component}' has no template property '${property}'`);
       return undefined;
@@ -320,7 +620,7 @@ class ModuleCompiler {
         this.ids.add(value);
       }
     }
-    const childrenAreTemplate = Boolean(this.components[node.name.full]?.childrenTemplate);
+    const childrenAreTemplate = Boolean(this.metadataOf(node.name.full)?.childrenTemplate);
     for (const child of node.children) {
       if (child.kind !== "element") continue;
       const isProperty = child.name.full === "property";
@@ -338,7 +638,18 @@ class ModuleCompiler {
       this.report(node.name, "E002", `The helper tag <${name}>`);
       return "null";
     }
-    if (node.name.prefix !== undefined || !Object.hasOwn(this.components, name)) {
+    if (name === "Component") {
+      this.report(node.name, "E016", "<Component> is allowed only at the top level of a file");
+      return "null";
+    }
+    if (name === "Slot") {
+      if (!this.inComponent) {
+        this.report(node.name, "E017", "<Slot> is allowed only inside a <Component>");
+        return "null";
+      }
+      return this.slot(node, scopeVar);
+    }
+    if (node.name.prefix !== undefined || !this.metadataOf(name)) {
       this.report(node.name, "E001", name);
       return "null";
     }
@@ -346,10 +657,11 @@ class ModuleCompiler {
     const visibility = this.visibility(node);
     if (visibility === "never") return "null";
     const declarations = this.declarations(node, isRoot);
+    const hasCodeBehind = node === this.codeBehindTarget && this.codeBehind !== undefined;
     // A source marker at the element's start: render errors map to the tag.
     const element = this.mark(
       node.start,
-      declarations.length === 0 ? this.element(node, scopeVar) : this.container(node, declarations, scopeVar),
+      declarations.length === 0 && !hasCodeBehind ? this.element(node, scopeVar) : this.container(node, declarations, scopeVar),
     );
     if (!visibility) return element;
     return this.mark(node.start, `$$h($$When, { test: ${visibility}.test, responsive: ${visibility}.responsive, scope: ${scopeVar} }, ${element})`);
@@ -444,34 +756,18 @@ class ModuleCompiler {
 
   /** An element declaring variables: its own component, which creates them once per instance. */
   private container(node: ElementNode, declarations: Declaration[], scopeVar: string): string {
-    const own = new Set(declarations.map((d) => d.name));
-    this.frames.push(own);
-    const entries: [string, string][] = [];
-    const graph = new Map<string, string[]>();
-    for (const declaration of declarations) {
-      if (!declaration.value) {
-        entries.push([declaration.name, `{ value: ${declaration.keyOnly ? '"true"' : "undefined"} }`]);
-        continue;
-      }
-      const value = this.value(this.segments(declaration.value));
-      if ("constant" in value) {
-        entries.push([declaration.name, `{ value: ${value.constant} }`]);
-      } else {
-        entries.push([declaration.name, `{ init: ${value.binding} }`]);
-        graph.set(declaration.name, value.dependencies.filter((d) => own.has(d)));
-      }
-    }
-    this.reportCycles(graph, declarations);
-    const definitions = this.hoist("$$v", entries);
+    const codeBehind = node === this.codeBehindTarget ? this.codeBehind : undefined;
+    const definitions = this.scopeEntries(declarations, codeBehind);
     const body = this.mark(node.start, this.element(node, "$$c"));
     this.frames.pop();
+    this.contextFrames.pop();
     const component = `$$K${this.counter++}`;
     this.hoisted.push(`function ${component}({ $$p }) {\n  const $$c = $$useScope($$p, ${definitions});\n  return ${body};\n}`);
     return `$$h(${component}, { $$p: ${scopeVar} })`;
   }
 
-  /** Reports each cycle among one container's variables once (E005). */
-  private reportCycles(graph: Map<string, string[]>, declarations: Declaration[]): void {
+  /** Reports each cycle among one scope's variables once (E005): `report(name, "a → b → a")`. */
+  private reportCycles(graph: Map<string, string[]>, report: (name: string, cycle: string) => void): void {
     const state = new Map<string, "visiting" | "done">();
     const stack: string[] = [];
     const visit = (name: string) => {
@@ -479,8 +775,7 @@ class ModuleCompiler {
       stack.push(name);
       for (const next of graph.get(name) ?? []) {
         if (state.get(next) === "visiting") {
-          const cycle = [...stack.slice(stack.indexOf(next)), next];
-          this.report(declarations.find((d) => d.name === next)!.span, "E005", cycle.join(" → "));
+          report(next, [...stack.slice(stack.indexOf(next)), next].join(" → "));
         } else if (!state.has(next)) {
           visit(next);
         }
@@ -491,11 +786,47 @@ class ModuleCompiler {
     for (const name of graph.keys()) if (!state.has(name)) visit(name);
   }
 
+  /**
+   * A component's metadata: built-in, or derived from a user component's
+   * interface (any prop and event; its slots as templates; the default slot
+   * as the children template).
+   */
+  private metadataOf(name: string): ComponentMetadata | undefined {
+    if (Object.hasOwn(this.components, name)) return this.components[name];
+    const user = this.userComponents.get(name);
+    if (!user) return undefined;
+    const templates: NonNullable<ComponentMetadata["templates"]> = {};
+    for (const [slot, contextVars] of Object.entries(user.slots)) {
+      templates[slot] = { description: `The '${slot}' slot`, contextVars };
+    }
+    return {
+      description: `The user-defined component '${name}'`,
+      props: {},
+      templates,
+      ...(Object.hasOwn(user.slots, DEFAULT_SLOT) ? { childrenTemplate: DEFAULT_SLOT } : {}),
+    };
+  }
+
+  /** How compiled code refers to a user component. */
+  private userComponentRef(name: string, span: Span): string {
+    const user = this.userComponents.get(name)!;
+    if (user.inline) return `$$U_${name}`;
+    // "function" format: looked up at render time, so components can refer to each other in cycles.
+    if (this.options.format === "function") return `$$imports.components[${jsString(name)}]`;
+    if (user.module === undefined) {
+      this.report(span, "E016", `The component '${name}' has no module to import it from (userComponents.${name}.module)`);
+      return "null";
+    }
+    this.usedExternal.add(name);
+    return `$$U_${name}`;
+  }
+
   /** The element itself: props, bindings, handlers and children. */
   private element(node: ElementNode, scopeVar: string): string {
     const name = node.name.full;
-    this.usedComponents.add(name);
-    const metadata = this.components[name]!;
+    const isUser = !Object.hasOwn(this.components, name);
+    if (!isUser) this.usedComponents.add(name);
+    const metadata = this.metadataOf(name)!;
 
     const constants: [string, string][] = [];
     const bindings: [string, string][] = [];
@@ -555,13 +886,15 @@ class ModuleCompiler {
     // Children as the template (Items): unless the template is also given as a <property>.
     const childrenTemplate = metadata.childrenTemplate;
     const meaningful = content.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
-    if (childrenTemplate && meaningful.length > 0) {
+    if (isUser && !childrenTemplate && meaningful.length > 0) {
+      this.report(meaningful[0]!, "E018", name);
+    } else if (childrenTemplate && meaningful.length > 0) {
       if (templates.some(([template]) => template === childrenTemplate)) {
         this.report(meaningful[0]!, "E013", `Content besides <property name="${childrenTemplate}">`);
       } else {
         templates.push([childrenTemplate, this.template(content, metadata.templates![childrenTemplate]!.contextVars)]);
       }
-    } else {
+    } else if (!isUser) {
       for (const child of content) {
         const compiled = this.child(child, scopeVar);
         if (compiled !== undefined) children.push(compiled);
@@ -577,12 +910,12 @@ class ModuleCompiler {
       }
     }
 
-    const component = `$$C_${name}`;
+    const component = isUser ? this.userComponentRef(name, node.name) : `$$C_${name}`;
     const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
     const id = idValue !== undefined && this.ids.has(idValue) ? idValue : undefined;
-    if (bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
+    if (!isUser && bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
       return `$$h(${component}, ${props}${args})`;
     }
     const bindingsName = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
@@ -603,7 +936,8 @@ class ModuleCompiler {
     const idPart = id === undefined ? "" : `, id: ${JSON.stringify(id)}`;
     const templatesPart = templates.length > 0 ? `, templates: ${this.hoistRaw("$$t", `{ ${templates.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }`)}` : "";
     const lifecyclePart = lifecycle.length > 0 ? `, lifecycle: ${this.hoist("$$l", lifecycle)}` : "";
-    return `$$h($$Bound, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`;
+    const bound = isUser ? "$$BoundUser" : "$$Bound";
+    return `$$h(${bound}, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`;
   }
 
   /**
@@ -650,6 +984,8 @@ class ModuleCompiler {
 
   private checkEvent(metadata: ComponentMetadata, component: string, event: string, span: Span): boolean {
     if (`on${event[0]!.toUpperCase()}${event.slice(1)}` in LIFECYCLE) return true;
+    // A user component's events are whatever it emits (emitEvent): not declared.
+    if (this.userComponents.has(component) && !Object.hasOwn(this.components, component)) return true;
     if (metadata.events && Object.hasOwn(metadata.events, event)) return true;
     this.report(span, "E004", event, component);
     return false;
@@ -673,19 +1009,76 @@ class ModuleCompiler {
       return undefined;
     }
     if (!this.checkEvent(metadata, component, event, nameAttribute!.value!)) return undefined;
-    const content = tag.children.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
-    if (content.length > 1 || content.some((c) => c.kind === "element" || c.kind === "script")) {
-      this.report(tag.name, "E002", "Components inside <event>");
+    const handler = this.tagHandler(tag);
+    return handler === undefined ? undefined : [`on${event[0]!.toUpperCase()}${event.slice(1)}`, handler];
+  }
+
+  /** `<method name="open">statements</method>` in a `<Component>`; returns `[name, factory]`. */
+  private methodTag(tag: ElementNode): [string, string] | undefined {
+    const nameAttribute = tag.attributes.find((a) => a.name.full === "name");
+    const name = nameAttribute?.value?.value;
+    if (name === undefined || !VARIABLE_NAME.test(name)) {
+      this.report(nameAttribute?.value ?? tag.name, "E016", "<method> needs a constant 'name' (a valid identifier)");
       return undefined;
     }
-    const prop = `on${event[0]!.toUpperCase()}${event.slice(1)}`;
+    const handler = this.tagHandler(tag);
+    return handler === undefined ? undefined : [name, handler];
+  }
+
+  /** The handler in a code tag's content (`<event>`, `<method>`): text or CDATA, not whitespace-collapsed. */
+  private tagHandler(tag: ElementNode): string | undefined {
+    const content = tag.children.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
+    if (content.length > 1 || content.some((c) => c.kind === "element" || c.kind === "script")) {
+      this.report(tag.name, "E002", `Components inside <${tag.name.full}>`);
+      return undefined;
+    }
     const text = content[0];
-    if (!text) return [prop, this.handler("", { offset: tag.end })];
-    if (text.kind === "cdata") return [prop, this.handler(text.value, { offset: text.start + "<![CDATA[".length })];
+    if (!text) return this.handler("", { offset: tag.end });
+    if (text.kind === "cdata") return this.handler(text.value, { offset: text.start + "<![CDATA[".length });
     if (text.kind !== "text") return undefined;
     // Handler code is not whitespace-collapsed (XMLUI exempts <event>).
     const decoded = decodeEntitiesWithOffsets(text.raw, text.start);
-    return [prop, this.handler(decoded.value, { offsets: decoded.offsets })];
+    return this.handler(decoded.value, { offsets: decoded.offsets });
+  }
+
+  /**
+   * `<Slot name="rowTemplate" item="{$item}">fallback</Slot>` in a component
+   * body: renders the caller's content for the slot, which receives each other
+   * attribute as a context variable (`$item`); else the fallback, in this scope.
+   */
+  private slot(node: ElementNode, scopeVar: string): string {
+    let name = DEFAULT_SLOT;
+    const entries: [string, string][] = [];
+    for (const attribute of node.attributes) {
+      const full = attribute.name.full;
+      if (full === "name") {
+        const value = attribute.value?.value;
+        if (value === undefined || value.includes("{") || !/^[a-z][A-Za-z0-9]*Template$/.test(value)) {
+          this.report(attribute.value ?? attribute.name, "E017", "A named slot needs a constant name ending in 'Template' (rowTemplate)");
+          continue;
+        }
+        name = value;
+        continue;
+      }
+      if (!VARIABLE_NAME.test(full)) {
+        this.report(attribute.name, "E017", `'${full}' is not a valid slot property name`);
+        continue;
+      }
+      if (!attribute.value) {
+        entries.push([`$${full}`, '() => "true"']);
+        continue;
+      }
+      const value = this.value(this.segments(attribute as ValuedAttribute));
+      entries.push([`$${full}`, "constant" in value ? `() => ${value.constant}` : value.binding]);
+    }
+    const children: string[] = [];
+    for (const child of node.children) {
+      const compiled = this.child(child, scopeVar);
+      if (compiled !== undefined) children.push(compiled);
+    }
+    const bindings = entries.length > 0 ? this.hoist("$$b", entries) : this.empty();
+    const args = children.length > 0 ? `, ${children.join(", ")}` : "";
+    return this.mark(node.start, `$$h($$Slot, { name: ${JSON.stringify(name)}, bindings: ${bindings}, scope: ${scopeVar} }${args})`);
   }
 
   private child(node: ContentNode, scopeVar: string): string | undefined {

@@ -779,6 +779,14 @@ export class Emitter {
     );
   }
 
+  /**
+   * A code-behind function declaration, as a function expression (handler mode:
+   * it may write variables). Synchronous unless its body contains `await`.
+   */
+  functionValue(node: A.FunctionDeclaration): string {
+    return this.functionExpression({ ...node, type: "FunctionExpression" } as unknown as A.FunctionExpression);
+  }
+
   private functionExpressionWithPrologue(node: A.FunctionExpression, prologue: string): string {
     if (node.async) this.report(node, "C009", "async");
     const names = node.id ? [node.id.name] : [];

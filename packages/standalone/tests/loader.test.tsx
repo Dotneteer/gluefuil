@@ -147,3 +147,78 @@ describe("watching", () => {
     expect(container.textContent).toBe("polled");
   });
 });
+
+describe("component files and code-behind (step 14)", () => {
+  const COUNTER = `
+    <Component name="Counter">
+      <Stack><Button label="{label + ': ' + count}" onClick="bump()"/><Slot/></Stack>
+    </Component>`;
+  const COUNTER_XS = "var count = 0;\nvar label = 'count';\nfunction bump() { count++; }";
+
+  test("used components are fetched from components/ next to the entry file, with their code-behind", async () => {
+    const files = server({
+      "app/Main.pfui": "<App><Counter><Text>{title}</Text></Counter><Badge/></App>",
+      "app/Main.pfui.xs": "var title = 'inside';",
+      "app/components/Counter.pfui": COUNTER,
+      "app/components/Counter.pfui.xs": COUNTER_XS,
+      "app/components/Badge.pfui": '<Component name="Badge"><Text>badge</Text></Component>',
+    });
+    const app = await startApp({ fetch: files.fetch, main: "app/Main.pfui" });
+    expect(container.textContent).toBe("count: 0insidebadge");
+    // Referenced names are visited in sorted order.
+    expect(app.status!.components).toEqual(["app/components/Badge.pfui", "app/components/Counter.pfui"]);
+    await act(async () => container.querySelector("button")!.click());
+    expect(container.querySelector("button")!.textContent).toBe("count: 1");
+    // Built-in names are never fetched.
+    expect(files.requests.map((r) => r.url).filter((u) => u.includes("components/")).sort()).toEqual([
+      "app/components/Badge.pfui",
+      "app/components/Badge.pfui.xs",
+      "app/components/Counter.pfui",
+      "app/components/Counter.pfui.xs",
+    ]);
+  });
+
+  test("components using components are followed; each file is cached on its own", async () => {
+    const storage = new MemoryStorage();
+    const files = server({
+      "Main.pfui": "<App><Outer/></App>",
+      "components/Outer.pfui": '<Component name="Outer"><Inner/></Component>',
+      "components/Inner.pfui": '<Component name="Inner"><Text>inner</Text></Component>',
+    });
+    const first = await startApp({ fetch: files.fetch, storage });
+    expect(container.textContent).toBe("inner");
+    expect([...storage.items.keys()].sort()).toEqual(["pfui:test:Main.pfui", "pfui:test:components/Inner.pfui", "pfui:test:components/Outer.pfui"]);
+    act(() => first.stop());
+    const second = await startApp({ fetch: files.fetch, storage });
+    expect(second.status!.source).toBe("cache");
+  });
+
+  test("a missing component file: the compiler's unknown-component error", async () => {
+    await startApp({ fetch: server({ "Main.pfui": "<App><Nope/></App>" }).fetch });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Main.pfui:1:7: error E001: Unknown component 'Nope'");
+  });
+
+  test("errors in a component file and in code-behind name their file", async () => {
+    await startApp({
+      fetch: server({ "Main.pfui": "<App><Bad/></App>", "components/Bad.pfui": '<Component name="Bad"><Text>{missing}</Text></Component>' }).fetch,
+    });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("components/Bad.pfui:1:30: error C001: Cannot find name 'missing'");
+    act(() => apps.pop()!.stop());
+
+    await startApp({ fetch: server({ "Main.pfui": "<App/>", "Main.pfui.xs": "let x = 1;" }).fetch });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Main.pfui.xs:1:1: error E019:");
+  });
+
+  test("watching: a change in a component file or its code-behind reloads; so does creating a missing one", async () => {
+    const files = server({ "Main.pfui": "<App><Counter/><Later/></App>", "components/Counter.pfui": COUNTER, "components/Counter.pfui.xs": COUNTER_XS });
+    const app = await startApp({ fetch: files.fetch });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Unknown component 'Later'");
+    files.files["components/Later.pfui"] = '<Component name="Later"><Text>later</Text></Component>';
+    expect(await act(() => app.refresh())).toBe(true);
+    expect(container.textContent).toBe("count: 0later");
+    expect(await act(() => app.refresh())).toBe(false);
+    files.files["components/Counter.pfui.xs"] = COUNTER_XS.replace("'count'", "'clicks'");
+    expect(await act(() => app.refresh())).toBe(true);
+    expect(container.textContent).toBe("clicks: 0later");
+  });
+});

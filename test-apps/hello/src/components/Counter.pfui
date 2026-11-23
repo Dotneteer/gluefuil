@@ -1,0 +1,8 @@
+<!-- XMLUI user-defined-components.md § Methods; state and a helper in Counter.pfui.xs -->
+<Component name="Counter" method.reset="count = 0">
+  <Stack orientation="horizontal" gap="4px">
+    <Text value="{label(count)}"/>
+    <Button label="Counter +1" onClick="count++"/>
+    <Button label="Counter reset" onClick="$self.reset()"/>
+  </Stack>
+</Component>
