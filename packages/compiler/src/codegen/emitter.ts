@@ -22,6 +22,38 @@ import {
 /** Names visible to a binding besides its locals and the allowed globals. */
 export type ScopeNames = ReadonlySet<string> | ((name: string) => boolean);
 
+export interface EmitterOptions {
+  /**
+   * "binding" (default): no state writes (C006). "handler": variables can be
+   * written; a write through a path rooted at a variable compiles to the
+   * runtime's path helpers (structural copy).
+   */
+  mode?: "binding" | "handler";
+  /** The scope names that are variables (writable in handler mode). */
+  variables?: ReadonlySet<string>;
+}
+
+/** Array methods compiled to `$$r.mutate` when called on a variable path (runtime ARRAY_MUTATORS). */
+const ARRAY_MUTATORS: ReadonlySet<string> = new Set([
+  "push",
+  "pop",
+  "shift",
+  "unshift",
+  "splice",
+  "sort",
+  "reverse",
+  "fill",
+  "copyWithin",
+]);
+
+const LOGICAL_ASSIGNMENT = new Set(["&&=", "||=", "??="]);
+
+/** A member chain rooted at a variable: `settings.items[i].done`. */
+interface VariablePath {
+  root: A.Identifier;
+  keys: { node: A.Expression; computed: boolean }[];
+}
+
 // Operator precedence of the emitted JavaScript (higher binds tighter).
 const P = {
   sequence: 1,
@@ -90,9 +122,14 @@ export class Emitter {
   readonly dependencies = new Set<string>();
   private lexical: LexicalScope | undefined;
   private readonly isScopeName: (name: string) => boolean;
+  private readonly handlerMode: boolean;
+  private readonly variables: ReadonlySet<string>;
+  private tempCount = 0;
 
-  constructor(scope: ScopeNames) {
+  constructor(scope: ScopeNames, options: EmitterOptions = {}) {
     this.isScopeName = typeof scope === "function" ? scope : (name) => scope.has(name);
+    this.handlerMode = options.mode === "handler";
+    this.variables = options.variables ?? new Set();
   }
 
   // --- Diagnostics and resolution --------------------------------------------------
@@ -165,6 +202,11 @@ export class Emitter {
       case "UnaryExpression":
         return { text: this.unary(node), prec: P.unary };
       case "UpdateExpression": {
+        const path = this.variablePathOf(node.argument);
+        if (path) {
+          const delta = node.operator === "++" ? 1 : -1;
+          return { text: this.withPath(path, (args) => `$$r.updateIn(${args}, ${delta}, ${node.prefix})`), prec: P.call };
+        }
         const target = this.target(node.argument as A.Pattern | A.MemberExpression, node);
         return node.prefix
           ? { text: `${node.operator}${target}`, prec: P.unary }
@@ -175,6 +217,8 @@ export class Emitter {
       case "LogicalExpression":
         return this.logical(node);
       case "AssignmentExpression": {
+        const path = this.variablePathOf(node.left);
+        if (path) return this.assignPath(node, path);
         const left = this.target(node.left, node);
         return { text: `${left} ${node.operator} ${this.expression(node.right, P.assign)}`, prec: P.assign };
       }
@@ -335,6 +379,8 @@ export class Emitter {
         return "delete undefined";
       }
       const member = argument.type === "ChainExpression" ? argument.expression : argument;
+      const path = this.variablePathOf(member);
+      if (path) return this.withPath(path, (args) => `$$r.deleteIn(${args})`);
       if (member.type === "MemberExpression") {
         this.checkWritable(member, node);
         return `delete ${this.member(member, "delete")}`;
@@ -405,8 +451,17 @@ export class Emitter {
   }
 
   private call(node: A.CallExpression): string {
-    const args = `(${node.arguments.map((a) => this.spreadable(a)).join(", ")})`;
     const callee = node.callee.type === "ChainExpression" ? node.callee.expression : node.callee;
+    // `items.push(x)` on a variable: copy the array, mutate the copy, assign.
+    if (callee.type === "MemberExpression" && !callee.computed && ARRAY_MUTATORS.has((callee.property as A.Identifier).name)) {
+      const path = this.variablePathOf(callee.object, true);
+      if (path) {
+        const method = JSON.stringify((callee.property as A.Identifier).name);
+        const list = `[${node.arguments.map((a) => this.spreadable(a)).join(", ")}]`;
+        return this.withPath(path, (args) => `$$r.mutate(${args}, ${method}, ${list})`);
+      }
+    }
+    const args = `(${node.arguments.map((a) => this.spreadable(a)).join(", ")})`;
     if (callee.type === "Identifier") {
       const text = this.reference(callee);
       // Through the scope or the globals object, `this` would be that object.
@@ -475,14 +530,23 @@ export class Emitter {
     }
   }
 
-  /** A binding must not write to its scope or to a built-in. */
+  /**
+   * Writing a name: a binding cannot write its scope (C006); a handler can
+   * write variables only (C012); nobody writes a built-in (C010).
+   */
   private checkWritableName(id: A.Identifier): void {
     const resolution = this.resolve(id.name);
-    if (resolution === "scope") this.report(id, "C006", id.name);
-    else if (resolution === "global") this.report(id, "C010", id.name);
+    if (resolution === "scope") {
+      if (!this.handlerMode) this.report(id, "C006", id.name);
+      else if (!this.variables.has(id.name)) this.report(id, "C012", id.name);
+    } else if (resolution === "global") this.report(id, "C010", id.name);
   }
 
-  /** Member writes: rejected when the chain's root is a scope name or a global. */
+  /**
+   * Member writes not compiled to a path helper: rejected when the chain's
+   * root is a scope name or a global. In a handler, a variable root reaches
+   * here only from a destructuring or for-in/of target (C013).
+   */
   private checkWritable(node: A.MemberExpression, operation: { start: number; end: number }): void {
     let root: A.Expression = node;
     while (root.type === "MemberExpression" || root.type === "ChainExpression") {
@@ -490,8 +554,114 @@ export class Emitter {
     }
     if (root.type !== "Identifier") return;
     const resolution = this.resolve(root.name);
-    if (resolution === "scope") this.report(operation, "C006", root.name);
-    else if (resolution === "global") this.report(operation, "C010", root.name);
+    if (resolution === "scope") {
+      if (!this.handlerMode) this.report(operation, "C006", root.name);
+      else if (this.variables.has(root.name)) this.report(operation, "C013", root.name);
+      else this.report(operation, "C012", root.name);
+    } else if (resolution === "global") this.report(operation, "C010", root.name);
+  }
+
+  // --- Writes through variable paths (handler mode) -------------------------------------
+
+  /**
+   * In handler mode, a member chain (or, with `allowRoot`, the bare name) rooted
+   * at a variable. Patterns and other targets return undefined.
+   */
+  private variablePathOf(node: A.Node, allowRoot = false): VariablePath | undefined {
+    if (!this.handlerMode) return undefined;
+    const keys: VariablePath["keys"] = [];
+    let current: A.Node = node;
+    while (current.type === "MemberExpression" || current.type === "ChainExpression") {
+      if (current.type === "ChainExpression") {
+        current = current.expression;
+        continue;
+      }
+      keys.unshift({ node: current.property, computed: current.computed });
+      current = current.object;
+    }
+    if (current.type !== "Identifier" || (keys.length === 0 && !allowRoot)) return undefined;
+    if (this.resolve(current.name) !== "scope" || !this.variables.has(current.name)) return undefined;
+    return { root: current, keys };
+  }
+
+  /**
+   * Emits a path helper call. `build` receives `$$s, "name", [keys]`. Computed
+   * keys are evaluated once (bound to temporaries), and checked by $$r.key().
+   */
+  private withPath(path: VariablePath, build: (args: string, read: string) => string): string {
+    const temps: [name: string, init: string][] = [];
+    const keys = path.keys.map(({ node, computed }) => {
+      if (!computed) {
+        const name = (node as A.Identifier).name;
+        if (BANNED_MEMBERS.has(name)) this.report(node, "C003", name);
+        return JSON.stringify(name);
+      }
+      if (node.type === "Literal" && (typeof node.value === "string" || typeof node.value === "number")) {
+        return this.guardedKey(node);
+      }
+      const temp = `$$k${this.tempCount++}`;
+      temps.push([temp, this.guardedKey(node)]);
+      return temp;
+    });
+    const scopeRead = this.reference(path.root);
+    const read = scopeRead + keys.map((k) => `?.[${k}]`).join("");
+    const text = build(`$$s, ${JSON.stringify(path.root.name)}, [${keys.join(", ")}]`, read);
+    if (temps.length === 0) return text;
+    return `((${temps.map(([t]) => t).join(", ")}) => ${text})(${temps.map(([, init]) => init).join(", ")})`;
+  }
+
+  /** `v.a.b = x`, `v.a op= x`, `v.a ??= x` on a variable path. */
+  private assignPath(node: A.AssignmentExpression, path: VariablePath): Emitted {
+    const right = (prec: number) => this.expression(node.right, prec);
+    if (node.operator === "=") {
+      return { text: this.withPath(path, (args) => `$$r.setIn(${args}, ${right(P.assign)})`), prec: P.call };
+    }
+    if (LOGICAL_ASSIGNMENT.has(node.operator)) {
+      // Short-circuits as in JavaScript: no write when the current value decides.
+      const op = node.operator.slice(0, 2);
+      return { text: this.withPath(path, (args, read) => `(${read} ${op} $$r.setIn(${args}, ${right(P.assign)}))`), prec: P.primary };
+    }
+    const op = node.operator.slice(0, -1) as A.BinaryOperator;
+    const prec = BINARY_PRECEDENCE[op];
+    return {
+      text: this.withPath(path, (args, read) => `$$r.setIn(${args}, ${read} ${op} ${right(prec + 1)})`),
+      prec: P.call,
+    };
+  }
+
+  // --- Handlers --------------------------------------------------------------------------
+
+  /**
+   * The function a handler compiles to (handler mode):
+   *   - a lone arrow or function expression: that function;
+   *   - a lone reference (`save`, `api.save`): `(...$params) => save(...$params)`;
+   *   - statements: `(...$params) => { const $param = $params[0]; … }`.
+   */
+  handlerFunction(program: A.Program): string {
+    const body = program.body;
+    const only = body.length === 1 && body[0]!.type === "ExpressionStatement" ? body[0].expression : undefined;
+    const lone = only?.type === "ChainExpression" ? only.expression : only;
+    if (lone?.type === "ArrowFunctionExpression" || lone?.type === "FunctionExpression") {
+      return this.expression(lone, P.assign);
+    }
+    if (lone?.type === "Identifier" || lone?.type === "MemberExpression") {
+      return this.withScope(["$params"], () => {
+        const at = { start: lone.start, end: lone.end };
+        const call: A.CallExpression = {
+          type: "CallExpression",
+          callee: lone,
+          arguments: [{ type: "SpreadElement", argument: { type: "Identifier", name: "$params", ...at }, ...at }],
+          optional: false,
+          ...at,
+        };
+        return `(...$params) => ${this.expression(call, P.assign)}`;
+      });
+    }
+    return this.withScope(["$param", "$params"], () => {
+      this.hoist(body);
+      const statements = body.map((s) => this.statement(s)).join(" ");
+      return `(...$params) => { const $param = $params[0];${statements ? ` ${statements}` : ""} }`;
+    });
   }
 
   // --- Statements (bodies of functions inside expressions) ----------------------------

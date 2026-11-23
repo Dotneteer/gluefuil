@@ -7,6 +7,8 @@ export interface ComponentMetadata {
   description: string;
   /** Props settable from markup attributes. */
   props: Record<string, { description: string }>;
+  /** Events, by name: `click` is handled by `onClick="…"` or `<event name="click">`. */
+  events?: Record<string, { description: string }>;
 }
 
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
@@ -24,6 +26,9 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     description: "A clickable button: `label`, or the nested content.",
     props: {
       label: { description: "The button's text. Nested content is used when it is absent." },
+    },
+    events: {
+      click: { description: "The button was clicked. The handler receives no arguments (no DOM event)." },
     },
   },
   Stack: {

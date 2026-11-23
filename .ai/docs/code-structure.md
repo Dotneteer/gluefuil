@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 5 (first running app).
+> **Last updated:** step 6 (variables and handlers).
 
 ## What this repository is
 
@@ -27,7 +27,9 @@ Current state:
 - **The pipeline runs end to end:** a `.pfui` document compiles to one
   JavaScript module that renders with the runtime and four minimal built-in
   components (`App`, `Text`, `Button`, `Stack`) ([modules.md](modules.md)).
-  There are no variables or handlers yet.
+- **Variables and handlers** work: `var.*`, `<variable>`, `global.*`,
+  `<global>` (follow until assigned), `on*` and `<event>` handlers with
+  deep writes and array mutations (copy-on-write on frozen values).
 
 ## Subsystem documents
 
@@ -55,7 +57,7 @@ Current state:
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
 │   │   ├── src/script/      sandbox globals and helpers; loadBinding
 │   │   ├── src/reactivity/  signal store, React hooks, scope object
-│   │   ├── src/render/      what compiled modules render with (Bound, TextNode, loadModule)
+│   │   ├── src/render/      what compiled modules render with (Bound, TextNode, useScope, loadModule)
 │   │   └── bench/           benchmarks (npm run bench)
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 │       └── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
@@ -87,8 +89,8 @@ version `0.0.0`.
 
 | File | Exports |
 |------|---------|
-| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `CompileOptions`, `CompileResult`, `ScopeNames`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`. **Rendering:** `Bound`, `TextNode`, `loadModule`, `createElement`, `Fragment`. |
+| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule`, `ARRAY_MUTATORS`, `createElement`, `Fragment`. |
 | `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`; re-exports the metadata |
 | `packages/components/src/metadata.ts` | `componentMetadata` (the four components and their props), `ComponentMetadata` |
 
@@ -118,9 +120,10 @@ others:
 3. The results become `createElement` calls, plus `Bound` wrappers and
    hoisted binding objects where there are bindings.
 
-Handlers (`parseStatements`) are not compiled yet (step 6).
-`tools/xmlui-corpus.test.ts` still checks handler parsing with a heuristic
-(`on*` and `method.*` are handlers).
+Handlers (`on*` attributes, `<event>` content) go through
+`parseStatements` and `compileHandler`. `tools/xmlui-corpus.test.ts` checks
+handler parsing across the XMLUI corpus with a heuristic (`on*` and
+`method.*` are handlers).
 
 ### No build step (yet)
 
@@ -263,15 +266,16 @@ Conventions:
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 5: 1,249 unit tests in 29 files.
+Count after step 6: 1,337 unit tests in 33 files.
 
-- Compiler: 638, of which markup 115, script 331, codegen 151, module 33
+- Compiler: 696, of which markup 115, script 331, codegen 185, module 57
   and source 8.
-- Runtime: 241, of which the script sandbox is 191, reactivity 38,
+- Runtime: 259, of which the script sandbox is 191, reactivity 56,
   rendering 10 and the smoke test 2.
 - Tools: 354, of which the corpus is 327, the boundaries 23 and the
   sandbox drift test 4.
-- Components: 16, of which the first app is 14 and the smoke test 2.
+- Components: 28, of which variables and handlers are 12, the first app 14
+  and the smoke test 2.
 
 ### Benchmarks (Vitest 5)
 
@@ -306,6 +310,7 @@ Count after step 5: 1,249 unit tests in 29 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/variables.spec.ts` | Counter and source/mirror (follow until assigned) in the hello app, with real clicks |
 | `e2e/first-app.spec.ts` | **The first compiled app**: `test-apps/hello/src/Main.pfui`, compiled by the fixture's Vite plugin, renders the expected texts and buttons, lays out a horizontal `Stack` in a row, with no errors |
 
 ## Conventions

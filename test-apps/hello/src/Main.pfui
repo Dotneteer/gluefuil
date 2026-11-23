@@ -1,4 +1,4 @@
-<App>
+<App var.count="{0}" var.source="{0}" var.mirror="{source}">
   <Stack gap="8px">
     <Text value="{1 + 2}"/>
     <Text>Hello, {'pfui'.toUpperCase()}!</Text>
@@ -6,6 +6,20 @@
     <Stack orientation="horizontal" gap="4px">
       <Button label="First"/>
       <Button>Second</Button>
+    </Stack>
+
+    <!-- Step 6: a counter -->
+    <Stack orientation="horizontal" gap="4px">
+      <Button label="Increment" onClick="count++"/>
+      <Text>Count: {count}</Text>
+    </Stack>
+
+    <!-- Step 6: a variable follows its expression until assigned (XMLUI markup.md) -->
+    <Text>source = {source}</Text>
+    <Text>mirror = {mirror}</Text>
+    <Stack orientation="horizontal" gap="4px">
+      <Button label="Increment source" onClick="source++"/>
+      <Button label="Override mirror" onClick="mirror = 999"/>
     </Stack>
   </Stack>
 </App>

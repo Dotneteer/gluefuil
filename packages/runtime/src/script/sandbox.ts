@@ -23,6 +23,8 @@ export class SandboxError extends Error {
   override name = "SandboxError";
 }
 
+import { deleteIn, mutate, setIn, updateIn } from "./paths";
+
 const OBJECT_RESTRICTED = new Set([
   "getPrototypeOf",
   "setPrototypeOf",
@@ -145,6 +147,12 @@ export const scriptRuntime = Object.freeze({
     if (typeof object === "function") throw new SandboxError("Functions cannot be modified in pfui script");
     return object;
   },
+
+  // Writes through a path rooted at a variable (handlers): see ./paths.ts.
+  setIn,
+  deleteIn,
+  updateIn,
+  mutate,
 
   /** A value inside interpolated text (XMLUI extractParam.ts): no `toString`, no text. */
   str(value: unknown): string {

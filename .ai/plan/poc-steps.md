@@ -170,7 +170,9 @@ Plan and findings: [poc-05-first-app.md](poc-05-first-app.md).
   - Unit: the compiled module renders the expected DOM.
   - E2E: the first Playwright test of a real app.
 
-### Step 6: Reactive variables and synchronous handlers
+### Step 6: Reactive variables and synchronous handlers ✅
+
+Plan and findings: [poc-06-variables-handlers.md](poc-06-variables-handlers.md).
 
 - **Subject:** `var.x`, `<variable>`, global variables, and the "follows its
   expression until assigned" semantics; handler statements (`count++`,

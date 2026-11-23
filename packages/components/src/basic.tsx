@@ -11,9 +11,18 @@ export function Text({ value, children }: { value?: unknown; children?: ReactNod
   return <span className="pfui-Text">{value !== undefined && value !== null ? String(value) : children}</span>;
 }
 
-export function Button({ label, children }: { label?: unknown; children?: ReactNode }) {
+export function Button({
+  label,
+  onClick,
+  children,
+}: {
+  label?: unknown;
+  onClick?: () => void;
+  children?: ReactNode;
+}) {
+  // The handler gets no DOM event: script must not reach raw platform objects.
   return (
-    <button type="button" className="pfui-Button">
+    <button type="button" className="pfui-Button" onClick={onClick ? () => onClick() : undefined}>
       {label !== undefined && label !== null ? String(label) : children}
     </button>
   );

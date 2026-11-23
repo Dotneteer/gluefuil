@@ -13,6 +13,8 @@ export const CodegenDiagnostics = {
   C009: (what: string) => `'${what}' cannot be compiled`,
   C010: (name: string) => `The built-in '${name}' cannot be modified`,
   C011: (path: string) => `'${path}' is not available in pfui script`,
+  C012: (name: string) => `'${name}' is not a variable; a handler can only change variables`,
+  C013: (name: string) => `Destructuring or loop targets cannot change part of '${name}'; assign to it directly`,
 } as const;
 
 export type CodegenDiagnosticCode = keyof typeof CodegenDiagnostics;

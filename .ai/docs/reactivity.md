@@ -5,7 +5,7 @@
 > the measurements behind the decision:
 > [`../plan/poc-04-reactivity.md`](../plan/poc-04-reactivity.md).
 >
-> **Last updated:** step 4.
+> **Last updated:** step 6 (variables, scopes with setters).
 
 ## Role
 
@@ -28,7 +28,10 @@ declaring component, its containers and its siblings are not involved.
 | `useSignal(source)` | Reads a signal or computed in a component |
 | `useComputed(fn, deps, equals = shallowEqual)` | A computed owned by the component. `deps` are its non-reactive inputs (props); a change creates a new computed. |
 | `shallowEqual(a, b)` | Same value, or arrays or plain objects with `Object.is`-equal entries |
-| `createScope(entries)` | The `$$s` object for compiled bindings. An entry `{ signal }` is a getter that reads the signal; an entry `{ value }` is a constant. The object is frozen. |
+| `variable(init)` | A reactive variable: **follows** `init` (a lazy, tracked computed) until `set`, then holds the assigned value. `.assigned` tells which. Values are deep-frozen. |
+| `freezeDeep(value)` | Freezes plain objects and arrays recursively; already-frozen subtrees are skipped (as Immer does) |
+| `createScope(entries, parent?)` | The `$$s` object compiled code reads and writes. `{ variable }` → getter + **setter**; `{ signal }` → getter; `{ value }` → constant. The prototype is `parent`, so names shadow and a write reaches the declaring scope's setter. Frozen. |
+| `SIGNAL_NODE` | The key under which a wrapper (a variable) exposes its store node, so `watch`, `useSignal` and `observerCount` accept it |
 
 ## How a compiled component uses it
 
@@ -44,8 +47,25 @@ The binding code from step 3 reads `$$s.count`. Through `createScope`, that
 is `countSignal.get()`, so the component's computed tracks exactly the
 variables the binding touches, including inside called functions.
 
-A handler writes with `.set()`, inside `batch()` when it writes more than
-once. Handlers are compiled in step 6.
+A compiled handler writes variables through the scope's setters
+(`$$s.count++`), or, for a path inside a variable's value, through the
+runtime path helpers (see [codegen.md](codegen.md) § Handlers). `Bound`
+runs each handler call in `batch()`.
+
+## Variables
+
+- **Follow until assigned** (XMLUI `markup.md`): a variable is a computed
+  over `init` until its first `set`; from then on it holds the assigned
+  value, and the initializer is no longer read.
+- **Deep-frozen values** (plain objects and arrays), as XMLUI's state is
+  (Immer 9 auto-freeze). In-place mutation through an alias throws a
+  `TypeError` instead of silently skipping a re-render. Changes go through
+  assignment or the path helpers, which copy along the path (structural
+  sharing).
+- **Containers:** `useScope(parent, definitions)` (runtime `render/`)
+  creates a container's variables once per component instance.
+  Initializers see the new scope, so variables can refer to each other in
+  any order.
 
 ## Store algorithm (`signals.ts`)
 
@@ -99,6 +119,7 @@ a cycle.
 | `runtime/src/reactivity/signals.ts` | The store |
 | `runtime/src/reactivity/react.ts` | `useSignal`, `useComputed`, `shallowEqual` |
 | `runtime/src/reactivity/scope.ts` | `createScope` |
+| `runtime/src/reactivity/variable.ts` | `variable`, `freezeDeep` |
 
 ## Tests
 
@@ -107,6 +128,7 @@ a cycle.
 | `runtime/tests/reactivity/signals.test.ts` | The store: laziness, caching, chains, diamond, equality cutoff, dynamic dependencies, unobserved computeds, errors, writes during computation, cycles, `untracked`, batch, watchers that write, unlinking, relinking |
 | `runtime/tests/reactivity/scenario.tsx`, `scenario.test.tsx` | The step 4 scenario under signals and under plain React state (naive and memoized): render counts per component for each handler |
 | `runtime/tests/reactivity/react.test.tsx` | Re-render only on change, shallow cutoff, props as inputs, unmount releases links, StrictMode, error boundary, server rendering, a compiled binding driving a component, tearing (with a control that does tear) |
+| `runtime/tests/reactivity/variable.test.ts` | Variables (follow, assign, laziness, freezing), scopes (shadowing, setters through the prototype chain, tracking), the path helpers (structural sharing, results, errors) |
 | `runtime/bench/reactivity.bench.tsx` | 1,000 rows: update one or all, under (a), (b) and (b) with memo |
 
 ## Measured
