@@ -5,6 +5,13 @@ import { defineConfig } from "vitest/config";
 // not depend on a DOM); the React-side packages run in jsdom.
 export default defineConfig({
   test: {
+    // Isolation is chosen explicitly (which also silences Vitest's "faster with
+    // isolate: false" hint). Measured in step 5: 1.19-1.22 s isolated vs
+    // 1.16-1.21 s with --no-isolate, i.e. no wall-clock gain, because files
+    // already run in parallel. Isolation keeps module state (the signal store's
+    // batch queue, React's act-environment flag) and the jsdom DOM from leaking
+    // between test files.
+    isolate: true,
     projects: [
       {
         test: {

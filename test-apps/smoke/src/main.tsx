@@ -1,6 +1,6 @@
 import { parseMarkup } from "@patchfuil/compiler";
-import { componentsInfo } from "@patchfuil/components";
-import { runtimeInfo } from "@patchfuil/runtime";
+import { componentMetadata } from "@patchfuil/components";
+import { signal } from "@patchfuil/runtime";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -23,8 +23,8 @@ function SmokeApp() {
       <h1>Smoke test app</h1>
       <ul aria-label="Loaded packages">
         <li>@patchfuil/compiler</li>
-        <li>{runtimeInfo.name}</li>
-        <li>{componentsInfo.name}</li>
+        {typeof signal === "function" && <li>@patchfuil/runtime</li>}
+        {"Text" in componentMetadata && <li>@patchfuil/components</li>}
       </ul>
       <p aria-label="Parser output">{describeParse(SAMPLE_MARKUP)}</p>
     </main>

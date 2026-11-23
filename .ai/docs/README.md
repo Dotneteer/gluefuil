@@ -10,6 +10,7 @@ on this repository. Plans (what we intend to build) live in
 | [markup-parser.md](markup-parser.md) | The markup parser: API, syntax tree, lexical rules, diagnostics, recovery, tests, measurements. |
 | [script-parser.md](script-parser.md) | The script parser: entry points, positions, the supported language, ASI, implementation, interpolation, diagnostics, tests. |
 | [reactivity.md](reactivity.md) | The reactivity core: signal store algorithm, React integration, scope object, tests, measurements. |
+| [modules.md](modules.md) | Compiled modules: `compileModule`, generated code, compilation rules, `Bound`/`TextNode`/`loadModule`, built-in components, the fixture Vite plugin. |
 | [codegen.md](codegen.md) | Code generation and the sandbox: API, generated code, name resolution, closed escape paths, interpolation, dependencies, tests, measurements. |
 
 ## Rules

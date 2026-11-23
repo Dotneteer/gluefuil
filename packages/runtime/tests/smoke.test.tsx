@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { runtimeInfo } from "../src/index";
+import * as runtime from "../src/index";
 
 test("runtime package loads", () => {
-  expect(runtimeInfo.name).toBe("@patchfuil/runtime");
+  expect(typeof runtime.signal).toBe("function");
+  expect(typeof runtime.loadModule).toBe("function");
 });
 
 test("React 19 renders in the jsdom test environment", () => {

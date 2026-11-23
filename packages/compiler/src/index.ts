@@ -42,6 +42,10 @@ export {
   RESTRICTED_GLOBAL_MEMBERS,
 } from "./codegen/names";
 
+// --- Modules (.pfui documents) ------------------------------------------------------
+export { compileModule, type CompileModuleOptions, type CompileModuleResult } from "./module/compile-module";
+export { ModuleDiagnostics, type ModuleDiagnosticCode } from "./module/diagnostics";
+
 // --- Source positions and diagnostics ---------------------------------------------
 export { formatDiagnostic, type Diagnostic, type Severity } from "./source/diagnostic";
 export { LineMap, type Position } from "./source/line-map";

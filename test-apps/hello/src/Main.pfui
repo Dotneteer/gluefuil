@@ -1,0 +1,11 @@
+<App>
+  <Stack gap="8px">
+    <Text value="{1 + 2}"/>
+    <Text>Hello, {'pfui'.toUpperCase()}!</Text>
+    <Text>{[1, 2, 3].map(n => n * n).join(' + ')} = {[1, 2, 3].reduce((sum, n) => sum + n * n, 0)}</Text>
+    <Stack orientation="horizontal" gap="4px">
+      <Button label="First"/>
+      <Button>Second</Button>
+    </Stack>
+  </Stack>
+</App>

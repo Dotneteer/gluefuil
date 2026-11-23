@@ -1,12 +1,12 @@
 import { expect, test } from "vitest";
-import { componentsInfo } from "../src/index";
+import * as components from "../src/index";
 import { componentMetadata } from "../src/metadata";
 
-test("components package loads and resolves the runtime workspace package", () => {
-  expect(componentsInfo.name).toBe("@patchfuil/components");
-  expect(componentsInfo.runtime).toBe("@patchfuil/runtime");
+test("components package loads", () => {
+  expect(typeof components.Text).toBe("function");
 });
 
-test("the metadata entry point loads on its own", () => {
-  expect(componentMetadata).toEqual({});
+test("every component has metadata, and the metadata entry point loads on its own", () => {
+  expect(Object.keys(componentMetadata).sort()).toEqual(["App", "Button", "Stack", "Text"]);
+  for (const name of Object.keys(componentMetadata)) expect(typeof (components as Record<string, unknown>)[name], name).toBe("function");
 });
