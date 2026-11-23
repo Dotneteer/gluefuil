@@ -8,6 +8,8 @@
 
 <App var.count="{0}" var.source="{0}" var.mirror="{source}" var.status="Idle">
   <Stack gap="8px">
+    <H1>pfui demo app</H1>
+    <H2>Step 5 · Bindings</H2>
     <Text value="{1 + 2}"/>
     <Text>Hello, {'pfui'.toUpperCase()}!</Text>
     <Text>{[1, 2, 3].map(n => n * n).join(' + ')} = {[1, 2, 3].reduce((sum, n) => sum + n * n, 0)}</Text>
@@ -16,6 +18,7 @@
       <Button>Second</Button>
     </Stack>
 
+    <H2>Step 6 · Variables and handlers</H2>
     <!-- Step 6: a counter -->
     <Stack orientation="horizontal" gap="4px">
       <Button label="Increment" onClick="count++"/>
@@ -30,6 +33,7 @@
       <Button label="Override mirror" onClick="mirror = 999"/>
     </Stack>
 
+    <H2>Step 8 · Component IDs</H2>
     <!-- Step 8: component IDs (file-scoped, order-independent) -->
     <Text>Greeting: Hello, {nameBox.value || 'stranger'}!</Text>
     <Stack orientation="horizontal" gap="4px">
@@ -38,6 +42,7 @@
       <Button label="Reset name" onClick="nameBox.setValue(''); nameBox.focus()"/>
     </Stack>
 
+    <H2>Step 9 · Source maps</H2>
     <!-- Step 9: source maps (e2e/source-maps.spec.ts pauses on this throw) -->
     <Button
       label="Throw"
@@ -46,6 +51,7 @@
         throw new Error('thrown in Main.pfui: ' + reason);
       "/>
 
+    <H2>Step 10 · Conditionals and templates</H2>
     <!-- Step 10: responsive when -->
     <Text when-md="false">Layout: compact</Text>
     <Text when="false" when-md="true">Layout: wide</Text>
@@ -61,6 +67,7 @@
       </Items>
     </Stack>
 
+    <H2>Step 7 · Async handlers</H2>
     <!-- Step 7: a slow handler (implicit await) -->
     <Stack orientation="horizontal" gap="4px">
       <Button label="Save" onClick="status = 'Saving…'; delay(300); status = 'Saved'"/>
@@ -85,6 +92,7 @@
       <Text>drop-while-running: {log.join(',')}</Text>
     </Stack>
 
+    <H2>Step 14 · User-defined components</H2>
     <!-- Step 14: user-defined components (components/*.pfui) -->
     <NameValue name="Mary" value="123"/>
     <NameValue name="Joe"/>
@@ -103,5 +111,63 @@
     <Panel title="with content"><Text>Panel content: count is {count}</Text></Panel>
     <Panel title="empty"/>
     <Text>{shout('code-behind')}</Text>
+
+    <H2>Step 17 · Theming</H2>
+    <!-- Step 17: theming -->
+    <Stack orientation="horizontal" gap="4px">
+      <Button label="Toggle tone" onClick="toggleThemeTone()"/>
+      <Text>Tone: {activeThemeTone}</Text>
+    </Stack>
+    <Theme backgroundColor-Button="rgb(220, 38, 38)">
+      <Button label="Themed button"/>
+    </Theme>
+    <Theme tone="dark">
+      <Text>Dark region</Text>
+    </Theme>
+
+    <H2>Step 18 · Behaviors</H2>
+    <!-- Step 18: behaviors -->
+    <Button label="Hover me" tooltip="A tooltip from the tooltip behavior"/>
+    <TextBox label="Labeled input" placeholder="type here"/>
+    <Theme backgroundColor-Button-danger="rgb(185, 28, 28)">
+      <Button label="Danger variant" variant="danger"/>
+      <Button label="Unknown variant" variant="nothing"/>
+    </Theme>
+
+    <!-- Step 16: Mantine components, Text variants, headings -->
+    <H2>Step 16 · Mantine components</H2>
+    <Stack var.fruit="none" var.agreed="{false}" var.typed="" gap="4px">
+      <TextBox placeholder="Type into Mantine" onDidChange="(v) => typed = v"/>
+      <Text>Typed: {typed}</Text>
+      <Select
+        placeholder="Pick a fruit"
+        clearable
+        options="{['Apple', 'Banana', { value: 'cherry', label: 'Cherry' }]}"
+        onDidChange="(v) => fruit = v ?? 'none'">
+        <property name="optionTemplate">
+          <Text>Fruit option: {$item.label}</Text>
+        </property>
+      </Select>
+      <Text>Fruit: {fruit}</Text>
+      <Checkbox label="I agree" onDidChange="(v) => agreed = v"/>
+      <Text>Agreed: {agreed}</Text>
+      <Button label="Disabled button" enabled="false"/>
+    </Stack>
+    <H2>Step 16 · Text variants and headings</H2>
+    <Stack orientation="horizontal" gap="8px">
+      <Text variant="strong">strong</Text>
+      <Text variant="em">em</Text>
+      <Text variant="code">code</Text>
+      <Text variant="keyboard">Ctrl+C</Text>
+      <Text variant="marked">marked</Text>
+      <Text variant="deleted">deleted</Text>
+      <Text variant="secondary">secondary</Text>
+      <Text variant="small">small</Text>
+    </Stack>
+    <Text variant="title">A title</Text>
+    <Text variant="subtitle">A subtitle</Text>
+    <H3>A level 3 heading</H3>
+    <Heading level="h4" value="A level 4 heading"/>
+    <Text maxLines="1">A long text clamped to one line: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</Text>
   </Stack>
 </App>

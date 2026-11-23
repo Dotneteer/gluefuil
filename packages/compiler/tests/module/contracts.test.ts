@@ -223,3 +223,21 @@ describe("helpers", () => {
     expect(checkLiteral({ description: "", valueType }, text) === undefined).toBe(ok);
   });
 });
+
+describe("<Theme> and App theme props (step 17)", () => {
+  test.each<[markup: string, expected: Found[]]>([
+    ['<App><Theme backgroundColor-Button="red" color-primary="{x}" space-base="2px"/></App>', [["C001", "x"]]],
+    ['<App><Theme backgroundColour-Button="red"/></App>', [["E025", "backgroundColour-Button"]]],
+    ['<App><Theme tone="dim"/></App>', [["E023", '"dim"']]],
+    ['<App><Theme themeId="pfui-blue"/></App>', [["E023", '"pfui-blue"']]],
+    ['<App defaultTone="dark" defaultTheme="pfui-green"/>', []],
+    ['<App defaultTone="night"/>', [["E023", '"night"']]],
+    ['<App><Button onClick="toggleThemeTone(); setThemeTone(\'dark\'); setTheme(\'pfui-red\')"/><Text>{activeThemeTone} {activeThemeId}</Text></App>', []],
+  ])("%s", (markup, expected) => {
+    expect(check(markup)).toEqual(expected);
+  });
+
+  test("message", () => {
+    expect(messages('<App><Theme backgroundColour-Button="red"/></App>')).toEqual(["'backgroundColour-Button' is not a theme variable. Did you mean 'backgroundColor-Button'?"]);
+  });
+});

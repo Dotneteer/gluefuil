@@ -19,6 +19,9 @@ interface ComponentMetadata {
   childrenTemplate?: string;
   allowArbitraryProps?: boolean;                  // no unknown-prop check
   allowArbitraryEvents?: boolean;                 // no unknown-event check
+  themeVars?: Record<string, string>;             // theme variable defaults (step 17)
+  themeVarAttributes?: boolean;                   // other attributes are theme variables (Theme)
+  nonVisual?: boolean;                            // no behaviors (step 18)
 }
 interface PropMetadata {
   description: string;
@@ -46,7 +49,9 @@ interface EventMetadata { description: string; deprecationMessage?: string }
 
 ## The checks (`compileModule`)
 
-Only element attributes are checked. **Framework attributes are never
+Only element attributes are checked. The props of an attached behavior
+are the behavior's ([behaviors.md](behaviors.md)), checked against its
+own props. **Framework attributes are never
 props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 `handlerTimeoutMs*`, `on*` (checked as events), and the lifecycle events.
 
@@ -59,6 +64,7 @@ props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 | E022 | A literal of the wrong type: `boolean` needs `true` or `false`, `number` a finite number, `integer` `-?\d+`. A key-only attribute counts as `true`. | the value |
 | E023 | A literal outside `availableValues` (the message lists them) | the value |
 | E024 | A deprecated prop or event: **always a warning**, with the message | the attribute |
+| E025 | A `<Theme>` attribute that is neither a prop nor a known theme variable ([theming.md](theming.md#contracts)) | the attribute name |
 | C015 | An unknown member of a component ID (`box.valu`, `c.rest()`), with "did you mean"; a component without `api` has no members | the member |
 
 - **Bound values are not type-checked:** their values are known only at

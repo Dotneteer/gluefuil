@@ -50,8 +50,8 @@ describe("a production build (no source maps)", () => {
   test("contains no compiler module", () => {
     const ids = chunks(output).flatMap(relativeIds);
     expect(ids.filter((id) => id.includes("packages/compiler/") || id.includes("@patchfuil/compiler"))).toEqual([]);
-    // Not even the React-free metadata the compiler reads.
-    expect(ids.filter((id) => id.endsWith("packages/components/src/metadata.ts"))).toEqual([]);
+    // The React-free metadata module is included since step 17: App needs the
+    // components' theme variable defaults at runtime. It is data, not compiler.
   });
 
   test("needs no eval: no `new Function`, no `eval(`", () => {
@@ -77,7 +77,9 @@ describe("a production build (no source maps)", () => {
   test("index.html contains the prerendered app, marked for takeover at xs", () => {
     const html = output.find((o) => o.fileName === "index.html") as Rolldown.OutputAsset;
     const source = String(html.source);
-    expect(source).toContain('<div id="root" data-pfui-prerendered="xs"><div class="pfui-App">');
+    // The stylesheet (React 19 hoisted <style>) comes first, then the themed App.
+    expect(source).toContain('<div id="root" data-pfui-prerendered="xs"><style data-precedence="pfui" data-href="pfui-mantine pfui-base">');
+    expect(source).toMatch(/<div class="pfui-App" data-tone="light" data-mantine-color-scheme="light" style="--pfui-/);
     expect(source).toContain('<span class="pfui-Text">Count: 0</span>');
     expect(source).toContain('<span class="pfui-Text">Todo #1: Write tests</span>');
     // Rendered for xs: the compact text, not the wide one.

@@ -305,7 +305,11 @@ Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
 - **Reference:** `pages/managed-react/verified-type-contracts.md`,
   `build-validation-analyzers.md`.
 
-### Step 16: Wrapping React components (Mantine)
+### Step 16: Wrapping React components (Mantine) ✅
+
+Skipped after step 15 and done after step 18, with a reduced scope (Button,
+TextBox, Select, Checkbox; plus Text variants and Heading). Plan and findings:
+[poc-16-mantine.md](poc-16-mantine.md).
 
 - **Subject:** the lightweight wrapper API. Covers forwarding by default,
   renames, events, controlled values (`value`/`onChange`), exposed methods
@@ -317,7 +321,9 @@ Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
     variable.
 - **Reference:** `.ai/xmlui/wrapcomponent.md`.
 
-### Step 17: Theming
+### Step 17: Theming ✅
+
+Plan and findings: [poc-17-theming.md](poc-17-theming.md).
 
 - **Subject:** theme definitions (`extends`, tones, derived tokens, `$ref`)
   compiled to CSS variables; XMLUI-style variable names mapped onto
@@ -329,7 +335,9 @@ Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
     scoped `<Theme>` and a tone switch.
 - **Reference:** `.ai/xmlui/theming-styling.md`.
 
-### Step 18: Behaviors
+### Step 18: Behaviors ✅
+
+Plan and findings: [poc-18-behaviors.md](poc-18-behaviors.md).
 
 - **Subject:** behaviors attached by trigger props, in a fixed order.
   Starts with `tooltip`, `label` and `variant`. Decides whether behaviors
