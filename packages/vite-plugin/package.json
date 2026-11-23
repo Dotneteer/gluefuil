@@ -1,0 +1,17 @@
+{
+  "name": "@patchfuil/vite-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Build-time compilation: a Vite plugin that compiles .pfui files to ES modules. The shipped app contains no compiler.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@patchfuil/compiler": "0.0.0",
+    "@patchfuil/components": "0.0.0"
+  },
+  "peerDependencies": {
+    "vite": "^8.0.0"
+  }
+}

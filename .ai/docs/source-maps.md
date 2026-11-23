@@ -53,7 +53,7 @@ inline:
 
 | Path | How the map reaches the browser |
 |------|---------------------------------|
-| Build tools (`"esm"`) | The Vite plugin returns `{ code, map }`; Vite serves the module with an inline map. The map's source is the file name, which the browser resolves relative to the module URL (`/src/Main.pfui`). |
+| Build tools (`"esm"`) | `@patchfuil/vite-plugin` returns `{ code, map }` ([build-time.md](build-time.md)); the dev server serves the module with an inline map, and a build with `build.sourcemap` carries it into the bundle's map. The map's source is the file name, which the browser resolves relative to the module URL (`/src/Main.pfui`). |
 | Standalone (`"function"`, `loadModule`) | `loadModule(code, { components, map, sourceURL })` appends `//# sourceURL=…` and an inline `//# sourceMappingURL=data:…`. The map's generated lines are shifted by 3: V8's two `new Function` header lines (`function anonymous($$imports\n) {\n`) and the `"use strict";` prologue. |
 
 ## API
@@ -98,7 +98,7 @@ inline:
 | `compiler/src/codegen/emitter.ts` | Marking expressions, logical operands and statements (`markers` option) |
 | `compiler/src/module/compile-module.ts` | Marking elements and text; building the map |
 | `runtime/src/render/module.ts` | `loadModule` with `map`/`sourceURL` |
-| `test-apps/hello/vite.config.ts` | The fixture plugin passes the map to Vite |
+| `vite-plugin/src/index.ts` | Passes the map to Vite (`sourceMap` option: on while serving, follows `build.sourcemap` in a build) |
 
 ## Tests
 

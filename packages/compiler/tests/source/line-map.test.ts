@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatDiagnostic } from "../../src/source/diagnostic";
+import { codeFrame, formatDiagnostic } from "../../src/source/diagnostic";
 import { LineMap } from "../../src/source/line-map";
 
 describe("LineMap", () => {
@@ -58,4 +58,17 @@ test("formatDiagnostic uses 1-based line and column", () => {
     "Main.pfui",
   );
   expect(formatted).toBe("Main.pfui:2:12: error M013: Duplicate attribute 'x'");
+});
+
+test.each([
+  ["\\n", "<App>\n  <Text value=\"{x}\"/>\n</App>"],
+  ["\\r\\n", "<App>\r\n  <Text value=\"{x}\"/>\r\n</App>"],
+  ["\\r", "<App>\r  <Text value=\"{x}\"/>\r</App>"],
+])("codeFrame shows the line and a caret (%s line breaks)", (_, text) => {
+  expect(codeFrame(text, new LineMap(text), text.indexOf("x}"))).toBe('    <Text value="{x}"/>\n' + " ".repeat(18) + "^");
+});
+
+test("codeFrame on the last line and at the end of the text", () => {
+  const text = "<App>\n<Text";
+  expect(codeFrame(text, new LineMap(text), text.length)).toBe("  <Text\n       ^");
 });

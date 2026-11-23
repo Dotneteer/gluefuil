@@ -48,6 +48,8 @@ describe("checkBoundaries", () => {
           "packages/components/src/index.ts": `import { r } from "@patchfuil/runtime"; import "react";`,
           "packages/components/src/metadata.ts": `import { buttonMd } from "./button/metadata";`,
           "packages/components/src/button/metadata.ts": `export const buttonMd = {};`,
+          "packages/vite-plugin/src/index.ts": `import { compileModule } from "@patchfuil/compiler"; import type { ComponentMetadata } from "@patchfuil/components/metadata"; import type { Plugin } from "vite"; import { basename } from "node:path"; import "./x";`,
+          "packages/standalone/src/index.ts": `import "@patchfuil/compiler"; import "@patchfuil/runtime"; import "@patchfuil/components"; import "react";`,
         }),
       ),
     ).toEqual([]);
@@ -62,6 +64,12 @@ describe("checkBoundaries", () => {
     ["packages/runtime/src/index.ts", "@patchfuil/components/metadata"],
     ["packages/components/src/index.ts", "@patchfuil/compiler"],
     ["packages/components/src/metadata.ts", "react"],
+    ["packages/vite-plugin/src/index.ts", "@patchfuil/runtime"],
+    ["packages/vite-plugin/src/index.ts", "@patchfuil/components"],
+    ["packages/vite-plugin/src/index.ts", "react"],
+    ["packages/runtime/src/index.ts", "@patchfuil/vite-plugin"],
+    ["packages/components/src/index.ts", "@patchfuil/standalone"],
+    ["packages/standalone/src/index.ts", "@patchfuil/vite-plugin"],
   ])("rejects %s importing %s", (file, specifier) => {
     const violations = checkBoundaries(files({ [file]: `import x from "${specifier}";` }));
     expect(violations).toHaveLength(1);

@@ -252,7 +252,9 @@ Plan and findings: [poc-11-standalone.md](poc-11-standalone.md).
   - E2E: first load compiles; second load hits the cache (no compile);
     editing a file on the test server updates the app.
 
-### Step 12: Build-time compilation
+### Step 12: Build-time compilation ✅
+
+Plan and findings: [poc-12-build-time.md](poc-12-build-time.md).
 
 - **Subject:** a Vite plugin compiles `.pfui` files at build time; the
   shipped bundle contains no parser or compiler.

@@ -11,7 +11,7 @@ import { scheduleMicrotask } from "../errors";
 import { useComputed } from "../reactivity/react";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 import { variable } from "../reactivity/variable";
-import { assertBindingValue } from "../script/load";
+import { assertBindingValue } from "../script/binding-value";
 import { apiRegistrar } from "./component-api";
 import { HandlerSlot, type HandlerFunction, type HandlerPolicy } from "./handlers";
 import { templateRenderer, type TemplateFunction } from "./templates";

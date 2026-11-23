@@ -9,7 +9,7 @@ test("a handler's exception resolves to its line in the .pfui file", async ({ pa
   const scripts = new Map<string, { url: string; sourceMapURL: string }>();
   cdp.on("Debugger.scriptParsed", (event) => scripts.set(event.scriptId, { url: event.url, sourceMapURL: event.sourceMapURL ?? "" }));
   await cdp.send("Debugger.enable");
-  await page.goto("http://localhost:5174/");
+  await page.goto("/");
   await expect(page.getByRole("button", { name: "Throw" })).toBeVisible();
   await cdp.send("Debugger.setPauseOnExceptions", { state: "all" });
 

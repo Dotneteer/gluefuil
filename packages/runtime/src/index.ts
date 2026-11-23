@@ -1,5 +1,6 @@
 // --- Script sandbox ---------------------------------------------------------------
-export { assertBindingValue, BindingError, loadBinding, type Binding } from "./script/load";
+export { assertBindingValue, BindingError } from "./script/binding-value";
+export { loadBinding, type Binding } from "./script/load";
 export { BANNED_MEMBERS, SandboxError, scriptGlobals, scriptRuntime } from "./script/sandbox";
 
 // --- Reactivity ---------------------------------------------------------------------

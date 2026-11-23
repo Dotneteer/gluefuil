@@ -5,7 +5,7 @@ import { createScope } from "../../src/reactivity/scope";
 import { signal } from "../../src/reactivity/signals";
 import { Bound, TextNode } from "../../src/render/elements";
 import { loadModule } from "../../src/render/module";
-import { BindingError } from "../../src/script/load";
+import { BindingError } from "../../src/script/binding-value";
 
 afterEach(cleanup);
 

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// test-apps/hello: Main.pfui is compiled at build time (a minimal Vite plugin)
+// test-apps/hello: Main.pfui is compiled at build time (@patchfuil/vite-plugin)
 // to an ES module, which renders with the runtime and the built-in components.
 test("the first compiled pfui app renders in a real browser", async ({ page }) => {
   const errors: string[] = [];
@@ -9,7 +9,7 @@ test("the first compiled pfui app renders in a real browser", async ({ page }) =
     if (message.type() === "error") errors.push(message.text());
   });
 
-  await page.goto("http://localhost:5174/");
+  await page.goto("/");
 
   const texts = page.locator(".pfui-Text");
   await expect(texts.first()).toHaveText("3");

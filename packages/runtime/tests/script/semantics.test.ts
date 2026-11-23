@@ -1,7 +1,7 @@
 // Semantic conformance table: a binding plus a scope gives the expected value.
 // Compiled by the real compiler, run through the real sandbox (loadBinding).
 import { describe, expect, test } from "vitest";
-import { BindingError } from "../../src/script/load";
+import { BindingError } from "../../src/script/binding-value";
 import { evaluate, evaluateText } from "./helpers";
 
 const scope = {
