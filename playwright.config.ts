@@ -73,6 +73,7 @@ export default defineConfig({
     },
     {
       command: "npx vite --config playground/vite.config.ts --configLoader runner --port 5180 --strictPort",
+      env: { PFUI_E2E: "1" },
       url: "http://localhost:5180",
       reuseExistingServer: !process.env.CI,
     },
