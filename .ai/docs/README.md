@@ -13,6 +13,7 @@ on this repository. Plans (what we intend to build) live in
 | [modules.md](modules.md) | Compiled modules: `compileModule`, generated code, compilation rules, `Bound`/`TextNode`/`loadModule`, built-in components, build-time integration. |
 | [build-time.md](build-time.md) | Build-time compilation: the Vite plugin, its options and errors, what a production build contains (no compiler, no eval). |
 | [ssg.md](ssg.md) | Static generation and takeover: the prerender, `mountApp`, the server view, what matches and what doesn't. |
+| [mantine.md](mantine.md) | `wrapComponent`; the Mantine-based built-ins and their theme mapping; `Text` variants and `Heading`. |
 | [behaviors.md](behaviors.md) | Behaviors (`label`, `tooltip`, `variant`): the attachment rule, compile-time wrapping, the order, user-defined components. |
 | [theming.md](theming.md) | Theming: the engine (chains, tones, derived tokens, references), the stylesheet, `App` and `Theme`, the tone and theme globals. |
 | [contracts.md](contracts.md) | Component metadata (one format for every component) and the compile-time contract checks: props, types, enums, events, API members, deprecations. |

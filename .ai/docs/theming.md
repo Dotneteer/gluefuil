@@ -94,6 +94,11 @@ The pipeline is `themeVariables()`, then `compileTheme()`:
     - otherwise only the overrides go in.
   - Without its own tone, it follows the app's.
 
+**Mantine** (step 16, done after 17): the Mantine-based built-ins read
+the same variables. Mantine's own variables are redirected to pfui's, and
+its CSS is in `@layer mantine` so our rules win
+([mantine.md](mantine.md#theme-mapping-mantine-never-sees-its-own-theme)).
+
 ## Contracts
 
 - **E025:** a `<Theme>` attribute that is neither a prop nor a known

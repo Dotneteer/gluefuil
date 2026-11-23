@@ -28,6 +28,8 @@
   - `textColor-Label`, `fontSize-Label`, `gap-Label`;
   - `backgroundColor-Tooltip`, `textColor-Tooltip`, `borderRadius-Tooltip`,
     `padding-Tooltip`, `fontSize-Tooltip`.
+- **Components that own `variant`** (`Text`, since step 16) skip the
+  variant behavior. `Button` doesn't declare one yet.
 - **Variant values** are theme variables with a variant segment
   (`backgroundColor-Button-danger`, `…-danger--hover`). E025 accepts them
   (`isKnownThemeVariable`).

@@ -305,10 +305,11 @@ Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
 - **Reference:** `pages/managed-react/verified-type-contracts.md`,
   `build-validation-analyzers.md`.
 
-### Step 16: Wrapping React components (Mantine) — skipped for now
+### Step 16: Wrapping React components (Mantine) ✅
 
-Skipped at the user's request (after step 15); steps 17 and 18 use our own
-built-in components instead of Mantine ones.
+Skipped after step 15 and done after step 18, with a reduced scope (Button,
+TextBox, Select, Checkbox; plus Text variants and Heading). Plan and findings:
+[poc-16-mantine.md](poc-16-mantine.md).
 
 - **Subject:** the lightweight wrapper API. Covers forwarding by default,
   renames, events, controlled values (`value`/`onChange`), exposed methods

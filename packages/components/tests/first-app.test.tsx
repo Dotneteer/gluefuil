@@ -1,7 +1,7 @@
 // Step 5 end to end in jsdom: markup -> compileModule -> loadModule -> React DOM.
 import { compileModule } from "@patchfuil/compiler";
 import { loadModule } from "@patchfuil/runtime";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import * as components from "../src/index";
 
@@ -20,22 +20,27 @@ function renderMarkup(markup: string): string {
 }
 
 test("the first app", () => {
-  expect(
-    renderMarkup(`
+  const html = renderMarkup(`
       <App>
         <Stack gap="8px">
           <Text value="{1 + 2}"/>
           <Text>Hello, {'pfui'.toUpperCase()}!</Text>
           <Button label="Click me"/>
         </Stack>
-      </App>`),
-  ).toBe(
-    '<div class="pfui-App"><div class="pfui-Stack" style="display: flex; flex-direction: column; gap: 8px;">' +
-      '<span class="pfui-Text">3</span>' +
-      '<span class="pfui-Text">Hello, PFUI!</span>' +
-      '<button type="button" class="pfui-Button">Click me</button>' +
-      "</div></div>",
+      </App>`);
+  expect(html).toMatch(
+    /^<div class="pfui-App"><div class="pfui-Stack" style="display: flex; flex-direction: column; gap: 8px;"><span class="pfui-Text">3<\/span><span class="pfui-Text">Hello, PFUI!<\/span><button /,
   );
+  // The Button is Mantine's (step 16), with the pfui class and the label.
+  const button = screen.getByRole("button", { name: "Click me" });
+  expect(button.classList).toContain("pfui-Button");
+  expect(button.classList).toContain("mantine-Button-root");
+});
+
+test("a Button's nested content (Mantine renders it inside its label part)", () => {
+  renderMarkup("<App><Button>Nested <Text value='label'/></Button></App>");
+  const button = screen.getByRole("button", { name: "Nested label" });
+  expect(button.querySelector(".mantine-Button-label .pfui-Text")!.textContent).toBe("label");
 });
 
 test.each<[markup: string, html: string]>([
@@ -54,8 +59,7 @@ test.each<[markup: string, html: string]>([
   // Entities and CDATA
   ["<Text>a &lt; b</Text>", '<span class="pfui-Text">a &lt; b</span>'],
   ["<Text><![CDATA[<b>{raw}</b>]]></Text>", '<span class="pfui-Text">&lt;b&gt;{raw}&lt;/b&gt;</span>'],
-  // Children and layout
-  ["<Button>Nested <Text value='label'/></Button>", '<button type="button" class="pfui-Button">Nested <span class="pfui-Text">label</span></button>'],
+  // Layout
   [
     '<Stack orientation="{\'horizontal\'}"><Text>1</Text><Text>2</Text></Stack>',
     '<div class="pfui-Stack" style="display: flex; flex-direction: row;"><span class="pfui-Text">1</span><span class="pfui-Text">2</span></div>',

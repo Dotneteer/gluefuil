@@ -64,6 +64,36 @@ export interface EventMetadata {
   deprecationMessage?: string;
 }
 
+/** XMLUI's Text variants that pfui implements (text.tsx). */
+const TEXT_VARIANTS = [
+  "abbr", "caption", "cite", "code", "deleted", "em", "inserted", "keyboard", "marked", "mono", "paragraph",
+  "placeholder", "sample", "secondary", "small", "strong", "sub", "subheading", "subtitle", "sup", "title", "var",
+];
+
+const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6", "H1", "H2", "H3", "H4", "H5", "H6", "1", "2", "3", "4", "5", "6"];
+
+const HEADING_THEME_VARS: Record<string, string> = {
+  "textColor-Heading": "$textColor",
+  "fontWeight-Heading": "600",
+  "lineHeight-Heading": "1.25",
+  "fontSize-H1": "2em",
+  "fontSize-H2": "1.5em",
+  "fontSize-H3": "1.25em",
+  "fontSize-H4": "1.1em",
+  "fontSize-H5": "1em",
+  "fontSize-H6": "0.9em",
+};
+
+function headingShortcut(level: number): ComponentMetadata {
+  return {
+    description: `A level ${level} heading (Heading level="h${level}").`,
+    props: {
+      value: { description: "The heading text. Nested text is used when it is absent.", valueType: "any" },
+      maxLines: { description: "Clamps the heading to this many lines, with an ellipsis.", valueType: "integer" },
+    },
+  };
+}
+
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   App: {
     description: "The root of an application: applies the active theme and tone.",
@@ -88,19 +118,45 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     nonVisual: true,
   },
   Text: {
-    description: "Displays text: `value`, or the nested text.",
+    description: "Displays text: `value`, or the nested text; `variant` picks a semantic style.",
     themeVars: {
       "textColor-Text": "$textColor",
       "fontSize-Text": "inherit",
+      "textColor-Text-secondary": "$textColor-secondary",
+      "fontFamily-Text-code": "ui-monospace, SFMono-Regular, Menlo, monospace",
+      "backgroundColor-Text-code": "$color-surface-100",
+      "backgroundColor-Text-marked": "$color-warn-200",
     },
     props: {
       value: { description: "The text to display. Nested text is used when it is absent.", valueType: "any" },
+      variant: {
+        description: "A named text style (XMLUI Text variants); renders the semantic element where one exists (strong, em, code, …).",
+        valueType: "string",
+        availableValues: TEXT_VARIANTS,
+      },
+      maxLines: { description: "Clamps the text to this many lines, with an ellipsis.", valueType: "integer" },
     },
   },
+  Heading: {
+    description: "A heading, h1 to h6: `value`, or the nested text.",
+    themeVars: HEADING_THEME_VARS,
+    props: {
+      value: { description: "The heading text. Nested text is used when it is absent.", valueType: "any" },
+      level: { description: "h1 (default) … h6; also H1 … H6 and 1 … 6.", valueType: "string", availableValues: HEADING_LEVELS },
+      maxLines: { description: "Clamps the heading to this many lines, with an ellipsis.", valueType: "integer" },
+    },
+  },
+  H1: headingShortcut(1),
+  H2: headingShortcut(2),
+  H3: headingShortcut(3),
+  H4: headingShortcut(4),
+  H5: headingShortcut(5),
+  H6: headingShortcut(6),
   Button: {
-    description: "A clickable button: `label`, or the nested content.",
+    description: "A clickable button (Mantine Button): `label`, or the nested content.",
     props: {
       label: { description: "The button's text. Nested content is used when it is absent.", valueType: "string" },
+      enabled: { description: "false: disabled.", valueType: "boolean" },
     },
     events: {
       click: { description: "The button was clicked. The handler receives no arguments (no DOM event)." },
@@ -111,14 +167,14 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       "textColor-Button": "#ffffff",
       "borderColor-Button": "$color-primary-600",
       "borderRadius-Button": "$borderRadius",
-      "padding-Button": "$space-1_5 $space-3",
     },
   },
   TextBox: {
-    description: "A single-line text input.",
+    description: "A single-line text input (Mantine TextInput).",
     props: {
       initialValue: { description: "The text when the component mounts.", valueType: "any" },
       placeholder: { description: "Shown while the text is empty.", valueType: "string" },
+      enabled: { description: "false: disabled.", valueType: "boolean" },
     },
     events: {
       didChange: { description: "The text changed by typing; `$param` is the new text." },
@@ -129,12 +185,59 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       "borderColor-TextBox": "$borderColor",
       "borderColor-TextBox--focus": "$color-primary-500",
       "borderRadius-TextBox": "$borderRadius",
-      "padding-TextBox": "$space-1_5 $space-2",
     },
     api: {
       value: { description: "The current text (reactive)." },
       setValue: { description: "Replaces the text." },
       focus: { description: "Moves the keyboard focus to the input." },
+    },
+  },
+  Select: {
+    description: "Picks one value from a list (Mantine Select).",
+    props: {
+      options: { description: "The choices: strings, or { value, label } objects.", valueType: "any" },
+      initialValue: { description: "The selected value when the component mounts.", valueType: "any" },
+      placeholder: { description: "Shown while nothing is selected.", valueType: "string" },
+      enabled: { description: "false: disabled.", valueType: "boolean" },
+      searchable: { description: "Filter the options by typing.", valueType: "boolean" },
+      clearable: { description: "Show a button that clears the selection.", valueType: "boolean" },
+    },
+    events: {
+      didChange: { description: "The selection changed; `$param` is the new value (null when cleared)." },
+    },
+    templates: {
+      optionTemplate: { description: "The markup for one option in the list.", contextVars: ["$item", "$checked"] },
+    },
+    themeVars: {
+      "backgroundColor-Select": "$backgroundColor",
+      "textColor-Select": "$textColor",
+      "borderColor-Select": "$borderColor",
+      "borderColor-Select--focus": "$color-primary-500",
+      "borderRadius-Select": "$borderRadius",
+    },
+    api: {
+      value: { description: "The selected value (reactive); null when none." },
+      setValue: { description: "Selects a value." },
+      focus: { description: "Moves the keyboard focus to the input." },
+    },
+  },
+  Checkbox: {
+    description: "A checkbox with its own label (Mantine Checkbox).",
+    props: {
+      label: { description: "The checkbox's label.", valueType: "string" },
+      initialValue: { description: "Checked when the component mounts.", valueType: "boolean" },
+      enabled: { description: "false: disabled.", valueType: "boolean" },
+    },
+    events: {
+      didChange: { description: "Checked or unchecked by the user; `$param` is the new state." },
+    },
+    themeVars: {
+      "backgroundColor-Checkbox--checked": "$color-primary-500",
+      "borderRadius-Checkbox": "$borderRadius",
+    },
+    api: {
+      value: { description: "Whether it is checked (reactive)." },
+      setValue: { description: "Checks or unchecks it." },
     },
   },
   Items: {

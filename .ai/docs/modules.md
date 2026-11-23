@@ -54,10 +54,13 @@ use file offsets.
 |-----------|-------|---------|
 | `App` | `defaultTheme`, `defaultTone` | `<div class="pfui-App">` with the active theme's variables, and the stylesheet ([theming.md](theming.md)) |
 | `Theme` | `themeId`, `tone`, theme variables | `<div class="pfui-Theme" style="display: contents">` with scoped variables |
-| `Text` | `value` | `<span class="pfui-Text">`, showing `value` or the children |
-| `Button` | `label`; event `click` | `<button type="button" class="pfui-Button">`, showing `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
+| `Text` | `value`, `variant`, `maxLines` | The variant's semantic element (default `<span class="pfui-Text">`) with `value` or the children ([mantine.md](mantine.md)) |
+| `Heading`, `H1`–`H6` | `value`, `level`, `maxLines` | `<hN class="pfui-Heading">` |
+| `Button` | `label`, `enabled`; event `click` | Mantine's `Button` with `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
 | `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="pfui-Stack">` |
-| `TextBox` | `initialValue`, `placeholder`; event `didChange`; API `value`, `setValue`, `focus` | `<input class="pfui-TextBox">` ([scoping.md](scoping.md)) |
+| `TextBox` | `initialValue`, `placeholder`, `enabled`; event `didChange`; API `value`, `setValue`, `focus` | Mantine's `TextInput` ([mantine.md](mantine.md)) |
+| `Select` | `options`, `initialValue`, `placeholder`, `enabled`, `searchable`, `clearable`; template `optionTemplate`; event `didChange`; API `value`, `setValue`, `focus` | Mantine's `Select` |
+| `Checkbox` | `label`, `initialValue`, `enabled`; event `didChange`; API `value`, `setValue` | Mantine's `Checkbox` |
 | `Items` | `data`, `reverse`; template `itemTemplate` (or children) with `$item`, `$itemIndex`, `$isFirst`, `$isLast` | One template instance per item, no wrapper ([visibility-templates.md](visibility-templates.md)) |
 
 `componentMetadata` (in the React-free `./metadata` entry) lists them as a

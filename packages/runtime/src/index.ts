@@ -84,6 +84,15 @@ export {
   setThemeTone,
   toggleThemeTone,
 } from "./render/theme-state";
+export {
+  coerceLiteral,
+  wrapComponent,
+  type WrapConfig,
+  type WrapEvent,
+  type WrapMetadata,
+  type WrapTemplate,
+  type WrapValue,
+} from "./render/wrap";
 export { mountApp, PRERENDERED_ATTRIBUTE, READY_ATTRIBUTE, type MountOptions } from "./render/mount";
 export {
   BoundUser,

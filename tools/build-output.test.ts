@@ -78,8 +78,8 @@ describe("a production build (no source maps)", () => {
     const html = output.find((o) => o.fileName === "index.html") as Rolldown.OutputAsset;
     const source = String(html.source);
     // The stylesheet (React 19 hoisted <style>) comes first, then the themed App.
-    expect(source).toContain('<div id="root" data-pfui-prerendered="xs"><style data-precedence="pfui" data-href="pfui-base">');
-    expect(source).toMatch(/<div class="pfui-App" data-tone="light" style="--pfui-/);
+    expect(source).toContain('<div id="root" data-pfui-prerendered="xs"><style data-precedence="pfui" data-href="pfui-mantine pfui-base">');
+    expect(source).toMatch(/<div class="pfui-App" data-tone="light" data-mantine-color-scheme="light" style="--pfui-/);
     expect(source).toContain('<span class="pfui-Text">Count: 0</span>');
     expect(source).toContain('<span class="pfui-Text">Todo #1: Write tests</span>');
     // Rendered for xs: the compact text, not the wide one.

@@ -81,7 +81,9 @@ app scope (createAppScope: delay)
 - **Metadata** declares the API (`ComponentMetadata.api`). `box.member` is
   checked against it at compile time (C015, [contracts.md](contracts.md)).
 
-`TextBox` is the reference implementation:
+`TextBox` is the reference implementation (since step 16, Mantine's
+`TextInput` through `wrapComponent`'s controlled value:
+[mantine.md](mantine.md)):
 
 - its text is a signal that drives both the input and `api.value`;
 - its API is `value`, `setValue(v)` and `focus()`;
@@ -97,7 +99,7 @@ app scope (createAppScope: delay)
 | `runtime/src/render/app-globals.ts` | `createAppScope` |
 | `compiler/src/module/compile-module.ts` | `collectIds`, `visibleNames`/`visibleVariables`, the file-scope prologue in `Main`, E010–E012 |
 | `compiler/src/codegen/emitter.ts` | `resolve`, `reportUnresolved` (C001/C002/C005/C014) |
-| `components/src/text-box.tsx` | `TextBox` |
+| `components/src/mantine.tsx`, `runtime/src/render/wrap.ts` | `TextBox` (and the other components with an API) |
 
 ## Tests
 

@@ -1,7 +1,9 @@
 // App-level theming and the <Theme> element (step 17). The engine compiles the
 // active theme and tone (runtime theme state) to CSS custom properties.
 import { activeThemeId, activeThemeTone, setThemeDefaults, useSignal } from "@patchfuil/runtime";
+import { MantineProvider } from "@mantine/core";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
 import { componentMetadata, componentThemeDefaults } from "./metadata";
 import { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
 import { compileTheme, scopedThemeVars, type Tone } from "./theming/engine";
@@ -27,11 +29,19 @@ export function App({ defaultTheme, defaultTone, children }: { defaultTheme?: un
   setThemeDefaults(typeof defaultTheme === "string" ? defaultTheme : undefined, typeof defaultTone === "string" ? defaultTone : undefined);
   const { tone, style } = useActiveTheme();
   return (
-    <div className="pfui-App" data-tone={tone} style={style}>
+    // data-mantine-color-scheme: Mantine's tone selectors match below the app,
+    // also in a server render (no script has to set it on <html> first).
+    <div className="pfui-App" data-tone={tone} data-mantine-color-scheme={tone} style={style}>
+      <style href={MANTINE_STYLESHEET_HREF} precedence="pfui">
+        {MANTINE_STYLESHEET}
+      </style>
       <style href={BASE_STYLESHEET_HREF} precedence="pfui">
         {BASE_STYLESHEET}
       </style>
-      {children}
+      {/* Mantine's variables and global classes come from MANTINE_STYLESHEET: no <style> elements of its own. */}
+      <MantineProvider forceColorScheme={tone} withCssVariables={false} withGlobalClasses={false}>
+        {children}
+      </MantineProvider>
     </div>
   );
 }
@@ -62,7 +72,7 @@ export function Theme({ themeId, tone, children, ...overrides }: { themeId?: unk
     [ownTheme, ownTone, active.themeId, active.tone, key],
   );
   return (
-    <div className="pfui-Theme" data-tone={ownTone} style={{ display: "contents", ...(style as CSSProperties) }}>
+    <div className="pfui-Theme" data-tone={ownTone} data-mantine-color-scheme={ownTone} style={{ display: "contents", ...(style as CSSProperties) }}>
       {children}
     </div>
   );
