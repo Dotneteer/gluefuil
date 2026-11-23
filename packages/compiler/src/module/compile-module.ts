@@ -18,7 +18,15 @@
 //   }
 //   footer (export default, or return)
 
-import { componentMetadata, themeVariableNames, type ComponentMetadata, type PropMetadata } from "@patchfuil/components/metadata";
+import {
+  attachedBehaviors,
+  componentMetadata,
+  isKnownThemeVariable,
+  themeVariableNames,
+  type BehaviorMetadata,
+  type ComponentMetadata,
+  type PropMetadata,
+} from "@patchfuil/components/metadata";
 import { compileExpression, compileFunction, compileHandler, compileInterpolation } from "../codegen/compile";
 import { extractMarkers, jsString, mark } from "../codegen/markers";
 import { APP_GLOBALS } from "../codegen/names";
@@ -873,6 +881,12 @@ class ModuleCompiler {
     const constants: [string, string][] = [];
     const bindings: [string, string][] = [];
     const handlers: [string, string][] = [];
+    // Behaviors (step 18): decided from the attributes the element sets; their
+    // props go to them, not to the component.
+    const behaviors = attachedBehaviors(metadata, new Set(node.attributes.map((a) => a.name.full)));
+    const behaviorValues = new Map<BehaviorMetadata, { constants: [string, string][]; bindings: [string, string][] }>(
+      behaviors.map((b) => [b, { constants: [], bindings: [] }]),
+    );
     // `handlerPolicy` / `handlerTimeoutMs`, for all handlers ("*") or one (`:onClick`).
     const policies = new Map<string, string>();
     const timeouts = new Map<string, number>();
@@ -898,11 +912,16 @@ class ModuleCompiler {
         this.report(attribute.name, "E002", unsupported);
         continue;
       }
+      const behavior = behaviors.find((b) => Object.hasOwn(b.props, attributeName));
+      if (behavior) {
+        this.behaviorAttribute(attribute, behavior.props[attributeName]!, behaviorValues.get(behavior)!);
+        continue;
+      }
       const prop = Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : undefined;
       if (!prop && metadata.themeVarAttributes) {
         // `<Theme backgroundColor-Button="…">`: a theme variable (step 17).
         const known = this.themeVariables();
-        if (!known.has(attributeName)) this.reportContract(attribute.name, "E025", attributeName, didYouMean(attributeName, known));
+        if (!isKnownThemeVariable(attributeName, known)) this.reportContract(attribute.name, "E025", attributeName, didYouMean(attributeName, known));
       } else if (!prop && !metadata.allowArbitraryProps) {
         this.reportContract(attribute.name, "E020", attributeName, name, didYouMean(attributeName, Object.keys(metadata.props)));
       }
@@ -980,7 +999,7 @@ class ModuleCompiler {
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
     const id = idValue !== undefined && this.ids.has(idValue) ? idValue : undefined;
     if (!isUser && bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
-      return `$$h(${component}, ${props}${args})`;
+      return this.withBehaviors(`$$h(${component}, ${props}${args})`, behaviors, behaviorValues, name, scopeVar);
     }
     const bindingsName = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
     let handlersPart = "";
@@ -1001,7 +1020,13 @@ class ModuleCompiler {
     const templatesPart = templates.length > 0 ? `, templates: ${this.hoistRaw("$$t", `{ ${templates.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }`)}` : "";
     const lifecyclePart = lifecycle.length > 0 ? `, lifecycle: ${this.hoist("$$l", lifecycle)}` : "";
     const bound = isUser ? "$$BoundUser" : "$$Bound";
-    return `$$h(${bound}, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`;
+    return this.withBehaviors(
+      `$$h(${bound}, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`,
+      behaviors,
+      behaviorValues,
+      name,
+      scopeVar,
+    );
   }
 
   /**
@@ -1051,6 +1076,47 @@ class ModuleCompiler {
   /** Every theme variable name of the components this compilation knows (E025). */
   private themeVariables(): Set<string> {
     return (this.knownThemeVariables ??= new Set(themeVariableNames(this.components)));
+  }
+
+  /** A behavior's attribute: a literal (type-checked) or a binding, for the behavior's wrapper. */
+  private behaviorAttribute(attribute: AttributeNode, prop: PropMetadata, into: { constants: [string, string][]; bindings: [string, string][] }): void {
+    const name = attribute.name.full;
+    if (!attribute.value) {
+      this.checkPropLiteral(prop, name, "true", attribute.name);
+      into.constants.push([name, '"true"']);
+      return;
+    }
+    const value = this.value(this.segments(attribute as ValuedAttribute));
+    if ("constant" in value) {
+      this.checkPropLiteral(prop, name, JSON.parse(value.constant) as string, attribute.value);
+      into.constants.push([name, value.constant]);
+    } else {
+      into.bindings.push([name, value.binding]);
+    }
+  }
+
+  /**
+   * Wraps a compiled element in its behaviors, the first innermost: each is a
+   * `Bound` of the behavior's component, evaluating its props in the element's
+   * scope (`variant` also gets the component's name).
+   */
+  private withBehaviors(
+    element: string,
+    behaviors: readonly BehaviorMetadata[],
+    values: Map<BehaviorMetadata, { constants: [string, string][]; bindings: [string, string][] }>,
+    component: string,
+    scopeVar: string,
+  ): string {
+    let result = element;
+    for (const behavior of behaviors) {
+      this.usedComponents.add(behavior.component);
+      const { constants, bindings } = values.get(behavior)!;
+      const props = behavior.requiresThemeVars ? [...constants, ["component", JSON.stringify(component)] as [string, string]] : constants;
+      const propsCode = props.length > 0 ? `{ ${props.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
+      const bindingsCode = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
+      result = `$$h($$Bound, { type: $$C_${behavior.component}, props: ${propsCode}, bindings: ${bindingsCode}, scope: ${scopeVar} }, ${result})`;
+    }
+    return result;
   }
 
   /** A literal value against the prop's type and enum (E022, E023). */

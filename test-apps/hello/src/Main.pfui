@@ -116,5 +116,12 @@
       <Text>Dark region</Text>
     </Theme>
 
+    <!-- Step 18: behaviors -->
+    <Button label="Hover me" tooltip="A tooltip from the tooltip behavior"/>
+    <TextBox label="Labeled input" placeholder="type here"/>
+    <Theme backgroundColor-Button-danger="rgb(185, 28, 28)">
+      <Button label="Danger variant" variant="danger"/>
+      <Button label="Unknown variant" variant="nothing"/>
+    </Theme>
   </Stack>
 </App>

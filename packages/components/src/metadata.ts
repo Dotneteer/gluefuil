@@ -2,6 +2,7 @@
 // this module, so nothing reachable from here may import React, Mantine,
 // or @patchfuil/runtime. The boundary test in tools/ enforces this.
 
+import { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
 import { themeVariables, TONES } from "./theming/engine";
 import { BUILT_IN_THEME_MAP, THEME_IDS } from "./theming/themes";
 
@@ -38,6 +39,8 @@ export interface ComponentMetadata {
   themeVars?: Record<string, string>;
   /** Attributes besides `props` are theme variables, checked against the known names (`Theme`). */
   themeVarAttributes?: boolean;
+  /** Renders no visual element of its own: behaviors never attach (`Items`, `Theme`). */
+  nonVisual?: boolean;
 }
 
 /** The literal value types the compiler checks (an attribute without `{…}`). */
@@ -82,6 +85,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       tone: { description: "A tone for the children.", valueType: "string", availableValues: TONES },
     },
     themeVarAttributes: true,
+    nonVisual: true,
   },
   Text: {
     description: "Displays text: `value`, or the nested text.",
@@ -146,6 +150,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       },
     },
     childrenTemplate: "itemTemplate",
+    nonVisual: true,
   },
   Stack: {
     description: "Lays out its children in a column or a row.",
@@ -156,12 +161,38 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
 };
 
-/** Every component's theme variable defaults, merged (the first layer of every theme). */
+/** Every component's (and behavior's) theme variable defaults, merged (the first layer of every theme). */
 export function componentThemeDefaults(metadata: Readonly<Record<string, ComponentMetadata>> = componentMetadata): Record<string, string> {
   const defaults: Record<string, string> = {};
   for (const component of Object.values(metadata)) Object.assign(defaults, component.themeVars);
+  for (const behavior of BEHAVIORS) Object.assign(defaults, behavior.themeVars);
   return defaults;
 }
+
+/**
+ * Whether `name` is a theme variable: a known name, or a known component
+ * variable with a variant segment (`backgroundColor-Button-danger`,
+ * `backgroundColor-Button-danger--hover`: the variant behavior reads them).
+ */
+export function isKnownThemeVariable(name: string, known: ReadonlySet<string>): boolean {
+  if (known.has(name)) return true;
+  const [main = "", ...states] = name.split("--");
+  const variant = /^(.*-[A-Z][A-Za-z0-9_]*)-[a-z][A-Za-z0-9]*$/.exec(main);
+  if (!variant) return false;
+  return known.has([variant[1], ...states].join("--"));
+}
+
+/** Which behaviors attach to an element of a component, given the attributes it sets (in application order). */
+export function attachedBehaviors(metadata: ComponentMetadata, attributes: ReadonlySet<string>): BehaviorMetadata[] {
+  if (metadata.nonVisual) return [];
+  return BEHAVIORS.filter(
+    (behavior) =>
+      behavior.triggerProps.some((prop) => attributes.has(prop) && !Object.hasOwn(metadata.props, prop)) &&
+      (!behavior.requiresThemeVars || Object.keys(metadata.themeVars ?? {}).length > 0),
+  );
+}
+
+export { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
 
 /** Every known theme variable name (`<Theme>` attributes are checked against them). */
 export function themeVariableNames(metadata: Readonly<Record<string, ComponentMetadata>> = componentMetadata): string[] {

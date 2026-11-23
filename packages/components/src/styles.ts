@@ -42,4 +42,35 @@ export const BASE_STYLESHEET = `
   outline: none;
   border-color: var(--pfui-borderColor-TextBox--focus);
 }
+.pfui-Label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--pfui-gap-Label);
+}
+.pfui-Label[data-position="start"] {
+  flex-direction: row;
+  align-items: center;
+}
+.pfui-Label-text {
+  color: var(--pfui-textColor-Label);
+  font-size: var(--pfui-fontSize-Label);
+}
+.pfui-TooltipAnchor {
+  position: relative;
+  display: inline-flex;
+}
+.pfui-Tooltip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--pfui-backgroundColor-Tooltip);
+  color: var(--pfui-textColor-Tooltip);
+  border-radius: var(--pfui-borderRadius-Tooltip);
+  padding: var(--pfui-padding-Tooltip);
+  font-size: var(--pfui-fontSize-Tooltip);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+}
 `.trim();

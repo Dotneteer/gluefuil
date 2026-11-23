@@ -21,6 +21,7 @@ interface ComponentMetadata {
   allowArbitraryEvents?: boolean;                 // no unknown-event check
   themeVars?: Record<string, string>;             // theme variable defaults (step 17)
   themeVarAttributes?: boolean;                   // other attributes are theme variables (Theme)
+  nonVisual?: boolean;                            // no behaviors (step 18)
 }
 interface PropMetadata {
   description: string;
@@ -48,7 +49,9 @@ interface EventMetadata { description: string; deprecationMessage?: string }
 
 ## The checks (`compileModule`)
 
-Only element attributes are checked. **Framework attributes are never
+Only element attributes are checked. The props of an attached behavior
+are the behavior's ([behaviors.md](behaviors.md)), checked against its
+own props. **Framework attributes are never
 props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 `handlerTimeoutMs*`, `on*` (checked as events), and the lifecycle events.
 

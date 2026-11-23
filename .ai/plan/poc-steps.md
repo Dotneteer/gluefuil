@@ -334,7 +334,9 @@ Plan and findings: [poc-17-theming.md](poc-17-theming.md).
     scoped `<Theme>` and a tone switch.
 - **Reference:** `.ai/xmlui/theming-styling.md`.
 
-### Step 18: Behaviors
+### Step 18: Behaviors ✅
+
+Plan and findings: [poc-18-behaviors.md](poc-18-behaviors.md).
 
 - **Subject:** behaviors attached by trigger props, in a fixed order.
   Starts with `tooltip`, `label` and `variant`. Decides whether behaviors

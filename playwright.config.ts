@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 const chrome = devices["Desktop Chrome"];
 
 // The hello app's specs: they run against the dev server and the production build.
-const HELLO_SPECS = /(first-app|variables|async-handlers|ids|conditionals-templates|user-components|theming)\.spec\.ts/;
+const HELLO_SPECS = /(first-app|variables|async-handlers|ids|conditionals-templates|user-components|theming|behaviors)\.spec\.ts/;
 
 export default defineConfig({
   testDir: "e2e",

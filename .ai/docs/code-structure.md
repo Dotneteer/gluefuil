@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 17 (theming). Step 16 (Mantine) was skipped.
+> **Last updated:** step 18 (behaviors). Step 16 (Mantine) was skipped.
 
 ## What this repository is
 
@@ -67,6 +67,9 @@ Current state:
   `$refs`) compile to `--pfui-*` CSS variables. The built-ins are styled
   through them, `<Theme>` scopes them, and the app globals switch the tone
   and theme ([theming.md](theming.md)).
+- **Behaviors:** `label`, `tooltip` and `variant` attach by trigger props,
+  decided at compile time and compiled to `Bound` wrappers, on built-ins
+  and user-defined components ([behaviors.md](behaviors.md)).
 
 ## Subsystem documents
 
@@ -77,6 +80,7 @@ Current state:
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
 | [build-time.md](build-time.md) | `packages/vite-plugin`: the Vite plugin, its options and errors, what a production build contains |
+| [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
 | [theming.md](theming.md) | `components/src/theming/` (the engine, built-in themes), `styles.ts`, `App`/`Theme`, `runtime/src/render/theme-state.ts` |
 | [contracts.md](contracts.md) | `ComponentMetadata`; the contract checks (E001, E004, E020–E024, C015); `strictContracts` |
 | [user-components.md](user-components.md) | `<Component>` definitions, analysis, compilation, `BoundUser`/`useComponent`/`Slot`, discovery in the plugin and standalone, code-behind |
@@ -113,6 +117,7 @@ Current state:
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 │       ├── src/basic.tsx    Text, Button, Stack (minimal; Mantine in step 16, skipped for now)
 │       ├── src/theme.tsx    App, Theme; src/styles.ts the stylesheet; src/theming/ the theme engine (React-free)
+│       ├── src/behaviors.tsx  LabelBehavior, TooltipBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
 │       ├── src/text-box.tsx TextBox (the first component with an API)
 │       └── src/items.tsx    Items (templates with $item)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, build-output check, static-server.mjs (E2E)
@@ -148,7 +153,7 @@ version `0.0.0`.
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
 | `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
-| `packages/components/src/index.ts` | `App`, `Theme`, `Text`, `Button`, `Stack`, `TextBox`, `Items`, `BASE_STYLESHEET`; re-exports the metadata and the theme engine |
+| `packages/components/src/index.ts` | `App`, `Theme`, `Text`, `Button`, `Stack`, `TextBox`, `Items`, the behavior components, `BASE_STYLESHEET`; re-exports the metadata and the theme engine |
 | `packages/components/src/metadata.ts` | `componentMetadata` (seven components, with `themeVars` defaults; props with value types and enums, events, API, templates), `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
 ### Compiler source layout
@@ -334,6 +339,7 @@ Conventions:
 | `packages/components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM (see [modules.md](modules.md#tests)) |
 | `packages/compiler/tests/module/*.test.ts` | `compileModule` (see [modules.md](modules.md#tests)) |
 | `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule`; the server view and `mountApp` (`server-view.test.tsx`, see [ssg.md](ssg.md#tests)) |
+| `packages/compiler/tests/module/behaviors.test.ts`, `packages/components/tests/behaviors.test.tsx` | Behaviors: attachment, order, generated code; rendering (see [behaviors.md](behaviors.md#tests)) |
 | `packages/components/tests/theming.test.ts`, `theme-components.test.tsx` | The theme engine tables; `App`/`Theme` and the globals (see [theming.md](theming.md#tests)) |
 | `packages/components/tests/user-components.test.tsx` | User-defined components, one test per feature (see [user-components.md](user-components.md#tests)) |
 | `packages/compiler/tests/module/contracts.test.ts` | The contract diagnostics table (see [contracts.md](contracts.md#tests)) |
@@ -347,10 +353,10 @@ Conventions:
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs (see [ssg.md](ssg.md#tests)) |
 
-Count after step 17: 1,844 unit tests in 60 files.
+Count after step 18: 1,870 unit tests in 62 files.
 
-- Compiler: 938, of which markup 115, script 331, codegen 207, module 259
-  (user components 57, contracts 74) and source 26.
+- Compiler: 957, of which markup 115, script 331, codegen 207, module 278
+  (user components 57, contracts 74, behaviors 19) and source 26.
 - Runtime: 358, of which the script sandbox and async arrays are 210,
   reactivity 65, rendering 81 (the server view and `mountApp` 12), and the
   smoke test 2.
@@ -358,8 +364,8 @@ Count after step 17: 1,844 unit tests in 60 files.
 - Vite plugin: 50 (the transform 22, the prerender 18, components 10).
 - Tools: 371, of which the corpus is 327, the boundaries 29, the build
   output 10 and the sandbox drift test 5.
-- Components: 102 (static generation 8, user components 11, the theme
-  engine 29, theme components 5).
+- Components: 109 (static generation 8, user components 11, the theme
+  engine 29, theme components 5, behaviors 7).
 
 ### Benchmarks (Vitest 5)
 
@@ -386,8 +392,8 @@ Count after step 17: 1,844 unit tests in 60 files.
 - **Projects** pick specs by file and set `baseURL`:
   - `smoke` (5173);
   - `hello-dev` (5174: the hello specs `first-app`, `variables`,
-    `async-handlers`, `ids`, `conditionals-templates`, `user-components`
-    and `theming`, plus `source-maps`);
+    `async-handlers`, `ids`, `conditionals-templates`, `user-components`,
+    `theming` and `behaviors`, plus `source-maps`);
   - `hello-build` (5176: the same hello specs plus `build` and `ssg`,
     against the prerendered production build under `script-src 'self'`);
   - `standalone` (5175, full URLs).
@@ -401,6 +407,7 @@ Count after step 17: 1,844 unit tests in 60 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
 | `e2e/user-components.spec.ts` | The XMLUI user-defined-components examples (component files, code-behind, an inline component; `$props`, events, methods, slots), in dev and in the prerendered build |
 | `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled; takeover at the prerendered breakpoint changes no DOM node; at desktop width only the responsive text switches; the app is live afterwards |
