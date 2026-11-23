@@ -32,7 +32,7 @@ export default defineConfig({
     { name: "routing-dev", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5177" } },
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
     // The manual-testing playground: every scenario still opens (smoke).
-    { name: "playground", testMatch: /playground\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    { name: "playground", testMatch: /playground(-scenarios)?\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
   ],
   webServer: [
     {

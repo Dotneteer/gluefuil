@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Manual testing: a dashboard of scenarios, each on its own page. See README.md.",
   "dependencies": {
+    "@patchfuil/compiler": "0.0.0",
     "@patchfuil/components": "0.0.0",
     "@patchfuil/runtime": "0.0.0",
     "@patchfuil/vite-plugin": "0.0.0"

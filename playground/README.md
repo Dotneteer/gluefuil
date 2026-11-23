@@ -9,6 +9,35 @@ npm run playground:preview    # production build (prerendered dashboard) + previ
 
 Routes use the hash (`/#/counter`), so any page can be bookmarked or reloaded.
 
+## The scenarios
+
+One or more per concept of proof-of-concept steps 2–19
+(`.ai/plan/poc-steps.md`):
+
+| Step | Scenario | Shows |
+|------|----------|-------|
+| 2 | Markup | Entities, CDATA, comments, whitespace, escaped braces |
+| 2–3 | Expressions | The script language in bindings; allowed globals |
+| 4 | Reactivity | Derived values, the glitch-free diamond, batching |
+| 5–6 | Counter | A first app |
+| 6 | Variables | Follow until assigned, deep writes, array mutations, `<variable>` |
+| 7 | Async handlers | Implicit await, the four policies, cancellation, timeouts |
+| 8 | Component IDs | APIs through ids, in any order |
+| 9 | Source maps | A handler error that points to its `.pfui` line (use the devtools) |
+| 10 | Conditionals | `when`, responsive `when-*`, `onMount`/`onUnmount` |
+| 10 | Items and templates | Context variables, `reverse`, an `id` per row, `<property>` templates |
+| 14 | User-defined components | Props, events, methods and `$self`, slots and slot props, code-behind (`Demo*.pfui`) |
+| 3, 15 | Live compiler | Type markup: diagnostics (sandbox, scoping, contracts), generated code, result |
+| 16 | Inputs | Mantine TextBox, Select (with an option template), Checkbox, `enabled` |
+| 16 | Text and headings | Every Text variant, Heading, H1–H6, `maxLines` |
+| 17 | Theming | Tones, themes, scoped Theme, a dark region, a variant |
+| 18 | Behaviors | Tooltip, label, variant, on built-ins and a user component |
+| 19 | Routing | `navigate`, `Link`, `$routeParams`, `$queryParams`, replace, back and forward |
+
+Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
+the playground itself is delivered: `npm run playground:preview` serves the
+prerendered build.
+
 ## Adding a scenario
 
 1. **Create `src/components/<Name>Scenario.pfui`.** Start with `ScenarioHeader`,
@@ -48,9 +77,13 @@ Routes use the hash (`/#/counter`), so any page can be bookmarked or reloaded.
 3. **Update `e2e/playground.spec.ts`:** add the title to its list of
    expected dashboard buttons. It opens every scenario, checks that its
    source is shown, and fails on any page or console error.
+   `e2e/playground-scenarios.spec.ts` checks that each scenario does what
+   its page says. Add a test there too.
 
 ## Things to know
 
+- **`LiveMarkup`** (`src/react/LiveMarkup.tsx`) compiles markup in the browser
+  (the live compiler scenario), so the playground bundle includes the compiler.
 - **`ScenarioSource`** (`src/react/ScenarioSource.tsx`) is the playground's own
   React component, used from markup. It is registered with the pfui Vite
   plugin's `extensions` option (`vite.config.ts`), with its metadata (its

@@ -1,0 +1,7 @@
+<!-- A demo component: private state and a helper in code-behind, a method ($self), an event. -->
+<Component name="DemoCounter" method.reset="count = 0; emitEvent('changed', count)">
+  <Stack orientation="horizontal" gap="8px">
+    <Button label="{label(count)}" onClick="count++; emitEvent('changed', count)"/>
+    <Button label="Reset (via $self)" onClick="$self.reset()"/>
+  </Stack>
+</Component>

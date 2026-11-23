@@ -1,0 +1,17 @@
+<Component name="MarkupScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Markup" description="Step 2: entities, CDATA, comments, whitespace and escaped braces in .pfui markup."/>
+    <Stack gap="8px">
+      <Text>Entities: a &lt; b &amp;&amp; c &gt; d, &quot;double&quot; and &apos;single&apos; quotes</Text>
+      <Text>Numeric references stay literal (as in XMLUI, only named entities decode): &#169;</Text>
+      <Text><![CDATA[CDATA is literal: <b>{not an expression}</b> & no entities]]></Text>
+      <!-- This comment is not rendered. -->
+      <Text>Whitespace     runs    in text
+            collapse to one space.</Text>
+      <Text>Non-breaking&nbsp;&nbsp;&nbsp;spaces are kept.</Text>
+      <Text>Escaped braces: \{not interpolated}, and {'interpolated'}.</Text>
+      <Text value="Attribute values decode entities too: &lt;tag&gt;"/>
+      <Button label="A key-only attribute means true: enabled" enabled/>
+    </Stack>
+  </Stack>
+</Component>

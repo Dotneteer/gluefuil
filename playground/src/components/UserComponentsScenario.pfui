@@ -1,0 +1,32 @@
+<Component name="UserComponentsScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="User-defined components" description="Step 14: $props, events, methods, slots and code-behind (components/Demo*.pfui)."/>
+    <H3>Props and events</H3>
+    <Stack gap="8px" var.stars="{3}">
+      <DemoRating label="Your rating" value="{stars}" onRate="(n) => stars = n"/>
+      <DemoRating/>
+      <Text>stars = {stars}</Text>
+    </Stack>
+    <H3>Methods, code-behind, events with arguments</H3>
+    <Stack gap="8px" var.last="(nothing yet)">
+      <DemoCounter id="counter" onChanged="(n) => last = 'changed to ' + n"/>
+      <Button label="Reset from outside (counter.reset())" onClick="counter.reset()"/>
+      <Text>Last event: {last}</Text>
+    </Stack>
+    <H3>Slots</H3>
+    <Stack gap="8px" var.likes="{0}">
+      <DemoCard title="Default content and header">
+        <Text>This text comes from the caller, in the caller's scope: likes = {likes}</Text>
+        <TextBox id="cardInput" placeholder="An id inside slot content"/>
+        <Text>Typed: {cardInput.value}</Text>
+        <Button label="Like" onClick="likes++"/>
+      </DemoCard>
+      <DemoCard title="A custom header" count="{likes}">
+        <property name="headerTemplate">
+          <H3>{$title} — {$count} like(s), from the slot props</H3>
+        </property>
+      </DemoCard>
+      <DemoCard title="No content: the fallback shows"/>
+    </Stack>
+  </Stack>
+</Component>

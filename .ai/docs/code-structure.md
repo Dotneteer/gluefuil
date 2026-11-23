@@ -136,7 +136,7 @@ Current state:
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
 │   ├── routing/         @patchfuil/routing-app E2E fixture: a dashboard of buttons and links opening routed pages (dev and prerendered build)
 │   └── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui (+ components/, code-behind), compiled by @patchfuil/vite-plugin, prerendered in builds
-├── playground/          @patchfuil/playground  manual testing: a dashboard of scenarios, one page each (see playground/README.md)
+├── playground/          @patchfuil/playground  manual testing: a dashboard of 17 scenarios (steps 2–19), one page each with its source, and a live compiler (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -416,8 +416,9 @@ Count after IDs in templates and extensions: 1,965 unit tests in 67 files.
   - `standalone` (5175, full URLs);
   - `routing-dev` (5177) and `routing-build` (5178): `routing.spec.ts`
     against `test-apps/routing`;
-  - `playground` (5180): `playground.spec.ts`, a smoke test that every
-    scenario of the playground opens without errors.
+  - `playground` (5180): `playground.spec.ts` (every scenario opens without
+    errors and shows its source) and `playground-scenarios.spec.ts` (each
+    scenario does what its page says).
 - `webServer` starts one server per fixture (reused locally if already
   running). `test-apps/hello` runs with `--configLoader runner` (see
   [build-time.md](build-time.md#using-it)). CI settings (retries,
@@ -428,6 +429,7 @@ Count after IDs in templates and extensions: 1,965 unit tests in 67 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/playground-scenarios.spec.ts` | Each playground scenario's key interactions (one test per scenario page) |
 | `e2e/playground.spec.ts` | The playground's dashboard lists its scenarios; each opens, shows its source (monospace, line breaks and indentation), has no page or console errors, and leads back |
 | `e2e/routing.spec.ts` | Routing in the routing fixture, dev and build (projects `routing-dev`, `routing-build`) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select, Checkbox and Button round-trips and theming; text variants and headings (dev and build) |

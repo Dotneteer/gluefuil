@@ -1,0 +1,11 @@
+<!-- A demo component: a named slot with slot props ($title, $count) and a default slot with a fallback. -->
+<Component name="DemoCard">
+  <Stack gap="8px">
+    <Slot name="headerTemplate" title="{$props.title}" count="{$props.count ?? 0}">
+      <H3>{$props.title}</H3>
+    </Slot>
+    <Slot>
+      <Text variant="secondary">(no content given)</Text>
+    </Slot>
+  </Stack>
+</Component>

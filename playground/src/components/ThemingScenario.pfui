@@ -1,6 +1,6 @@
 <Component name="ThemingScenario">
   <Stack gap="16px">
-    <ScenarioHeader title="Theming" description="Switch the tone and the theme; scoped Theme elements override variables."/>
+    <ScenarioHeader title="Theming" description="Step 17: switch the tone and the theme; scoped Theme elements override variables."/>
     <Stack gap="8px">
       <Stack orientation="horizontal" gap="8px">
         <Button label="Toggle tone" onClick="toggleThemeTone()"/>
