@@ -1,0 +1,23 @@
+<Component name="ThemingScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Theming" description="Switch the tone and the theme; scoped Theme elements override variables."/>
+    <Stack gap="8px">
+      <Stack orientation="horizontal" gap="8px">
+        <Button label="Toggle tone" onClick="toggleThemeTone()"/>
+        <Button label="Default theme" onClick="setTheme('pfui')"/>
+        <Button label="Green theme" onClick="setTheme('pfui-green')"/>
+        <Button label="Red theme" onClick="setTheme('pfui-red')"/>
+      </Stack>
+      <Text>Tone: {activeThemeTone}, theme: {activeThemeId}</Text>
+      <Theme backgroundColor-Button="$color-warn-500">
+        <Button label="A Button in a scoped Theme"/>
+      </Theme>
+      <Theme tone="dark">
+        <Text>This text is in a dark-tone region.</Text>
+      </Theme>
+      <Theme backgroundColor-Button-danger="$color-danger-600">
+        <Button label="variant=danger" variant="danger"/>
+      </Theme>
+    </Stack>
+  </Stack>
+</Component>

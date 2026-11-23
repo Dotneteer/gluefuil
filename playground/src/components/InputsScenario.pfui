@@ -1,0 +1,14 @@
+<Component name="InputsScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Inputs" description="Mantine inputs bound to variables through their events and APIs."/>
+    <Stack gap="8px" var.fruit="none" var.agreed="{false}">
+      <TextBox id="nameBox" label="Name" placeholder="Type your name"/>
+      <Text>Hello, {nameBox.value || 'stranger'}!</Text>
+      <Button label="Shout" onClick="nameBox.setValue(nameBox.value.toUpperCase())"/>
+      <Select placeholder="Pick a fruit" clearable options="{['Apple', 'Banana', 'Cherry']}" onDidChange="(v) => fruit = v ?? 'none'"/>
+      <Text>Fruit: {fruit}</Text>
+      <Checkbox label="I agree" onDidChange="(v) => agreed = v"/>
+      <Text>Agreed: {agreed}</Text>
+    </Stack>
+  </Stack>
+</Component>

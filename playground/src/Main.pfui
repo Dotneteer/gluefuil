@@ -1,0 +1,32 @@
+<!--
+  The playground: a dashboard of scenarios, each on its own page.
+  To add a scenario: create src/components/<Name>.pfui (wrap it in <ScenarioPage>),
+  add an entry to `scenarios` below, and a <Page> for it. See README.md.
+-->
+<App
+  var.scenarios="{[
+    { path: '/counter', title: 'Counter', description: 'Variables, handlers and reactive text.' },
+    { path: '/async', title: 'Async handlers', description: 'Implicit await, handler policies, cancellation.' },
+    { path: '/theming', title: 'Theming', description: 'Tone switching, scoped themes, variants.' },
+    { path: '/inputs', title: 'Inputs', description: 'Mantine TextBox, Select and Checkbox bound to variables.' }
+  ]}">
+  <Pages fallbackPath="/">
+    <Page url="/">
+      <Stack gap="16px">
+        <H1>pfui playground</H1>
+        <Text variant="secondary">Pick a scenario. Each page has a way back to this dashboard.</Text>
+        <Items data="{scenarios}">
+          <Stack orientation="horizontal" gap="12px">
+            <Button label="{$item.title}" onClick="navigate($item.path)"/>
+            <Text variant="secondary">{$item.description}</Text>
+          </Stack>
+        </Items>
+      </Stack>
+    </Page>
+
+    <Page url="/counter"><CounterScenario/></Page>
+    <Page url="/async"><AsyncScenario/></Page>
+    <Page url="/theming"><ThemingScenario/></Page>
+    <Page url="/inputs"><InputsScenario/></Page>
+  </Pages>
+</App>

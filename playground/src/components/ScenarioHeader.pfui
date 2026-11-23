@@ -1,0 +1,15 @@
+<!--
+  The top of every scenario page: a way back, the title and the description.
+  It is a sibling of the scenario's content, not a wrapper: content passed into
+  a <Slot> is a template, and ids inside templates are not supported yet (E014).
+-->
+<Component name="ScenarioHeader">
+  <Stack gap="8px">
+    <Stack orientation="horizontal" gap="12px">
+      <Button label="← Dashboard" onClick="navigate('/')"/>
+      <Text variant="secondary">{$pathname}</Text>
+    </Stack>
+    <H1>{$props.title}</H1>
+    <Text variant="secondary">{$props.description}</Text>
+  </Stack>
+</Component>

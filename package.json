@@ -5,7 +5,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "test-apps/*"
+    "test-apps/*",
+    "playground"
   ],
   "engines": {
     "node": ">=22.12.0"
@@ -15,9 +16,12 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "bench": "vitest bench --run --reporter=verbose",
-    "typecheck": "tsc -p packages/compiler && tsc -p packages/runtime && tsc -p packages/components && tsc -p packages/standalone && tsc -p packages/vite-plugin && tsc -p tools && tsc -p test-apps/smoke && tsc -p test-apps/hello && tsc -p test-apps/routing && tsc -p e2e",
+    "typecheck": "tsc -p packages/compiler && tsc -p packages/runtime && tsc -p packages/components && tsc -p packages/standalone && tsc -p packages/vite-plugin && tsc -p tools && tsc -p test-apps/smoke && tsc -p test-apps/hello && tsc -p test-apps/routing && tsc -p playground && tsc -p e2e",
     "check": "npm run typecheck && npm test && npm run test:e2e",
-    "build:standalone": "npm run build -w @patchfuil/standalone"
+    "build:standalone": "npm run build -w @patchfuil/standalone",
+    "playground": "vite --config playground/vite.config.ts --configLoader runner",
+    "playground:build": "vite build --config playground/vite.config.ts --configLoader runner --outDir ../.tmp/playground-dist --emptyOutDir",
+    "playground:preview": "npm run playground:build && vite preview --config playground/vite.config.ts --configLoader runner --outDir ../.tmp/playground-dist"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",

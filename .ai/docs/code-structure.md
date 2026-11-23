@@ -136,6 +136,7 @@ Current state:
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
 │   ├── routing/         @patchfuil/routing-app E2E fixture: a dashboard of buttons and links opening routed pages (dev and prerendered build)
 │   └── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui (+ components/, code-behind), compiled by @patchfuil/vite-plugin, prerendered in builds
+├── playground/          @patchfuil/playground  manual testing: a dashboard of scenarios, one page each (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -254,7 +255,7 @@ conscious decision.
 | Tool | Version | Configuration |
 |------|---------|---------------|
 | Node | ≥ 22.12 (`engines`) | |
-| npm workspaces | npm 10 | `workspaces: ["packages/*", "test-apps/*"]` in the root `package.json` |
+| npm workspaces | npm 10 | `workspaces: ["packages/*", "test-apps/*", "playground"]` in the root `package.json` |
 | TypeScript | 7.0.2 | `tsconfig.base.json` plus one `tsconfig.json` per package or folder |
 | Vite | 8.3.8 | `test-apps/*/vite.config.ts` (with `@vitejs/plugin-react`), `packages/standalone/vite.config.ts` |
 | Vitest | 5.1.1 | `vitest.config.ts` (tests and benchmarks) |
@@ -291,10 +292,11 @@ Run from the repository root.
 
 | Command | Does |
 |---------|------|
-| `npm install` | Installs everything and links the workspace packages |
+| `npm install` | Installs everything and links the workspace packages (`packages/*`, `test-apps/*`, `playground`) |
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176) |
+| `npm run playground` | The manual-testing playground on the Vite dev server (`playground:build`, `playground:preview` for the prerendered build) |
 | `npm run build:standalone` | Builds `packages/standalone/dist/pfui.js` (also run by the E2E web server) |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
 | `npm run typecheck` | `tsc -p` for each package and folder, each with its own settings |
@@ -413,7 +415,9 @@ Count after step 19 (routing): 1,950 unit tests in 67 files.
     against the prerendered production build under `script-src 'self'`);
   - `standalone` (5175, full URLs);
   - `routing-dev` (5177) and `routing-build` (5178): `routing.spec.ts`
-    against `test-apps/routing`.
+    against `test-apps/routing`;
+  - `playground` (5180): `playground.spec.ts`, a smoke test that every
+    scenario of the playground opens without errors.
 - `webServer` starts one server per fixture (reused locally if already
   running). `test-apps/hello` runs with `--configLoader runner` (see
   [build-time.md](build-time.md#using-it)). CI settings (retries,
@@ -424,6 +428,7 @@ Count after step 19 (routing): 1,950 unit tests in 67 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/playground.spec.ts` | The playground's dashboard lists its scenarios; each opens, has no page or console errors, and leads back |
 | `e2e/routing.spec.ts` | Routing in the routing fixture, dev and build (projects `routing-dev`, `routing-build`) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select, Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
