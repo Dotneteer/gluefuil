@@ -29,7 +29,13 @@
   3. otherwise the opposite of the lowest defined rule.
 - **The current breakpoint** is a runtime signal (`breakpoint()`). It is
   created on first use and follows `window.innerWidth` on `resize`; with no
-  window (server rendering) it stays at `xs`.
+  window it stays at `xs`.
+- **`When` reads `currentBreakpoint()`.** In the server view (server
+  rendering and hydration), that is the **server breakpoint**
+  (`setServerBreakpoint`, which the prerender and `mountApp` set);
+  otherwise it is the live signal. The static HTML and the hydrated tree
+  agree, and the live breakpoint takes over right after
+  ([ssg.md](ssg.md)).
 
 ## `onMount` / `onUnmount`
 

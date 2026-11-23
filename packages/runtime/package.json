@@ -5,7 +5,8 @@
   "type": "module",
   "description": "What compiled code calls into: reactivity, scheduling, theming engine, wrapping API.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
   },
   "peerDependencies": {
     "react": "^19.2.0",

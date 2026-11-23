@@ -27,8 +27,9 @@ declaring component, its containers and its siblings are not involved.
 | `untracked(fn)` | Reads without recording dependencies |
 | `observerCount(source)` | For tests and diagnostics |
 | `ReactivityError` | A computation wrote state, or a cycle was found |
-| `useSignal(source)` | Reads a signal or computed in a component |
-| `useComputed(fn, deps, equals = shallowEqual)` | A computed owned by the component. `deps` are its non-reactive inputs (props); a change creates a new computed. |
+| `useSignal(source, serverSnapshot?)` | Reads a signal or computed in a component |
+| `useComputed(fn, deps, equals = shallowEqual)` | A computed owned by the component. `deps` are its non-reactive inputs (props); a change creates a new computed. Has a server snapshot (below). |
+| `inServerView(fn)`, `isServerView()` | The server view (`server-view.ts`): how values look to server rendering and hydration |
 | `shallowEqual(a, b)` | Same value, or arrays or plain objects with `Object.is`-equal entries |
 | `variable(init)` | A reactive variable: **follows** `init` (a lazy, tracked computed) until `set`, then holds the assigned value. `.assigned` tells which. Values are deep-frozen. |
 | `freezeDeep(value)` | Freezes plain objects and arrays recursively; already-frozen subtrees are skipped (as Immer does) |
@@ -110,8 +111,14 @@ a cycle.
 
 ## React integration (`react.ts`)
 
-- `useSignal` = `useSyncExternalStore(watch(source), source.peek)`. The
-  same snapshot function serves server rendering.
+- `useSignal` = `useSyncExternalStore(watch(source), source.peek,
+  serverSnapshot ?? source.peek)`.
+- **`useComputed`'s server snapshot** is `fn` evaluated untracked in the
+  **server view**, cached with `equals` (React requires repeated calls to
+  agree). Server rendering and hydration read it; afterwards React
+  re-renders only components whose client snapshot differs. Environment
+  readers check the server view: so far only `currentBreakpoint()`
+  ([ssg.md](ssg.md)).
 - `useComputed` creates its computed in `useMemo`. It is linked only when
   React subscribes during commit, which is safe under StrictMode and with
   discarded renders.

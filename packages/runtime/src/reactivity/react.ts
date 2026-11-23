@@ -3,11 +3,13 @@
 // A compiled component evaluates all its bindings inside one `useComputed`.
 // It re-renders only when one of its own values changes; parents and
 // siblings are not involved. useSyncExternalStore gives tearing-free reads
-// under concurrent rendering and a server snapshot for server rendering.
+// under concurrent rendering and a server snapshot for server rendering and
+// hydration (evaluated in the server view: server-view.ts).
 // Design: .ai/plan/poc-04-reactivity.md
 
 import { useCallback, useMemo, useSyncExternalStore, type DependencyList } from "react";
-import { computed, watch, type Equals, type ReadonlySignal } from "./signals";
+import { inServerView } from "./server-view";
+import { computed, untracked, watch, type Equals, type ReadonlySignal } from "./signals";
 
 /** Equal when both are the same, or arrays/plain objects with the same entries (Object.is). */
 export function shallowEqual(a: unknown, b: unknown): boolean {
@@ -26,10 +28,10 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 }
 
 /** Reads a signal or computed, re-rendering when it changes. */
-export function useSignal<T>(source: ReadonlySignal<T>): T {
+export function useSignal<T>(source: ReadonlySignal<T>, serverSnapshot?: () => T): T {
   const subscribe = useCallback((onChange: () => void) => watch(source, onChange), [source]);
   const snapshot = useCallback(() => source.peek(), [source]);
-  return useSyncExternalStore(subscribe, snapshot, snapshot);
+  return useSyncExternalStore(subscribe, snapshot, serverSnapshot ?? snapshot);
 }
 
 /**
@@ -41,5 +43,21 @@ export function useSignal<T>(source: ReadonlySignal<T>): T {
 export function useComputed<T>(fn: () => T, deps: DependencyList, equals: Equals<T> = shallowEqual): T {
   // The caller lists fn's inputs in deps (like useMemo).
   const source = useMemo(() => computed(fn, { equals }), deps);
-  return useSignal(source);
+  const serverSnapshot = useMemo(() => serverSnapshotOf(fn, equals), [source]);
+  return useSignal(source, serverSnapshot);
+}
+
+/**
+ * The value as the server render and hydration see it: `fn` evaluated
+ * untracked in the server view (server-view.ts). React requires repeated calls
+ * to return the same value while nothing changed, so it is cached with `equals`.
+ */
+function serverSnapshotOf<T>(fn: () => T, equals: Equals<T>): () => T {
+  let cached: { value: T } | undefined;
+  return () => {
+    const value = inServerView(() => untracked(fn));
+    if (cached && equals(cached.value, value)) return cached.value;
+    cached = { value };
+    return value;
+  };
 }

@@ -11,6 +11,9 @@ import {
 import type { ComponentMetadata } from "@patchfuil/components/metadata";
 import { basename } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
+import { injectPrerendered, renderEntry, resolvePrerender, type PrerenderOptions } from "./prerender";
+
+export { injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
 
 export interface PfuiPluginOptions {
   /** The components markup may use. Default: the built-in components. */
@@ -21,6 +24,12 @@ export interface PfuiPluginOptions {
    * compiler skips its position markers, which is faster.
    */
   sourceMap?: boolean | "auto";
+  /**
+   * Static generation: in a build, render the app to HTML and put it into
+   * index.html, where `mountApp` takes it over. `true` uses the defaults
+   * (entry `src/Main.pfui`, root id `root`, breakpoint `xs`). Off by default.
+   */
+  prerender?: boolean | PrerenderOptions;
 }
 
 const EXTENSION = ".pfui";
@@ -39,13 +48,27 @@ export function formatErrors(errors: readonly Diagnostic[], source: string, file
 
 export function pfui(options: PfuiPluginOptions = {}): Plugin {
   const sourceMapOption = options.sourceMap ?? "auto";
+  const prerender = resolvePrerender(options.prerender);
   let sourceMap = true;
+  let config: ResolvedConfig | undefined;
   return {
     name: "pfui",
     // Before other transforms (React's), which expect JavaScript.
     enforce: "pre",
-    configResolved(config: ResolvedConfig) {
-      sourceMap = sourceMapOption === "auto" ? config.command === "serve" || !!config.build.sourcemap : sourceMapOption;
+    configResolved(resolved: ResolvedConfig) {
+      config = resolved;
+      sourceMap = sourceMapOption === "auto" ? resolved.command === "serve" || !!resolved.build.sourcemap : sourceMapOption;
+    },
+    transformIndexHtml: {
+      // After other plugins: the page is final except for the app's HTML.
+      order: "post",
+      async handler(html) {
+        if (!prerender || !config || config.command !== "build" || config.build.ssr) return html;
+        // The render's own server uses only the compile step (no prerender, no maps).
+        const transform = pfui({ sourceMap: false, ...(options.components ? { components: options.components } : {}) });
+        const { html: inner, attributes } = await renderEntry(config.root, prerender, transform);
+        return injectPrerendered(html, prerender.rootId, inner, attributes);
+      },
     },
     transform(source, id) {
       const file = pfuiFilePath(id);

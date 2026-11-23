@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 12 (build-time compilation).
+> **Last updated:** step 13 (static generation and takeover).
 
 ## What this repository is
 
@@ -50,6 +50,10 @@ Current state:
 - **Build-time compilation:** `@patchfuil/vite-plugin` compiles `.pfui`
   files in Vite. A production build contains no compiler and needs no
   eval: it runs under `script-src 'self'` ([build-time.md](build-time.md)).
+- **Static generation:** a build can prerender the app into `index.html`;
+  `mountApp` takes it over with hydration, reusing the DOM. A responsive
+  `When` hydrates at the prerender breakpoint and switches afterwards
+  ([ssg.md](ssg.md)).
 
 ## Subsystem documents
 
@@ -60,6 +64,7 @@ Current state:
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
 | [build-time.md](build-time.md) | `packages/vite-plugin`: the Vite plugin, its options and errors, what a production build contains |
+| [ssg.md](ssg.md) | Prerendering (`vite-plugin/src/prerender.ts`), takeover (`runtime/src/render/mount.ts`), the server view, `@patchfuil/runtime/server` |
 | [standalone.md](standalone.md) | `packages/standalone`: the one-file engine, loading, the compile cache, watching, the bundle |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle, templates and context variables, `Items` |
 | [source-maps.md](source-maps.md) | Source markers, Source Map v3, delivery through Vite and `loadModule`, the evidence |
@@ -83,11 +88,12 @@ Current state:
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
 │   │   ├── src/script/      sandbox globals and helpers; the binding-value check; loadBinding (standalone only)
 │   │   ├── src/reactivity/  signal store, React hooks, scope object
-│   │   ├── src/render/      what compiled modules render with (Bound, TextNode, useScope, loadModule), handler runtime, app globals
+│   │   ├── src/render/      what compiled modules render with (Bound, TextNode, useScope, loadModule), handler runtime, app globals, mountApp
+│   │   ├── src/server.ts    @patchfuil/runtime/server: renderStatic (static generation; never in client bundles)
 │   │   ├── src/errors.ts    the runtime error reporter
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── standalone/      @patchfuil/standalone  the one-file engine (dist/pfui.js): fetch, compile, cache, watch
-│   ├── vite-plugin/     @patchfuil/vite-plugin build-time compilation: .pfui -> ES module in Vite
+│   ├── vite-plugin/     @patchfuil/vite-plugin build-time compilation: .pfui -> ES module in Vite; prerendering
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 │       ├── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
 │       ├── src/text-box.tsx TextBox (the first component with an API)
@@ -95,9 +101,9 @@ Current state:
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, build-output check, static-server.mjs (E2E)
 ├── test-apps/
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
-│   └── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui, compiled by @patchfuil/vite-plugin
+│   └── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui, compiled by @patchfuil/vite-plugin, prerendered in builds
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
-├── .tmp/                (ignored) E2E work folders: the standalone site copy, the hello app's production build
+├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
 ├── README.md            product overview and quick start
 ├── package.json         workspace root: scripts, pinned dev dependencies
@@ -114,7 +120,7 @@ version `0.0.0`.
 | Package | Role | Entry points (`exports`) | Runs in |
 |---------|------|--------------------------|---------|
 | `@patchfuil/compiler` | Turns `.pfui` markup and scripts into JS modules. | `.` → `src/index.ts` | Node (build tools, static generation, editor) **and** the browser (standalone mode) |
-| `@patchfuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts` | Browser; Node for server rendering |
+| `@patchfuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts`; `./server` → `src/server.ts` | Browser; `./server` in Node (static generation) |
 | `@patchfuil/components` | Built-in components (own and Mantine-wrapped). | `.` → `src/index.ts`; `./metadata` → `src/metadata.ts` | Browser; Node for server rendering |
 | `@patchfuil/standalone` | The one-file engine for standalone mode; built into `dist/pfui.js` (IIFE, global `pfui`). | `.` → `src/index.ts` | Browser |
 | `@patchfuil/vite-plugin` | Build-time compilation: the Vite plugin `pfui()`. | `.` → `src/index.ts` | Node (Vite) |
@@ -124,7 +130,7 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
 | `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`, `TextBox`, `Items`; re-exports the metadata |
 | `packages/components/src/metadata.ts` | `componentMetadata` (six components: props, events, API, templates), `ComponentMetadata` |
 
@@ -310,24 +316,27 @@ Conventions:
 | `packages/components/tests/smoke.test.ts` | Package loads; every component has metadata; the metadata entry point loads on its own |
 | `packages/components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM (see [modules.md](modules.md#tests)) |
 | `packages/compiler/tests/module/*.test.ts` | `compileModule` (see [modules.md](modules.md#tests)) |
-| `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule` |
+| `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule`; the server view and `mountApp` (`server-view.test.tsx`, see [ssg.md](ssg.md#tests)) |
+| `packages/components/tests/ssg.test.tsx` | Compile, render statically, take over (see [ssg.md](ssg.md#tests)) |
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
-| `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader, and maps back to `Main.pfui` with `build.sourcemap` (see [build-time.md](build-time.md#tests)) |
+| `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.pfui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
+| `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs (see [ssg.md](ssg.md#tests)) |
 
-Count after step 12: 1,603 unit tests in 51 files.
+Count after step 13: 1,645 unit tests in 54 files.
 
 - Compiler: 807, of which markup 115, script 331, codegen 207, module 128
   and source 26.
-- Runtime: 342, of which the script sandbox and async arrays are 210,
-  reactivity 65, rendering 65, and the smoke test 2.
+- Runtime: 354, of which the script sandbox and async arrays are 210,
+  reactivity 65, rendering 77 (the server view and `mountApp` 12), and the
+  smoke test 2.
 - Standalone: 19 (the cache 10, the loader 8, the hash 1).
-- Vite plugin: 20.
-- Tools: 367, of which the corpus is 327, the boundaries 29, the build
-  output 6 and the sandbox drift test 5.
-- Components: 48.
+- Vite plugin: 38 (the transform 20, the prerender 18).
+- Tools: 371, of which the corpus is 327, the boundaries 29, the build
+  output 10 and the sandbox drift test 5.
+- Components: 56 (static generation 8).
 
 ### Benchmarks (Vitest 5)
 
@@ -355,8 +364,8 @@ Count after step 12: 1,603 unit tests in 51 files.
   - `smoke` (5173);
   - `hello-dev` (5174: the hello specs `first-app`, `variables`,
     `async-handlers`, `ids` and `conditionals-templates`, plus `source-maps`);
-  - `hello-build` (5176: the same hello specs plus `build`, against the
-    production build under `script-src 'self'`);
+  - `hello-build` (5176: the same hello specs plus `build` and `ssg`,
+    against the prerendered production build under `script-src 'self'`);
   - `standalone` (5175, full URLs).
 - `webServer` starts one server per fixture (reused locally if already
   running). `test-apps/hello` runs with `--configLoader runner` (see
@@ -368,6 +377,7 @@ Count after step 12: 1,603 unit tests in 51 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled; takeover at the prerendered breakpoint changes no DOM node; at desktop width only the responsive text switches; the app is live afterwards |
 | `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.pfui` fetched |
 | `e2e/standalone.spec.ts` | Standalone mode against the built `pfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery (serial: the tests edit the served files) |
 | `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |

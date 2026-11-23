@@ -263,7 +263,9 @@ Plan and findings: [poc-12-build-time.md](poc-12-build-time.md).
   - E2E: the built app runs.
   - Bundle check: compiler modules are absent from the output.
 
-### Step 13: Static site generation and takeover
+### Step 13: Static site generation and takeover ✅
+
+Plan and findings: [poc-13-ssg.md](poc-13-ssg.md).
 
 - **Subject:** render the app to static HTML at build time, show it before
   the engine loads, then hydrate (signals must resume their state without

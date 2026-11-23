@@ -63,8 +63,11 @@ export {
   BREAKPOINT_NAMES,
   BREAKPOINTS,
   breakpoint,
+  breakpointFromName,
   breakpointIndex,
+  currentBreakpoint,
   resolveVisibility,
+  setServerBreakpoint,
   When,
   type BreakpointName,
   type Condition,
@@ -72,5 +75,7 @@ export {
 } from "./render/visibility";
 export { TemplateInstance, templateRenderer, type TemplateFunction, type TemplateRenderer } from "./render/templates";
 export { loadModule, type ModuleImports, type ModuleSourceMap } from "./render/module";
+export { mountApp, PRERENDERED_ATTRIBUTE, READY_ATTRIBUTE, type MountOptions } from "./render/mount";
+export { inServerView, isServerView } from "./reactivity/server-view";
 // Compiled code creates elements through the runtime, never through React directly.
 export { createElement, Fragment } from "react";
