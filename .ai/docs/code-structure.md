@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 4 (reactivity core).
+> **Last updated:** step 5 (first running app).
 
 ## What this repository is
 
@@ -24,7 +24,10 @@ Current state:
   loads and runs them ([codegen.md](codegen.md)).
 - The runtime has the **reactivity core**: a signal store and one
   `useSyncExternalStore` subscription per component ([reactivity.md](reactivity.md)).
-- Components are still a placeholder.
+- **The pipeline runs end to end:** a `.pfui` document compiles to one
+  JavaScript module that renders with the runtime and four minimal built-in
+  components (`App`, `Text`, `Button`, `Stack`) ([modules.md](modules.md)).
+  There are no variables or handlers yet.
 
 ## Subsystem documents
 
@@ -33,6 +36,7 @@ Current state:
 | [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.pfui` markup text to a syntax tree with positions and diagnostics |
 | [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
+| [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
 | [codegen.md](codegen.md) | `packages/compiler/src/codegen/` and `packages/runtime/src/script/`: bindings compiled to JavaScript, static name resolution, the sandbox, dependencies |
 
 ## Repository layout
@@ -45,16 +49,20 @@ Current state:
 │   │   ├── src/markup/      markup parser: text -> syntax tree
 │   │   ├── src/script/      script parser: expressions, statements, interpolation
 │   │   ├── src/codegen/     bindings -> JavaScript; name resolution and the sandbox
+│   │   ├── src/module/      .pfui document -> JavaScript module
 │   │   ├── tests/           unit tests (mirrors src/)
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
 │   │   ├── src/script/      sandbox globals and helpers; loadBinding
 │   │   ├── src/reactivity/  signal store, React hooks, scope object
+│   │   ├── src/render/      what compiled modules render with (Bound, TextNode, loadModule)
 │   │   └── bench/           benchmarks (npm run bench)
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
+│       └── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test
 ├── test-apps/
-│   └── smoke/           @patchfuil/smoke-app   E2E fixture app
+│   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
+│   └── hello/           @patchfuil/hello-app   E2E fixture: the first compiled app (Main.pfui + minimal Vite plugin)
 ├── e2e/                 Playwright specs
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
 ├── README.md            product overview and quick start
@@ -79,10 +87,10 @@ version `0.0.0`.
 
 | File | Exports |
 |------|---------|
-| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `CompileOptions`, `CompileResult`, `ScopeNames`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`. `runtimeInfo` (placeholder). |
-| `packages/components/src/index.ts` | `componentsInfo` (`{ name, runtime }`), a placeholder; re-exports `componentMetadata` |
-| `packages/components/src/metadata.ts` | `componentMetadata` (empty object) |
+| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `CompileOptions`, `CompileResult`, `ScopeNames`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`. **Rendering:** `Bound`, `TextNode`, `loadModule`, `createElement`, `Fragment`. |
+| `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`; re-exports the metadata |
+| `packages/components/src/metadata.ts` | `componentMetadata` (the four components and their props), `ComponentMetadata` |
 
 ### Compiler source layout
 
@@ -92,6 +100,7 @@ version `0.0.0`.
 | `src/markup/` | The markup parser ([markup-parser.md](markup-parser.md)) |
 | `src/script/` | The script parser ([script-parser.md](script-parser.md)) |
 | `src/codegen/` | Binding compilation and the sandbox tables ([codegen.md](codegen.md)) |
+| `src/module/` | Whole documents to modules ([modules.md](modules.md)) |
 
 Positions everywhere in the compiler are **UTF-16 offsets** into the `.pfui`
 file, converted to line and column only when needed (diagnostics, and later
@@ -99,15 +108,19 @@ source maps). Script inside markup is parsed with its offset in the file
 (`offset`, or `offsets` for entity-decoded text), so script nodes point
 straight into the markup.
 
-**How the stages connect:** `parseMarkup` produces elements, attributes and
-text. Attribute values and text are entity-decoded with
-`decodeEntitiesWithOffsets`, then passed to `parseInterpolation` (values) or
-`parseStatements` (handlers, `<script>`). Deciding which attribute is which
-is not built yet: it is the job of the semantic stage, which needs component
-metadata. Until then, `tools/xmlui-corpus.test.ts` shows the wiring with a
-heuristic (`on*` and `method.*` are handlers). Values are then compiled with
-`compileInterpolation` against a scope; the caller supplies the scope names
-(until step 8, tests and the corpus check supply them).
+**How the stages connect:** `compileModule` (`src/module/`) drives the
+others:
+
+1. `parseMarkup` produces elements, attributes and text.
+2. Each attribute value and each text node is entity-decoded with
+   `decodeEntitiesWithOffsets`, split by `parseInterpolation`, and compiled
+   by `compileInterpolation` against the scope.
+3. The results become `createElement` calls, plus `Bound` wrappers and
+   hoisted binding objects where there are bindings.
+
+Handlers (`parseStatements`) are not compiled yet (step 6).
+`tools/xmlui-corpus.test.ts` still checks handler parsing with a heuristic
+(`on*` and `method.*` are handlers).
 
 ### No build step (yet)
 
@@ -128,7 +141,7 @@ compiled app ──► @patchfuil/runtime ◄── @patchfuil/components
 |---------|-----------|-----------------|
 | compiler | relative files; `@patchfuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
-| components | runtime, React (later Mantine) | compiler |
+| components | runtime, React (later Mantine) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 
 **Why:** the packages ship in different combinations. Standalone mode
@@ -179,6 +192,7 @@ All dev dependencies are pinned to exact versions in the root `package.json`.
 | `packages/compiler` | `lib: ["ES2023"]` (no DOM); includes `src`, `tests` and `bench` |
 | `packages/runtime` | includes `src`, `tests` and `bench` |
 | `packages/components`, `test-apps/smoke` | none |
+| `test-apps/hello` | `types: ["node"]` (its `vite.config.ts` holds the plugin) |
 | `tools` | `lib: ["ES2023"]`, `types: ["node"]` |
 | `e2e` | `types: ["node"]`; also covers `playwright.config.ts` |
 
@@ -191,7 +205,7 @@ Run from the repository root.
 | `npm install` | Installs everything and links the workspace packages |
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | Playwright; starts the Vite dev server for `test-apps/smoke` on port 5173 |
+| `npm run test:e2e` | Playwright; starts a Vite dev server per fixture app: `test-apps/smoke` on port 5173, `test-apps/hello` on 5174 |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
 | `npm run typecheck` | `tsc -p` for each package and folder, each with its own settings |
 | `npm run check` | typecheck, then unit tests, then E2E. Must pass before a step is done. |
@@ -210,6 +224,11 @@ One-time machine setup for E2E: `npx playwright install chromium`.
 | `runtime` | `packages/runtime` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}`; benchmarks: `bench/**/*.bench.{ts,tsx}` |
 | `components` | `packages/components` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
 | `tools` | `tools` | `node` | `**/*.test.ts` |
+
+Test files run **isolated** (`isolate: true`, set explicitly in
+`vitest.config.ts`): one fresh worker per file. `--no-isolate` gave no
+measurable wall-clock gain (files already run in parallel), and isolation
+keeps module state and the jsdom DOM from leaking between files.
 
 Conventions:
 
@@ -236,19 +255,23 @@ Conventions:
 | `packages/runtime/tests/smoke.test.tsx` | Package loads; React 19 renders in jsdom |
 | `packages/runtime/tests/reactivity/*` | The signal store, the React integration (StrictMode, unmounting, server rendering, tearing) and the scenario that compares signals with plain React state (see [reactivity.md](reactivity.md#tests)) |
 | `packages/runtime/tests/script/*.test.ts` | Compiled bindings run in the sandbox: semantics table, equivalence with native JavaScript, escape attempts (see [codegen.md](codegen.md#tests)) |
-| `packages/components/tests/smoke.test.ts` | Package loads and resolves the runtime; the metadata entry point loads on its own |
+| `packages/components/tests/smoke.test.ts` | Package loads; every component has metadata; the metadata entry point loads on its own |
+| `packages/components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM (see [modules.md](modules.md#tests)) |
+| `packages/compiler/tests/module/*.test.ts` | `compileModule` (see [modules.md](modules.md#tests)) |
+| `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule` |
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 4: 1,192 unit tests in 26 files.
+Count after step 5: 1,249 unit tests in 29 files.
 
-- Compiler: 605, of which markup 115, script 331, codegen 151 and source 8.
-- Runtime: 231, of which the script sandbox is 191, reactivity 38 and the
-  smoke test 2.
+- Compiler: 638, of which markup 115, script 331, codegen 151, module 33
+  and source 8.
+- Runtime: 241, of which the script sandbox is 191, reactivity 38,
+  rendering 10 and the smoke test 2.
 - Tools: 354, of which the corpus is 327, the boundaries 23 and the
   sandbox drift test 4.
-- Components: 2.
+- Components: 16, of which the first app is 14 and the smoke test 2.
 
 ### Benchmarks (Vitest 5)
 
@@ -272,8 +295,10 @@ Count after step 4: 1,192 unit tests in 26 files.
 ### E2E tests (Playwright)
 
 - Specs live in `e2e/*.spec.ts`; there is one browser project, Chromium.
-- `webServer` runs Vite with `test-apps/smoke/vite.config.ts` and is reused
-  locally if already running. CI settings (retries, `forbidOnly`, the GitHub
+- `webServer` starts one Vite dev server per fixture app (reused locally if
+  already running). `baseURL` is the smoke app; specs for other apps use
+  full URLs. `test-apps/hello` runs with `--configLoader runner` (see
+  [modules.md](modules.md#build-time-integration-fixture-only)). CI settings (retries, `forbidOnly`, the GitHub
   reporter) switch on when `CI` is set.
 - Fixture apps live in `test-apps/<name>/`, each a workspace package with
   `index.html`, `src/main.tsx` and `vite.config.ts`.
@@ -281,6 +306,7 @@ Count after step 4: 1,192 unit tests in 26 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/first-app.spec.ts` | **The first compiled app**: `test-apps/hello/src/Main.pfui`, compiled by the fixture's Vite plugin, renders the expected texts and buttons, lays out a horizontal `Stack` in a row, with no errors |
 
 ## Conventions
 
@@ -292,8 +318,8 @@ Count after step 4: 1,192 unit tests in 26 files.
 - **Branches:** each proof-of-concept step is developed on `poc/NN-topic`,
   reviewed by the user, then merged.
 - **Commits:** only when the user asks.
-- **Placeholders:** the `*Info` exports exist only to prove the wiring. They
-  are removed once a package has real exports (`compilerInfo` was removed in
-  step 1).
+- **Placeholders:** the `*Info` exports existed only to prove the wiring.
+  All are gone: `compilerInfo` was removed in step 1, `runtimeInfo` and
+  `componentsInfo` in step 5.
 - **Documentation:** every step ends by updating this file (see
   [README.md](README.md)).

@@ -13,9 +13,17 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: `npx vite --config test-apps/smoke/vite.config.ts --port ${port} --strictPort`,
-    url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
-  },
+  // One dev server per fixture app; specs for other apps use full URLs.
+  webServer: [
+    {
+      command: `npx vite --config test-apps/smoke/vite.config.ts --port ${port} --strictPort`,
+      url: `http://localhost:${port}`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npx vite --config test-apps/hello/vite.config.ts --configLoader runner --port 5174 --strictPort",
+      url: "http://localhost:5174",
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

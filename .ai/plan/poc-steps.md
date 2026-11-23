@@ -158,7 +158,9 @@ Plan, measurements and decision: [poc-04-reactivity.md](poc-04-reactivity.md).
 
 ## Phase B: Basic concepts, end to end
 
-### Step 5: First running app
+### Step 5: First running app ✅
+
+Plan and findings: [poc-05-first-app.md](poc-05-first-app.md).
 
 - **Subject:** the pipeline from markup to a compiled module to React to the
   browser, for `<App><Text value="{1 + 2}"/></App>`. Own minimal `App`,

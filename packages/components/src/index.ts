@@ -1,8 +1,2 @@
-import { runtimeInfo } from "@patchfuil/runtime";
-
-export { componentMetadata } from "./metadata";
-
-export const componentsInfo = {
-  name: "@patchfuil/components",
-  runtime: runtimeInfo.name,
-} as const;
+export { componentMetadata, type ComponentMetadata } from "./metadata";
+export { App, Button, Stack, Text } from "./basic";

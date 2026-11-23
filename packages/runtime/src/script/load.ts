@@ -22,6 +22,14 @@ function isThenable(value: unknown): boolean {
   );
 }
 
+/** Bindings are synchronous: a promise (any thenable) as a binding's value throws. */
+export function assertBindingValue<T>(value: T): T {
+  if (isThenable(value)) {
+    throw new BindingError("A binding cannot produce a promise; call async functions from an event handler");
+  }
+  return value;
+}
+
 /**
  * Instantiates compiled binding code (`($$s) => …`). Bindings are synchronous:
  * a promise (any thenable) as the result throws a BindingError.
@@ -32,11 +40,5 @@ export function loadBinding(code: string): Binding {
     runtime: unknown,
   ) => (scope: object) => unknown;
   const compiled = factory(scriptGlobals, scriptRuntime);
-  return (scope) => {
-    const value = compiled(scope);
-    if (isThenable(value)) {
-      throw new BindingError("A binding cannot produce a promise; call async functions from an event handler");
-    }
-    return value;
-  };
+  return (scope) => assertBindingValue(compiled(scope));
 }
