@@ -40,6 +40,7 @@ extensionless imports.
 | `sourceMap` | `"auto"` | `"auto"`: on while serving; in a build, on only when `build.sourcemap` is set. `true` / `false` force it |
 | `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint }` ([ssg.md](ssg.md)) |
 | `strictContracts` | `true` | `false`: contract violations are warnings ([contracts.md](contracts.md)) |
+| `extensions` | none | The app's own React components: `{ Name: { module, metadata } }`. `module` is relative to the Vite root and exports `Name`; each `.pfui` file imports it with a relative path (`componentModules`), and its contracts are checked like a built-in's. Example: the playground's `ScenarioSource`. |
 | `componentsDir` | `"src/components"` | User-defined component files, relative to the Vite root ([user-components.md](user-components.md#delivery)) |
 
 With source maps off, the compiler emits no position markers. The code is
@@ -51,7 +52,8 @@ identical either way (tested). The transform then returns
 - `enforce: "pre"`, so it runs before React's plugin, which expects
   JavaScript.
 - **Ids:** `pfuiFilePath(id)` drops `?query` and `#hash`, then matches
-  `.pfui`.
+  `.pfui`. An id with `?raw`, `?url`, `?inline` or `?worker` is not a module
+  to compile: `import.meta.glob("*.pfui", { query: "?raw" })` gets the text.
 - **Output:** `compileModule(source, { format: "esm", fileName: basename,
   sourceMap, components, userComponents, codeBehind })`. This is an ES
   module that imports `@patchfuil/runtime`, `@patchfuil/components` and

@@ -1,7 +1,8 @@
 <!--
   The playground: a dashboard of scenarios, each on its own page.
-  To add a scenario: create src/components/<Name>.pfui (wrap it in <ScenarioPage>),
-  add an entry to `scenarios` below, and a <Page> for it. See README.md.
+  To add a scenario: create src/components/<Name>Scenario.pfui (starting with
+  <ScenarioHeader>), add an entry to `scenarios` below, and a <Page> for it that
+  also shows its source (<ScenarioSource>). See README.md.
 -->
 <App
   var.scenarios="{[
@@ -24,9 +25,17 @@
       </Stack>
     </Page>
 
-    <Page url="/counter"><CounterScenario/></Page>
-    <Page url="/async"><AsyncScenario/></Page>
-    <Page url="/theming"><ThemingScenario/></Page>
-    <Page url="/inputs"><InputsScenario/></Page>
+    <Page url="/counter">
+      <Stack gap="24px"><CounterScenario/><ScenarioSource file="CounterScenario"/></Stack>
+    </Page>
+    <Page url="/async">
+      <Stack gap="24px"><AsyncScenario/><ScenarioSource file="AsyncScenario"/></Stack>
+    </Page>
+    <Page url="/theming">
+      <Stack gap="24px"><ThemingScenario/><ScenarioSource file="ThemingScenario"/></Stack>
+    </Page>
+    <Page url="/inputs">
+      <Stack gap="24px"><InputsScenario/><ScenarioSource file="InputsScenario"/></Stack>
+    </Page>
   </Pages>
 </App>
