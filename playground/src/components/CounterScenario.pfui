@@ -1,6 +1,6 @@
 <Component name="CounterScenario">
   <Stack gap="16px">
-    <ScenarioHeader title="Counter" description="Click to change a variable; the texts follow it."/>
+    <ScenarioHeader title="Counter" description="Steps 5-6: a first app. Click to change a variable; the texts follow it."/>
     <Stack gap="8px" var.count="{0}">
       <Stack orientation="horizontal" gap="8px">
         <Button label="Increment" onClick="count++"/>

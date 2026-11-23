@@ -13,6 +13,16 @@ export default defineConfig({
       prerender: true,
       // The playground's own React component, usable from markup.
       extensions: {
+        LiveMarkup: {
+          module: "src/react/LiveMarkup.tsx",
+          metadata: {
+            description: "Compiles markup in the browser: diagnostics, generated code, the rendered result.",
+            props: {
+              initialMarkup: { description: "The markup to start with.", valueType: "string" },
+              title: { description: "A caption above the editor.", valueType: "string" },
+            },
+          },
+        },
         ScenarioSource: {
           module: "src/react/ScenarioSource.tsx",
           metadata: {
@@ -27,6 +37,6 @@ export default defineConfig({
   // Its own ports: 5173 belongs to the E2E smoke app (Playwright reuses a running server).
   server: { port: 5190 },
   preview: { port: 5191 },
-  // React, ReactDOM and Mantine make one ~500 kB chunk; known, not a problem here.
-  build: { chunkSizeWarningLimit: 700 },
+  // React, ReactDOM, Mantine and (for the live compiler) the compiler: one ~670 kB chunk; fine here.
+  build: { chunkSizeWarningLimit: 900 },
 });

@@ -1,0 +1,16 @@
+<Component name="ExpressionsScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Expressions" description="Steps 2-3: the script language in bindings, compiled to sandboxed JavaScript."/>
+    <Stack gap="8px" var.items="{[3, 1, 2]}" var.user="{({ name: 'Ada', address: { city: 'London' } })}">
+      <Text>Arithmetic: 1 + 2 * 3 = {1 + 2 * 3}; 7 % 3 = {7 % 3}; (1 + 2) * 3 = {(1 + 2) * 3}</Text>
+      <Text>Template literal: {`Hello, ${user.name} from ${user.address.city}!`}</Text>
+      <Text>Optional chaining by default: user.phone.number is {user.phone.number ?? 'missing, no error'}</Text>
+      <Text>Conditional and logical: {items.length > 2 ? 'many' : 'few'}, {null || 'fallback'}, {0 ?? 'not used'}</Text>
+      <Text>Array methods: sorted {[...items].sort().join(', ')}; doubled {items.map(x => x * 2).join(', ')}; sum {items.reduce((a, b) => a + b, 0)}</Text>
+      <Text>Spread: {JSON.stringify({ ...user, extra: true })}</Text>
+      <Text>Allowed globals: Math.max = {Math.max(...items)}; Number.isInteger(2) = {Number.isInteger(2)}; new Date(0) = {new Date(0).toISOString()}</Text>
+      <Text>typeof, in, instanceof: {typeof items}, {'name' in user}, {items instanceof Array}</Text>
+      <Text variant="secondary">Banned names (window, document, eval, …) are compile errors: try them in the "Live compiler" scenario.</Text>
+    </Stack>
+  </Stack>
+</Component>

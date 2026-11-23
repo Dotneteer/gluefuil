@@ -14,10 +14,29 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
   // Every button on the dashboard opens a scenario.
   const titles = await page.getByRole("button").allTextContents();
-  expect(titles).toEqual(["Counter", "Async handlers", "Theming", "Inputs"]);
+  expect(titles).toEqual([
+    "Markup",
+    "Expressions",
+    "Reactivity",
+    "Counter",
+    "Variables",
+    "Async handlers",
+    "Component IDs",
+    "Source maps",
+    "Conditionals",
+    "Items and templates",
+    "User-defined components",
+    "Live compiler",
+    "Inputs",
+    "Text and headings",
+    "Theming",
+    "Behaviors",
+    "Routing",
+  ]);
   for (const title of titles) {
     await page.getByRole("button", { name: title, exact: true }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+    // The page title is the first h1 (a scenario may show more, such as the H1 example).
+    await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText(title);
     // The scenario's own source, as monospace text with its line breaks and indentation.
     const source = page.locator("pre code").first();
     await expect(source).toContainText('<Component name="');

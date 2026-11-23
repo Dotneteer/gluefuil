@@ -1,0 +1,19 @@
+<Component name="TextScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Text and headings" description="Step 16: Text variants (semantic elements) and Heading / H1–H6."/>
+    <Items data="{['strong', 'em', 'code', 'keyboard', 'marked', 'deleted', 'inserted', 'sample', 'var', 'abbr', 'cite', 'small', 'sub', 'sup', 'secondary', 'caption', 'mono', 'placeholder', 'subheading', 'subtitle', 'title', 'paragraph']}">
+      <Stack orientation="horizontal" gap="12px">
+        <Text variant="mono">{$item}</Text>
+        <Text variant="{$item}">The quick brown fox</Text>
+      </Stack>
+    </Items>
+    <H1>H1 heading</H1>
+    <H2>H2 heading</H2>
+    <H3>H3 heading</H3>
+    <H4>H4 heading</H4>
+    <H5>H5 heading</H5>
+    <H6>H6 heading</H6>
+    <Heading level="3" value="Heading level=3"/>
+    <Text maxLines="2">maxLines="2": Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</Text>
+  </Stack>
+</Component>

@@ -1,0 +1,15 @@
+<Component name="SourceMapsScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Source maps" description="Step 9: compiled code maps back to the .pfui file."/>
+    <Stack gap="8px">
+      <Text>Open the browser's developer tools (Sources and Console), then click the button.</Text>
+      <Button
+        label="Throw an error in a handler"
+        onClick="
+          const reason = 'source maps';
+          throw new Error('thrown in SourceMapsScenario.pfui: ' + reason);
+        "/>
+      <Text variant="secondary">The error's stack trace points to the throw line in components/SourceMapsScenario.pfui; with "pause on exceptions", the debugger stops there.</Text>
+    </Stack>
+  </Stack>
+</Component>

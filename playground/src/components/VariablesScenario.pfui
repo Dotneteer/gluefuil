@@ -1,0 +1,37 @@
+<Component name="VariablesScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Variables" description="Step 6: variables follow their expression until assigned; deep writes and array mutations copy on write."/>
+    <H3>Follow until assigned</H3>
+    <Stack gap="8px" var.source="{1}" var.mirror="{source * 10}">
+      <Text>source = {source}, mirror = {mirror}</Text>
+      <Stack orientation="horizontal" gap="8px">
+        <Button label="source++" onClick="source++"/>
+        <Button label="Assign mirror = 0 (stops following)" onClick="mirror = 0"/>
+      </Stack>
+    </Stack>
+    <H3>Deep writes</H3>
+    <Stack gap="8px" var.user="{({ name: 'Ada', address: { city: 'London' } })}">
+      <Text>{user.name} lives in {user.address.city}.</Text>
+      <Stack orientation="horizontal" gap="8px">
+        <Button label="Move to Paris" onClick="user.address.city = 'Paris'"/>
+        <Button label="Add an exclamation" onClick="user.name += '!'"/>
+        <Button label="Delete the city" onClick="delete user.address.city"/>
+      </Stack>
+    </Stack>
+    <H3>Array mutations</H3>
+    <Stack gap="8px" var.list="{['banana', 'apple', 'cherry']}">
+      <Text>{list.join(', ') || '(empty)'}</Text>
+      <Stack orientation="horizontal" gap="8px">
+        <Button label="push" onClick="list.push('item ' + (list.length + 1))"/>
+        <Button label="remove first" onClick="list.splice(0, 1)"/>
+        <Button label="sort" onClick="list.sort()"/>
+        <Button label="reverse" onClick="list.reverse()"/>
+      </Stack>
+    </Stack>
+    <H3>The variable tag</H3>
+    <Stack>
+      <variable name="tagged" value="declared with a variable tag"/>
+      <Text>{tagged}</Text>
+    </Stack>
+  </Stack>
+</Component>

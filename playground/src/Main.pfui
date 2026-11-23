@@ -1,23 +1,37 @@
 <!--
-  The playground: a dashboard of scenarios, each on its own page.
+  The playground: a dashboard of scenarios, each on its own page with its source.
   To add a scenario: create src/components/<Name>Scenario.pfui (starting with
-  <ScenarioHeader>), add an entry to `scenarios` below, and a <Page> for it that
-  also shows its source (<ScenarioSource>). See README.md.
+  <ScenarioHeader>), add an entry to `scenarios` below, and a <Page> for it.
+  See README.md.
 -->
 <App
   var.scenarios="{[
-    { path: '/counter', title: 'Counter', description: 'Variables, handlers and reactive text.' },
-    { path: '/async', title: 'Async handlers', description: 'Implicit await, handler policies, cancellation.' },
-    { path: '/theming', title: 'Theming', description: 'Tone switching, scoped themes, variants.' },
-    { path: '/inputs', title: 'Inputs', description: 'Mantine TextBox, Select and Checkbox bound to variables.' }
+    { path: '/markup', step: '2', title: 'Markup', description: 'Entities, CDATA, comments, whitespace, escaped braces.' },
+    { path: '/expressions', step: '2–3', title: 'Expressions', description: 'The script language in bindings; allowed globals.' },
+    { path: '/reactivity', step: '4', title: 'Reactivity', description: 'Derived values, glitch-free updates, batching.' },
+    { path: '/counter', step: '5–6', title: 'Counter', description: 'A first app: variables, handlers and reactive text.' },
+    { path: '/variables', step: '6', title: 'Variables', description: 'Follow until assigned, deep writes, array mutations.' },
+    { path: '/async', step: '7', title: 'Async handlers', description: 'Implicit await, policies, cancellation, timeouts.' },
+    { path: '/ids', step: '8', title: 'Component IDs', description: 'APIs through ids, in any order: value, setValue, focus.' },
+    { path: '/source-maps', step: '9', title: 'Source maps', description: 'A handler error points to its .pfui line.' },
+    { path: '/conditionals', step: '10', title: 'Conditionals', description: 'when, responsive when-*, onMount / onUnmount.' },
+    { path: '/templates', step: '10', title: 'Items and templates', description: 'Item templates, context variables, ids per row.' },
+    { path: '/user-components', step: '14', title: 'User-defined components', description: 'Props, events, methods, slots, code-behind.' },
+    { path: '/live', step: '3, 15', title: 'Live compiler', description: 'Type markup: diagnostics, generated code, result.' },
+    { path: '/inputs', step: '16', title: 'Inputs', description: 'Mantine TextBox, Select and Checkbox bound to variables.' },
+    { path: '/text', step: '16', title: 'Text and headings', description: 'Text variants, Heading and H1–H6.' },
+    { path: '/theming', step: '17', title: 'Theming', description: 'Tone switching, scoped themes, variants.' },
+    { path: '/behaviors', step: '18', title: 'Behaviors', description: 'label, tooltip and variant on any component.' },
+    { path: '/routing', step: '19', title: 'Routing', description: 'navigate, Link, route and query parameters.' }
   ]}">
   <Pages fallbackPath="/">
     <Page url="/">
       <Stack gap="16px">
         <H1>pfui playground</H1>
-        <Text variant="secondary">Pick a scenario. Each page has a way back to this dashboard.</Text>
+        <Text variant="secondary">Pick a scenario. Each page shows its source and has a way back to this dashboard.</Text>
         <Items data="{scenarios}">
           <Stack orientation="horizontal" gap="12px">
+            <Text variant="mono">Step {$item.step}</Text>
             <Button label="{$item.title}" onClick="navigate($item.path)"/>
             <Text variant="secondary">{$item.description}</Text>
           </Stack>
@@ -25,17 +39,31 @@
       </Stack>
     </Page>
 
-    <Page url="/counter">
-      <Stack gap="24px"><CounterScenario/><ScenarioSource file="CounterScenario"/></Stack>
+    <Page url="/markup"><Stack gap="24px"><MarkupScenario/><ScenarioSource file="MarkupScenario"/></Stack></Page>
+    <Page url="/expressions"><Stack gap="24px"><ExpressionsScenario/><ScenarioSource file="ExpressionsScenario"/></Stack></Page>
+    <Page url="/reactivity"><Stack gap="24px"><ReactivityScenario/><ScenarioSource file="ReactivityScenario"/></Stack></Page>
+    <Page url="/counter"><Stack gap="24px"><CounterScenario/><ScenarioSource file="CounterScenario"/></Stack></Page>
+    <Page url="/variables"><Stack gap="24px"><VariablesScenario/><ScenarioSource file="VariablesScenario"/></Stack></Page>
+    <Page url="/async"><Stack gap="24px"><AsyncScenario/><ScenarioSource file="AsyncScenario"/></Stack></Page>
+    <Page url="/ids"><Stack gap="24px"><IdsScenario/><ScenarioSource file="IdsScenario"/></Stack></Page>
+    <Page url="/source-maps"><Stack gap="24px"><SourceMapsScenario/><ScenarioSource file="SourceMapsScenario"/></Stack></Page>
+    <Page url="/conditionals"><Stack gap="24px"><ConditionalsScenario/><ScenarioSource file="ConditionalsScenario"/></Stack></Page>
+    <Page url="/templates"><Stack gap="24px"><TemplatesScenario/><ScenarioSource file="TemplatesScenario"/></Stack></Page>
+    <Page url="/user-components">
+      <Stack gap="24px">
+        <UserComponentsScenario/>
+        <ScenarioSource file="UserComponentsScenario"/>
+        <ScenarioSource file="DemoRating"/>
+        <ScenarioSource file="DemoCounter"/>
+        <ScenarioSource file="DemoCard"/>
+      </Stack>
     </Page>
-    <Page url="/async">
-      <Stack gap="24px"><AsyncScenario/><ScenarioSource file="AsyncScenario"/></Stack>
-    </Page>
-    <Page url="/theming">
-      <Stack gap="24px"><ThemingScenario/><ScenarioSource file="ThemingScenario"/></Stack>
-    </Page>
-    <Page url="/inputs">
-      <Stack gap="24px"><InputsScenario/><ScenarioSource file="InputsScenario"/></Stack>
-    </Page>
+    <Page url="/live"><Stack gap="24px"><LiveCompilerScenario/><ScenarioSource file="LiveCompilerScenario"/></Stack></Page>
+    <Page url="/inputs"><Stack gap="24px"><InputsScenario/><ScenarioSource file="InputsScenario"/></Stack></Page>
+    <Page url="/text"><Stack gap="24px"><TextScenario/><ScenarioSource file="TextScenario"/></Stack></Page>
+    <Page url="/theming"><Stack gap="24px"><ThemingScenario/><ScenarioSource file="ThemingScenario"/></Stack></Page>
+    <Page url="/behaviors"><Stack gap="24px"><BehaviorsScenario/><ScenarioSource file="BehaviorsScenario"/></Stack></Page>
+    <Page url="/routing"><Stack gap="24px"><RoutingScenario/><ScenarioSource file="RoutingScenario"/></Stack></Page>
+    <Page url="/routing/:item"><Stack gap="24px"><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></Stack></Page>
   </Pages>
 </App>
