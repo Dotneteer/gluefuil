@@ -4,7 +4,7 @@
 > and how component IDs expose APIs. Describes the code as it is. Design
 > and XMLUI comparison: [`../plan/poc-08-scoping-ids.md`](../plan/poc-08-scoping-ids.md).
 >
-> **Last updated:** step 10 (template context variables).
+> **Last updated:** step 14 (inside user-defined components).
 
 ## Name resolution (compile time)
 
@@ -18,6 +18,16 @@ A name in a binding or handler resolves to the first match:
 | 3 | Component ID | `id="x"` **anywhere in the file** | No (C012); use API methods |
 | 4 | App global | The runtime (`delay`) | No (C012) |
 | 5 | Sandbox global | `Math`, `JSON`, … ([codegen.md](codegen.md)) | No (C010) |
+
+**Inside a `<Component>` body** the same order applies to the component's own
+names only:
+- code-behind functions resolve like variables, but are read-only (C012);
+- `$props`, `$self`, `emitEvent` and `hasEventHandler` come before app globals
+  and are read-only.
+
+The caller's names are not visible (C001): isolation. Slot content passed by
+a caller is compiled in the caller's scope
+([user-components.md](user-components.md)).
 
 - **Anything else is a compile error:**
   - a known platform global: C002;

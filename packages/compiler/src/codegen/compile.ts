@@ -1,6 +1,6 @@
 // Public entry points for compiling bindings. See .ai/plan/poc-03-codegen.md.
 
-import type { Expression, Program } from "../script/ast";
+import type { Expression, FunctionDeclaration, Program } from "../script/ast";
 import type { InterpolationSegment } from "../script/interpolation";
 import type { Diagnostic } from "../source/diagnostic";
 import { Emitter, type ScopeNames } from "./emitter";
@@ -105,4 +105,15 @@ export function compileHandler(program: Program, options: CompileHandlerOptions)
   const fn = emitter.handlerFunction(program);
   const code = `($$s) => ${fn}`;
   return { code, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
+}
+
+/**
+ * Compiles a code-behind function declaration (step 14) to `($$s) => function f(…) {…}`.
+ * It is compiled like a function nested in a handler: it may write variables,
+ * and it is synchronous unless it contains `await`.
+ */
+export function compileFunction(node: FunctionDeclaration, options: CompileHandlerOptions): CompileResult {
+  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers });
+  const fn = emitter.functionValue(node);
+  return { code: `($$s) => ${fn}`, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
 }

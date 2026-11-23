@@ -6,7 +6,7 @@
 > the code as it is. Design, the options considered and the XMLUI
 > comparison: [`../plan/poc-07-async-handlers.md`](../plan/poc-07-async-handlers.md).
 >
-> **Last updated:** step 7.
+> **Last updated:** step 14 (`HandlerSlot.call`).
 
 ## What a handler compiles to
 
@@ -91,6 +91,14 @@ are delivered as one batch:
 ## Policies, timeouts, unmount (`HandlerSlot`)
 
 `Bound` keeps one `HandlerSlot` per handler prop and element instance.
+
+- `invoke(args)` (event props) returns nothing and reports errors.
+- `call(args)` (`emitEvent`, component methods: step 14) returns a promise
+  of the handler's result:
+  - `undefined` when the policy drops the call, the call is cancelled, or the
+    slot is disposed while it is queued;
+  - a handler error rejects the promise and is **not** reported (the caller
+    receives it).
 
 | Policy | A call while one is running |
 |--------|-----------------------------|

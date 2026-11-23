@@ -246,3 +246,50 @@ test("the app scope provides exactly the app globals", () => {
   expect(Object.keys(scope).sort()).toEqual([...APP_GLOBAL_NAMES].sort());
   expect(scope.delay).toBe(delay);
 });
+
+describe("HandlerSlot.call (emitEvent, component methods): a promise of the result", () => {
+  /** A handler function that returns `body(args)`; `body` may be async. */
+  const raw = (body: (...args: unknown[]) => unknown): HandlerFunction => () => (...args) => body(...args);
+
+  test("resolves with the handler's result, sync or async", async () => {
+    expect(await new HandlerSlot(raw((a) => `got ${String(a)}`)).call([1])).toBe("got 1");
+    expect(await new HandlerSlot(raw(async () => (await wait(1), 42))).call([])).toBe(42);
+  });
+
+  test("an error rejects the call and is not reported (the caller has it)", async () => {
+    const slot = new HandlerSlot(raw(() => {
+      throw new Error("boom");
+    }));
+    await expect(slot.call([])).rejects.toThrow("boom");
+    expect(reported).toEqual([]);
+  });
+
+  test("dropped, cancelled or disposed calls resolve to undefined", async () => {
+    const dropping = new HandlerSlot(raw(() => delay(20).then(() => "done")), "drop-while-running");
+    const first = dropping.call([]);
+    expect(await dropping.call([])).toBeUndefined();
+    expect(await first).toBe("done");
+
+    const single = new HandlerSlot(raw(() => delay(20).then(() => "done")), "single-flight");
+    const superseded = single.call([]);
+    const winner = single.call([]);
+    expect(await superseded).toBeUndefined();
+    expect(await winner).toBe("done");
+
+    const queue = new HandlerSlot(raw(() => delay(20)), "queue");
+    const running = queue.call([]);
+    const queued = queue.call([]);
+    queue.dispose();
+    expect(await queued).toBeUndefined();
+    expect(await running).toBeUndefined();
+    expect(await queue.call([])).toBeUndefined();
+    expect(reported).toEqual([]);
+  });
+
+  test("invoke still reports errors", async () => {
+    new HandlerSlot(raw(() => {
+      throw new Error("reported");
+    })).invoke([]);
+    expect(reported).toEqual([new Error("reported")]);
+  });
+});

@@ -14,7 +14,7 @@ import { variable } from "../reactivity/variable";
 import { assertBindingValue } from "../script/binding-value";
 import { apiRegistrar } from "./component-api";
 import { HandlerSlot, type HandlerFunction, type HandlerPolicy } from "./handlers";
-import { templateRenderer, type TemplateFunction } from "./templates";
+import { templateRenderer, type TemplateFunction, type TemplateRenderer } from "./templates";
 
 /** A compiled binding: `($$s) => value`. */
 export type BindingFunction = (scope: object) => unknown;
@@ -56,6 +56,20 @@ export function Bound({ type, props, bindings, handlers, policies, timeouts, id,
     for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
     return result;
   }, [bindings, scope]);
+  const { handlerProps, templateProps, registerApi } = useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }, false);
+  const extra = registerApi ? { registerApi } : undefined;
+  return createElement(type, { ...props, ...values, ...handlerProps, ...templateProps, ...extra }, children);
+}
+
+type Wiring = Pick<BoundProps, "handlers" | "policies" | "timeouts" | "id" | "templates" | "lifecycle" | "scope">;
+
+/**
+ * What every compiled element with behavior needs: one handler slot per
+ * handler, the API registrar for its `id`, template renderers, lifecycle
+ * handlers. `withResults`: handler props return a promise of the handler's
+ * result (`HandlerSlot.call`, for `emitEvent`), instead of nothing.
+ */
+export function useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }: Wiring, withResults: boolean) {
   // One slot per handler: it applies the policy, the timeout, and batching
   // (one batch per synchronous segment of each call).
   const slots = useMemo(() => {
@@ -74,19 +88,20 @@ export function Bound({ type, props, bindings, handlers, policies, timeouts, id,
     };
   }, [slots]);
   const handlerProps = useMemo(() => {
-    const result: Record<string, (...args: unknown[]) => void> = {};
-    for (const name in slots) result[name] = (...args) => slots[name]!.invoke(args);
+    const result: Record<string, (...args: unknown[]) => unknown> = {};
+    for (const name in slots) {
+      result[name] = withResults ? (...args) => slots[name]!.call(args) : (...args) => slots[name]!.invoke(args);
+    }
     return result;
-  }, [slots]);
+  }, [slots, withResults]);
   const registerApi = useMemo(() => (id === undefined ? undefined : apiRegistrar(scope, id)), [id, scope]);
-  const extra = registerApi ? { registerApi } : undefined;
   const templateProps = useMemo(() => {
-    const result: Record<string, unknown> = {};
+    const result: Record<string, TemplateRenderer> = {};
     for (const name in templates) result[name] = templateRenderer(scope, templates[name]!);
     return result;
   }, [templates, scope]);
   useLifecycle(lifecycle, scope);
-  return createElement(type, { ...props, ...values, ...handlerProps, ...templateProps, ...extra }, children);
+  return { handlerProps, templateProps, registerApi };
 }
 
 /**
@@ -119,8 +134,11 @@ function useLifecycle(lifecycle: BoundProps["lifecycle"], scope: object): void {
   }, [slots]);
 }
 
-/** How a container declares one variable: an initializer binding or a constant. */
-export type VariableDefinition = { init: BindingFunction } | { value: unknown };
+/**
+ * How a container declares one name: a variable with an initializer binding or
+ * a constant, or a code-behind function (`fn` builds it for the new scope).
+ */
+export type VariableDefinition = { init: BindingFunction } | { value: unknown } | { fn: (scope: object) => (...args: unknown[]) => unknown };
 
 /**
  * Creates a container's variables once per component instance and returns its
@@ -128,17 +146,29 @@ export type VariableDefinition = { init: BindingFunction } | { value: unknown };
  * refer to each other; they are evaluated lazily, so order does not matter.
  */
 export function useScope(parent: object, definitions: Record<string, VariableDefinition>): object {
-  const [scope] = useState(() => {
-    const entries: Record<string, ScopeEntry> = {};
-    let created: object | undefined;
-    for (const [name, definition] of Object.entries(definitions)) {
-      const init = "init" in definition ? () => assertBindingValue(definition.init(created!)) : () => definition.value;
-      entries[name] = { variable: variable(init) };
-    }
-    created = createScope(entries, parent);
-    return created;
-  });
+  const [scope] = useState(() => createVariableScope(parent, definitions));
   return scope;
+}
+
+/** The scope `useScope` creates: variables (lazy initializers) and functions, over `parent`. */
+export function createVariableScope(parent: object, definitions: Record<string, VariableDefinition>): object {
+  const entries: Record<string, ScopeEntry> = {};
+  let created: object | undefined;
+  const functions: [holder: { fn?: (...args: unknown[]) => unknown }, build: (scope: object) => (...args: unknown[]) => unknown][] = [];
+  for (const [name, definition] of Object.entries(definitions)) {
+    if ("fn" in definition) {
+      // The function closes over the scope, which exists only after this loop.
+      const holder: { fn?: (...args: unknown[]) => unknown } = {};
+      functions.push([holder, definition.fn]);
+      entries[name] = { value: (...args: unknown[]) => holder.fn!(...args) };
+      continue;
+    }
+    const init = "init" in definition ? () => assertBindingValue(definition.init(created!)) : () => definition.value;
+    entries[name] = { variable: variable(init) };
+  }
+  created = createScope(entries, parent);
+  for (const [holder, build] of functions) holder.fn = build(created);
+  return created;
 }
 
 /** Text content: `null` and `undefined` render nothing; other values as text. */

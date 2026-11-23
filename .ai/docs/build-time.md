@@ -4,7 +4,7 @@
 > during a Vite build or dev session. Describes the code as it is. Design and
 > XMLUI comparison: [`../plan/poc-12-build-time.md`](../plan/poc-12-build-time.md).
 >
-> **Last updated:** step 13 (the `prerender` option).
+> **Last updated:** step 14 (component files, code-behind).
 
 ## Using it
 
@@ -39,6 +39,7 @@ extensionless imports.
 | `components` | the built-in metadata | The components markup may use (`Record<string, ComponentMetadata>`) |
 | `sourceMap` | `"auto"` | `"auto"`: on while serving; in a build, on only when `build.sourcemap` is set. `true` / `false` force it |
 | `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint }` ([ssg.md](ssg.md)) |
+| `componentsDir` | `"src/components"` | User-defined component files, relative to the Vite root ([user-components.md](user-components.md#delivery)) |
 
 With source maps off, the compiler emits no position markers. The code is
 identical either way (tested). The transform then returns
@@ -51,10 +52,19 @@ identical either way (tested). The transform then returns
 - **Ids:** `pfuiFilePath(id)` drops `?query` and `#hash`, then matches
   `.pfui`.
 - **Output:** `compileModule(source, { format: "esm", fileName: basename,
-  sourceMap, components })`. This is an ES module that imports
-  `@patchfuil/runtime` and `@patchfuil/components`, and whose default
-  export is the root component. The map's `sources` entry is the file's
-  basename, which the browser resolves relative to the module.
+  sourceMap, components, userComponents, codeBehind })`. This is an ES
+  module that imports `@patchfuil/runtime`, `@patchfuil/components` and
+  the user components it uses (`./components/X.pfui`), and whose default
+  export is the root component (an app file) or the component (a
+  component file). The map's `sources` entry is the file's basename,
+  which the browser resolves relative to the module.
+- **User components and code-behind** ([user-components.md](user-components.md#delivery)):
+  - the folder `componentsDir` is scanned on every transform; each
+    component file is `addWatchFile`d;
+  - `<file>.xs` is read (and watched) as code-behind, and its errors fail
+    the transform at the `.xs` file;
+  - a component or code-behind file appearing or disappearing recompiles
+    every `.pfui` module and reloads.
 - **Warnings:** `this.warn` with `loc`.
 - **Errors:** `this.error` with:
   - `id`, `loc` (`file`, 1-based `line`, 0-based `column`) and `frame` for
@@ -105,6 +115,7 @@ app's config):
 |------|----------|
 | `vite-plugin/src/index.ts` | `pfui(options)`, `pfuiFilePath`, `formatErrors`, `PfuiPluginOptions` |
 | `vite-plugin/src/prerender.ts` | Static generation ([ssg.md](ssg.md)) |
+| `vite-plugin/src/components.ts` | Component discovery and code-behind ([user-components.md](user-components.md)) |
 | `compiler/src/source/diagnostic.ts` | `codeFrame` (with `formatDiagnostic`) |
 | `test-apps/hello/vite.config.ts` | The plugin in use; `preview.headers` sets the CSP |
 

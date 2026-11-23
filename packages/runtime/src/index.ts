@@ -76,6 +76,15 @@ export {
 export { TemplateInstance, templateRenderer, type TemplateFunction, type TemplateRenderer } from "./render/templates";
 export { loadModule, type ModuleImports, type ModuleSourceMap } from "./render/module";
 export { mountApp, PRERENDERED_ATTRIBUTE, READY_ATTRIBUTE, type MountOptions } from "./render/mount";
+export {
+  BoundUser,
+  DEFAULT_SLOT,
+  Slot,
+  SLOTS,
+  useComponent,
+  type ComponentInput,
+  type SlotProps,
+} from "./render/user-components";
 export { inServerView, isServerView } from "./reactivity/server-view";
 // Compiled code creates elements through the runtime, never through React directly.
 export { createElement, Fragment } from "react";

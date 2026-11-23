@@ -33,6 +33,7 @@ export type { ScriptSourceOptions } from "./script/parser";
 // --- Code generation (bindings) ---------------------------------------------------
 export {
   compileExpression,
+  compileFunction,
   compileHandler,
   compileInterpolation,
   type CompileHandlerOptions,
@@ -52,6 +53,7 @@ export {
 
 // --- Modules (.pfui documents) ------------------------------------------------------
 export { compileModule, type CompileModuleOptions, type CompileModuleResult } from "./module/compile-module";
+export { analyzeModule, COMPONENT_NAME, DEFAULT_SLOT, type ModuleAnalysis, type UserComponentInfo } from "./module/analyze";
 export { ModuleDiagnostics, type ModuleDiagnosticCode } from "./module/diagnostics";
 
 // --- Source maps -------------------------------------------------------------------

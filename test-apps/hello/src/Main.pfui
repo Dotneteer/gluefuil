@@ -1,3 +1,11 @@
+<!-- Step 14: an inline component (XMLUI user-defined-components.md) -->
+<Component name="NameValue">
+  <Stack orientation="horizontal" gap="4px">
+    <Text>Name: {$props.name}</Text>
+    <Text>Value: {$props.value ?? '[no value]'}</Text>
+  </Stack>
+</Component>
+
 <App var.count="{0}" var.source="{0}" var.mirror="{source}" var.status="Idle">
   <Stack gap="8px">
     <Text value="{1 + 2}"/>
@@ -76,5 +84,24 @@
       <Button label="drop-while-running" handlerPolicy="drop-while-running" onClick="const i = ++n; log.push('s' + i); delay(150); log.push('e' + i)"/>
       <Text>drop-while-running: {log.join(',')}</Text>
     </Stack>
+
+    <!-- Step 14: user-defined components (components/*.pfui) -->
+    <NameValue name="Mary" value="123"/>
+    <NameValue name="Joe"/>
+    <Stack var.increments="" gap="4px">
+      <IncButton onIncremented="(clickCount) => increments += ' ' + clickCount"/>
+      <Text>Increments:{increments}</Text>
+    </Stack>
+    <Counter id="counter1"/>
+    <Button label="Reset counter (external)" onClick="counter1.reset()"/>
+    <StatusList items="{[{ label: 'Build', ok: true }, { label: 'Tests', ok: false }]}">
+      <property name="rowTemplate">
+        <Text>{$item.ok ? 'passed' : 'failed'}: {$item.label}</Text>
+      </property>
+    </StatusList>
+    <StatusList items="{[{ label: 'Deploy' }]}"/>
+    <Panel title="with content"><Text>Panel content: count is {count}</Text></Panel>
+    <Panel title="empty"/>
+    <Text>{shout('code-behind')}</Text>
   </Stack>
 </App>

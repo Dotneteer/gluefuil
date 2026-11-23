@@ -7,10 +7,12 @@ import {
   formatDiagnostic,
   LineMap,
   type Diagnostic,
+  type UserComponentInfo,
 } from "@patchfuil/compiler";
 import type { ComponentMetadata } from "@patchfuil/components/metadata";
-import { basename } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
+import { ComponentFolder, importSpecifier, readCodeBehind } from "./components";
 import { injectPrerendered, renderEntry, resolvePrerender, type PrerenderOptions } from "./prerender";
 
 export { injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
@@ -30,6 +32,11 @@ export interface PfuiPluginOptions {
    * (entry `src/Main.pfui`, root id `root`, breakpoint `xs`). Off by default.
    */
   prerender?: boolean | PrerenderOptions;
+  /**
+   * The folder of user-defined component files (`<Name>.pfui`, each defining
+   * `<Component name="Name">`), relative to the Vite root. Default "src/components".
+   */
+  componentsDir?: string;
 }
 
 const EXTENSION = ".pfui";
@@ -51,6 +58,8 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
   const prerender = resolvePrerender(options.prerender);
   let sourceMap = true;
   let config: ResolvedConfig | undefined;
+  let folder: ComponentFolder | undefined;
+  const componentsFolder = () => (folder ??= new ComponentFolder(resolve(config?.root ?? process.cwd(), options.componentsDir ?? "src/components")));
   return {
     name: "pfui",
     // Before other transforms (React's), which expect JavaScript.
@@ -65,21 +74,61 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
       async handler(html) {
         if (!prerender || !config || config.command !== "build" || config.build.ssr) return html;
         // The render's own server uses only the compile step (no prerender, no maps).
-        const transform = pfui({ sourceMap: false, ...(options.components ? { components: options.components } : {}) });
+        const transform = pfui({
+          sourceMap: false,
+          ...(options.components ? { components: options.components } : {}),
+          ...(options.componentsDir ? { componentsDir: options.componentsDir } : {}),
+        });
         const { html: inner, attributes } = await renderEntry(config.root, prerender, transform);
         return injectPrerendered(html, prerender.rootId, inner, attributes);
       },
     },
+    configureServer(server) {
+      // A component file (or code-behind) appearing or disappearing changes what
+      // other files compile to: recompile every .pfui module and reload.
+      const changed = (path: string) => {
+        if (!path.endsWith(".pfui") && !path.endsWith(".pfui.xs")) return;
+        for (const [id, module] of server.moduleGraph.idToModuleMap) {
+          if (pfuiFilePath(id)) server.moduleGraph.invalidateModule(module);
+        }
+        server.hot.send({ type: "full-reload" });
+      };
+      server.watcher.on("add", changed);
+      server.watcher.on("unlink", changed);
+    },
     transform(source, id) {
       const file = pfuiFilePath(id);
       if (!file) return undefined;
-      const { code, map, diagnostics } = compileModule(source, {
+      // The other component files' interfaces; a change to one recompiles this file.
+      const userComponents: Record<string, UserComponentInfo> = {};
+      for (const [name, found] of componentsFolder().scan()) {
+        this.addWatchFile(found.file);
+        if (found.file === file) continue;
+        userComponents[name] = { ...found.info, module: importSpecifier(dirname(file), found.file) };
+      }
+      const codeBehind = readCodeBehind(file);
+      if (codeBehind !== undefined) this.addWatchFile(`${file}.xs`);
+      const { code, map, diagnostics, codeBehindDiagnostics } = compileModule(source, {
         format: "esm",
         // The map's source resolves relative to the module's URL.
         fileName: basename(file),
         sourceMap,
+        userComponents,
+        ...(codeBehind !== undefined ? { codeBehind } : {}),
         ...(options.components ? { components: options.components } : {}),
       });
+      const codeBehindErrors = (codeBehindDiagnostics ?? []).filter((d) => d.severity === "error");
+      if (codeBehind !== undefined && codeBehindErrors.length > 0) {
+        const xs = `${file}.xs`;
+        const xsLines = new LineMap(codeBehind);
+        const { line, column } = xsLines.positionAt(codeBehindErrors[0]!.start);
+        this.error({
+          message: `${codeBehindErrors.length} error${codeBehindErrors.length === 1 ? "" : "s"} in ${basename(xs)}:\n${formatErrors(codeBehindErrors, codeBehind, xs)}`,
+          id: xs,
+          loc: { file: xs, line: line + 1, column },
+          frame: codeFrame(codeBehind, xsLines, codeBehindErrors[0]!.start),
+        });
+      }
       const lineMap = new LineMap(source);
       for (const warning of diagnostics.filter((d) => d.severity === "warning")) {
         const { line, column } = lineMap.positionAt(warning.start);

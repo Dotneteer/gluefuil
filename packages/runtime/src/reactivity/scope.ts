@@ -3,6 +3,7 @@
 // Every name is an accessor:
 //   - a variable: a getter that reads it (tracked) and a setter that assigns it;
 //   - a signal: a getter;
+//   - a getter: any read-only computed name (a component's `$props`);
 //   - a plain value (functions, component APIs, constants): a data property.
 //
 // A child scope's prototype is its parent, so names resolve with shadowing, and
@@ -16,6 +17,7 @@ import type { Variable } from "./variable";
 export type ScopeEntry =
   | { variable: Variable<unknown> }
   | { signal: ReadonlySignal<unknown> }
+  | { get: () => unknown }
   | { value: unknown };
 
 /** Builds a (frozen) scope object, optionally inheriting from `parent`. */
@@ -29,6 +31,8 @@ export function createScope(entries: Record<string, ScopeEntry>, parent: object 
     } else if ("signal" in entry) {
       const s = entry.signal;
       descriptor = { get: () => s.get(), enumerable: true };
+    } else if ("get" in entry) {
+      descriptor = { get: entry.get, enumerable: true };
     } else {
       descriptor = { value: entry.value, enumerable: true };
     }

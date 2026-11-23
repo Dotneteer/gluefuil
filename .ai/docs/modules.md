@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 10 (when, templates, lifecycle).
+> **Last updated:** step 14 (user-defined components, code-behind).
 
 ## Role
 
@@ -122,7 +122,7 @@ export default Main;
 | `attr="…{expr}…"` | A binding (step 3 interpolation rules) |
 | `attr` with no value | The string `"true"` (as XMLUI) |
 | `var.x="…"`, `<variable name="x" value="…"/>` | A variable of the element (which becomes a container). Its value is interpolated: constant or binding. A key-only `var.x` is `"true"`; `<variable>` without `value` is `undefined`. |
-| `global.x`, `<global>` | The same, allowed only on the root element (E006). Global visibility in user-defined components is step 14. |
+| `global.x`, `<global>` | The same, allowed only on the root element (E006). Not visible inside user-defined components yet. |
 | `onClick="…"` | A handler (`compileHandler`, statements, async: see [async-handlers.md](async-handlers.md)). The event must be in the component's metadata `events` (E004). |
 | `handlerPolicy="…"`, `handlerPolicy:onClick="…"`, `handlerTimeoutMs`, `handlerTimeoutMs:onClick` | `policies: { onClick: "queue" }`, `timeouts: { onClick: 500 }` on the `Bound` element. The per-handler form wins. Constants only; unknown policy or non-numeric timeout: E009. |
 | `<event name="click">…</event>` | The same. Text or CDATA content, not whitespace-collapsed; components inside are E002. |
@@ -130,11 +130,13 @@ export default Main;
 | `when`, `when-xs` … `when-xxl` | A `When` wrapper, or nothing for a constant false ([visibility-templates.md](visibility-templates.md)) |
 | `onMount`, `onUnmount` (`onInit`, `onCleanup`); `<event name="mount">` | `lifecycle: $$lN` on any element |
 | `<property name="tpl">markup</property>`; children of an element with a `childrenTemplate` | A template function `$$TN`, given as `templates: $$tN` |
-| `method.*`, `event.*` | E002 (step 14) |
+| `<Component name="X">` (top level), `<Slot>`, `method.*`, `<method>` | User-defined components ([user-components.md](user-components.md)) |
+| `<X …>` for a user component | `$$h($$BoundUser, …)`; all content becomes templates (slots) |
+| `event.*` | E002 |
 | Whitespace-only text | Dropped (trivia) |
 | Other text | Interpolated. Whitespace runs in literal parts collapse to one space (U+00A0 is kept); expressions are not collapsed. With expressions, it becomes a `Bound` `TextNode`. |
 | CDATA | Literal text, without interpolation or collapsing |
-| `<script>` | E002 (step 6) |
+| `<script>` | E002 (code-behind files are the supported form: [user-components.md](user-components.md)) |
 | Comments | Dropped |
 
 ## Diagnostics
@@ -156,6 +158,7 @@ export default Main;
 | E013 | Unknown template property, non-template `<property>`, content besides an explicit children template |
 | E014 | `id` inside a template |
 | E015 | Unknown `when-*` breakpoint |
+| E016–E019 | User-defined components, slots and code-behind ([user-components.md](user-components.md#compiling-compilemodule)) |
 
 ## Build-time integration
 

@@ -1,0 +1,8 @@
+<!-- XMLUI user-defined-components.md § Passing data into slot content -->
+<Component name="StatusList">
+  <Items data="{$props.items}">
+    <Slot name="rowTemplate" item="{$item}">
+      <Text>{$item.label}</Text>
+    </Slot>
+  </Items>
+</Component>
