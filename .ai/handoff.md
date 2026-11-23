@@ -4,21 +4,23 @@
 > then [`docs/code-structure.md`](docs/code-structure.md) before changing code.
 > Update this file when you hand off again.
 >
-> **Written:** after proof-of-concept steps 0–19 (2026-11-23).
+> **Written:** after proof-of-concept steps 0–19 (2026-11-23); updated
+> after the inserted steps 19A–19C (the App shell).
 
 ## State
 
-- **`master` is clean, and everything is merged.** All working branches
-  were deleted after their merges, by the user's request. The step history
-  is in `master` through merge commits.
+- **`master` holds steps 0–19 and 19A–19C (the App shell), merged.**
+  Earlier branches were deleted after their merges, by the user's request;
+  `poc/19a-app-shell` still exists. Step 20 has not started.
 - **The remote `origin`** (github.com/Dotneteer/patchfuil) **has nothing
   pushed.** Pushing is the user's decision.
-- **`npm run check` passes and prints no warnings:** 1,965 unit tests in
-  67 files and 95 E2E tests. A new warning is worth a look:
+- **`npm run check` passes and prints no warnings:** 2,035 unit tests in
+  69 files and 122 E2E tests. A new warning is worth a look:
   `code-structure.md` § E2E says why the output is quiet.
 - **Steps 0–19 of [`plan/poc-steps.md`](plan/poc-steps.md) are done**
   (✅), each with its plan `plan/poc-NN-*.md`, which ends in *Outcome*,
-  *Findings* and *Open for later steps*.
+  *Findings* and *Open for later steps*. The inserted 19A–19C have one
+  plan, [`plan/poc-19a-app-shell.md`](plan/poc-19a-app-shell.md).
 
 ### Where the work deviated from `poc-steps.md`
 
@@ -43,7 +45,9 @@
 
 - **`npm run playground`** starts it on http://localhost:5190 (use
   `playground:preview` for the prerendered build, on 5191).
-- **A dashboard of 17 scenarios,** one per concept of steps 2–19. Each page
+- **A dashboard of 18 scenarios,** one per concept of steps 2–19C, on the
+  App shell (a side nav lists them). `layouts.html?layout=…` is a second
+  page: one App shell demo per XMLUI layout. Each page
   shows its own source (`ScenarioSource`, an app React component).
 - **"Live compiler"** compiles markup in the browser (`LiveMarkup`).
 - **Tests:** `e2e/playground.spec.ts` (smoke) and
@@ -99,6 +103,7 @@
   | 5177 | routing dev server |
   | 5178 | routing build |
   | 5180 | playground under E2E |
+  | 5181 | playground production build under E2E |
   | 5190 | playground for the user |
   | 5191 | playground preview |
 
@@ -131,9 +136,10 @@
 
 - **Step 20: data binding** (`DataSource`, `APICall`). It needs a decision:
   `@tanstack/react-query` is in the plan.
-- **The rest of step 19:** the layout model and the App shell.
-- **The rest of step 21:** active links, `willNavigate`/`didNavigate`,
-  prerendering every static route.
+- **The rest of step 19:** the layout model (`Stack` sizing, star sizing).
+  The App shell was done as the inserted steps 19A–19C.
+- **The rest of step 21:** `willNavigate`/`didNavigate`, prerendering every
+  static route. (Active links came with `NavLink`.)
 - **Gaps recorded in the plans' "Open for later steps":**
   - global variables in user components;
   - `<script>` blocks;
@@ -142,4 +148,8 @@
   - app components in standalone mode;
   - state-preserving hot reload;
   - bundle size (Mantine doubled it);
+  - App-level theme variable overrides (XMLUI's `desktop` padding 0);
+  - the App shell's open items (`poc-19a-app-shell.md`, *Open for later
+    steps*): RTL drawer, scroll lock, more NavLink props, an `Aside`,
+    an icon library;
   - runtime contract checks of bound values.

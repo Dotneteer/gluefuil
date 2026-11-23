@@ -1,0 +1,8 @@
+<!-- XMLUI layout="condensed-sticky" (the default): the nav in the header; the header and footer stick. No settings needed. -->
+<App>
+  <property name="logoTemplate"><Text variant="strong">◆ Acme</Text></property>
+  <AppHeader title="condensed-sticky"/>
+  <NavPanel><LayoutDemoLinks/></NavPanel>
+  <LayoutDemoPages/>
+  <Footer>Footer</Footer>
+</App>

@@ -99,8 +99,10 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
     transformIndexHtml: {
       // After other plugins: the page is final except for the app's HTML.
       order: "post",
-      async handler(html) {
+      async handler(html, context) {
         if (!prerender || !config || config.command !== "build" || config.build.ssr) return html;
+        // Only index.html: other pages of a multi-page build have their own entries.
+        if (context?.path !== undefined && context.path !== "/index.html") return html;
         // The render's own server uses only the compile step (no prerender, no maps).
         const transform = pfui({
           sourceMap: false,

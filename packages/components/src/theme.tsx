@@ -1,10 +1,11 @@
 // App-level theming and the <Theme> element (step 17). The engine compiles the
 // active theme and tone (runtime theme state) to CSS custom properties.
-import { activeThemeId, activeThemeTone, setRoutingMode, setThemeDefaults, useSignal } from "@patchfuil/runtime";
+import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@patchfuil/runtime";
 import { MantineProvider } from "@mantine/core";
-import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
 import { componentMetadata, componentThemeDefaults } from "./metadata";
+import { appLogo, needsGeneratedHeader, Shell, shellAttributes, type ShellConfig } from "./shell";
 import { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
 import { compileTheme, scopedThemeVars, type Tone } from "./theming/engine";
 import { BUILT_IN_THEME_MAP } from "./theming/themes";
@@ -24,15 +25,38 @@ function useActiveTheme(): { themeId: string; tone: Tone; style: CSSProperties }
   return { themeId, tone, style };
 }
 
+/**
+ * The root of an app: the theme and tone, and the shell (shell.tsx) around the
+ * content. The compiler passes the regions (`$$header`, `$$nav`, `$$footer`)
+ * and their settings (`$$shell`).
+ */
 export function App({
   defaultTheme,
   defaultTone,
   useHashBasedRouting,
+  scroll,
+  logo,
+  "logo-light": logoLight,
+  "logo-dark": logoDark,
+  logoTemplate,
+  $$header,
+  $$nav,
+  $$footer,
+  $$shell,
   children,
 }: {
   defaultTheme?: unknown;
   defaultTone?: unknown;
   useHashBasedRouting?: unknown;
+  scroll?: unknown;
+  logo?: unknown;
+  "logo-light"?: unknown;
+  "logo-dark"?: unknown;
+  logoTemplate?: TemplateRenderer;
+  $$header?: ReactNode;
+  $$nav?: ReactNode;
+  $$footer?: ReactNode;
+  $$shell?: ShellConfig;
   children?: ReactNode;
 }) {
   // Routing mode (step 19): hash-based unless explicitly false.
@@ -40,10 +64,17 @@ export function App({
   // Before reading the state, so this render (and a server render) uses them.
   setThemeDefaults(typeof defaultTheme === "string" ? defaultTheme : undefined, typeof defaultTone === "string" ? defaultTone : undefined);
   const { tone, style } = useActiveTheme();
+  const shell: ShellConfig = $$shell ?? { scroll: typeof scroll === "string" ? scroll : "page" };
+  const root = useRef<HTMLDivElement>(null);
+  const collapsed = useSignal(navPanelCollapsed);
+  const drawerOpen = useSignal(navDrawerOpen);
+  // A generated header (shell.tsx) shows on wide screens only when the nav lives in it.
+  const headerShown = $$header !== undefined || (needsGeneratedHeader(shell, false) && shell.nav?.placement === "header");
+  const attributes = shellAttributes(shell, headerShown, collapsed, drawerOpen);
   return (
     // data-mantine-color-scheme: Mantine's tone selectors match below the app,
     // also in a server render (no script has to set it on <html> first).
-    <div className="pfui-App" data-tone={tone} data-mantine-color-scheme={tone} style={style}>
+    <div ref={root} className="pfui-App" data-tone={tone} data-mantine-color-scheme={tone} style={style} {...attributes}>
       <style href={MANTINE_STYLESHEET_HREF} precedence="pfui">
         {MANTINE_STYLESHEET}
       </style>
@@ -52,7 +83,9 @@ export function App({
       </style>
       {/* Mantine's variables and global classes come from MANTINE_STYLESHEET: no <style> elements of its own. */}
       <MantineProvider forceColorScheme={tone} withCssVariables={false} withGlobalClasses={false}>
-        {children}
+        <Shell config={shell} header={$$header} nav={$$nav} footer={$$footer} logo={appLogo(tone, logo, logoLight, logoDark, logoTemplate)} root={root}>
+          {children}
+        </Shell>
       </MantineProvider>
     </div>
   );

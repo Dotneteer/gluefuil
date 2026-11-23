@@ -1,0 +1,8 @@
+<!-- XMLUI layout="vertical-sticky": a full-height side nav (the logo moves into it); everything sticks. -->
+<App>
+  <property name="logoTemplate"><Text variant="strong">◆ Acme</Text></property>
+  <AppHeader title="vertical-sticky"/>
+  <NavPanel placement="side" fullHeight="true"><LayoutDemoLinks/></NavPanel>
+  <LayoutDemoPages/>
+  <Footer>Footer</Footer>
+</App>

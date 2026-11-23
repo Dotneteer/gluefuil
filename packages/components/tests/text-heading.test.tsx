@@ -12,7 +12,7 @@ function inner(markup: string): string {
   const { code, diagnostics } = compileModule(`<App>${markup}</App>`, { format: "function" });
   expect(diagnostics).toEqual([]);
   const Main = loadModule(code, { components });
-  return render(<Main />).container.querySelector(".pfui-App")!.innerHTML.replace(/<style[^>]*>.*?<\/style>/gs, "");
+  return render(<Main />).container.querySelector(".pfui-AppContent")!.innerHTML.replace(/<style[^>]*>.*?<\/style>/gs, "");
 }
 
 describe("Text", () => {

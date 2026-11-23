@@ -3,6 +3,10 @@
   To add a scenario: create src/components/<Name>Scenario.pfui (starting with
   <ScenarioHeader>), add an entry to `scenarios` below, and a <Page> for it.
   See README.md.
+
+  The App shell (steps 19A–19C): a header with the tone toggle, a collapsible
+  side nav built from `scenarios`, and a footer. Below the lg breakpoint the
+  nav moves into a drawer, opened from the header.
 -->
 <App
   var.scenarios="{[
@@ -22,8 +26,21 @@
     { path: '/text', step: '16', title: 'Text and headings', description: 'Text variants, Heading and H1–H6.' },
     { path: '/theming', step: '17', title: 'Theming', description: 'Tone switching, scoped themes, variants.' },
     { path: '/behaviors', step: '18', title: 'Behaviors', description: 'label, tooltip and variant on any component.' },
-    { path: '/routing', step: '19', title: 'Routing', description: 'navigate, Link, route and query parameters.' }
+    { path: '/routing', step: '19', title: 'Routing', description: 'navigate, Link, route and query parameters.' },
+    { path: '/app-shell', step: '19A–C', title: 'App shell', description: 'Header, nav, footer: every XMLUI layout, desktop and phone.' }
   ]}">
+  <AppHeader title="pfui playground">
+    <NavPanelCollapseButton/>
+    <property name="profileMenuTemplate">
+      <Button label="Tone: {activeThemeTone}" onClick="toggleThemeTone()"/>
+    </property>
+  </AppHeader>
+  <NavPanel placement="side" collapsible="true">
+    <NavLink label="Dashboard" to="/" icon="home"/>
+    <Items data="{scenarios}">
+      <NavLink label="{$item.title}" to="{$item.path}"/>
+    </Items>
+  </NavPanel>
   <Pages fallbackPath="/">
     <Page url="/">
       <Stack gap="16px">
@@ -65,5 +82,9 @@
     <Page url="/behaviors"><Stack gap="24px"><BehaviorsScenario/><ScenarioSource file="BehaviorsScenario"/></Stack></Page>
     <Page url="/routing"><Stack gap="24px"><RoutingScenario/><ScenarioSource file="RoutingScenario"/></Stack></Page>
     <Page url="/routing/:item"><Stack gap="24px"><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></Stack></Page>
+    <Page url="/app-shell"><Stack gap="24px"><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></Stack></Page>
   </Pages>
+  <Footer sticky="false">
+    <Text variant="secondary">pfui playground: manual testing for the proof-of-concept steps.</Text>
+  </Footer>
 </App>

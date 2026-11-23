@@ -281,3 +281,29 @@ test("Source maps: the handler's exception resolves to its line in SourceMapsSce
   await cdp.send("Debugger.setPauseOnExceptions", { state: "none" });
   await cdp.send("Debugger.resume");
 });
+
+test("App shell: the preview frames each layout; the playground's own nav collapses", async ({ page }) => {
+  await open(page, "/app-shell");
+  const frame = page.frameLocator('iframe[title^="Layout:"]');
+  // Each layout runs as its own page in the frame.
+  await expect(page.locator("iframe")).toHaveAttribute("title", "Layout: condensed-sticky");
+  await expect(frame.getByRole("heading", { name: "Home" })).toBeVisible();
+  await expect(text(page, "layouts/condensed-sticky.pfui")).toBeVisible();
+  await button(page, "vertical-sticky").click();
+  await expect(page.locator("iframe")).toHaveAttribute("title", "Layout: vertical-sticky");
+  await expect(frame.locator(".pfui-App")).toHaveAttribute("data-nav-full-height", "");
+  await frame.getByRole("link", { name: "Orders" }).click();
+  await expect(frame.getByRole("heading", { name: "Orders" })).toBeVisible();
+  // At phone width the frame's nav is a drawer.
+  await button(page, "Phone").click();
+  await expect(frame.getByRole("navigation", { name: "Main" })).toBeHidden();
+  await frame.getByRole("button", { name: "Open navigation" }).click();
+  await expect(frame.getByRole("navigation", { name: "Main" })).toBeVisible();
+  // The scenario's button drives this playground's own shell through setNavPanelCollapsed.
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await button(page, "Collapse this playground's nav: false").click();
+  await expect(page.locator("#root .pfui-App").first()).toHaveAttribute("data-nav-collapsed", "");
+  expect((await nav.boundingBox())!.width).toBe(48);
+  await page.getByRole("button", { name: "Expand navigation" }).click();
+  await expect(button(page, "Collapse this playground's nav: false")).toBeVisible();
+});

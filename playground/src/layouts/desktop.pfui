@@ -1,0 +1,7 @@
+<!-- XMLUI layout="desktop": no nav; only the content area scrolls, between the header and the footer. -->
+<App scroll="content">
+  <property name="logoTemplate"><Text variant="strong">◆ Acme</Text></property>
+  <AppHeader title="desktop"/>
+  <LayoutDemoPages/>
+  <Footer>Footer</Footer>
+</App>

@@ -1,0 +1,8 @@
+<!-- XMLUI layout="horizontal-sticky": the nav in a bar below the header; all of them stick. -->
+<App>
+  <property name="logoTemplate"><Text variant="strong">◆ Acme</Text></property>
+  <AppHeader title="horizontal-sticky"/>
+  <NavPanel placement="below-header"><LayoutDemoLinks/></NavPanel>
+  <LayoutDemoPages/>
+  <Footer>Footer</Footer>
+</App>

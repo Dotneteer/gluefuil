@@ -1,0 +1,8 @@
+<!-- New, no XMLUI layout name: the nav in the header, and only the content area scrolls. -->
+<App scroll="content">
+  <property name="logoTemplate"><Text variant="strong">◆ Acme</Text></property>
+  <AppHeader title="condensed-content"/>
+  <NavPanel><LayoutDemoLinks/></NavPanel>
+  <LayoutDemoPages/>
+  <Footer>Footer</Footer>
+</App>

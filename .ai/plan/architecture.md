@@ -668,6 +668,9 @@ review, not a decision.
 
 ## Area 6 (part): the App shell
 
+> Refined into a step plan: [poc-19a-app-shell.md](poc-19a-app-shell.md)
+> (Draft), which answers the open questions below with recommendations.
+
 **Keep:** `App` as the hub: the root of the app, the owner of routing
 (`Pages`/`Page`), navigation (`NavPanel`/`NavLink`), theme and tone, locale
 and direction, and app-level events (`willNavigate`, `didNavigate`, `ready`,
@@ -767,15 +770,15 @@ non-sticky regions needs checking; if it can't, we implement the shell as a
 small CSS grid of our own and use Mantine only for the drawer and the burger
 button.
 
-### Open questions (App shell)
+### Open questions (App shell): answered
 
-1. Region-owned settings (as proposed), or all settings as attributes on `App`?
-2. Do we want presets at all?
-3. Logo: keep the automatic placement ("the logo shows in the top-left
-   region"), or make authors place an explicit `<AppLogo/>` in the header or
-   nav?
-4. Is `top` vs `header` (a separate bar vs merged into the header) a
-   distinction worth keeping?
+Answered in [poc-19a-app-shell.md](poc-19a-app-shell.md) (*Decisions*):
+
+1. Region-owned settings, with `scroll` on `App`.
+2. No presets.
+3. The logo shows in the top-left region (the header, or a full-height side
+   nav); `logoTemplate` on a region overrides it there.
+4. Yes: `placement="header"` and `placement="below-header"`.
 
 ## Open questions
 

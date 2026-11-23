@@ -22,6 +22,10 @@ interface ComponentMetadata {
   themeVars?: Record<string, string>;             // theme variable defaults (step 17)
   themeVarAttributes?: boolean;                   // other attributes are theme variables (Theme)
   nonVisual?: boolean;                            // no behaviors (step 18)
+  isRoute?: boolean;                              // E027 (step 19)
+  regions?: Record<string, string>;               // App: region children become these props (steps 19A–19C)
+  isRegion?: boolean;                             // E028: only as a direct child of App
+  removedProps?: Record<string, { message: string; byValue?: Record<string, string> }>;   // E030
 }
 interface PropMetadata {
   description: string;
@@ -68,6 +72,9 @@ props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 | E025 | A `<Theme>` attribute that is neither a prop nor a known theme variable ([theming.md](theming.md#contracts)) | the attribute name |
 | E026 | A literal-only prop (`isLiteral`) given an expression: `Page url` ([routing.md](routing.md)) | the value |
 | E027 | A route (`isRoute`: `Page`) using `when` or variables, which would wrap it | the attribute or `<variable>` |
+| E028 | The App shell: a region (`isRegion`) not a direct child of `App`, or twice; `fullHeight`/`collapsible` without a side nav; `NavPanelCollapseButton` without a collapsible side nav ([app-shell.md](app-shell.md)) | the element or attribute name |
+| E029 | A warning: `sticky` on a region when `App scroll` is not `page` | the attribute name |
+| E030 | A removed prop (`removedProps`: App `layout`, `scrollWholePage`, `fitContent`), with what to write instead | the attribute name |
 | C015 | An unknown member of a component ID (`box.valu`, `c.rest()`), with "did you mean"; a component without `api` has no members | the member |
 
 - **Bound values are not type-checked:** their values are known only at

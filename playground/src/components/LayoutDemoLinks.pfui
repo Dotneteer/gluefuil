@@ -1,0 +1,10 @@
+<!-- The navigation of every layout demo (src/layouts/). A component inside a NavPanel. -->
+<Component name="LayoutDemoLinks">
+  <NavLink label="Home" to="/" icon="home"/>
+  <NavLink label="Orders" to="/orders" icon="list"/>
+  <NavGroup label="Reports" icon="chart">
+    <NavLink label="Sales" to="/reports/sales"/>
+    <NavLink label="Costs" to="/reports/costs"/>
+  </NavGroup>
+  <NavLink label="Settings" to="/settings" icon="settings"/>
+</Component>
