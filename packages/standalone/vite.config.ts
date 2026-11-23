@@ -21,5 +21,13 @@ export default defineConfig({
       formats: ["iife"],
       fileName: () => "pfui.js",
     },
+    rolldownOptions: {
+      onLog(level, log, handler) {
+        // Mantine marks its modules "use client" (a React Server Components directive):
+        // meaningless in this client-side bundle, and reported once per module (800+ lines).
+        if (log.code === "MODULE_LEVEL_DIRECTIVE" && log.message.includes('"use client"')) return;
+        handler(level, log);
+      },
+    },
   },
 });

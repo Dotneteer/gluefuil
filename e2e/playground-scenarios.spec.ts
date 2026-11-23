@@ -1,7 +1,9 @@
-import { expect, test, type Page } from "@playwright/test";
+import { originalPositionFor, type SourceMap } from "@patchfuil/compiler";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
-// The playground's scenarios do what their pages say (project "playground").
-// The smoke test (playground.spec.ts) opens every page; this one interacts.
+// The playground's scenarios do what their pages say (project "playground"):
+// one test per scenario page. The smoke test (playground.spec.ts) opens every
+// page; this one interacts and checks the results.
 
 const open = async (page: Page, path: string) => {
   await page.goto(`/#${path}`);
@@ -10,6 +12,7 @@ const open = async (page: Page, path: string) => {
 const button = (page: Page, name: string | RegExp) => page.getByRole("button", { name, exact: typeof name === "string" });
 // Exact for strings: the page also shows its source, which contains the same phrases.
 const text = (page: Page, value: string | RegExp) => page.getByText(value, { exact: typeof value === "string" });
+const style = (locator: Locator, property: string) => locator.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), property);
 
 test("Markup: entities, CDATA, whitespace, escaped braces", async ({ page }) => {
   await open(page, "/markup");
@@ -161,4 +164,120 @@ test("Routing: route and query parameters, replace, back to the scenario", async
   await button(page, "Back to the routing scenario").click();
   await page.getByRole("link", { name: "A link with an encoded segment" }).click();
   await expect(text(page, "$routeParams.item = hello world")).toBeVisible();
+});
+
+test("Counter: the texts follow the variable; a conditional text appears at five", async ({ page }) => {
+  await open(page, "/counter");
+  await expect(text(page, "Count: 0")).toBeVisible();
+  for (let i = 0; i < 5; i++) await button(page, "Increment").click();
+  await expect(text(page, "Count: 5")).toBeVisible();
+  await expect(text(page, "Doubled: 10")).toBeVisible();
+  await expect(page.locator("strong.pfui-Text", { hasText: "Five or more!" })).toBeVisible();
+  await button(page, "Reset").click();
+  await expect(text(page, "Count: 0")).toBeVisible();
+  await expect(text(page, "Five or more!")).toHaveCount(0);
+});
+
+test("Text and headings: each variant renders its element; headings; maxLines clamps", async ({ page }) => {
+  await open(page, "/text");
+  const elements: [variant: string, tag: string][] = [
+    ["strong", "strong"], ["em", "em"], ["code", "code"], ["keyboard", "kbd"], ["marked", "mark"], ["deleted", "del"],
+    ["inserted", "ins"], ["sample", "samp"], ["var", "var"], ["abbr", "abbr"], ["cite", "cite"], ["small", "small"],
+    ["sub", "sub"], ["sup", "sup"], ["paragraph", "p"], ["secondary", "span"], ["title", "span"], ["mono", "span"],
+  ];
+  for (const [variant, tag] of elements) {
+    await expect(page.locator(`${tag}.pfui-Text[data-variant="${variant}"]`, { hasText: "The quick brown fox" }), variant).toBeVisible();
+  }
+  // Styled variants differ from plain text.
+  const plain = page.locator('.pfui-Text[data-variant="mono"]').first();
+  expect(await style(page.locator('code.pfui-Text[data-variant="code"]', { hasText: "The quick brown fox" }), "font-family")).toMatch(/mono|Menlo|Consolas/i);
+  expect(await style(page.locator('strong.pfui-Text[data-variant="strong"]', { hasText: "The quick brown fox" }), "font-weight")).toBe("700");
+  expect(await style(plain, "font-family")).toMatch(/mono|Menlo|Consolas/i);
+  for (let level = 1; level <= 6; level++) {
+    await expect(page.getByRole("heading", { level, name: `H${level} heading` })).toBeVisible();
+  }
+  await expect(page.getByRole("heading", { level: 3, name: "Heading level=3" })).toBeVisible();
+  // Sizes decrease with the level.
+  const h1 = parseFloat(await style(page.getByRole("heading", { level: 1, name: "H1 heading" }), "font-size"));
+  const h6 = parseFloat(await style(page.getByRole("heading", { level: 6, name: "H6 heading" }), "font-size"));
+  expect(h1).toBeGreaterThan(h6);
+  // maxLines="2": the text is clipped to two lines.
+  const clamped = page.locator(".pfui-Text", { hasText: 'maxLines="2"' });
+  expect(await style(clamped, "-webkit-line-clamp")).toBe("2");
+  // The same text without the clamp is taller: some of it is cut off.
+  const heights = await clamped.evaluate((el) => {
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.removeAttribute("style");
+    el.parentElement!.appendChild(clone);
+    const full = clone.getBoundingClientRect().height;
+    clone.remove();
+    return { clamped: el.getBoundingClientRect().height, full };
+  });
+  expect(heights.full).toBeGreaterThan(heights.clamped);
+});
+
+test("Theming: the tone toggle, theme switching, a scoped Theme, a dark region, a variant", async ({ page }) => {
+  await open(page, "/theming");
+  const app = page.locator(".pfui-App");
+  const plainButton = button(page, "Toggle tone");
+  await expect(text(page, "Tone: light, theme: pfui")).toBeVisible();
+  expect(await style(app, "background-color")).toBe("rgb(255, 255, 255)");
+  expect(await style(plainButton, "background-color")).toBe("rgb(37, 99, 235)");
+  // A scoped Theme: only its subtree.
+  expect(await style(button(page, "A Button in a scoped Theme"), "background-color")).toBe("rgb(217, 119, 6)");
+  // A variant defined by its enclosing Theme.
+  expect(await style(button(page, "variant=danger"), "background-color")).not.toBe("rgb(37, 99, 235)");
+  // The dark region differs from the light app; after the toggle, the app matches it.
+  const darkText = await style(text(page, "This text is in a dark-tone region."), "color");
+  expect(await style(app, "color")).not.toBe(darkText);
+  await plainButton.click();
+  await expect(text(page, "Tone: dark, theme: pfui")).toBeVisible();
+  expect(await style(app, "background-color")).not.toBe("rgb(255, 255, 255)");
+  expect(await style(app, "color")).toBe(darkText);
+  // Themes change the primary color everywhere outside scoped overrides.
+  await button(page, "Green theme").click();
+  await expect(text(page, "Tone: dark, theme: pfui-green")).toBeVisible();
+  expect(await style(plainButton, "background-color")).toBe("rgb(22, 163, 74)");
+  await button(page, "Red theme").click();
+  expect(await style(plainButton, "background-color")).toBe("rgb(220, 38, 38)");
+  expect(await style(button(page, "A Button in a scoped Theme"), "background-color")).toBe("rgb(217, 119, 6)");
+  await button(page, "Default theme").click();
+  expect(await style(plainButton, "background-color")).toBe("rgb(37, 99, 235)");
+});
+
+test("Source maps: the handler's exception resolves to its line in SourceMapsScenario.pfui", async ({ page }) => {
+  // Through the Chrome DevTools Protocol (as e2e/source-maps.spec.ts does for the hello app).
+  const cdp = await page.context().newCDPSession(page);
+  const scripts = new Map<string, { url: string; sourceMapURL: string }>();
+  cdp.on("Debugger.scriptParsed", (event) => scripts.set(event.scriptId, { url: event.url, sourceMapURL: event.sourceMapURL ?? "" }));
+  await cdp.send("Debugger.enable");
+  await open(page, "/source-maps");
+  await cdp.send("Debugger.setPauseOnExceptions", { state: "all" });
+  const paused = new Promise<{ scriptId: string; lineNumber: number; columnNumber: number }>((resolve) => {
+    cdp.on("Debugger.paused", (event) => {
+      const description = String((event.data as { description?: string } | undefined)?.description ?? "");
+      if ((event.reason === "exception" || event.reason === "promiseRejection") && description.includes("thrown in SourceMapsScenario.pfui")) {
+        const location = event.callFrames[0]!.location;
+        resolve({ scriptId: location.scriptId, lineNumber: location.lineNumber, columnNumber: location.columnNumber ?? 0 });
+      } else {
+        void cdp.send("Debugger.resume");
+      }
+    });
+  });
+  // Not awaited: the page is paused until we resume.
+  void button(page, "Throw an error in a handler").click();
+  const location = await paused;
+
+  const script = scripts.get(location.scriptId)!;
+  expect(script.url).toMatch(/\/src\/components\/SourceMapsScenario\.pfui(\?|$)/);
+  const base64 = script.sourceMapURL.split("base64,")[1];
+  expect(base64).toBeTruthy();
+  const map = JSON.parse(Buffer.from(base64!, "base64").toString("utf8")) as SourceMap;
+  const original = originalPositionFor(map, location.lineNumber, location.columnNumber);
+  expect(original).toBeDefined();
+  const markupLine = map.sourcesContent![0]!.split("\n")[original!.line]!;
+  expect(markupLine.slice(original!.column)).toBe("throw new Error('thrown in SourceMapsScenario.pfui: ' + reason);");
+
+  await cdp.send("Debugger.setPauseOnExceptions", { state: "none" });
+  await cdp.send("Debugger.resume");
 });

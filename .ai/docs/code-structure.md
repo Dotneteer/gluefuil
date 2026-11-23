@@ -420,7 +420,18 @@ Count after IDs in templates and extensions: 1,965 unit tests in 67 files.
     errors and shows its source) and `playground-scenarios.spec.ts` (each
     scenario does what its page says).
 - `webServer` starts one server per fixture (reused locally if already
-  running). `test-apps/hello` runs with `--configLoader runner` (see
+  running).
+- **The output stays quiet (`npm run check` prints no warnings), on purpose:**
+  - the standalone build filters Mantine's `"use client"` directive messages
+    (`MODULE_LEVEL_DIRECTIVE`, 800+ lines; meaningless in a client bundle);
+  - the fixture apps raise `chunkSizeWarningLimit` (React, ReactDOM and
+    Mantine are a known ~500 kB);
+  - the fixture dev servers turn off Vite's `server.forwardConsole`. It is on
+    by default under an AI agent, and would print the source-map tests'
+    deliberate throws. The playground turns it off only under the E2E suite
+    (`PFUI_E2E`).
+
+  A new warning is therefore worth a look. `test-apps/hello` runs with `--configLoader runner` (see
   [build-time.md](build-time.md#using-it)). CI settings (retries,
   `forbidOnly`, the GitHub reporter) switch on when `CI` is set.
 - Fixture apps live in `test-apps/<name>/`, each a workspace package with

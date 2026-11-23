@@ -35,7 +35,9 @@ export default defineConfig({
     react(),
   ],
   // Its own ports: 5173 belongs to the E2E smoke app (Playwright reuses a running server).
-  server: { port: 5190 },
+  // Under the E2E suite (PFUI_E2E), no forwarding of browser errors to the terminal:
+  // the tests check them, and the source-map test throws on purpose.
+  server: { port: 5190, ...(process.env.PFUI_E2E ? { forwardConsole: false } : {}) },
   preview: { port: 5191 },
   // React, ReactDOM, Mantine and (for the live compiler) the compiler: one ~670 kB chunk; fine here.
   build: { chunkSizeWarningLimit: 900 },
