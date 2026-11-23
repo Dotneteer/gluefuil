@@ -98,6 +98,7 @@ here as one line each, with a link to the plan that justified them:
   - The short name `pfui` is used for the CSS custom-property prefix (`--pfui-*`), the standalone browser global, the CLI command and the docs code-fence language.
   - In prose, say "XMLUI" only when referring to the original framework.
 - **Toolchain:** TypeScript 7, npm workspaces, Vite 8, Vitest 5 (jsdom for React packages), Playwright, React 19. Packages: `compiler`, `runtime`, `components` (see [.ai/docs/code-structure.md](.ai/docs/code-structure.md)). See [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) step 0.
+- **Reactivity: signals with one `useSyncExternalStore` subscription per component**, using our own small store (`packages/runtime/src/reactivity/`). Plain React state was measured and rejected. See [.ai/plan/poc-04-reactivity.md](.ai/plan/poc-04-reactivity.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

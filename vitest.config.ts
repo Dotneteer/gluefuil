@@ -30,6 +30,10 @@ export default defineConfig({
           root: "packages/runtime",
           environment: "jsdom",
           include: ["tests/**/*.test.{ts,tsx}"],
+          benchmark: {
+            include: ["bench/**/*.bench.{ts,tsx}"],
+            suppressExportGetterWarnings: true,
+          },
         },
       },
       {

@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 3 (code generation and the sandbox).
+> **Last updated:** step 4 (reactivity core).
 
 ## What this repository is
 
@@ -22,6 +22,8 @@ Current state:
   expressions, handlers and code-behind ([script-parser.md](script-parser.md)).
 - The compiler compiles **bindings** to sandboxed JavaScript, and the runtime
   loads and runs them ([codegen.md](codegen.md)).
+- The runtime has the **reactivity core**: a signal store and one
+  `useSyncExternalStore` subscription per component ([reactivity.md](reactivity.md)).
 - Components are still a placeholder.
 
 ## Subsystem documents
@@ -30,6 +32,7 @@ Current state:
 |----------|-----------|
 | [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.pfui` markup text to a syntax tree with positions and diagnostics |
 | [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
+| [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [codegen.md](codegen.md) | `packages/compiler/src/codegen/` and `packages/runtime/src/script/`: bindings compiled to JavaScript, static name resolution, the sandbox, dependencies |
 
 ## Repository layout
@@ -45,7 +48,9 @@ Current state:
 │   │   ├── tests/           unit tests (mirrors src/)
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
-│   │   └── src/script/      sandbox globals and helpers; loadBinding
+│   │   ├── src/script/      sandbox globals and helpers; loadBinding
+│   │   ├── src/reactivity/  signal store, React hooks, scope object
+│   │   └── bench/           benchmarks (npm run bench)
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test
 ├── test-apps/
@@ -75,7 +80,7 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `CompileOptions`, `CompileResult`, `ScopeNames`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
-| `packages/runtime/src/index.ts` | `loadBinding`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`; `runtimeInfo` (placeholder) |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`. `runtimeInfo` (placeholder). |
 | `packages/components/src/index.ts` | `componentsInfo` (`{ name, runtime }`), a placeholder; re-exports `componentMetadata` |
 | `packages/components/src/metadata.ts` | `componentMetadata` (empty object) |
 
@@ -172,7 +177,8 @@ All dev dependencies are pinned to exact versions in the root `package.json`.
 | tsconfig | Differs from the base |
 |----------|-----------------------|
 | `packages/compiler` | `lib: ["ES2023"]` (no DOM); includes `src`, `tests` and `bench` |
-| `packages/runtime`, `packages/components`, `test-apps/smoke` | none |
+| `packages/runtime` | includes `src`, `tests` and `bench` |
+| `packages/components`, `test-apps/smoke` | none |
 | `tools` | `lib: ["ES2023"]`, `types: ["node"]` |
 | `e2e` | `types: ["node"]`; also covers `playwright.config.ts` |
 
@@ -201,7 +207,7 @@ One-time machine setup for E2E: `npx playwright install chromium`.
 | Project | Root | Environment | Files |
 |---------|------|-------------|-------|
 | `compiler` | `packages/compiler` | `node` (no DOM, matching the compiler's constraint) | `tests/**/*.test.ts`; benchmarks: `bench/**/*.bench.ts` |
-| `runtime` | `packages/runtime` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
+| `runtime` | `packages/runtime` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}`; benchmarks: `bench/**/*.bench.{ts,tsx}` |
 | `components` | `packages/components` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
 | `tools` | `tools` | `node` | `**/*.test.ts` |
 
@@ -210,7 +216,9 @@ Conventions:
 - Tests live in each package's `tests/` folder and import from `../src/…`.
 - Import test functions explicitly (`import { test, expect } from "vitest"`);
   there are no globals.
-- React tests use `@testing-library/react` (`render`, `screen`).
+- React tests use `@testing-library/react` (`render`, `screen`). Without
+  Vitest globals its automatic cleanup is not registered: call
+  `afterEach(cleanup)` in files that render more than once.
 - Behavior that defines the language goes into data-driven conformance
   tables (`test.each`), which act as the written spec.
 - Compiler tests mirror `src/` (`tests/markup/`, `tests/source/`). Shared
@@ -226,23 +234,25 @@ Conventions:
 | `packages/compiler/tests/codegen/*.test.ts` | Code generation: emitted code, diagnostics, dependencies, interpolation (see [codegen.md](codegen.md#tests)) |
 | `packages/compiler/tests/source/line-map.test.ts` | `LineMap` and `formatDiagnostic` |
 | `packages/runtime/tests/smoke.test.tsx` | Package loads; React 19 renders in jsdom |
+| `packages/runtime/tests/reactivity/*` | The signal store, the React integration (StrictMode, unmounting, server rendering, tearing) and the scenario that compares signals with plain React state (see [reactivity.md](reactivity.md#tests)) |
 | `packages/runtime/tests/script/*.test.ts` | Compiled bindings run in the sandbox: semantics table, equivalence with native JavaScript, escape attempts (see [codegen.md](codegen.md#tests)) |
 | `packages/components/tests/smoke.test.ts` | Package loads and resolves the runtime; the metadata entry point loads on its own |
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 3: 1,154 unit tests in 23 files.
+Count after step 4: 1,192 unit tests in 26 files.
 
 - Compiler: 605, of which markup 115, script 331, codegen 151 and source 8.
-- Runtime: 193, of which the script sandbox is 191 and the smoke test 2.
+- Runtime: 231, of which the script sandbox is 191, reactivity 38 and the
+  smoke test 2.
 - Tools: 354, of which the corpus is 327, the boundaries 23 and the
   sandbox drift test 4.
 - Components: 2.
 
 ### Benchmarks (Vitest 5)
 
-- Files: `packages/<pkg>/bench/*.bench.ts`, selected by the project's
+- Files: `packages/<pkg>/bench/*.bench.ts(x)`, selected by the project's
   `benchmark.include`. Only `npm run bench` runs them.
 - Vitest 5 API: a benchmark is a test that uses the `bench` fixture:
   `test("…", async ({ bench }) => { await bench("name", fn).run(); })`.
@@ -255,6 +265,7 @@ Count after step 3: 1,154 unit tests in 23 files.
 | Benchmark | Measures |
 |-----------|----------|
 | `packages/compiler/bench/markup.bench.ts` | `parseMarkup` on generated realistic markup: 10 KiB, 100 KiB, 1 MiB (about 120 MB/s) |
+| `packages/runtime/bench/reactivity.bench.tsx` | 1,000 rows, one or all updated: signals 0.15 ms / 2.3 ms; React state 2.3 ms / 2.6 ms; with memo 1.2 ms / 2.7 ms |
 | `packages/compiler/bench/codegen.bench.ts` | Compiling typical bindings (about 0.3 µs each); compiled against hand-written evaluation (within about 10–15%) |
 | `packages/compiler/bench/script.bench.ts` | `parseInterpolation` on typical bindings (about 2 µs each), `parseStatements` on a 15-line handler (about 15 µs) |
 

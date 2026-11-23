@@ -138,7 +138,9 @@ Plan and findings: [poc-03-codegen.md](poc-03-codegen.md).
 - **Reference:** `pages/managed-react/code-injection-prevention.md`,
   `dom-api-isolation.md`.
 
-### Step 4: Reactivity core (decides the open area-1 question)
+### Step 4: Reactivity core (decides the open area-1 question) ✅
+
+Plan, measurements and decision: [poc-04-reactivity.md](poc-04-reactivity.md).
 
 - **Subject:** how compiled reactivity drives React. Build the same tiny
   scenario on (a) signals plus a subscription per component and (b) plain
