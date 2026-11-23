@@ -53,6 +53,15 @@ export default defineConfig({
         },
       },
       {
+        plugins: [react()],
+        test: {
+          name: "standalone",
+          root: "packages/standalone",
+          environment: "jsdom",
+          include: ["tests/**/*.test.{ts,tsx}"],
+        },
+      },
+      {
         test: {
           name: "tools",
           root: "tools",

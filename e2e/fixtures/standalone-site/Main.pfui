@@ -1,0 +1,4 @@
+<App var.count="{0}">
+  <Text>Standalone: count = {count}</Text>
+  <Button label="Increment" onClick="count++"/>
+</App>
