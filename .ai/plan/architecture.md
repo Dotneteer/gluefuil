@@ -243,7 +243,8 @@ Each area is settled before the next one starts. Later areas may reopen
 earlier ones if they expose a problem.
 
 1. **Rendering foundation.** What compiled code targets. **Decided: React**
-   (see below). Still open: how compiled reactivity drives React. *(current)*
+   (see below), driven by **signals with a subscription per component**
+   (decided in step 4).
 2. **Compilation pipeline.** Stages from markup to JS module, the
    intermediate representation, one compiler shared by browser and build
    tool, and where source maps are produced.
@@ -379,6 +380,20 @@ at runtime what a compiler could know ahead of time:
 | **c. Signals that also update the DOM directly** | Like (a), but text and attribute bindings on our own components bypass React and write to the DOM. | Fastest for hot text, but creates two update paths. It conflicts with wrapped components and with hydration. It could be added later as an optimization of (a). |
 
 Recommendation: **(a)**.
+
+**Decided in step 4: (a).** Measured on the same scenario
+([poc-04-reactivity.md](poc-04-reactivity.md)):
+
+- **Render counts:** a change re-renders only the components that read it.
+  With plain React state the whole tree re-renders, and even fully
+  memoized it re-renders 8 of 10 components.
+- **Update cost:** updating one of 1,000 rows takes 0.15 ms, against 2.3 ms
+  (1.2 ms memoized).
+- **Tearing:** none, thanks to `useSyncExternalStore`.
+- **Store:** our own (`runtime/src/reactivity/`). `alien-signals` is the
+  fallback if it grows complex.
+- **Accepted limitation:** signal writes are synchronous React updates, not
+  transitions.
 
 ## Notes for area 5: candidate React component libraries
 
