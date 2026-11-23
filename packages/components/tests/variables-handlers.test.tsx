@@ -1,6 +1,6 @@
 // Step 6 end to end in jsdom: variables and handlers, from markup to clicks.
 import { compileModule } from "@patchfuil/compiler";
-import { loadModule } from "@patchfuil/runtime";
+import { loadModule, setErrorReporter } from "@patchfuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -126,22 +126,20 @@ describe("deep writes and array mutations (copy-on-write)", () => {
     expect(texts()).toEqual(['{"counts":{"a":2,"b":11},"list":[1,2],"extra":"new"}']);
   });
 
-  test("mutating a variable's value through an alias throws instead of being silently lost", () => {
+  test("mutating a variable's value through an alias throws instead of being silently lost", async () => {
     renderMarkup(`
       <App var.items="{[1]}">
         <Button label="Alias" onClick="const list = items; list.push(2)"/>
         <Text>{items.length}</Text>
       </App>`);
     const errors: unknown[] = [];
-    const onError = (event: ErrorEvent) => {
-      errors.push(event.error);
-      event.preventDefault();
-    };
-    window.addEventListener("error", onError);
+    const restore = setErrorReporter((error) => errors.push(error));
     try {
       click("Alias");
+      // Handlers are async functions: their errors are reported when the call settles.
+      await act(async () => {});
     } finally {
-      window.removeEventListener("error", onError);
+      restore();
     }
     expect(errors).toHaveLength(1);
     expect(errors[0]).toBeInstanceOf(TypeError);

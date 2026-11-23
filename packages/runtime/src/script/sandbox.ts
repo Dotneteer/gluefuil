@@ -23,6 +23,7 @@ export class SandboxError extends Error {
   override name = "SandboxError";
 }
 
+import { arrayCall } from "./async-array";
 import { deleteIn, mutate, setIn, updateIn } from "./paths";
 
 const OBJECT_RESTRICTED = new Set([
@@ -147,6 +148,18 @@ export const scriptRuntime = Object.freeze({
     if (typeof object === "function") throw new SandboxError("Functions cannot be modified in pfui script");
     return object;
   },
+
+  /** Handler code: is this call result something to await? (implicit await) */
+  th(value: unknown): boolean {
+    return (
+      value !== null &&
+      (typeof value === "object" || typeof value === "function") &&
+      typeof (value as { then?: unknown }).then === "function"
+    );
+  },
+
+  /** Handler code: `a.map(cb)` and friends, async-aware (see ./async-array.ts). */
+  arr: arrayCall,
 
   // Writes through a path rooted at a variable (handlers): see ./paths.ts.
   setIn,

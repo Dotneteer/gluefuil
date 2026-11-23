@@ -1,4 +1,4 @@
-<App var.count="{0}" var.source="{0}" var.mirror="{source}">
+<App var.count="{0}" var.source="{0}" var.mirror="{source}" var.status="Idle">
   <Stack gap="8px">
     <Text value="{1 + 2}"/>
     <Text>Hello, {'pfui'.toUpperCase()}!</Text>
@@ -20,6 +20,30 @@
     <Stack orientation="horizontal" gap="4px">
       <Button label="Increment source" onClick="source++"/>
       <Button label="Override mirror" onClick="mirror = 999"/>
+    </Stack>
+
+    <!-- Step 7: a slow handler (implicit await) -->
+    <Stack orientation="horizontal" gap="4px">
+      <Button label="Save" onClick="status = 'Saving…'; delay(300); status = 'Saved'"/>
+      <Text>Status: {status}</Text>
+    </Stack>
+
+    <!-- Step 7: handler policies (double-click each button) -->
+    <Stack orientation="horizontal" gap="4px" var.log="{[]}" var.n="{0}">
+      <Button label="parallel" onClick="const i = ++n; log.push('s' + i); delay(150); log.push('e' + i)"/>
+      <Text>parallel: {log.join(',')}</Text>
+    </Stack>
+    <Stack orientation="horizontal" gap="4px" var.log="{[]}" var.n="{0}">
+      <Button label="single-flight" handlerPolicy="single-flight" onClick="const i = ++n; log.push('s' + i); delay(150); log.push('e' + i)"/>
+      <Text>single-flight: {log.join(',')}</Text>
+    </Stack>
+    <Stack orientation="horizontal" gap="4px" var.log="{[]}" var.n="{0}">
+      <Button label="queue" handlerPolicy="queue" onClick="const i = ++n; log.push('s' + i); delay(150); log.push('e' + i)"/>
+      <Text>queue: {log.join(',')}</Text>
+    </Stack>
+    <Stack orientation="horizontal" gap="4px" var.log="{[]}" var.n="{0}">
+      <Button label="drop-while-running" handlerPolicy="drop-while-running" onClick="const i = ++n; log.push('s' + i); delay(150); log.push('e' + i)"/>
+      <Text>drop-while-running: {log.join(',')}</Text>
     </Stack>
   </Stack>
 </App>

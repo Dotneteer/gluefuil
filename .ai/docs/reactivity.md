@@ -5,7 +5,7 @@
 > the measurements behind the decision:
 > [`../plan/poc-04-reactivity.md`](../plan/poc-04-reactivity.md).
 >
-> **Last updated:** step 6 (variables, scopes with setters).
+> **Last updated:** step 7 (segment batches, watchdog, robust delivery).
 
 ## Role
 
@@ -21,6 +21,8 @@ declaring component, its containers and its siblings are not involved.
 | `signal(value, { equals? })` | A writable value: `.get()` (tracked), `.peek()` (untracked), `.set(v)`. Setting an equal value (`Object.is` by default) does nothing. |
 | `computed(fn, { equals? })` | A derived value: lazy, cached, glitch-free. Errors are cached and rethrown. |
 | `batch(fn)` | Watchers are notified once, after the outermost batch. Returns `fn`'s value. |
+| `startBatch()`, `endBatch()` | A batch that is opened and closed in separate places: handler segments (see [async-handlers.md](async-handlers.md)). It must close within the synchronous run that opened it; the **watchdog** force-closes a leaked one at the next microtask and reports a `ReactivityError`. An unbalanced `endBatch()` is ignored. |
+| `isBatching()` | For tests and diagnostics |
 | `watch(source, callback)` | A leaf subscriber; returns the function that stops watching. The callback must read the source: a computed that nobody reads stops forwarding changes. |
 | `untracked(fn)` | Reads without recording dependencies |
 | `observerCount(source)` | For tests and diagnostics |
@@ -98,6 +100,14 @@ updates the links.
 **Guards:** `set` during a computation throws (bindings are pure); so does
 a cycle.
 
+**Delivery** (`flush`):
+
+- every watcher is called even if another throws; errors go to the runtime
+  error reporter afterwards;
+- a write inside a watcher is picked up by the running loop;
+- after 100 rounds of watchers changing state, delivery stops and a
+  `ReactivityError` is reported.
+
 ## React integration (`react.ts`)
 
 - `useSignal` = `useSyncExternalStore(watch(source), source.peek)`. The
@@ -128,6 +138,7 @@ a cycle.
 | `runtime/tests/reactivity/signals.test.ts` | The store: laziness, caching, chains, diamond, equality cutoff, dynamic dependencies, unobserved computeds, errors, writes during computation, cycles, `untracked`, batch, watchers that write, unlinking, relinking |
 | `runtime/tests/reactivity/scenario.tsx`, `scenario.test.tsx` | The step 4 scenario under signals and under plain React state (naive and memoized): render counts per component for each handler |
 | `runtime/tests/reactivity/react.test.tsx` | Re-render only on change, shallow cutoff, props as inputs, unmount releases links, StrictMode, error boundary, server rendering, a compiled binding driving a component, tearing (with a control that does tear) |
+| `runtime/tests/reactivity/batching.test.ts` | `startBatch`/`endBatch`, the watchdog, a throwing watcher, the ping-pong guard |
 | `runtime/tests/reactivity/variable.test.ts` | Variables (follow, assign, laziness, freezing), scopes (shadowing, setters through the prototype chain, tracking), the path helpers (structural sharing, results, errors) |
 | `runtime/bench/reactivity.bench.tsx` | 1,000 rows: update one or all, under (a), (b) and (b) with memo |
 

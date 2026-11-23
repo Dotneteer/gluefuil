@@ -23,6 +23,11 @@ export interface ScriptSourceOptions {
    * Takes precedence over `offset`.
    */
   offsets?: readonly number[];
+  /**
+   * Accept `await` (statement code: handlers). Default false: in bindings
+   * `await` is S030, as bindings are synchronous.
+   */
+  allowAwait?: boolean;
 }
 
 class ParseError extends Error {}
@@ -857,7 +862,7 @@ export class ScriptParser {
       return this.finish<AST.UpdateExpression>(start, { type: "UpdateExpression", operator: value, prefix: true, argument });
     }
     if (kind === "name" && value === "await") {
-      this.report("S030", this.tok.start, this.tok.end, "'await'");
+      if (!this.source.allowAwait) this.report("S030", this.tok.start, this.tok.end, "'await'");
       this.next();
       const argument = this.parseUnary();
       return this.finish<AST.AwaitExpression>(start, { type: "AwaitExpression", argument });

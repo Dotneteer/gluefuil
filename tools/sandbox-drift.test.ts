@@ -5,10 +5,12 @@
 import { expect, test } from "vitest";
 import {
   ALLOWED_GLOBALS,
+  APP_GLOBALS,
   BANNED_MEMBERS as COMPILER_BANNED_MEMBERS,
   CONSTRUCTIBLE,
   RESTRICTED_GLOBAL_MEMBERS,
 } from "../packages/compiler/src/index";
+import { APP_GLOBAL_NAMES } from "../packages/runtime/src/render/app-global-names";
 import { BANNED_MEMBERS as RUNTIME_BANNED_MEMBERS, scriptGlobals } from "../packages/runtime/src/script/sandbox";
 
 const LITERALS = new Set(["undefined", "NaN", "Infinity"]);
@@ -34,4 +36,8 @@ test("every constructible path is a constructor in the globals object", () => {
     const value = path.split(".").reduce<unknown>((o, key) => (o as Record<string, unknown>)?.[key], scriptGlobals);
     expect(typeof value, path).toBe("function");
   }
+});
+
+test("app global names agree (compiler APP_GLOBALS, runtime APP_GLOBAL_NAMES)", () => {
+  expect([...APP_GLOBALS].sort()).toEqual([...APP_GLOBAL_NAMES].sort());
 });

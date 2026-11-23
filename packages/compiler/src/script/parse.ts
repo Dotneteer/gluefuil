@@ -27,7 +27,8 @@ export function parseExpression(source: string, options: ScriptSourceOptions = {
  * blocks and code-behind. Recovers after errors; never throws.
  */
 export function parseStatements(source: string, options: ScriptSourceOptions = {}): ParseStatementsResult {
-  const parser = new ScriptParser(source, 0, source.length, options);
+  // Statement code (handlers) may use `await`; see .ai/plan/poc-07-async-handlers.md.
+  const parser = new ScriptParser(source, 0, source.length, { allowAwait: true, ...options });
   const program = parser.parseProgram();
   return { program, diagnostics: parser.diagnostics };
 }

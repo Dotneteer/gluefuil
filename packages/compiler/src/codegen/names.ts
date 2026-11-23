@@ -223,3 +223,11 @@ export const RESTRICTED_GLOBAL_MEMBERS: ReadonlyMap<string, ReadonlySet<string>>
 
 /** Names starting with this prefix are reserved for generated code. */
 export const RESERVED_PREFIX = "$$";
+
+/**
+ * App globals: scope names every binding and handler sees (XMLUI globals.md),
+ * readable but not writable. The runtime's copy is APP_GLOBAL_NAMES
+ * (runtime src/render/app-global-names.ts); tools/sandbox-drift.test.ts
+ * keeps them in sync.
+ */
+export const APP_GLOBALS: readonly string[] = ["delay"];

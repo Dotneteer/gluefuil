@@ -43,6 +43,7 @@ export { CodegenDiagnostics, type CodegenDiagnosticCode } from "./codegen/diagno
 export type { EmitterOptions, ScopeNames } from "./codegen/emitter";
 export {
   ALLOWED_GLOBALS,
+  APP_GLOBALS,
   BANNED_GLOBALS,
   BANNED_MEMBERS,
   CONSTRUCTIBLE,

@@ -43,13 +43,16 @@ describe("containers", () => {
 describe("handlers", () => {
   test("onClick compiles to a hoisted handler object on a Bound element", () => {
     const code = lines('<App var.count="{0}"><Button label="+" onClick="count++"/></App>');
-    expect(code).toContain('const $$e1 = { "onClick": ($$s) => (...$params) => { const $param = $params[0]; $$s.count++; } };');
+    expect(code).toContain(
+      'const $$e1 = { "onClick": ($$s) => ($$x) => async (...$params) => { const $param = $params[0]; const $cancel = $$x.cancel; ' +
+        "let $$t, $$o = false; try { $$s.count++; } finally { $$o && $$x.close(); } } };",
+    );
     expect(code).toContain("const $$empty = Object.freeze({});");
   });
 
   test("<event name='click'> is the same as onClick; its code is not whitespace-collapsed", () => {
     const code = lines('<App var.s="{\'\'}"><Button><event name="click">s = \'a   b\'</event></Button></App>');
-    expect(code).toContain('const $$e1 = { "onClick": ($$s) => (...$params) => { const $param = $params[0]; $$s.s = \'a   b\'; } };');
+    expect(code.some((l) => l.startsWith('const $$e1 = { "onClick"') && l.includes("$$s.s = 'a   b';"))).toBe(true);
   });
 
   test("<event> with CDATA", () => {
@@ -82,6 +85,38 @@ describe("diagnostics", () => {
     ['<App var.t="{1}"><Stack var.t="{2}"><Text value="{t}"/></Stack></App>', []],
     // Shadowing applies to a variable's own initializer: `t` here is the inner `t`, a self-reference.
     ['<App var.t="{1}"><Stack var.t="{t + 1}"/></App>', [["E005", "var.t"]]],
+  ])("%s", (markup, expected) => {
+    const { diagnostics } = compileModule(markup);
+    expect(diagnostics.map((d) => [d.code, markup.slice(d.start, d.end)])).toEqual(expected);
+  });
+});
+
+describe("async handlers (step 7)", () => {
+  test("handlerPolicy and handlerTimeoutMs, for all handlers or per handler", () => {
+    const code = lines(
+      '<App var.n="{0}"><Button handlerPolicy="queue" handlerTimeoutMs:onClick="500" onClick="n++"/></App>',
+    );
+    expect(code.some((l) => l.includes('policies: { "onClick": "queue" }, timeouts: { "onClick": 500 }'))).toBe(true);
+  });
+
+  test("a per-handler setting wins over the element-wide one", () => {
+    const code = lines('<App var.n="{0}"><Button handlerPolicy="queue" handlerPolicy:onClick="single-flight" onClick="n++"/></App>');
+    expect(code.some((l) => l.includes('policies: { "onClick": "single-flight" }'))).toBe(true);
+  });
+
+  test("app globals: delay is visible, readable, and awaited implicitly", () => {
+    const code = lines('<App var.done="{false}"><Button onClick="delay(10); done = true"/></App>');
+    expect(code.some((l) => l.includes("$$r.th($$t = (0, $$s.delay)?.(10))"))).toBe(true);
+  });
+
+  test.each<[markup: string, expected: [code: string, text: string][]]>([
+    ['<App><Button handlerPolicy="fast" onClick="x"/></App>', [["E009", '"fast"'], ["C001", "x"]]],
+    ['<App><Button handlerPolicy="{p}"/></App>', [["E009", '"{p}"']]],
+    ['<App><Button handlerTimeoutMs="soon"/></App>', [["E009", '"soon"']]],
+    ['<App><Button handlerPolicy:click="queue"/></App>', [["E009", "handlerPolicy:click"]]],
+    ['<App><Button handlerPolicy:onHover="queue"/></App>', [["E004", "handlerPolicy:onHover"]]],
+    ['<App><Button onClick="delay = 1"/></App>', [["C012", "delay"]]],
+    ['<App var.v="{0}"><Text value="{await delay(1)}"/></App>', [["S030", "await"]]],
   ])("%s", (markup, expected) => {
     const { diagnostics } = compileModule(markup);
     expect(diagnostics.map((d) => [d.code, markup.slice(d.start, d.end)])).toEqual(expected);
