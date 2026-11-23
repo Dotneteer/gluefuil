@@ -58,6 +58,6 @@ export {
   type RegisterApi,
 } from "./render/component-api";
 export { reportRuntimeError, setErrorReporter, type ErrorReporter } from "./errors";
-export { loadModule, type ModuleImports } from "./render/module";
+export { loadModule, type ModuleImports, type ModuleSourceMap } from "./render/module";
 // Compiled code creates elements through the runtime, never through React directly.
 export { createElement, Fragment } from "react";

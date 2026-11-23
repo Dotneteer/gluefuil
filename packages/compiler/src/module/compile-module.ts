@@ -20,6 +20,7 @@
 
 import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
 import { compileHandler, compileInterpolation } from "../codegen/compile";
+import { extractMarkers, jsString, mark } from "../codegen/markers";
 import { APP_GLOBALS } from "../codegen/names";
 import type { AttributeNode, ContentNode, ElementNode, Span } from "../markup/ast";
 import { decodeEntitiesWithOffsets } from "../markup/entities";
@@ -27,6 +28,7 @@ import { parseMarkup } from "../markup/parser";
 import { parseInterpolation, type InterpolationSegment } from "../script/interpolation";
 import { parseStatements } from "../script/parse";
 import type { Diagnostic } from "../source/diagnostic";
+import { buildSourceMap, type SourceMap } from "../source/source-map";
 import { ModuleDiagnostics, type ModuleDiagnosticCode } from "./diagnostics";
 
 export interface CompileModuleOptions {
@@ -41,10 +43,19 @@ export interface CompileModuleOptions {
   /** Module specifiers for the "esm" format. */
   runtimeModule?: string;
   componentsModule?: string;
+  /** The source file's name, as the source map's `sources` entry. Default "Main.pfui". */
+  fileName?: string;
+  /** Produce a source map (default true). */
+  sourceMap?: boolean;
 }
 
 export interface CompileModuleResult {
   code: string;
+  /**
+   * Source Map v3 from `code` back to the .pfui file: every expression,
+   * statement, handler and element. Includes the source text.
+   */
+  map?: SourceMap;
   /** Markup (M), script (S), binding (C) and module (E) diagnostics, in file positions. */
   diagnostics: Diagnostic[];
 }
@@ -110,8 +121,17 @@ class ModuleCompiler {
   private counter = 0;
   private usesEmpty = false;
 
+  /** Source markers on (a source map is wanted). */
+  private readonly markers: boolean;
+
   constructor(private readonly options: CompileModuleOptions) {
     this.components = options.components ?? componentMetadata;
+    this.markers = options.sourceMap !== false;
+  }
+
+  /** A source marker for `offset`, when a source map is wanted. */
+  private mark(offset: number, text: string): string {
+    return this.markers ? mark(offset, text) : text;
   }
 
   private report<C extends ModuleDiagnosticCode>(
@@ -145,7 +165,7 @@ class ModuleCompiler {
     const fileScope = this.ids.size > 0 ? "$$f" : "$$scope";
     const body = root ? this.node(root, fileScope, true) : "null";
     const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids])});\n` : "";
-    const code = [
+    const marked = [
       this.header(),
       "const $$scope = $$createAppScope();",
       ...(this.usesEmpty ? ["const $$empty = Object.freeze({});"] : []),
@@ -154,11 +174,14 @@ class ModuleCompiler {
       this.options.format === "function" ? "return Main;" : "export default Main;",
       "",
     ].join("\n");
+    const { code, pairs } = extractMarkers(marked);
+    const fileName = this.options.fileName ?? "Main.pfui";
+    const map = this.options.sourceMap === false ? undefined : buildSourceMap(code, markup, pairs, { source: fileName, file: `${fileName}.js` });
     this.diagnostics.sort((a, b) => a.start - b.start);
     // `await`/`async` in a binding: the parser's S030 already says it; drop the code generator's C009.
     const unsupported = new Set(this.diagnostics.filter((d) => d.code === "S030").map((d) => d.start));
     const diagnostics = this.diagnostics.filter((d) => !(d.code === "C009" && unsupported.has(d.start)));
-    return { code, diagnostics };
+    return { code, ...(map ? { map } : {}), diagnostics };
   }
 
   private findRoot(nodes: ContentNode[], document: { start: number; end: number }): ElementNode | undefined {
@@ -198,7 +221,7 @@ class ModuleCompiler {
   /** Hoists an object of compiled values; returns its name. */
   private hoist(prefix: string, entries: [name: string, code: string][]): string {
     const name = `${prefix}${this.counter++}`;
-    this.hoisted.push(`const ${name} = { ${entries.map(([key, code]) => `${JSON.stringify(key)}: ${code}`).join(", ")} };`);
+    this.hoisted.push(`const ${name} = { ${entries.map(([key, code]) => `${jsString(key)}: ${code}`).join(", ")} };`);
     return name;
   }
 
@@ -212,10 +235,10 @@ class ModuleCompiler {
 
   /** Compiles one interpolated value: a constant (JSON) or binding code with its dependencies. */
   private value(segments: InterpolationSegment[]): { constant: string } | { binding: string; dependencies: string[] } {
-    const result = compileInterpolation(segments, { scope: this.visibleNames() });
+    const result = compileInterpolation(segments, { scope: this.visibleNames(), markers: this.markers });
     this.diagnostics.push(...result.diagnostics);
     return result.constant
-      ? { constant: JSON.stringify(result.value) }
+      ? { constant: jsString(result.value!) }
       : { binding: result.code, dependencies: result.dependencies };
   }
 
@@ -249,8 +272,9 @@ class ModuleCompiler {
       return "null";
     }
     const declarations = this.declarations(node, isRoot);
-    if (declarations.length === 0) return this.element(node, scopeVar);
-    return this.container(node, declarations, scopeVar);
+    // A source marker at the element's start: render errors map to the tag.
+    if (declarations.length === 0) return this.mark(node.start, this.element(node, scopeVar));
+    return this.mark(node.start, this.container(node, declarations, scopeVar));
   }
 
   /** `var.*` / `global.*` attributes and `<variable>` / `<global>` children of an element. */
@@ -319,7 +343,7 @@ class ModuleCompiler {
     }
     this.reportCycles(graph, declarations);
     const definitions = this.hoist("$$v", entries);
-    const body = this.element(node, "$$c");
+    const body = this.mark(node.start, this.element(node, "$$c"));
     this.frames.pop();
     const component = `$$K${this.counter++}`;
     this.hoisted.push(`function ${component}({ $$p }) {\n  const $$c = $$useScope($$p, ${definitions});\n  return ${body};\n}`);
@@ -403,7 +427,7 @@ class ModuleCompiler {
     }
 
     const component = `$$C_${name}`;
-    const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${JSON.stringify(k)}: ${v}`).join(", ")} }` : "null";
+    const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
     const id = idValue !== undefined && this.ids.has(idValue) ? idValue : undefined;
@@ -478,7 +502,7 @@ class ModuleCompiler {
   private handler(source: string, position: { offsets?: number[]; offset?: number }): string {
     const parsed = parseStatements(source, position);
     this.diagnostics.push(...parsed.diagnostics);
-    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables() });
+    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: this.markers });
     this.diagnostics.push(...result.diagnostics);
     return result.code;
   }
@@ -515,7 +539,7 @@ class ModuleCompiler {
         return this.text(node.raw, node.start, scopeVar);
       case "cdata":
         // Literal text: no interpolation, no whitespace collapsing.
-        return JSON.stringify(node.value);
+        return jsString(node.value);
       case "script":
         this.report({ start: node.start, end: node.contentSpan.start }, "E002", "<script>");
         return undefined;
@@ -535,6 +559,6 @@ class ModuleCompiler {
     );
     const value = this.value(segments);
     if ("constant" in value) return value.constant;
-    return `$$h($$Bound, { type: $$TextNode, bindings: ${this.hoist("$$b", [["value", value.binding]])}, scope: ${scopeVar} })`;
+    return this.mark(start, `$$h($$Bound, { type: $$TextNode, bindings: ${this.hoist("$$b", [["value", value.binding]])}, scope: ${scopeVar} })`);
   }
 }

@@ -30,6 +30,14 @@
       <Button label="Reset name" onClick="nameBox.setValue(''); nameBox.focus()"/>
     </Stack>
 
+    <!-- Step 9: source maps (e2e/source-maps.spec.ts pauses on this throw) -->
+    <Button
+      label="Throw"
+      onClick="
+        const reason = 'source maps';
+        throw new Error('thrown in Main.pfui: ' + reason);
+      "/>
+
     <!-- Step 7: a slow handler (implicit await) -->
     <Stack orientation="horizontal" gap="4px">
       <Button label="Save" onClick="status = 'Saving…'; delay(300); status = 'Saved'"/>
