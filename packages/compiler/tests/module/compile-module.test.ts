@@ -22,7 +22,7 @@ describe("module shape", () => {
   test("esm: imports from the runtime and the components package, exports Main", () => {
     const { code } = compileModule(markup);
     expect(code.split("\n")).toEqual([
-      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@patchfuil/runtime";',
+      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@patchfuil/runtime";',
       'import { App as $$C_App, Text as $$C_Text } from "@patchfuil/components";',
       "const $$scope = $$createAppScope();",
       'const $$b0 = { "value": ($$s) => 1 + 2 };',
@@ -43,7 +43,7 @@ describe("module shape", () => {
   test("function: reads $$imports and returns Main; valid as a function body", () => {
     const { code } = compileModule(markup, { format: "function" });
     expect(code.split("\n").slice(0, 2)).toEqual([
-      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, scriptGlobals: $$g, scriptRuntime: $$r } = $$imports.runtime;",
+      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, useFileScope: $$useFileScope, scriptGlobals: $$g, scriptRuntime: $$r } = $$imports.runtime;",
       "const { App: $$C_App, Text: $$C_Text } = $$imports.components;",
     ]);
     expect(code.trimEnd().endsWith("return Main;")).toBe(true);
@@ -107,7 +107,7 @@ describe("diagnostics", () => {
     ["<App><ns:Text/></App>", [["E001", "ns:Text"]]],
     // Handlers and variables are step 6 (tests/module/variables-handlers.test.ts).
     ['<App><Button onClick="count++"/></App>', [["C001", "count"]]],
-    ['<App><Text when="{true}" id="t"/></App>', [["E002", "when"], ["E002", "id"]]],
+    ['<App><Text when="{true}" id="t"/></App>', [["E002", "when"]]],
     ["<App><property name='x'/></App>", [["E002", "property"]]],
     ["<App><script>var x = 1;</script></App>", [["E002", "<script>"]]],
     ["<App/><App/>", [["E003", "<App/>"]]],

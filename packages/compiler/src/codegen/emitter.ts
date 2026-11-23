@@ -184,6 +184,7 @@ export class Emitter {
   private reportUnresolved(id: A.Identifier): void {
     if (id.name.startsWith(RESERVED_PREFIX)) this.report(id, "C005", id.name);
     else if (BANNED_GLOBALS.has(id.name)) this.report(id, "C002", id.name, BANNED_GLOBALS.get(id.name));
+    else if (id.name.startsWith("$")) this.report(id, "C014", id.name);
     else this.report(id, "C001", id.name);
   }
 

@@ -144,7 +144,9 @@ Resolution is static and follows block scoping. In order:
 3. **Allowed globals** (`ALLOWED_GLOBALS` in `codegen/names.ts`).
 
 Anything else is reported: C005 for a reserved `$$` name, C002 for a known
-platform global (with a hint), otherwise C001. A scope name may reuse a
+platform global (with a hint), C014 for a `$`-name (a context variable not
+available here), otherwise C001. The full resolution order for markup
+(variables, component IDs, app globals) is in [scoping.md](scoping.md). A scope name may reuse a
 banned name (a variable called `top` is fine).
 
 ## The sandbox
@@ -216,6 +218,7 @@ All are errors.
 | C011 | A member left out of a curated global |
 | C012 | A handler can only change variables |
 | C013 | Destructuring or `for` target into a variable's member |
+| C014 | A context variable (`$`-name) that is not available here |
 
 ## Tests
 

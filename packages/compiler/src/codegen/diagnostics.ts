@@ -14,6 +14,7 @@ export const CodegenDiagnostics = {
   C010: (name: string) => `The built-in '${name}' cannot be modified`,
   C011: (path: string) => `'${path}' is not available in pfui script`,
   C012: (name: string) => `'${name}' is not a variable; a handler can only change variables`,
+  C014: (name: string) => `The context variable '${name}' is not available here`,
   C013: (name: string) => `Destructuring or loop targets cannot change part of '${name}'; assign to it directly`,
 } as const;
 

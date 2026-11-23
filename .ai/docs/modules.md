@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 7 (async handlers, app scope).
+> **Last updated:** step 8 (component IDs).
 
 ## Role
 
@@ -54,6 +54,7 @@ use file offsets.
 | `Text` | `value` | `<span class="pfui-Text">`, showing `value` or the children |
 | `Button` | `label`; event `click` | `<button type="button" class="pfui-Button">`, showing `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
 | `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="pfui-Stack">` |
+| `TextBox` | `initialValue`, `placeholder`; event `didChange`; API `value`, `setValue`, `focus` | `<input class="pfui-TextBox">` ([scoping.md](scoping.md)) |
 
 `componentMetadata` (in the React-free `./metadata` entry) lists them as a
 `ComponentMetadata` (`description`, `props`, `events`). The compiler resolves element
@@ -117,7 +118,8 @@ export default Main;
 | `onClick="…"` | A handler (`compileHandler`, statements, async: see [async-handlers.md](async-handlers.md)). The event must be in the component's metadata `events` (E004). |
 | `handlerPolicy="…"`, `handlerPolicy:onClick="…"`, `handlerTimeoutMs`, `handlerTimeoutMs:onClick` | `policies: { onClick: "queue" }`, `timeouts: { onClick: 500 }` on the `Bound` element. The per-handler form wins. Constants only; unknown policy or non-numeric timeout: E009. |
 | `<event name="click">…</event>` | The same. Text or CDATA content, not whitespace-collapsed; components inside are E002. |
-| `method.*`, `event.*`, `when`, `id` | E002 (steps 8, 10, 14) |
+| `id="x"` | A file-scoped component ID ([scoping.md](scoping.md)): `Main` creates a file scope (`$$useFileScope`), and the element is a `Bound` with `id: "x"`, so the component receives `registerApi` |
+| `method.*`, `event.*`, `when` | E002 (steps 10, 14) |
 | Whitespace-only text | Dropped (trivia) |
 | Other text | Interpolated. Whitespace runs in literal parts collapse to one space (U+00A0 is kept); expressions are not collapsed. With expressions, it becomes a `Bound` `TextNode`. |
 | CDATA | Literal text, without interpolation or collapsing |
@@ -137,6 +139,9 @@ export default Main;
 | E007 | A variable declared twice on one element |
 | E008 | Invalid variable name; `<variable>`/`<global>`/`<event>` without a constant `name` |
 | E009 | Invalid `handlerPolicy` / `handlerTimeoutMs` |
+| E010 | Duplicate `id` in the file |
+| E011 | Invalid `id` |
+| E012 | A variable named like a component ID |
 
 ## Build-time integration (fixture only)
 

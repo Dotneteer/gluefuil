@@ -9,6 +9,8 @@ export interface ComponentMetadata {
   props: Record<string, { description: string }>;
   /** Events, by name: `click` is handled by `onClick="…"` or `<event name="click">`. */
   events?: Record<string, { description: string }>;
+  /** What `id` exposes: values and methods (`textBox.value`, `textBox.setValue(v)`). */
+  api?: Record<string, { description: string }>;
 }
 
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
@@ -29,6 +31,21 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     },
     events: {
       click: { description: "The button was clicked. The handler receives no arguments (no DOM event)." },
+    },
+  },
+  TextBox: {
+    description: "A single-line text input.",
+    props: {
+      initialValue: { description: "The text when the component mounts." },
+      placeholder: { description: "Shown while the text is empty." },
+    },
+    events: {
+      didChange: { description: "The text changed by typing; `$param` is the new text." },
+    },
+    api: {
+      value: { description: "The current text (reactive)." },
+      setValue: { description: "Replaces the text." },
+      focus: { description: "Moves the keyboard focus to the input." },
     },
   },
   Stack: {
