@@ -78,8 +78,8 @@ app scope (createAppScope: delay)
   opt-in.
 - **Before mount and after unmount** the ID reads `undefined`, so
   `box.value` is `undefined` (optional chaining).
-- **Metadata** declares the API (`ComponentMetadata.api`). Checking
-  `box.member` against it at compile time is step 15.
+- **Metadata** declares the API (`ComponentMetadata.api`). `box.member` is
+  checked against it at compile time (C015, [contracts.md](contracts.md)).
 
 `TextBox` is the reference implementation:
 

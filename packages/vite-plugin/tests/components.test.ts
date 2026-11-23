@@ -47,7 +47,8 @@ describe("ComponentFolder", () => {
   test("finds <Name>.pfui files that define <Component name=Name>; others are skipped", () => {
     const found = new ComponentFolder(join(src(), "components")).scan();
     expect([...found.keys()]).toEqual(["Counter"]);
-    expect(found.get("Counter")!.info).toEqual({ name: "Counter", slots: { rowTemplate: ["$item"] }, methods: [] });
+    // Counter.pfui.xs declares bump(); nothing reads $props or emits events.
+    expect(found.get("Counter")!.info).toEqual({ name: "Counter", slots: { rowTemplate: ["$item"] }, methods: [], props: [], events: [] });
   });
 
   test("a missing folder is empty", () => {

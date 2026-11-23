@@ -2,10 +2,10 @@
 // .ai/plan/poc-14-user-components.md (E016–E019).
 
 export const ModuleDiagnostics = {
-  E001: (name: string) => `Unknown component '${name}'`,
+  E001: (name: string, hint = "") => `Unknown component '${name}'${hint ? `.${hint}` : ""}`,
   E002: (what: string) => `${what} is not supported yet`,
   E003: (detail: string) => `A document must have exactly one root element: ${detail}`,
-  E004: (event: string, component: string) => `'${component}' has no event '${event}'`,
+  E004: (event: string, component: string, hint = "") => `'${component}' has no event '${event}'${hint ? `.${hint}` : ""}`,
   E005: (cycle: string) => `Reactive cycle between variables: ${cycle}`,
   E006: (name: string) => `The global '${name}' must be declared on the root element`,
   E007: (name: string) => `The variable '${name}' is declared twice on this element`,
@@ -25,6 +25,13 @@ export const ModuleDiagnostics = {
   E018: (component: string) => `'${component}' has no <Slot/>: it cannot take children`,
   /** Code-behind: only top-level `var` and `function` declarations. */
   E019: (detail: string) => detail,
+  /** Contracts (step 15): an attribute that is not a prop of the component. */
+  E020: (prop: string, component: string, hint: string) => `'${component}' has no prop '${prop}'.${hint}`,
+  E021: (prop: string, component: string) => `'${component}' requires the prop '${prop}'`,
+  E022: (prop: string, value: string, problem: string) => `'${value}' is not a valid value for '${prop}': ${problem}`,
+  E023: (prop: string, value: string, problem: string) => `'${value}' is not a valid value for '${prop}': ${problem}`,
+  /** A warning: the prop or event is deprecated. */
+  E024: (what: string, message: string) => `${what} is deprecated: ${message}`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

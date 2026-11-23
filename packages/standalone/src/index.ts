@@ -40,6 +40,8 @@ export function optionsFromScript(script: HTMLOrSVGScriptElement | null): StartO
   const watch = flag(data.watch);
   if (watch !== undefined) options.watch = watch;
   if (data.watchInterval) options.watchInterval = Number(data.watchInterval);
+  const strictContracts = flag(data.strictContracts);
+  if (strictContracts !== undefined) options.strictContracts = strictContracts;
   return options;
 }
 

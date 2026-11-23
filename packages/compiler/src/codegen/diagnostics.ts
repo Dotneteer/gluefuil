@@ -15,6 +15,8 @@ export const CodegenDiagnostics = {
   C011: (path: string) => `'${path}' is not available in pfui script`,
   C012: (name: string) => `'${name}' is not a variable; a handler can only change variables`,
   C014: (name: string) => `The context variable '${name}' is not available here`,
+  /** Contracts (step 15): `box.valu` where `box` is a component without that API member. */
+  C015: (id: string, component: string, member: string, hint: string) => `'${id}' (${component}) has no member '${member}'.${hint}`,
   C013: (name: string) => `Destructuring or loop targets cannot change part of '${name}'; assign to it directly`,
 } as const;
 

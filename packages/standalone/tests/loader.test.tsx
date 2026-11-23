@@ -1,6 +1,6 @@
 // The standalone loader against a mocked server: compile, cache, errors, watching.
 import { act, cleanup } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StorageLike } from "../src/cache";
 import { StandaloneApp } from "../src/loader";
 
@@ -220,5 +220,20 @@ describe("component files and code-behind (step 14)", () => {
     files.files["components/Counter.pfui.xs"] = COUNTER_XS.replace("'count'", "'clicks'");
     expect(await act(() => app.refresh())).toBe(true);
     expect(container.textContent).toBe("clicks: 0later");
+  });
+});
+
+describe("contracts (step 15)", () => {
+  test("a contract violation is an error by default; with strictContracts: false a console warning, and the app runs", async () => {
+    const markup = '<App><Text valu="x">ok</Text></App>';
+    await startApp({ fetch: server({ "Main.pfui": markup }).fetch });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Main.pfui:1:12: error E020: 'Text' has no prop 'valu'. Did you mean 'value'?");
+    act(() => apps.pop()!.stop());
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await startApp({ fetch: server({ "Main.pfui": markup }).fetch, strictContracts: false });
+    expect(container.textContent).toBe("ok");
+    expect(warn).toHaveBeenCalledWith("pfui: Main.pfui:1:12: warning E020: 'Text' has no prop 'valu'. Did you mean 'value'?");
+    warn.mockRestore();
   });
 });

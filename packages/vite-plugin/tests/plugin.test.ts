@@ -132,3 +132,21 @@ describe("errors", () => {
     expect(reported).toEqual({ warnings: [] });
   });
 });
+
+describe("contracts (step 15)", () => {
+  const markup = '<App><Text valu="x">ok</Text></App>';
+
+  test("a contract violation fails the transform by default", () => {
+    const { reported } = transform(markup, "/a/Main.pfui");
+    expect(String(reported.error!.message)).toContain("error E020: 'Text' has no prop 'valu'. Did you mean 'value'?");
+  });
+
+  test("strictContracts: false turns it into a warning", () => {
+    const { reported, result } = transform(markup, "/a/Main.pfui", { strictContracts: false });
+    expect(reported.error).toBeUndefined();
+    expect(reported.warnings).toEqual([
+      { message: "/a/Main.pfui:1:12: warning E020: 'Text' has no prop 'valu'. Did you mean 'value'?", loc: { file: "/a/Main.pfui", line: 1, column: 11 } },
+    ]);
+    expect(result!.code).toContain('"valu": "x"');
+  });
+});

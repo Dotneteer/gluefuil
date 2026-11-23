@@ -8,6 +8,7 @@
 
 import type * as A from "../script/ast";
 import type { Diagnostic } from "../source/diagnostic";
+import { didYouMean } from "../source/suggest";
 import { CodegenDiagnostics, type CodegenDiagnosticCode } from "./diagnostics";
 import { bare, escapeMarkerChars, mark } from "./markers";
 import {
@@ -34,7 +35,14 @@ export interface EmitterOptions {
   variables?: ReadonlySet<string>;
   /** Insert source markers (see ./markers.ts) for source maps. Default false. */
   markers?: boolean;
+  /** Component contracts: the API members of scope names that are component IDs (C015). */
+  members?: MemberLookup | undefined;
+  /** The severity of contract diagnostics. Default "error". */
+  contractSeverity?: "error" | "warning" | undefined;
 }
+
+/** For a scope name that is a component ID: its component and the API members it exposes. */
+export type MemberLookup = (name: string) => { component: string; members: readonly string[] } | undefined;
 
 /** Array methods compiled to `$$r.mutate` when called on a variable path (runtime ARRAY_MUTATORS). */
 const ARRAY_MUTATORS: ReadonlySet<string> = new Set([
@@ -148,6 +156,8 @@ export class Emitter {
   private readonly isScopeName: (name: string) => boolean;
   private readonly handlerMode: boolean;
   private readonly markers: boolean;
+  private readonly members: MemberLookup | undefined;
+  private readonly contractSeverity: "error" | "warning";
   private readonly variables: ReadonlySet<string>;
   private tempCount = 0;
   /**
@@ -161,6 +171,8 @@ export class Emitter {
     this.isScopeName = typeof scope === "function" ? scope : (name) => scope.has(name);
     this.handlerMode = options.mode === "handler";
     this.markers = options.markers ?? false;
+    this.members = options.members;
+    this.contractSeverity = options.contractSeverity ?? "error";
     this.variables = options.variables ?? new Set();
   }
 
@@ -529,6 +541,7 @@ export class Emitter {
    */
   private member(node: A.MemberExpression, mode: "read" | "write" | "delete"): string {
     this.checkRestrictedGlobalMember(node);
+    this.checkComponentMember(node);
     const object =
       mode === "read" ? this.expression(node.object, P.call) : `$$r.obj(${this.expression(node.object, P.assign)})`;
     const link = mode !== "write" ? "?." : node.computed ? "" : ".";
@@ -536,6 +549,17 @@ export class Emitter {
     const name = (node.property as A.Identifier).name;
     if (BANNED_MEMBERS.has(name)) this.report(node.property, "C003", name);
     return `${object}${link}${name}`;
+  }
+
+  /** `box.valu` where `box` is a component ID whose API has no `valu` (C015). Locals shadow IDs. */
+  private checkComponentMember(node: A.MemberExpression): void {
+    if (!this.members || node.object.type !== "Identifier" || node.computed) return;
+    if (this.resolve(node.object.name) !== "scope") return;
+    const api = this.members(node.object.name);
+    const name = (node.property as A.Identifier).name;
+    if (!api || api.members.includes(name)) return;
+    this.report(node.property, "C015", node.object.name, api.component, name, didYouMean(name, api.members));
+    if (this.contractSeverity === "warning") this.diagnostics[this.diagnostics.length - 1]!.severity = "warning";
   }
 
   /** `Object.getPrototypeOf` and similar members left out of a curated global. */

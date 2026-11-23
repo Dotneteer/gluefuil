@@ -4,7 +4,7 @@
 > during a Vite build or dev session. Describes the code as it is. Design and
 > XMLUI comparison: [`../plan/poc-12-build-time.md`](../plan/poc-12-build-time.md).
 >
-> **Last updated:** step 14 (component files, code-behind).
+> **Last updated:** step 15 (`strictContracts`).
 
 ## Using it
 
@@ -39,6 +39,7 @@ extensionless imports.
 | `components` | the built-in metadata | The components markup may use (`Record<string, ComponentMetadata>`) |
 | `sourceMap` | `"auto"` | `"auto"`: on while serving; in a build, on only when `build.sourcemap` is set. `true` / `false` force it |
 | `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint }` ([ssg.md](ssg.md)) |
+| `strictContracts` | `true` | `false`: contract violations are warnings ([contracts.md](contracts.md)) |
 | `componentsDir` | `"src/components"` | User-defined component files, relative to the Vite root ([user-components.md](user-components.md#delivery)) |
 
 With source maps off, the compiler emits no position markers. The code is

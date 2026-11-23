@@ -3,7 +3,7 @@
 // and watch the files for changes.
 // Design: .ai/plan/poc-11-standalone.md, .ai/plan/poc-14-user-components.md
 
-import { analyzeModule, compileModule, type Diagnostic, type UserComponentInfo } from "@patchfuil/compiler";
+import { analyzeModule, compileModule, formatDiagnostic, LineMap, type Diagnostic, type UserComponentInfo } from "@patchfuil/compiler";
 import * as builtIns from "@patchfuil/components";
 import { componentMetadata } from "@patchfuil/components/metadata";
 import { loadModule, setDefaultHandlerTimeout } from "@patchfuil/runtime";
@@ -24,6 +24,11 @@ export interface StartOptions {
   watch?: boolean;
   /** Polling interval in ms. Default 1000. */
   watchInterval?: number;
+  /**
+   * Component contract violations are errors (default true) or warnings
+   * (false, for migrating XMLUI markup). Warnings go to the console.
+   */
+  strictContracts?: boolean;
   /** Replaceable for tests. */
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
   storage?: StorageLike;
@@ -159,7 +164,7 @@ export class StandaloneApp {
     const seen = new Set<string>();
     const visit = async (source: Source) => {
       fingerprint.push(source.path, hashText(source.markup), source.codeBehind === undefined ? "-" : hashText(source.codeBehind));
-      const analysis = analyzeModule(source.markup);
+      const analysis = analyzeModule(source.markup, source.codeBehind !== undefined ? { codeBehind: source.codeBehind } : {});
       for (const defined of analysis.components) seen.add(defined.name);
       const wanted = analysis.references.filter((name) => !Object.hasOwn(componentMetadata, name) && !seen.has(name));
       for (const name of wanted) seen.add(name);
@@ -185,7 +190,7 @@ export class StandaloneApp {
     // The interfaces of the component files (a file must define its own name).
     const infos: Record<string, UserComponentInfo> = {};
     for (const [name, source] of fetched.components) {
-      const info = analyzeModule(source.markup).components.find((c) => c.name === name);
+      const info = analyzeModule(source.markup, source.codeBehind !== undefined ? { codeBehind: source.codeBehind } : {}).components.find((c) => c.name === name);
       if (info) infos[name] = info;
     }
     const components: Record<string, unknown> = { ...builtIns };
@@ -203,7 +208,10 @@ export class StandaloneApp {
           fileName: source.path,
           userComponents,
           ...(source.codeBehind !== undefined ? { codeBehind: source.codeBehind } : {}),
+          ...(this.options.strictContracts !== undefined ? { strictContracts: this.options.strictContracts } : {}),
         });
+        this.logWarnings(source.path, source.markup, result.diagnostics);
+        if (source.codeBehind !== undefined) this.logWarnings(`${source.path}.xs`, source.codeBehind, result.codeBehindDiagnostics ?? []);
         compileMs += performance.now() - started;
         if (this.showDiagnostics(source.path, source.markup, result.diagnostics)) return undefined;
         if (source.codeBehind !== undefined && this.showDiagnostics(`${source.path}.xs`, source.codeBehind, result.codeBehindDiagnostics ?? [])) return undefined;
@@ -238,6 +246,14 @@ export class StandaloneApp {
     } catch (error) {
       this.showError({ file: this.file, error });
     }
+  }
+
+  /** Warnings (deprecations; contract violations when not strict) go to the console. */
+  private logWarnings(file: string, source: string, diagnostics: Diagnostic[]): void {
+    const warnings = diagnostics.filter((d) => d.severity === "warning");
+    if (warnings.length === 0) return;
+    const lineMap = new LineMap(source);
+    for (const warning of warnings) console.warn(`pfui: ${formatDiagnostic(warning, lineMap, file)}`);
   }
 
   /** Shows the overlay when there are errors; returns whether it did. */

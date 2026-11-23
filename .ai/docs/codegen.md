@@ -5,7 +5,7 @@
 > rationale and XMLUI comparison:
 > [`../plan/poc-03-codegen.md`](../plan/poc-03-codegen.md).
 >
-> **Last updated:** step 9 (source markers).
+> **Last updated:** step 15 (C015, the `members` option).
 
 ## Role
 
@@ -223,6 +223,7 @@ All are errors.
 | C012 | A handler can only change variables |
 | C013 | Destructuring or `for` target into a variable's member |
 | C014 | A context variable (`$`-name) that is not available here |
+| C015 | An unknown API member of a component ID (contracts, step 15: [contracts.md](contracts.md)); only with the `members` option |
 
 ## Tests
 

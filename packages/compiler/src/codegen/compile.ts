@@ -3,7 +3,7 @@
 import type { Expression, FunctionDeclaration, Program } from "../script/ast";
 import type { InterpolationSegment } from "../script/interpolation";
 import type { Diagnostic } from "../source/diagnostic";
-import { Emitter, type ScopeNames } from "./emitter";
+import { Emitter, type MemberLookup, type ScopeNames } from "./emitter";
 import { bare, jsString } from "./markers";
 
 /** Emit at assignment level: a top-level sequence expression gets parentheses. */
@@ -20,6 +20,10 @@ export interface CompileOptions {
    * source map; see ./markers.ts). Default false: clean code.
    */
   markers?: boolean;
+  /** Component contracts: the API members of scope names that are component IDs (C015). */
+  members?: MemberLookup;
+  /** The severity of contract diagnostics (C015). Default "error". */
+  contractSeverity?: "error" | "warning";
 }
 
 export interface CompileResult {
@@ -38,7 +42,7 @@ export interface CompileResult {
 
 /** Compiles one expression (an attribute value that is exactly `{expr}`). */
 export function compileExpression(expression: Expression, options: CompileOptions): CompileResult {
-  const emitter = new Emitter(options.scope, { markers: options.markers });
+  const emitter = new Emitter(options.scope, { markers: options.markers, members: options.members, contractSeverity: options.contractSeverity });
   const body = emitter.expression(expression, ASSIGNMENT_PRECEDENCE);
   const code = `($$s) => ${bare(body).startsWith("{") ? `(${body})` : body}`;
   return {
@@ -71,7 +75,7 @@ export function compileInterpolation(segments: InterpolationSegment[], options: 
     return { code: `($$s) => ${jsString(value)}`, dependencies: [], constant: true, value, diagnostics: [] };
   }
 
-  const emitter = new Emitter(options.scope, { markers: options.markers });
+  const emitter = new Emitter(options.scope, { markers: options.markers, members: options.members, contractSeverity: options.contractSeverity });
   const emit = (expression: Expression | null) => (expression ? emitter.expression(expression, ASSIGNMENT_PRECEDENCE) : "undefined");
   let body: string;
   if (parts.length === 1 && parts[0]!.kind === "expression") {
@@ -101,7 +105,7 @@ export interface CompileHandlerOptions extends CompileOptions {
  * Emitter.handlerFunction for the shapes.
  */
 export function compileHandler(program: Program, options: CompileHandlerOptions): CompileResult {
-  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers });
+  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers, members: options.members, contractSeverity: options.contractSeverity });
   const fn = emitter.handlerFunction(program);
   const code = `($$s) => ${fn}`;
   return { code, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
@@ -113,7 +117,7 @@ export function compileHandler(program: Program, options: CompileHandlerOptions)
  * and it is synchronous unless it contains `await`.
  */
 export function compileFunction(node: FunctionDeclaration, options: CompileHandlerOptions): CompileResult {
-  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers });
+  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers, members: options.members, contractSeverity: options.contractSeverity });
   const fn = emitter.functionValue(node);
   return { code: `($$s) => ${fn}`, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
 }

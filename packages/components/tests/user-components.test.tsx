@@ -16,8 +16,9 @@ afterEach(cleanup);
 function load(main: string, files: Record<string, string | { markup: string; codeBehind: string }> = {}, mainCodeBehind?: string) {
   const sources = Object.fromEntries(Object.entries(files).map(([name, f]) => [name, typeof f === "string" ? { markup: f } : f]));
   const infos: Record<string, UserComponentInfo> = {};
-  for (const [name, { markup }] of Object.entries(sources)) {
-    for (const info of analyzeModule(markup).components) if (info.name === name) infos[name] = info;
+  for (const [name, source] of Object.entries(sources)) {
+    const codeBehind = (source as { codeBehind?: string }).codeBehind;
+    for (const info of analyzeModule(source.markup, codeBehind !== undefined ? { codeBehind } : {}).components) if (info.name === name) infos[name] = info;
   }
   const components: Record<string, unknown> = { ...builtIns };
   const compile = (markup: string, fileName: string, codeBehind: string | undefined, own?: string) => {
