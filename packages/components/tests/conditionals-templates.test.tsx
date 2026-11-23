@@ -114,3 +114,31 @@ test("nested templates see both levels' context through the scope chain", () => 
     </App>`);
   expect(texts()).toEqual(["1", "2", "3"]);
 });
+
+test("IDs inside a template: one scope per instance (each row has its own box)", () => {
+  renderMarkup(`
+    <App>
+      <Items data="{['a', 'b']}">
+        <Stack>
+          <TextBox id="box" placeholder="{'row ' + $item}"/>
+          <Text>{$item}: {box.value}</Text>
+        </Stack>
+      </Items>
+    </App>`);
+  act(() => fireEvent.change(screen.getByPlaceholderText("row b"), { target: { value: "typed" } }));
+  expect(texts()).toEqual(["a: ", "b: typed"]);
+});
+
+test("IDs inside a component's slot content work, and see the file's IDs", () => {
+  renderMarkup(`
+    <Component name="Frame"><Stack><Text>frame</Text><Slot/></Stack></Component>
+    <App>
+      <TextBox id="outside" initialValue="file"/>
+      <Frame>
+        <TextBox id="inside" placeholder="in slot"/>
+        <Text>{inside.value} / {outside.value}</Text>
+      </Frame>
+    </App>`);
+  act(() => fireEvent.change(screen.getByPlaceholderText("in slot"), { target: { value: "slot" } }));
+  expect(texts()).toEqual(["frame", "slot / file"]);
+});

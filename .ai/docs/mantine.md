@@ -41,6 +41,15 @@ export const TextBox = wrapComponent(TextInput, {
 - `children` are passed only when given, so a rename can produce them
   (`label` → `children`).
 
+### An app's own React components
+
+An app module can export React components (wrapped with `wrapComponent`
+or written directly). The Vite plugin's **`extensions`** option registers
+them with their metadata, and markup then uses them like built-ins
+([build-time.md](build-time.md)). See the playground's `ScenarioSource`
+(`playground/src/react/ScenarioSource.tsx`, `playground/vite.config.ts`).
+Standalone mode can't load them yet.
+
 ## The Mantine-based built-ins (`components/src/mantine.tsx`)
 
 | Component | Mantine | Props | Events | API |

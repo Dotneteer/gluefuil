@@ -296,7 +296,7 @@ Run from the repository root.
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176) |
-| `npm run playground` | The manual-testing playground on the Vite dev server (`playground:build`, `playground:preview` for the prerendered build) |
+| `npm run playground` | The manual-testing playground on the Vite dev server, port 5190 (`playground:build`, and `playground:preview` on 5191, for the prerendered build) |
 | `npm run build:standalone` | Builds `packages/standalone/dist/pfui.js` (also run by the E2E web server) |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
 | `npm run typecheck` | `tsc -p` for each package and folder, each with its own settings |
@@ -369,18 +369,18 @@ Conventions:
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs (see [ssg.md](ssg.md#tests)) |
 
-Count after step 19 (routing): 1,950 unit tests in 67 files.
+Count after IDs in templates and extensions: 1,965 unit tests in 67 files.
 
-- Compiler: 957, of which markup 115, script 331, codegen 207, module 278
+- Compiler: 965, of which markup 115, script 331, codegen 207, module 286
   (user components 57, contracts 74, behaviors 19) and source 26.
 - Runtime: 404, of which the script sandbox and async arrays are 210,
   reactivity 65, rendering 127 (the server view and `mountApp` 12,
   `wrapComponent` 19, the router 27), and the smoke test 2.
 - Standalone: 25 (the cache 10, the loader 14, the hash 1).
-- Vite plugin: 50 (the transform 22, the prerender 18, components 10).
+- Vite plugin: 55 (the transform 27, the prerender 18, components 10).
 - Tools: 371, of which the corpus is 327, the boundaries 29, the build
   output 10 and the sandbox drift test 5.
-- Components: 143 (static generation 8, user components 11, the theme
+- Components: 145 (static generation 8, user components 11, the theme
   engine 29, theme components 5, behaviors 7, Mantine 6, Text and Heading
   21, routing 7).
 
@@ -428,7 +428,7 @@ Count after step 19 (routing): 1,950 unit tests in 67 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
-| `e2e/playground.spec.ts` | The playground's dashboard lists its scenarios; each opens, has no page or console errors, and leads back |
+| `e2e/playground.spec.ts` | The playground's dashboard lists its scenarios; each opens, shows its source (monospace, line breaks and indentation), has no page or console errors, and leads back |
 | `e2e/routing.spec.ts` | Routing in the routing fixture, dev and build (projects `routing-dev`, `routing-build`) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select, Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |

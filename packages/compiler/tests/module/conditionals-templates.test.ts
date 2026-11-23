@@ -75,9 +75,21 @@ describe("templates", () => {
     // Unknown template property; content besides an explicit template.
     ['<App><Items><property name="footer"><Text/></property></Items></App>', [["E013", '"footer"']]],
     ['<App><Items><property name="itemTemplate"><Text/></property><Text value="x"/></Items></App>', [["E013", '<Text value="x"/>']]],
-    // IDs inside templates are not supported yet.
-    ['<App><Items data="{[1]}"><TextBox id="box"/></Items></App>', [["E014", "id"]]],
-    ['<App><Items><property name="itemTemplate"><TextBox id="b"/></property></Items></App>', [["E014", "id"]]],
+    // IDs inside a template belong to the template instance (E014 is retired).
+    ['<App><Items data="{[1]}"><TextBox id="box"/><Text>{box.value}</Text></Items></App>', []],
+    ['<App><Items><property name="itemTemplate"><TextBox id="b"/><Button onClick="b.focus()"/></property></Items></App>', []],
+    // Not visible outside the template (there may be many instances).
+    ['<App><Items data="{[1]}"><TextBox id="box"/></Items><Text>{box.value}</Text></App>', [["C001", "box"]]],
+    // The file's IDs are visible inside; a template ID may not reuse one, nor a variable reuse a template ID.
+    ['<App><TextBox id="top"/><Items data="{[1]}"><Text>{top.value}</Text></Items></App>', []],
+    ['<App><TextBox id="box"/><Items data="{[1]}"><TextBox id="box"/></Items></App>', [["E010", '"box"']]],
+    ['<App><Items data="{[1]}"><TextBox id="a"/><TextBox id="a"/></Items></App>', [["E010", '"a"']]],
+    ['<App><Items data="{[1]}"><TextBox id="a"/><Stack var.a="{1}"/></Items></App>', [["E012", "var.a"]]],
+    // Nested templates: the inner sees the outer's IDs; siblings' templates are separate scopes.
+    ['<App><Items data="{[1]}"><TextBox id="outer"/><Items data="{[2]}"><TextBox id="inner"/><Text>{outer.value}{inner.value}</Text></Items></Items></App>', []],
+    ['<App><Items data="{[1]}"><TextBox id="x"/></Items><Items data="{[2]}"><TextBox id="x"/></Items></App>', []],
+    // Contracts apply to template IDs too.
+    ['<App><Items data="{[1]}"><TextBox id="box"/><Text>{box.valu}</Text></Items></App>', [["C015", "valu"]]],
   ])("%s", (markup, expected) => {
     expect(diagnostics(markup)).toEqual(expected);
   });

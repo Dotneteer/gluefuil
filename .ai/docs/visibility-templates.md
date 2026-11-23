@@ -80,7 +80,8 @@
   Instances are keyed by index.
 - **Nesting:** inner templates see outer context variables through the
   scope chain; an inner `$item` shadows the outer one.
-- **IDs inside templates** are E014 for now.
+- **IDs inside templates** belong to the template instance (one ID scope per
+  instance; [scoping.md](scoping.md)).
 
 ## `Items`
 
@@ -99,7 +100,7 @@
 | `runtime/src/render/templates.ts` | `TemplateInstance`, `templateRenderer` |
 | `runtime/src/render/elements.ts` | `Bound`: `templates`, `lifecycle` (`useLifecycle`) |
 | `components/src/items.tsx` | `Items` |
-| `compiler/src/module/compile-module.ts` | `visibility`, `template`, `propertyTag`, lifecycle routing, `contextFrames`; `collectIds` skips templates (E014) |
+| `compiler/src/module/compile-module.ts` | `visibility`, `template`, `propertyTag`, lifecycle routing, `contextFrames`; the template's own ID scope (`templateIds`, `collectIds` per scope) |
 
 ## Tests
 

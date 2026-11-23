@@ -1,8 +1,4 @@
-<!--
-  The top of every scenario page: a way back, the title and the description.
-  It is a sibling of the scenario's content, not a wrapper: content passed into
-  a <Slot> is a template, and ids inside templates are not supported yet (E014).
--->
+<!-- The top of every scenario page: a way back, the title and the description. -->
 <Component name="ScenarioHeader">
   <Stack gap="8px">
     <Stack orientation="horizontal" gap="12px">

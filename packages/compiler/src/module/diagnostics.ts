@@ -11,11 +11,11 @@ export const ModuleDiagnostics = {
   E007: (name: string) => `The variable '${name}' is declared twice on this element`,
   E008: (detail: string) => detail,
   E009: (detail: string) => detail,
-  E010: (id: string) => `The id '${id}' is already used in this file`,
+  E010: (id: string) => `The id '${id}' is already used in this file (or by an enclosing scope)`,
   E011: (id: string) => `'${id}' is not a valid id: use a name starting with a letter or '_'`,
   E012: (name: string) => `The variable '${name}' has the same name as a component id`,
   E013: (detail: string) => detail,
-  E014: () => "An id inside a template is not supported yet",
+  // E014 (an id inside a template) is retired: template instances have their own ID scope.
   E015: (name: string) => `'${name}': use when-xs, when-sm, when-md, when-lg, when-xl or when-xxl`,
   /** User-defined component definitions: names, duplicates, attributes, file names. */
   E016: (detail: string) => detail,

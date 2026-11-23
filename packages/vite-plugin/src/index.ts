@@ -9,7 +9,7 @@ import {
   type Diagnostic,
   type UserComponentInfo,
 } from "@patchfuil/compiler";
-import type { ComponentMetadata } from "@patchfuil/components/metadata";
+import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
 import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
 import { ComponentFolder, importSpecifier, readCodeBehind } from "./components";
@@ -42,12 +42,24 @@ export interface PfuiPluginOptions {
    * (false, for migrating XMLUI markup). See compileModule `strictContracts`.
    */
   strictContracts?: boolean;
+  /**
+   * The app's own React components, usable from markup: name → the module
+   * (relative to the Vite root) that exports a component of that name, and its
+   * metadata (checked like a built-in's). Wrap a third-party component with
+   * `wrapComponent` from @patchfuil/runtime in that module.
+   */
+  extensions?: Readonly<Record<string, { module: string; metadata: ComponentMetadata }>>;
 }
+
+/** Query parameters that make Vite load a file as something other than a module (`?raw`). */
+const NON_MODULE_QUERY = /[?&](raw|url|inline|worker|sharedworker)\b/;
 
 const EXTENSION = ".pfui";
 
 /** The file path of a module id: without a `?query` or `#hash`. */
 export function pfuiFilePath(id: string): string | undefined {
+  // `Main.pfui?raw` is the file's text (import.meta.glob of sources), not a module to compile.
+  if (NON_MODULE_QUERY.test(id)) return undefined;
   const path = id.replace(/[?#].*$/, "");
   return path.endsWith(EXTENSION) ? path : undefined;
 }
@@ -64,6 +76,17 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
   let sourceMap = true;
   let config: ResolvedConfig | undefined;
   let folder: ComponentFolder | undefined;
+  // Extensions: their metadata joins the built-ins'; each file imports them by a path relative to itself.
+  const extensionOptions = (file: string) => {
+    if (!options.extensions) return options.components ? { components: options.components } : {};
+    const components: Record<string, ComponentMetadata> = { ...(options.components ?? componentMetadata) };
+    const componentModules: Record<string, string> = {};
+    for (const [name, extension] of Object.entries(options.extensions)) {
+      components[name] = extension.metadata;
+      componentModules[name] = importSpecifier(dirname(file), resolve(config?.root ?? process.cwd(), extension.module));
+    }
+    return { components, componentModules };
+  };
   const componentsFolder = () => (folder ??= new ComponentFolder(resolve(config?.root ?? process.cwd(), options.componentsDir ?? "src/components")));
   return {
     name: "pfui",
@@ -82,6 +105,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
         const transform = pfui({
           sourceMap: false,
           ...(options.components ? { components: options.components } : {}),
+          ...(options.extensions ? { extensions: options.extensions } : {}),
           ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
           ...(options.componentsDir ? { componentsDir: options.componentsDir } : {}),
         });
@@ -121,7 +145,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
         sourceMap,
         userComponents,
         ...(codeBehind !== undefined ? { codeBehind } : {}),
-        ...(options.components ? { components: options.components } : {}),
+        ...extensionOptions(file),
         ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
       });
       if (codeBehind !== undefined) {

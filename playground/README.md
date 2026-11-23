@@ -3,8 +3,8 @@
 Manual testing: a dashboard of scenarios, each on its own page.
 
 ```sh
-npm run playground            # dev server (http://localhost:5173); edits reload the page
-npm run playground:preview    # production build (prerendered dashboard) + preview server
+npm run playground            # dev server (http://localhost:5190); edits reload the page
+npm run playground:preview    # production build (prerendered dashboard) + preview (http://localhost:5191)
 ```
 
 Routes use the hash (`/#/counter`), so any page can be bookmarked or reloaded.
@@ -37,24 +37,31 @@ Routes use the hash (`/#/counter`), so any page can be bookmarked or reloaded.
    { path: '/clock', title: 'Clock', description: 'What it checks.' },
    ```
 
-   Then add the route to `<Pages>`:
+   Then add its page to `<Pages>`, with its source below it:
 
    ```xml
-   <Page url="/clock"><ClockScenario/></Page>
+   <Page url="/clock">
+     <Stack gap="24px"><ClockScenario/><ScenarioSource file="ClockScenario"/></Stack>
+   </Page>
    ```
 
 3. **Update `e2e/playground.spec.ts`:** add the title to its list of
-   expected dashboard buttons. It opens every scenario and fails on any
-   page or console error.
+   expected dashboard buttons. It opens every scenario, checks that its
+   source is shown, and fails on any page or console error.
 
 ## Things to know
 
-- **The header is a sibling of the content, not a wrapper.** Content passed
-  into another component's `<Slot>` is compiled as a template, and `id`s
-  inside templates are not supported yet (E014).
+- **`ScenarioSource`** (`src/react/ScenarioSource.tsx`) is the playground's own
+  React component, used from markup. It is registered with the pfui Vite
+  plugin's `extensions` option (`vite.config.ts`), with its metadata (its
+  props are checked like a built-in's). It reads the sources with
+  `import.meta.glob(…, { query: "?raw" })`.
+- **IDs inside slot content** (or any template) belong to that content's
+  instance: a scenario's content could also be wrapped in a component with a
+  `<Slot/>`.
 - **A page's state starts fresh on every visit:** only the active page is
   mounted.
-- **The app's theme and tone are shared by every page** (`toggleThemeTone()`
-  persists while you navigate).
+- **The app's theme and tone are shared by every page:**
+  `toggleThemeTone()` persists while you navigate.
 - **Compile errors** show in Vite's overlay, with the file, line and
   column.

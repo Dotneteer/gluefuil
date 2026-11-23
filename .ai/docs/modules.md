@@ -27,6 +27,7 @@ compileModule(markup, {
   components?: Record<string, ComponentMetadata>,  // default: built-in metadata
   runtimeModule?: string,               // default "@patchfuil/runtime"
   componentsModule?: string,            // default "@patchfuil/components"
+  componentModules?: Record<string, string>, // "esm": per-component modules (an app's own React components)
   fileName?: string,                    // the source map's source; default "Main.pfui"
   sourceMap?: boolean,                  // default true
 }): { code: string; map?: SourceMap; diagnostics: Diagnostic[] }
@@ -161,7 +162,7 @@ export default Main;
 | E011 | Invalid `id` |
 | E012 | A variable named like a component ID |
 | E013 | Unknown template property, non-template `<property>`, content besides an explicit children template |
-| E014 | `id` inside a template |
+| E014 | Retired: IDs inside templates are scoped to the template instance ([scoping.md](scoping.md)) |
 | E015 | Unknown `when-*` breakpoint |
 | E016–E019 | User-defined components, slots and code-behind ([user-components.md](user-components.md#compiling-compilemodule)) |
 | E020–E024 | Contracts: unknown prop, missing required prop, wrong literal type, value outside the enum, deprecation (a warning) ([contracts.md](contracts.md)) |

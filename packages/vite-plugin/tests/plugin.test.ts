@@ -48,6 +48,10 @@ describe("which files", () => {
     ["/app/src/main.tsx", undefined],
     ["/app/src/Main.pfui.ts", undefined],
     ["/app/src/main.tsx?file=a.pfui", undefined],
+    // The file's text, not a module (import.meta.glob(…, { query: "?raw" })).
+    ["/app/src/Main.pfui?raw", undefined],
+    ["/app/src/Main.pfui?import&raw", undefined],
+    ["/app/src/Main.pfui?url", undefined],
   ])("%s", (id, expected) => {
     expect(pfuiFilePath(id)).toBe(expected);
   });
@@ -148,5 +152,26 @@ describe("contracts (step 15)", () => {
       { message: "/a/Main.pfui:1:12: warning E020: 'Text' has no prop 'valu'. Did you mean 'value'?", loc: { file: "/a/Main.pfui", line: 1, column: 11 } },
     ]);
     expect(result!.code).toContain('"valu": "x"');
+  });
+});
+
+describe("extensions: the app's own React components (playground SourceView, step 19+)", () => {
+  const extensions = {
+    Fancy: { module: "src/react/Fancy.tsx", metadata: { description: "An app component.", props: { level: { description: "", valueType: "integer" as const } } } },
+  };
+
+  test("imported from their module, relative to the compiled file; built-ins still from the package", () => {
+    const plugin = pfui({ extensions });
+    (plugin.configResolved as (c: unknown) => void)({ root: "/app", command: "build", build: { sourcemap: false } });
+    const context = { addWatchFile: () => undefined, warn: () => undefined, error: (e: { message: string }) => { throw new Error(e.message); } };
+    const run = (file: string) => (plugin.transform as (this: unknown, s: string, id: string) => { code: string }).call(context, '<App><Fancy level="2"/><Text/></App>', file).code;
+    expect(run("/app/src/Main.pfui")).toContain('import { Fancy as $$C_Fancy } from "./react/Fancy.tsx";');
+    expect(run("/app/src/Main.pfui")).toContain('import { App as $$C_App, Text as $$C_Text } from "@patchfuil/components";');
+    expect(run("/app/src/components/X.pfui")).toContain('from "../react/Fancy.tsx";');
+  });
+
+  test("their contracts are checked like a built-in's", () => {
+    const { reported } = transform('<App><Fancy level="1.5"/></App>', "/a/Main.pfui", { extensions });
+    expect(String(reported.error!.message)).toContain("error E022: '1.5' is not a valid value for 'level': expected an integer");
   });
 });

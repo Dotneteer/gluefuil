@@ -4,7 +4,7 @@
 > and how component IDs expose APIs. Describes the code as it is. Design
 > and XMLUI comparison: [`../plan/poc-08-scoping-ids.md`](../plan/poc-08-scoping-ids.md).
 >
-> **Last updated:** step 14 (inside user-defined components).
+> **Last updated:** IDs inside templates (after step 19).
 
 ## Name resolution (compile time)
 
@@ -38,9 +38,22 @@ a caller is compiled in the caller's scope
   (its own attributes too) and its descendants, not to its siblings.
 - **IDs are file-scoped and order-independent:** the module compiler
   collects them before compiling (`collectIds`).
+- **An ID inside a template** (an `Items` row, a `<property>` template, a
+  component's slot content) **belongs to the template instance.**
+  - It is visible to code inside that instance, including nested
+    templates.
+  - It is not visible outside (C001): there may be many instances, and each
+    `Items` row has its own `box`.
+  - The file's IDs stay visible inside.
+  - The template function creates the instance's ID scope
+    (`const $$i = $$useFileScope($$c, ["box"])`): it runs as part of its
+    `TemplateInstance`'s render, so the hook is safe.
+  - XMLUI's docs don't specify IDs declared in templates; E014 (an error
+    before) is retired.
 - **Conflicts:**
   - a variable named like an ID is E012;
-  - a duplicate ID is E010;
+  - a duplicate ID is E010, and so is a template ID that reuses an ID
+    visible from an enclosing scope;
   - an invalid ID (not a constant identifier, or `$`-prefixed) is E011.
 
 ## Scope objects (runtime)
@@ -54,7 +67,8 @@ app scope (createAppScope: delay)
        └─ container scope (useScope: variables, getters + setters)
             └─ nested container scope …
                  └─ template instance scope (TemplateInstance: $item, … as signals)
-                      └─ …
+                      └─ template ID scope (useFileScope in the template function) — only when the template has IDs
+                           └─ …
 ```
 
 - **Every scope object is frozen.**

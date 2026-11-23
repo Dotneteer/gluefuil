@@ -55,6 +55,12 @@ export interface CompileModuleOptions {
   /** Module specifiers for the "esm" format. */
   runtimeModule?: string;
   componentsModule?: string;
+  /**
+   * "esm": the module to import a component from, by name, for components not
+   * in `componentsModule` (an app's own React components: the Vite plugin's
+   * `extensions`). Their metadata goes in `components`.
+   */
+  componentModules?: Readonly<Record<string, string>>;
   /** The source file's name, as the source map's `sources` entry. Default "Main.pfui". */
   fileName?: string;
   /** Produce a source map (default true). */
@@ -182,6 +188,11 @@ class ModuleCompiler {
   /** The component IDs of the file (collected before compiling: their order doesn't matter). */
   /** The file's (or the component body's) IDs, each with its component's name. */
   private readonly ids = new Map<string, string>();
+  /**
+   * IDs of the enclosing templates, innermost last. Each template instance has
+   * its own ID scope: its IDs are visible inside it, not outside.
+   */
+  private readonly templateIds: Map<string, string>[] = [];
   private counter = 0;
   private usesEmpty = false;
   /** User components: other files' (options) and this file's own. */
@@ -231,7 +242,7 @@ class ModuleCompiler {
 
   /** What the emitter needs for C015: the component and API members behind an ID. */
   private readonly memberLookup = (name: string) => {
-    const component = this.ids.get(name);
+    const component = this.idComponent(name);
     if (component === undefined) return undefined;
     return { component, members: Object.keys(this.metadataOf(component)?.api ?? {}) };
   };
@@ -244,6 +255,7 @@ class ModuleCompiler {
   /** Every name visible at this point: app globals, the file's IDs, and the variables in scope. */
   private visibleNames(): Set<string> {
     const names = new Set<string>([...APP_GLOBALS, ...this.ids.keys()]);
+    for (const frame of this.templateIds) for (const id of frame.keys()) names.add(id);
     for (const frame of this.frames) for (const name of frame) names.add(name);
     for (const frame of this.contextFrames) for (const name of frame) names.add(name);
     return names;
@@ -394,8 +406,15 @@ class ModuleCompiler {
    * and sees nothing of the file it is used from (isolation).
    */
   private componentDefinition(definition: ElementNode, name: string): string {
-    const saved = { ids: new Map(this.ids), frames: [...this.frames], contextFrames: [...this.contextFrames], inComponent: this.inComponent };
+    const saved = {
+      ids: new Map(this.ids),
+      templateIds: [...this.templateIds],
+      frames: [...this.frames],
+      contextFrames: [...this.contextFrames],
+      inComponent: this.inComponent,
+    };
     this.ids.clear();
+    this.templateIds.length = 0;
     this.frames.length = 0;
     this.contextFrames.length = 0;
     this.inComponent = true;
@@ -450,6 +469,8 @@ class ModuleCompiler {
     this.contextFrames.push(...saved.contextFrames);
     this.ids.clear();
     for (const [id, component] of saved.ids) this.ids.set(id, component);
+    this.templateIds.length = 0;
+    this.templateIds.push(...saved.templateIds);
     this.inComponent = saved.inComponent;
 
     const fn = `$$U_${name}`;
@@ -470,7 +491,7 @@ class ModuleCompiler {
     const codeVariables: CodeBehind["variables"] = [];
     const functions: FunctionDeclaration[] = [];
     const functionNames = new Set<string>();
-    const clash = (name: string) => own.has(name) || functionNames.has(name) || this.ids.has(name);
+    const clash = (name: string) => own.has(name) || functionNames.has(name) || this.isId(name);
     for (const variable of codeBehind?.variables ?? []) {
       if (clash(variable.name)) {
         this.reportCodeBehind(variable, `'${variable.name}' is declared twice (in the markup or the code-behind), or is a component id`);
@@ -568,9 +589,14 @@ class ModuleCompiler {
     }
     const runtime = RUNTIME_IMPORTS.map(([name, local]) => `${name} as ${local}`).join(", ");
     const lines = [`import { ${runtime} } from ${JSON.stringify(this.options.runtimeModule ?? "@patchfuil/runtime")};`];
-    if (components.length > 0) {
-      const specifiers = components.map((c) => `${c} as $$C_${c}`).join(", ");
-      lines.push(`import { ${specifiers} } from ${JSON.stringify(this.options.componentsModule ?? "@patchfuil/components")};`);
+    // Grouped by module: the built-ins, and each app module of `componentModules`.
+    const byModule = new Map<string, string[]>();
+    for (const c of components) {
+      const module = this.options.componentModules?.[c] ?? this.options.componentsModule ?? "@patchfuil/components";
+      byModule.set(module, [...(byModule.get(module) ?? []), c]);
+    }
+    for (const [module, names] of byModule) {
+      lines.push(`import { ${names.map((c) => `${c} as $$C_${c}`).join(", ")} } from ${JSON.stringify(module)};`);
     }
     for (const name of [...this.usedExternal].sort()) {
       lines.push(`import $$U_${name} from ${JSON.stringify(this.userComponents.get(name)!.module)};`);
@@ -592,16 +618,39 @@ class ModuleCompiler {
    */
   private template(content: ContentNode[], contextVars: readonly string[]): string {
     this.contextFrames.push(new Set(contextVars));
+    // IDs in this template (not in nested ones): one ID scope per instance.
+    const ids = new Map<string, string>();
+    this.templateIds.push(ids);
+    for (const child of content) if (child.kind === "element") this.collectIds(child, ids);
+    // The ID scope is created by a hook: a template function runs as part of
+    // its TemplateInstance's render, always the same function, so it is safe.
+    const scopeVar = ids.size > 0 ? "$$i" : "$$c";
     const parts: string[] = [];
     for (const child of content) {
-      const compiled = this.child(child, "$$c");
+      const compiled = this.child(child, scopeVar);
       if (compiled !== undefined) parts.push(compiled);
     }
+    this.templateIds.pop();
     this.contextFrames.pop();
     const body = parts.length === 0 ? "null" : parts.length === 1 ? parts[0]! : `$$h($$Fragment, null, ${parts.join(", ")})`;
     const name = `$$T${this.counter++}`;
-    this.hoisted.push(`function ${name}($$c) {\n  return ${body};\n}`);
+    const prologue = ids.size > 0 ? `  const $$i = $$useFileScope($$c, ${JSON.stringify([...ids.keys()])});\n` : "";
+    this.hoisted.push(`function ${name}($$c) {\n${prologue}  return ${body};\n}`);
     return name;
+  }
+
+  /** Whether a name is a component ID visible here: the template's, an enclosing template's, or the file's. */
+  private isId(name: string): boolean {
+    return this.idComponent(name) !== undefined;
+  }
+
+  /** The component behind a visible ID (innermost scope first). */
+  private idComponent(name: string): string | undefined {
+    for (let i = this.templateIds.length - 1; i >= 0; i--) {
+      const component = this.templateIds[i]!.get(name);
+      if (component !== undefined) return component;
+    }
+    return this.ids.get(name);
   }
 
   /** `<property name="itemTemplate">markup</property>`: a template prop (E013 otherwise). */
@@ -645,21 +694,21 @@ class ModuleCompiler {
   }
 
   /**
-   * Collects the file's IDs (E010 duplicate, E011 invalid). IDs inside templates
-   * are E014 (one ID per rendered item needs its own design).
+   * Collects the IDs of one ID scope (the file, a component body, or a
+   * template) into `into`: E010 duplicate (also of an ID visible from an
+   * enclosing scope), E011 invalid. Template content is its own scope, collected
+   * when the template is compiled.
    */
-  private collectIds(node: ElementNode, inTemplate = false): void {
+  private collectIds(node: ElementNode, into: Map<string, string> = this.ids): void {
     const attribute = node.attributes.find((a) => a.name.full === "id");
-    if (attribute && inTemplate) {
-      this.report(attribute.name, "E014");
-    } else if (attribute) {
+    if (attribute) {
       const value = attribute.value?.value;
       if (value === undefined || !VARIABLE_NAME.test(value)) {
         this.report(attribute.value ?? attribute.name, "E011", value ?? "");
-      } else if (this.ids.has(value)) {
+      } else if (into.has(value) || (into !== this.ids && this.isId(value))) {
         this.report(attribute.value!, "E010", value);
       } else {
-        this.ids.set(value, node.name.full);
+        into.set(value, node.name.full);
       }
     }
     const childrenAreTemplate = Boolean(this.metadataOf(node.name.full)?.childrenTemplate);
@@ -667,7 +716,8 @@ class ModuleCompiler {
       if (child.kind !== "element") continue;
       const isProperty = child.name.full === "property";
       const isHelper = HELPER_TAGS.has(child.name.full);
-      this.collectIds(child, inTemplate || isProperty || (childrenAreTemplate && !isHelper));
+      if (isProperty || (childrenAreTemplate && !isHelper)) continue;
+      this.collectIds(child, into);
     }
   }
 
@@ -775,7 +825,7 @@ class ModuleCompiler {
         this.report(span, "E007", name);
         return;
       }
-      if (this.ids.has(name)) {
+      if (this.isId(name)) {
         this.report(span, "E012", name);
         return;
       }
@@ -1005,7 +1055,7 @@ class ModuleCompiler {
     const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
-    const id = idValue !== undefined && this.ids.has(idValue) ? idValue : undefined;
+    const id = idValue !== undefined && this.isId(idValue) ? idValue : undefined;
     if (!isUser && bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
       return this.withBehaviors(`$$h(${component}, ${props}${args})`, behaviors, behaviorValues, name, scopeVar);
     }
