@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 2 (script parser).
+> **Last updated:** step 3 (code generation and the sandbox).
 
 ## What this repository is
 
@@ -20,7 +20,9 @@ Current state:
 - The compiler has its two parsing stages: the **markup parser**
   ([markup-parser.md](markup-parser.md)) and the **script parser** for
   expressions, handlers and code-behind ([script-parser.md](script-parser.md)).
-- The runtime and components packages are still placeholders.
+- The compiler compiles **bindings** to sandboxed JavaScript, and the runtime
+  loads and runs them ([codegen.md](codegen.md)).
+- Components are still a placeholder.
 
 ## Subsystem documents
 
@@ -28,6 +30,7 @@ Current state:
 |----------|-----------|
 | [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.pfui` markup text to a syntax tree with positions and diagnostics |
 | [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
+| [codegen.md](codegen.md) | `packages/compiler/src/codegen/` and `packages/runtime/src/script/`: bindings compiled to JavaScript, static name resolution, the sandbox, dependencies |
 
 ## Repository layout
 
@@ -38,11 +41,13 @@ Current state:
 │   │   ├── src/source/      positions (LineMap) and diagnostics, shared by all stages
 │   │   ├── src/markup/      markup parser: text -> syntax tree
 │   │   ├── src/script/      script parser: expressions, statements, interpolation
+│   │   ├── src/codegen/     bindings -> JavaScript; name resolution and the sandbox
 │   │   ├── tests/           unit tests (mirrors src/)
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
+│   │   └── src/script/      sandbox globals and helpers; loadBinding
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
-├── tools/               repository tooling: package-boundary checker, XMLUI corpus test
+├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test
 ├── test-apps/
 │   └── smoke/           @patchfuil/smoke-app   E2E fixture app
 ├── e2e/                 Playwright specs
@@ -69,8 +74,8 @@ version `0.0.0`.
 
 | File | Exports |
 |------|---------|
-| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
-| `packages/runtime/src/index.ts` | `runtimeInfo` (`{ name }`), a placeholder |
+| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `CompileOptions`, `CompileResult`, `ScopeNames`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
+| `packages/runtime/src/index.ts` | `loadBinding`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`; `runtimeInfo` (placeholder) |
 | `packages/components/src/index.ts` | `componentsInfo` (`{ name, runtime }`), a placeholder; re-exports `componentMetadata` |
 | `packages/components/src/metadata.ts` | `componentMetadata` (empty object) |
 
@@ -81,6 +86,7 @@ version `0.0.0`.
 | `src/source/` | Stage-independent source utilities: `LineMap` (offset ↔ 0-based line and column) and the `Diagnostic` shape plus `formatDiagnostic`. Every compiler stage reports positions and problems through these. |
 | `src/markup/` | The markup parser ([markup-parser.md](markup-parser.md)) |
 | `src/script/` | The script parser ([script-parser.md](script-parser.md)) |
+| `src/codegen/` | Binding compilation and the sandbox tables ([codegen.md](codegen.md)) |
 
 Positions everywhere in the compiler are **UTF-16 offsets** into the `.pfui`
 file, converted to line and column only when needed (diagnostics, and later
@@ -94,7 +100,9 @@ text. Attribute values and text are entity-decoded with
 `parseStatements` (handlers, `<script>`). Deciding which attribute is which
 is not built yet: it is the job of the semantic stage, which needs component
 metadata. Until then, `tools/xmlui-corpus.test.ts` shows the wiring with a
-heuristic (`on*` and `method.*` are handlers).
+heuristic (`on*` and `method.*` are handlers). Values are then compiled with
+`compileInterpolation` against a scope; the caller supplies the scope names
+(until step 8, tests and the corpus check supply them).
 
 ### No build step (yet)
 
@@ -114,7 +122,7 @@ compiled app ──► @patchfuil/runtime ◄── @patchfuil/components
 | Package | May import | Must not import |
 |---------|-----------|-----------------|
 | compiler | relative files; `@patchfuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
-| runtime | React, relative files | compiler, components |
+| runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
 | components | runtime, React (later Mantine) | compiler |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 
@@ -215,17 +223,22 @@ Conventions:
 |-----------|--------|
 | `packages/compiler/tests/markup/*.test.ts` | The markup parser: valid markup, positions, diagnostics, recovery, entities (see [markup-parser.md](markup-parser.md#tests)) |
 | `packages/compiler/tests/script/*.test.ts` | The script parser: expressions, statements and ASI, diagnostics and recovery, positions, interpolation (see [script-parser.md](script-parser.md#tests)) |
+| `packages/compiler/tests/codegen/*.test.ts` | Code generation: emitted code, diagnostics, dependencies, interpolation (see [codegen.md](codegen.md#tests)) |
 | `packages/compiler/tests/source/line-map.test.ts` | `LineMap` and `formatDiagnostic` |
 | `packages/runtime/tests/smoke.test.tsx` | Package loads; React 19 renders in jsdom |
+| `packages/runtime/tests/script/*.test.ts` | Compiled bindings run in the sandbox: semantics table, equivalence with native JavaScript, escape attempts (see [codegen.md](codegen.md#tests)) |
 | `packages/components/tests/smoke.test.ts` | Package loads and resolves the runtime; the metadata entry point loads on its own |
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
-| `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses. All with zero diagnostics. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
+| `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
+| `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 2: 702 unit tests in 15 files.
+Count after step 3: 1,154 unit tests in 23 files.
 
-- Compiler: 454, of which markup 115, script 331 and source 8.
-- Tools: 244, of which the corpus is 221 and the boundaries 23.
-- Runtime and components: 2 each.
+- Compiler: 605, of which markup 115, script 331, codegen 151 and source 8.
+- Runtime: 193, of which the script sandbox is 191 and the smoke test 2.
+- Tools: 354, of which the corpus is 327, the boundaries 23 and the
+  sandbox drift test 4.
+- Components: 2.
 
 ### Benchmarks (Vitest 5)
 
@@ -242,6 +255,7 @@ Count after step 2: 702 unit tests in 15 files.
 | Benchmark | Measures |
 |-----------|----------|
 | `packages/compiler/bench/markup.bench.ts` | `parseMarkup` on generated realistic markup: 10 KiB, 100 KiB, 1 MiB (about 120 MB/s) |
+| `packages/compiler/bench/codegen.bench.ts` | Compiling typical bindings (about 0.3 µs each); compiled against hand-written evaluation (within about 10–15%) |
 | `packages/compiler/bench/script.bench.ts` | `parseInterpolation` on typical bindings (about 2 µs each), `parseStatements` on a 15-line handler (about 15 µs) |
 
 ### E2E tests (Playwright)

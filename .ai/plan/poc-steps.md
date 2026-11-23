@@ -120,7 +120,9 @@ relative to `/Users/dotneteer/source/xmlui`.
 - **Reference:** `.ai/xmlui/expression-eval.md` § "Differences from
   JavaScript", `pages/scripting.md`.
 
-### Step 3: Expression code generation and the sandbox
+### Step 3: Expression code generation and the sandbox ✅
+
+Plan and findings: [poc-03-codegen.md](poc-03-codegen.md).
 
 - **Subject:** compile a binding expression's AST to a JS function.
   Includes static name resolution against a scope and an allowlist, which
