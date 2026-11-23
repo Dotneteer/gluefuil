@@ -5,7 +5,7 @@
 > as it is. Design and XMLUI comparison:
 > [`../plan/poc-11-standalone.md`](../plan/poc-11-standalone.md).
 >
-> **Last updated:** step 14 (component files and code-behind).
+> **Last updated:** step 15 (`strictContracts`, warnings to the console).
 
 ## Using it
 
@@ -29,6 +29,7 @@ Put `Main.pfui` next to it and serve the folder with any static server.
 | `data-watch` | `true` on localhost, else `false` | Poll the markup for changes |
 | `data-watch-interval` | `1000` | The polling interval in ms |
 | `data-autostart` | `true` | `false`: start yourself with `pfui.startApp(options)` |
+| `data-strict-contracts` | `true` | `false`: contract violations are console warnings, not errors ([contracts.md](contracts.md)) |
 
 **The global `pfui`:**
 

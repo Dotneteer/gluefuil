@@ -37,6 +37,11 @@ export interface PfuiPluginOptions {
    * `<Component name="Name">`), relative to the Vite root. Default "src/components".
    */
   componentsDir?: string;
+  /**
+   * Component contract violations are errors (default true) or warnings
+   * (false, for migrating XMLUI markup). See compileModule `strictContracts`.
+   */
+  strictContracts?: boolean;
 }
 
 const EXTENSION = ".pfui";
@@ -77,6 +82,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
         const transform = pfui({
           sourceMap: false,
           ...(options.components ? { components: options.components } : {}),
+          ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
           ...(options.componentsDir ? { componentsDir: options.componentsDir } : {}),
         });
         const { html: inner, attributes } = await renderEntry(config.root, prerender, transform);
@@ -116,7 +122,15 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
         userComponents,
         ...(codeBehind !== undefined ? { codeBehind } : {}),
         ...(options.components ? { components: options.components } : {}),
+        ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
       });
+      if (codeBehind !== undefined) {
+        const xsLines = new LineMap(codeBehind);
+        for (const warning of (codeBehindDiagnostics ?? []).filter((d) => d.severity === "warning")) {
+          const { line, column } = xsLines.positionAt(warning.start);
+          this.warn({ message: formatDiagnostic(warning, xsLines, `${file}.xs`), loc: { file: `${file}.xs`, line: line + 1, column } });
+        }
+      }
       const codeBehindErrors = (codeBehindDiagnostics ?? []).filter((d) => d.severity === "error");
       if (codeBehind !== undefined && codeBehindErrors.length > 0) {
         const xs = `${file}.xs`;

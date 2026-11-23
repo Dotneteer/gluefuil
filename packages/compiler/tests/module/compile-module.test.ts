@@ -56,7 +56,7 @@ describe("elements and attributes", () => {
     ["<App/>", "$$h($$C_App, null)"],
     ['<App><Stack gap="8px" orientation="horizontal"/></App>', '$$h($$C_App, null, $$h($$C_Stack, { "gap": "8px", "orientation": "horizontal" }))'],
     // A key-only attribute means "true" (as in XMLUI).
-    ["<App><Button disabled/></App>", '$$h($$C_App, null, $$h($$C_Button, { "disabled": "true" }))'],
+    ["<App><Items reverse/></App>", '$$h($$C_App, null, $$h($$C_Items, { "reverse": "true" }))'],
     // Entities are decoded; escaped braces are literal.
     ['<App><Text value="a &amp; b \\{c}"/></App>', '$$h($$C_App, null, $$h($$C_Text, { "value": "a & b {c}" }))'],
     // Constant and bound props on one element.

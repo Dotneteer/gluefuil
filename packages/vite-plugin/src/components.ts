@@ -24,10 +24,13 @@ export class ComponentFolder {
       if (!entry.endsWith(".pfui")) continue;
       const file = join(this.dir, entry);
       const name = entry.slice(0, -".pfui".length);
-      const { mtimeMs } = statSync(file);
+      // The code-behind takes part: it can read $props and emit events.
+      const xs = `${file}.xs`;
+      const mtimeMs = statSync(file).mtimeMs + (existsSync(xs) ? statSync(xs).mtimeMs : 0);
       let cached = this.analyzed.get(file);
       if (!cached || cached.mtimeMs !== mtimeMs) {
-        const info = analyzeModule(readFileSync(file, "utf8")).components.find((c) => c.name === name);
+        const codeBehind = readCodeBehind(file);
+        const info = analyzeModule(readFileSync(file, "utf8"), codeBehind !== undefined ? { codeBehind } : {}).components.find((c) => c.name === name);
         cached = { mtimeMs, info };
         this.analyzed.set(file, cached);
       }

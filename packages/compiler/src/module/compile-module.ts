@@ -18,7 +18,7 @@
 //   }
 //   footer (export default, or return)
 
-import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
+import { componentMetadata, type ComponentMetadata, type PropMetadata } from "@patchfuil/components/metadata";
 import { compileExpression, compileFunction, compileHandler, compileInterpolation } from "../codegen/compile";
 import { extractMarkers, jsString, mark } from "../codegen/markers";
 import { APP_GLOBALS } from "../codegen/names";
@@ -30,7 +30,9 @@ import type { Expression, FunctionDeclaration } from "../script/ast";
 import { parseStatements } from "../script/parse";
 import type { Diagnostic } from "../source/diagnostic";
 import { buildSourceMap, type SourceMap } from "../source/source-map";
+import { didYouMean } from "../source/suggest";
 import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, type UserComponentInfo } from "./analyze";
+import { checkLiteral } from "./contracts";
 import { ModuleDiagnostics, type ModuleDiagnosticCode } from "./diagnostics";
 
 export interface CompileModuleOptions {
@@ -59,6 +61,13 @@ export interface CompileModuleOptions {
    * `var` and `function` declarations for the app root, or for the file's component.
    */
   codeBehind?: string;
+  /**
+   * Contract violations (unknown props, events and API members, missing
+   * required props, invalid literals) are errors (default true), or
+   * warnings (false: for migrating XMLUI markup). Deprecations are always
+   * warnings. See .ai/plan/poc-15-contracts.md.
+   */
+  strictContracts?: boolean;
 }
 
 export interface CompileModuleResult {
@@ -163,7 +172,8 @@ class ModuleCompiler {
   /** Context variables of the enclosing templates (readable, not writable). */
   private readonly contextFrames: Set<string>[] = [];
   /** The component IDs of the file (collected before compiling: their order doesn't matter). */
-  private readonly ids = new Set<string>();
+  /** The file's (or the component body's) IDs, each with its component's name. */
+  private readonly ids = new Map<string, string>();
   private counter = 0;
   private usesEmpty = false;
   /** User components: other files' (options) and this file's own. */
@@ -199,9 +209,33 @@ class ModuleCompiler {
     this.diagnostics.push({ code, severity: "error", message, start: span.start, end: span.end });
   }
 
+  /** A contract violation: an error, or a warning when `strictContracts` is false. */
+  private reportContract<C extends ModuleDiagnosticCode>(span: { start: number; end: number }, code: C, ...args: Parameters<(typeof ModuleDiagnostics)[C]>): void {
+    this.report(span, code, ...args);
+    if (this.options.strictContracts === false) this.diagnostics[this.diagnostics.length - 1]!.severity = "warning";
+  }
+
+  /** A deprecation: always a warning. */
+  private reportDeprecated(span: { start: number; end: number }, what: string, message: string): void {
+    this.report(span, "E024", what, message);
+    this.diagnostics[this.diagnostics.length - 1]!.severity = "warning";
+  }
+
+  /** What the emitter needs for C015: the component and API members behind an ID. */
+  private readonly memberLookup = (name: string) => {
+    const component = this.ids.get(name);
+    if (component === undefined) return undefined;
+    return { component, members: Object.keys(this.metadataOf(component)?.api ?? {}) };
+  };
+
+  /** Options every expression compile gets: contracts. */
+  private contractOptions() {
+    return { members: this.memberLookup, contractSeverity: this.options.strictContracts === false ? ("warning" as const) : ("error" as const) };
+  }
+
   /** Every name visible at this point: app globals, the file's IDs, and the variables in scope. */
   private visibleNames(): Set<string> {
-    const names = new Set<string>([...APP_GLOBALS, ...this.ids]);
+    const names = new Set<string>([...APP_GLOBALS, ...this.ids.keys()]);
     for (const frame of this.frames) for (const name of frame) names.add(name);
     for (const frame of this.contextFrames) for (const name of frame) names.add(name);
     return names;
@@ -235,7 +269,7 @@ class ModuleCompiler {
       this.collectIds(app);
       const fileScope = this.ids.size > 0 ? "$$f" : "$$scope";
       const body = this.node(app, fileScope, true);
-      const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids])});\n` : "";
+      const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids.keys()])});\n` : "";
       main = `function Main() {\n${prologue}  return ${body};\n}`;
     } else if (definitions.length === 1 && defined.length === 1) {
       exported = defined[0]!;
@@ -352,7 +386,7 @@ class ModuleCompiler {
    * and sees nothing of the file it is used from (isolation).
    */
   private componentDefinition(definition: ElementNode, name: string): string {
-    const saved = { ids: new Set(this.ids), frames: [...this.frames], contextFrames: [...this.contextFrames], inComponent: this.inComponent };
+    const saved = { ids: new Map(this.ids), frames: [...this.frames], contextFrames: [...this.contextFrames], inComponent: this.inComponent };
     this.ids.clear();
     this.frames.length = 0;
     this.contextFrames.length = 0;
@@ -400,14 +434,14 @@ class ModuleCompiler {
       if (compiled !== undefined) parts.push(compiled);
     }
     const rendered = parts.length === 0 ? "null" : parts.length === 1 ? parts[0]! : `$$h($$Fragment, null, ${parts.join(", ")})`;
-    const ids = JSON.stringify([...this.ids]);
+    const ids = JSON.stringify([...this.ids.keys()]);
 
     this.frames.length = 0;
     this.frames.push(...saved.frames);
     this.contextFrames.length = 0;
     this.contextFrames.push(...saved.contextFrames);
     this.ids.clear();
-    for (const id of saved.ids) this.ids.add(id);
+    for (const [id, component] of saved.ids) this.ids.set(id, component);
     this.inComponent = saved.inComponent;
 
     const fn = `$$U_${name}`;
@@ -468,13 +502,13 @@ class ModuleCompiler {
         entries.push([variable.name, "{ value: undefined }"]);
         continue;
       }
-      const result = compileExpression(variable.init, { scope: this.visibleNames(), markers: false });
+      const result = compileExpression(variable.init, { scope: this.visibleNames(), markers: false, ...this.contractOptions() });
       this.codeBehindDiagnostics.push(...result.diagnostics);
       entries.push([variable.name, `{ init: ${result.code} }`]);
       graph.set(variable.name, result.dependencies.filter((d) => own.has(d)));
     }
     for (const fn of functions) {
-      const result = compileFunction(fn, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: false });
+      const result = compileFunction(fn, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: false, ...this.contractOptions() });
       this.codeBehindDiagnostics.push(...result.diagnostics);
       entries.push([fn.id.name, `{ fn: ${result.code} }`]);
     }
@@ -595,7 +629,7 @@ class ModuleCompiler {
 
   /** Compiles one interpolated value: a constant (JSON) or binding code with its dependencies. */
   private value(segments: InterpolationSegment[]): { constant: string } | { binding: string; dependencies: string[] } {
-    const result = compileInterpolation(segments, { scope: this.visibleNames(), markers: this.markers });
+    const result = compileInterpolation(segments, { scope: this.visibleNames(), markers: this.markers, ...this.contractOptions() });
     this.diagnostics.push(...result.diagnostics);
     return result.constant
       ? { constant: jsString(result.value!) }
@@ -617,7 +651,7 @@ class ModuleCompiler {
       } else if (this.ids.has(value)) {
         this.report(attribute.value!, "E010", value);
       } else {
-        this.ids.add(value);
+        this.ids.set(value, node.name.full);
       }
     }
     const childrenAreTemplate = Boolean(this.metadataOf(node.name.full)?.childrenTemplate);
@@ -650,7 +684,7 @@ class ModuleCompiler {
       return this.slot(node, scopeVar);
     }
     if (node.name.prefix !== undefined || !this.metadataOf(name)) {
-      this.report(node.name, "E001", name);
+      this.report(node.name, "E001", name, didYouMean(name, [...Object.keys(this.components), ...this.userComponents.keys()]));
       return "null";
     }
     // `when` / `when-*` are evaluated in the enclosing scope, before the element exists.
@@ -799,11 +833,19 @@ class ModuleCompiler {
     for (const [slot, contextVars] of Object.entries(user.slots)) {
       templates[slot] = { description: `The '${slot}' slot`, contextVars };
     }
+    // Derived by analyzeModule: the `$props` members it reads, the events it
+    // emits, its methods. An absent list means "any".
+    const described = (names: readonly string[], what: string) =>
+      Object.fromEntries(names.map((n) => [n, { description: `${what} of '${name}'`, valueType: "any" as const }]));
     return {
       description: `The user-defined component '${name}'`,
-      props: {},
+      props: described(user.props ?? [], "A prop"),
+      events: described(user.events ?? [], "An event"),
+      api: described(user.methods, "A method"),
       templates,
       ...(Object.hasOwn(user.slots, DEFAULT_SLOT) ? { childrenTemplate: DEFAULT_SLOT } : {}),
+      ...(user.props === undefined ? { allowArbitraryProps: true } : {}),
+      ...(user.events === undefined ? { allowArbitraryEvents: true } : {}),
     };
   }
 
@@ -856,14 +898,32 @@ class ModuleCompiler {
         this.report(attribute.name, "E002", unsupported);
         continue;
       }
+      const prop = Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : undefined;
+      if (!prop && !metadata.allowArbitraryProps) {
+        this.reportContract(attribute.name, "E020", attributeName, name, didYouMean(attributeName, Object.keys(metadata.props)));
+      }
+      if (prop?.deprecationMessage !== undefined) {
+        this.reportDeprecated(attribute.name, `The prop '${attributeName}' of '${name}'`, prop.deprecationMessage);
+      }
       if (!attribute.value) {
         // A key-only attribute means "true" (XMLUI transform.ts desugarKeyOnlyAttrs).
+        if (prop) this.checkPropLiteral(prop, attributeName, "true", attribute.name);
         constants.push([attributeName, '"true"']);
         continue;
       }
       const value = this.value(this.segments(attribute as ValuedAttribute));
-      if ("constant" in value) constants.push([attributeName, value.constant]);
-      else bindings.push([attributeName, value.binding]);
+      if ("constant" in value) {
+        if (prop) this.checkPropLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
+        constants.push([attributeName, value.constant]);
+      } else {
+        bindings.push([attributeName, value.binding]);
+      }
+    }
+    // Required props: set as an attribute (any form) or as a template property.
+    for (const [propName, prop] of Object.entries(metadata.props)) {
+      if (prop.isRequired && !node.attributes.some((a) => a.name.full === propName)) {
+        this.reportContract(node.name, "E021", propName, name);
+      }
     }
 
     const children: string[] = [];
@@ -982,12 +1042,21 @@ class ModuleCompiler {
     return "$$empty";
   }
 
+  /** A literal value against the prop's type and enum (E022, E023). */
+  private checkPropLiteral(prop: PropMetadata, propName: string, text: string, span: Span): void {
+    const failure = checkLiteral(prop, text);
+    if (failure) this.reportContract(span, failure.code, propName, text, failure.problem);
+  }
+
   private checkEvent(metadata: ComponentMetadata, component: string, event: string, span: Span): boolean {
     if (`on${event[0]!.toUpperCase()}${event.slice(1)}` in LIFECYCLE) return true;
-    // A user component's events are whatever it emits (emitEvent): not declared.
-    if (this.userComponents.has(component) && !Object.hasOwn(this.components, component)) return true;
-    if (metadata.events && Object.hasOwn(metadata.events, event)) return true;
-    this.report(span, "E004", event, component);
+    if (metadata.events && Object.hasOwn(metadata.events, event)) {
+      const deprecation = metadata.events[event]!.deprecationMessage;
+      if (deprecation !== undefined) this.reportDeprecated(span, `The event '${event}' of '${component}'`, deprecation);
+      return true;
+    }
+    if (metadata.allowArbitraryEvents) return true;
+    this.reportContract(span, "E004", event, component, didYouMean(event, Object.keys(metadata.events ?? {})));
     return false;
   }
 
@@ -995,7 +1064,7 @@ class ModuleCompiler {
   private handler(source: string, position: { offsets?: number[]; offset?: number }): string {
     const parsed = parseStatements(source, position);
     this.diagnostics.push(...parsed.diagnostics);
-    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: this.markers });
+    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: this.markers, ...this.contractOptions() });
     this.diagnostics.push(...result.diagnostics);
     return result.code;
   }

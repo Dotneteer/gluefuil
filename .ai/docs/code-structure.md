@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 14 (user-defined components).
+> **Last updated:** step 15 (component metadata and contracts).
 
 ## What this repository is
 
@@ -58,6 +58,11 @@ Current state:
   with `$props`, events, methods and `$self`, default and named slots with
   slot props, complete scope isolation, and code-behind (`.pfui.xs`), in
   every delivery mode ([user-components.md](user-components.md)).
+- **Contracts:** one metadata format describes every component (built-ins
+  declare it, user components get it derived). Markup is checked for
+  unknown props, events and API members (with "did you mean"), missing
+  required props, wrong literal types and enums, and deprecations
+  ([contracts.md](contracts.md)).
 
 ## Subsystem documents
 
@@ -68,6 +73,7 @@ Current state:
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
 | [build-time.md](build-time.md) | `packages/vite-plugin`: the Vite plugin, its options and errors, what a production build contains |
+| [contracts.md](contracts.md) | `ComponentMetadata`; the contract checks (E001, E004, E020–E024, C015); `strictContracts` |
 | [user-components.md](user-components.md) | `<Component>` definitions, analysis, compilation, `BoundUser`/`useComponent`/`Slot`, discovery in the plugin and standalone, code-behind |
 | [ssg.md](ssg.md) | Prerendering (`vite-plugin/src/prerender.ts`), takeover (`runtime/src/render/mount.ts`), the server view, `@patchfuil/runtime/server` |
 | [standalone.md](standalone.md) | `packages/standalone`: the one-file engine, loading, the compile cache, watching, the bundle |
@@ -83,7 +89,7 @@ Current state:
 .
 ├── packages/
 │   ├── compiler/        @patchfuil/compiler    markup + script compiler
-│   │   ├── src/source/      positions (LineMap), diagnostics and source maps, shared by all stages
+│   │   ├── src/source/      positions (LineMap), diagnostics, source maps and suggestions ("did you mean"), shared by all stages
 │   │   ├── src/markup/      markup parser: text -> syntax tree
 │   │   ├── src/script/      script parser: expressions, statements, interpolation
 │   │   ├── src/codegen/     bindings -> JavaScript; name resolution and the sandbox
@@ -134,10 +140,10 @@ version `0.0.0`.
 
 | File | Exports |
 |------|---------|
-| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`. |
+| `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
 | `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
 | `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`, `TextBox`, `Items`; re-exports the metadata |
-| `packages/components/src/metadata.ts` | `componentMetadata` (six components: props, events, API, templates), `ComponentMetadata` |
+| `packages/components/src/metadata.ts` | `componentMetadata` (six components: props with value types and enums, events, API, templates), `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
 ### Compiler source layout
 
@@ -323,6 +329,7 @@ Conventions:
 | `packages/compiler/tests/module/*.test.ts` | `compileModule` (see [modules.md](modules.md#tests)) |
 | `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule`; the server view and `mountApp` (`server-view.test.tsx`, see [ssg.md](ssg.md#tests)) |
 | `packages/components/tests/user-components.test.tsx` | User-defined components, one test per feature (see [user-components.md](user-components.md#tests)) |
+| `packages/compiler/tests/module/contracts.test.ts` | The contract diagnostics table (see [contracts.md](contracts.md#tests)) |
 | `packages/compiler/tests/module/user-components.test.ts` | Analysis, file forms, slots, isolation, code-behind diagnostics and code (see [user-components.md](user-components.md#tests)) |
 | `packages/vite-plugin/tests/components.test.ts` | Component discovery and code-behind in the plugin |
 | `packages/components/tests/ssg.test.tsx` | Compile, render statically, take over (see [ssg.md](ssg.md#tests)) |
@@ -333,18 +340,18 @@ Conventions:
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs (see [ssg.md](ssg.md#tests)) |
 
-Count after step 14: 1,732 unit tests in 57 files.
+Count after step 15: 1,802 unit tests in 58 files.
 
-- Compiler: 864, of which markup 115, script 331, codegen 207, module 185
-  (user components 57) and source 26.
+- Compiler: 930, of which markup 115, script 331, codegen 207, module 251
+  (user components 57, contracts 66) and source 26.
 - Runtime: 358, of which the script sandbox and async arrays are 210,
   reactivity 65, rendering 81 (the server view and `mountApp` 12), and the
   smoke test 2.
-- Standalone: 24 (the cache 10, the loader 13, the hash 1).
-- Vite plugin: 48 (the transform 20, the prerender 18, components 10).
+- Standalone: 25 (the cache 10, the loader 14, the hash 1).
+- Vite plugin: 50 (the transform 22, the prerender 18, components 10).
 - Tools: 371, of which the corpus is 327, the boundaries 29, the build
   output 10 and the sandbox drift test 5.
-- Components: 67 (static generation 8, user components 11).
+- Components: 68 (static generation 8, user components 11).
 
 ### Benchmarks (Vitest 5)
 

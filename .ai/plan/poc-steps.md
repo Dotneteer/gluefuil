@@ -292,7 +292,9 @@ Plan and findings: [poc-14-user-components.md](poc-14-user-components.md).
   - Unit: one test per feature.
   - E2E: the examples from `pages/user-defined-components.md`.
 
-### Step 15: Component metadata and compile-time contracts
+### Step 15: Component metadata and compile-time contracts ✅
+
+Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
 
 - **Subject:** one metadata format for built-ins, wrapped components and
   UDCs. Diagnostics for unknown or missing props, wrong types, invalid

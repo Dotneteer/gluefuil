@@ -5,7 +5,7 @@
 > as it is. Design and XMLUI comparison:
 > [`../plan/poc-14-user-components.md`](../plan/poc-14-user-components.md).
 >
-> **Last updated:** step 14.
+> **Last updated:** step 15 (derived contracts).
 
 ## Writing one
 
@@ -51,11 +51,15 @@ function label(n) { return 'Counter: ' + n; }
 
 ## Compiling (`compileModule`)
 
-- **`analyzeModule(markup)`** (`module/analyze.ts`) returns the file's
-  `kind` (`"app"` or `"component"`), its definitions
-  (`UserComponentInfo`: `name`, `slots` with their context variables,
-  `methods`), and every component name it references. Tools analyze
-  component files first.
+- **`analyzeModule(markup, { codeBehind })`** (`module/analyze.ts`)
+  returns the file's `kind` (`"app"` or `"component"`), its definitions,
+  and every component name it references. Tools analyze component files
+  first.
+  - A definition is a `UserComponentInfo`: `name`, `slots` with their
+    context variables, `methods`, and the derived `props` and `events`.
+    `undefined` means any ([contracts.md](contracts.md)).
+  - Callers are checked against it: unknown props, events and methods
+    are errors.
 - **`compileModule(markup, { userComponents, codeBehind })`:**
   - `userComponents` are the other files' interfaces. The "esm" format
     needs each one's `module`, the import specifier.

@@ -31,7 +31,7 @@ describe("analyzeModule", () => {
       <App><Card/><Other/><Text/></App>`);
     expect(analysis).toEqual({
       kind: "app",
-      components: [{ name: "Card", slots: { headerTemplate: ["$level", "$title"], $$slot: ["$item"] }, methods: ["close", "open"] }],
+      components: [{ name: "Card", slots: { headerTemplate: ["$level", "$title"], $$slot: ["$item"] }, methods: ["close", "open"], props: [], events: [] }],
       references: ["App", "Card", "Items", "Other", "Stack", "Text"],
     });
   });
@@ -39,7 +39,7 @@ describe("analyzeModule", () => {
   test("a component file", () => {
     expect(analyzeModule('<Component name="Leaf"><Text>{$props.x}</Text></Component>')).toEqual({
       kind: "component",
-      components: [{ name: "Leaf", slots: {}, methods: [] }],
+      components: [{ name: "Leaf", slots: {}, methods: [], props: ["x"], events: [] }],
       references: ["Text"],
     });
   });

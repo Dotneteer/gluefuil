@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 14 (user-defined components, code-behind).
+> **Last updated:** step 15 (contracts).
 
 ## Role
 
@@ -159,6 +159,7 @@ export default Main;
 | E014 | `id` inside a template |
 | E015 | Unknown `when-*` breakpoint |
 | E016–E019 | User-defined components, slots and code-behind ([user-components.md](user-components.md#compiling-compilemodule)) |
+| E020–E024 | Contracts: unknown prop, missing required prop, wrong literal type, value outside the enum, deprecation (a warning) ([contracts.md](contracts.md)) |
 
 ## Build-time integration
 
