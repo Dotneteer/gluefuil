@@ -42,6 +42,7 @@ import { didYouMean } from "../source/suggest";
 import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, type UserComponentInfo } from "./analyze";
 import { checkLiteral } from "./contracts";
 import { ModuleDiagnostics, type ModuleDiagnosticCode } from "./diagnostics";
+import { shellConfig, type ShellConfig } from "./shell";
 
 export interface CompileModuleOptions {
   /**
@@ -205,6 +206,11 @@ class ModuleCompiler {
   private codeBehind: CodeBehind | undefined;
   private codeBehindTarget: ElementNode | undefined;
   private readonly codeBehindDiagnostics: Diagnostic[] = [];
+  /** True while compiling a direct region child of App (AppHeader, NavPanel, Footer): E028 elsewhere. */
+  private regionAllowed = false;
+  /** The App's shell settings, once compiled; NavPanelCollapseButton elements, checked against them. */
+  private shell: ShellConfig | undefined;
+  private readonly collapseButtons: Span[] = [];
 
   /** Source markers on (a source map is wanted). */
   private readonly markers: boolean;
@@ -291,6 +297,12 @@ class ModuleCompiler {
       const body = this.node(app, fileScope, true);
       const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids.keys()])});\n` : "";
       main = `function Main() {\n${prologue}  return ${body};\n}`;
+      // A collapse button needs a collapsible side nav (only checkable in the App's own file).
+      if (!(this.shell?.nav?.placement === "side" && this.shell.nav.collapsible)) {
+        for (const span of this.collapseButtons) {
+          this.report(span, "E028", 'NavPanelCollapseButton needs a collapsible side nav: <NavPanel placement="side" collapsible="true">');
+        }
+      }
     } else if (definitions.length === 1 && defined.length === 1) {
       exported = defined[0]!;
       this.checkFileName(definitions[0]!);
@@ -726,6 +738,8 @@ class ModuleCompiler {
   /** An element rendered in the runtime scope held by the JavaScript variable `scopeVar`. */
   private node(node: ElementNode, scopeVar: string, isRoot: boolean): string {
     const name = node.name.full;
+    const regionAllowed = this.regionAllowed;
+    this.regionAllowed = false;
     if (node.name.prefix === undefined && /^[a-z]/.test(name)) {
       this.report(node.name, "E002", `The helper tag <${name}>`);
       return "null";
@@ -745,6 +759,12 @@ class ModuleCompiler {
       this.report(node.name, "E001", name, didYouMean(name, [...Object.keys(this.components), ...this.userComponents.keys()]));
       return "null";
     }
+    // Shell regions belong to App (step 19A).
+    if (this.metadataOf(name)?.isRegion && !regionAllowed) {
+      this.report(node.name, "E028", `<${name}> must be a direct child of <App>`);
+      return "null";
+    }
+    if (name === "NavPanelCollapseButton") this.collapseButtons.push(node.name);
     // A route (Page) must stay a direct element for Pages to read its url (E027).
     if (this.metadataOf(name)?.isRoute) {
       const wrapping = node.attributes.find((a) => a.name.full === "when" || a.name.full.startsWith("when-") || a.name.full.startsWith("var."));
@@ -969,6 +989,13 @@ class ModuleCompiler {
         this.report(attribute.name, "E002", unsupported);
         continue;
       }
+      const removed = metadata.removedProps?.[attributeName];
+      if (removed) {
+        const text = attribute.value && !attribute.value.value.includes("{") ? attribute.value.value.trim() : undefined;
+        const instead = (text !== undefined ? removed.byValue?.[text] : undefined) ?? removed.message;
+        this.reportContract(attribute.name, "E030", attributeName, name, instead);
+        continue;
+      }
       const behavior = behaviors.find((b) => Object.hasOwn(b.props, attributeName));
       if (behavior) {
         this.behaviorAttribute(attribute, behavior.props[attributeName]!, behaviorValues.get(behavior)!);
@@ -1010,7 +1037,12 @@ class ModuleCompiler {
     const children: string[] = [];
     const templates: [string, string][] = [];
     const content: ContentNode[] = [];
+    const regionNodes: ElementNode[] = [];
     for (const child of node.children) {
+      if (metadata.regions && child.kind === "element" && Object.hasOwn(metadata.regions, child.name.full)) {
+        regionNodes.push(child);
+        continue;
+      }
       if (child.kind === "element" && child.name.full === "event") {
         const handler = this.eventTag(child, metadata, name);
         if (handler) handlers.push(handler);
@@ -1041,6 +1073,8 @@ class ModuleCompiler {
         if (compiled !== undefined) children.push(compiled);
       }
     }
+    // The App shell's regions: props of their own, plus the settings (step 19A).
+    if (metadata.regions) this.regions(node, regionNodes, metadata.regions, scopeVar, constants);
     // onMount / onUnmount (any element): not component props.
     const lifecycle: [string, string][] = [];
     for (let i = handlers.length - 1; i >= 0; i--) {
@@ -1085,6 +1119,33 @@ class ModuleCompiler {
       name,
       scopeVar,
     );
+  }
+
+  /**
+   * Compiles App's region children (`AppHeader` …) into the props `metadata.regions`
+   * names, and adds `$$shell`: their settings, decided here (see ./shell.ts).
+   */
+  private regions(app: ElementNode, nodes: ElementNode[], props: Record<string, string>, scopeVar: string, into: [string, string][]): void {
+    const found = new Map<string, ElementNode>();
+    for (const region of nodes) {
+      const prop = props[region.name.full]!;
+      if (found.has(prop)) {
+        this.report(region.name, "E028", `<App> can have only one <${region.name.full}>`);
+        continue;
+      }
+      found.set(prop, region);
+      this.regionAllowed = true;
+      into.push([prop, this.node(region, scopeVar, false)]);
+    }
+    this.shell = shellConfig(app, found, (span, kind, message) => {
+      if (kind === "error") this.report(span, "E028", message);
+      else {
+        this.report(span, "E029", message);
+        this.diagnostics[this.diagnostics.length - 1]!.severity = "warning";
+      }
+    });
+    // Without regions App needs only its own `scroll` prop.
+    if (found.size > 0) into.push(["$$shell", this.hoistRaw("$$q", JSON.stringify(this.shell))]);
   }
 
   /**

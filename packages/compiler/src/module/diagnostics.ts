@@ -1,5 +1,5 @@
 // Module (element tree) diagnostic codes. See .ai/plan/poc-05-first-app.md and
-// .ai/plan/poc-14-user-components.md (E016–E019).
+// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030).
 
 export const ModuleDiagnostics = {
   E001: (name: string, hint = "") => `Unknown component '${name}'${hint ? `.${hint}` : ""}`,
@@ -38,6 +38,12 @@ export const ModuleDiagnostics = {
   E026: (prop: string, component: string) => `'${component}' needs a literal '${prop}', not an expression`,
   /** A route (Page) wrapped by when or variables (step 19). */
   E027: (what: string) => `A Page cannot use ${what}: put it on the page's content`,
+  /** The App shell (step 19A): regions in the wrong place, impossible combinations. */
+  E028: (detail: string) => detail,
+  /** A warning: a shell setting that has no effect. */
+  E029: (detail: string) => detail,
+  /** A prop that no longer exists, with what to use instead (App layout). */
+  E030: (prop: string, component: string, instead: string) => `'${component}' has no '${prop}' any more: ${instead}`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

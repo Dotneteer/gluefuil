@@ -8,14 +8,15 @@ import * as components from "../src/index";
 afterEach(cleanup);
 
 /**
- * Compiles and renders markup; returns the rendered HTML inside the App
- * element (whose own attributes carry the theme variables, step 17).
+ * Compiles and renders markup; returns the rendered HTML of the App's content
+ * (the App element's attributes carry the theme variables, step 17; the shell
+ * around the content is tested in shell.test.tsx).
  */
 function renderMarkup(markup: string): string {
   const { code, diagnostics } = compileModule(markup, { format: "function" });
   expect(diagnostics).toEqual([]);
   const Main = loadModule(code, { components });
-  const app = render(<Main />).container.querySelector(".pfui-App")!;
+  const app = render(<Main />).container.querySelector(".pfui-AppContent")!;
   return `<div class="pfui-App">${app.innerHTML}</div>`;
 }
 

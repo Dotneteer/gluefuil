@@ -43,6 +43,19 @@ export interface ComponentMetadata {
   nonVisual?: boolean;
   /** A route of `Pages` (`Page`): it may not use `when` or variables, which would wrap it (E027). */
   isRoute?: boolean;
+  /**
+   * The App shell (step 19A): direct children of these component names are
+   * regions, passed to the component as the given props (`AppHeader` →
+   * `$$header`) instead of as children, with `$$shell` describing them.
+   */
+  regions?: Record<string, string>;
+  /** A shell region (`AppHeader`, `NavPanel`, `Footer`): allowed only as a direct child of a component with `regions` (E028). */
+  isRegion?: boolean;
+  /**
+   * Props that no longer exist, with what to use instead (E030). `byValue`
+   * gives a more specific message for a literal value (`layout="vertical"`).
+   */
+  removedProps?: Record<string, { message: string; byValue?: Record<string, string> }>;
 }
 
 /** The literal value types the compiler checks (an attribute without `{…}`). */
@@ -98,15 +111,172 @@ function headingShortcut(level: number): ComponentMetadata {
   };
 }
 
+
+/** Breakpoints a NavPanel can move into its drawer below (`drawerBelow`). */
+export const DRAWER_BREAKPOINTS = ["sm", "md", "lg", "xl", "xxl", "never"] as const;
+
+/** XMLUI's App `layout` values, each with the equivalent shell markup (E030). */
+export const LAYOUT_EQUIVALENTS: Readonly<Record<string, string>> = {
+  "condensed-sticky": "it is the default: remove 'layout'",
+  condensed: `remove 'layout'; use <AppHeader sticky="false"> and <Footer sticky="false">`,
+  "horizontal-sticky": `remove 'layout'; use <NavPanel placement="below-header">`,
+  horizontal: `remove 'layout'; use <NavPanel placement="below-header" sticky="false">, <AppHeader sticky="false"> and <Footer sticky="false">`,
+  "vertical-full-header": `remove 'layout'; use <NavPanel placement="side">`,
+  "vertical-sticky": `remove 'layout'; use <NavPanel placement="side" fullHeight="true">`,
+  vertical: `remove 'layout'; use <NavPanel placement="side" fullHeight="true" sticky="false">, <AppHeader sticky="false"> and <Footer sticky="false">`,
+  desktop: `remove 'layout'; use <App scroll="content">, no NavPanel, and the theme variables maxWidth-content-App="none" and paddingHorizontal-content-App="0"`,
+};
+
+const STICKY_PROP: PropMetadata = {
+  description: "Stays in view while the page scrolls (only with App scroll=\"page\"). Default true.",
+  valueType: "boolean",
+  isLiteral: true,
+};
+
+const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
+  AppHeader: {
+    description: "The App's header bar: the drawer toggle, the logo, the title, your content and the profile menu.",
+    props: {
+      sticky: STICKY_PROP,
+      title: { description: "The app's title, next to the logo.", valueType: "string" },
+      showLogo: { description: "Show the logo in the header (default true).", valueType: "boolean" },
+    },
+    templates: {
+      logoTemplate: { description: "Replaces the logo in the header.", contextVars: [] },
+      titleTemplate: { description: "Replaces the title.", contextVars: [] },
+      profileMenuTemplate: { description: "Content at the end of the header (a profile menu).", contextVars: [] },
+    },
+    isRegion: true,
+    themeVars: {
+      "height-AppHeader": "56px",
+      "backgroundColor-AppHeader": "$backgroundColor",
+      "textColor-AppHeader": "$textColor",
+      "borderColor-AppHeader": "$borderColor",
+      "paddingHorizontal-AppHeader": "$space-4",
+      "gap-AppHeader": "$space-4",
+    },
+  },
+  NavPanel: {
+    description: "The App's navigation: NavLink and NavGroup items, placed by `placement`.",
+    props: {
+      placement: {
+        description: "header (inside the header bar; default), below-header (its own bar under the header) or side (a column).",
+        valueType: "string",
+        availableValues: ["header", "below-header", "side"],
+        isLiteral: true,
+      },
+      fullHeight: {
+        description: "A side nav that runs the full height, beside the header and the footer (placement=\"side\" only).",
+        valueType: "boolean",
+        isLiteral: true,
+      },
+      sticky: STICKY_PROP,
+      drawerBelow: {
+        description: "Below this breakpoint the nav moves into a drawer opened from the header (default lg); never: it stays in place.",
+        valueType: "string",
+        availableValues: DRAWER_BREAKPOINTS,
+        isLiteral: true,
+      },
+      collapsible: {
+        description: "The side nav can collapse to icons (NavPanelCollapseButton, setNavPanelCollapsed); placement=\"side\" only.",
+        valueType: "boolean",
+        isLiteral: true,
+      },
+    },
+    templates: {
+      logoTemplate: { description: "Replaces the logo when it shows in the nav (a full-height side nav).", contextVars: [] },
+      footerTemplate: { description: "Content at the bottom of the nav.", contextVars: [] },
+    },
+    isRegion: true,
+    themeVars: {
+      "width-navPanel-App": "256px",
+      "width-navPanel-collapsed-App": "48px",
+      "backgroundColor-NavPanel": "$backgroundColor",
+      "borderColor-NavPanel": "$borderColor",
+      "padding-NavPanel": "$space-2",
+      "backgroundColor-NavPanel-overlay": "rgb(0 0 0 / 0.4)",
+    },
+  },
+  Footer: {
+    description: "The App's footer.",
+    props: { sticky: STICKY_PROP },
+    isRegion: true,
+    themeVars: {
+      "height-Footer": "48px",
+      "backgroundColor-Footer": "$backgroundColor",
+      "textColor-Footer": "$textColor-secondary",
+      "borderColor-Footer": "$borderColor",
+      "paddingHorizontal-Footer": "$space-4",
+    },
+  },
+  NavLink: {
+    description: "A navigation item: a link to a route, highlighted while its route is active.",
+    props: {
+      label: { description: "The link's text. Nested content is used when it is absent.", valueType: "string" },
+      to: { description: "The route to go to.", valueType: "string" },
+      icon: { description: "A built-in icon name: home, list, settings, user, info, star, folder, chart, mail, search, layout.", valueType: "string" },
+      exact: { description: "Active only on exactly `to` (default: also on paths below it; \"/\" is always exact).", valueType: "boolean" },
+      active: { description: "Forces the active look (true) or turns it off (false), whatever the route.", valueType: "boolean" },
+    },
+    themeVars: {
+      "textColor-NavLink": "$textColor",
+      "textColor-NavLink--active": "$color-primary-600",
+      "backgroundColor-NavLink--hover": "$color-surface-100",
+      "backgroundColor-NavLink--active": "$color-primary-50",
+      "borderRadius-NavLink": "$borderRadius",
+      "padding-NavLink": "$space-2",
+    },
+  },
+  NavGroup: {
+    description: "A group of navigation items under a label: expands in place in a side nav or a drawer, drops down in a bar.",
+    props: {
+      label: { description: "The group's text.", valueType: "string" },
+      icon: { description: "A built-in icon name (see NavLink).", valueType: "string" },
+      initiallyExpanded: { description: "Expanded when it first renders (default false).", valueType: "boolean" },
+    },
+  },
+  NavPanelCollapseButton: {
+    description: "Collapses the side nav to icons and back (a collapsible side NavPanel only).",
+    props: {
+      "aria-label": { description: "The accessible name while expanded (default \"Collapse navigation\").", valueType: "string" },
+      "aria-labelCollapsed": { description: "The accessible name while collapsed (default \"Expand navigation\").", valueType: "string" },
+    },
+  },
+};
+
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   App: {
-    description: "The root of an application: applies the active theme and tone.",
+    description: "The root of an application: the shell (AppHeader, NavPanel, Footer around the content), the theme and the tone.",
     props: {
+      scroll: {
+        description: "page (default): the window scrolls; content: only the content area scrolls; none: the app is as tall as its content (embedding).",
+        valueType: "string",
+        availableValues: ["page", "content", "none"],
+        isLiteral: true,
+      },
+      logo: { description: "The logo image's URL.", valueType: "string" },
+      "logo-light": { description: "The logo in the light tone.", valueType: "string" },
+      "logo-dark": { description: "The logo in the dark tone.", valueType: "string" },
       defaultTheme: { description: "The theme until `setTheme()`.", valueType: "string", availableValues: THEME_IDS },
       defaultTone: { description: "The tone until `setThemeTone()`.", valueType: "string", availableValues: TONES },
       useHashBasedRouting: { description: "Routes after `#` (default true: any static server works); false: the path and the History API.", valueType: "boolean" },
     },
+    templates: {
+      logoTemplate: { description: "The logo, as markup (instead of an image).", contextVars: [] },
+    },
+    regions: { AppHeader: "$$header", NavPanel: "$$nav", Footer: "$$footer" },
+    removedProps: {
+      layout: {
+        message: "the shell has no layout names: set placement, fullHeight and sticky on the regions, and scroll on App",
+        byValue: LAYOUT_EQUIVALENTS,
+      },
+      scrollWholePage: { message: "use scroll=\"page\" (true) or scroll=\"content\" (false)" },
+      fitContent: { message: "use scroll=\"none\"" },
+    },
     themeVars: {
+      "maxWidth-content-App": "none",
+      "paddingHorizontal-content-App": "$space-4",
+      "paddingVertical-content-App": "$space-4",
       "backgroundColor-App": "$backgroundColor",
       "textColor-App": "$textColor",
       "fontFamily-App": "$fontFamily",
@@ -290,6 +460,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       "textColor-Link": "$color-primary-600",
     },
   },
+  ...SHELL_COMPONENTS,
   Stack: {
     description: "Lays out its children in a column or a row.",
     props: {

@@ -9,6 +9,11 @@ npm run playground:preview    # production build (prerendered dashboard) + previ
 
 Routes use the hash (`/#/counter`), so any page can be bookmarked or reloaded.
 
+The playground runs on the App shell (steps 19A–19C): a header with the
+tone toggle and the nav's collapse button, a side nav listing every
+scenario (built from `scenarios` with `Items`), and a footer. Below 992px
+the nav is a drawer, opened from the header.
+
 ## The scenarios
 
 One or more per concept of proof-of-concept steps 2–19
@@ -33,6 +38,7 @@ One or more per concept of proof-of-concept steps 2–19
 | 17 | Theming | Tones, themes, scoped Theme, a dark region, a variant |
 | 18 | Behaviors | Tooltip, label, variant, on built-ins and a user component |
 | 19 | Routing | `navigate`, `Link`, `$routeParams`, `$queryParams`, replace, back and forward |
+| 19A–C | App shell | Every XMLUI layout with the new settings, in a frame at desktop or phone width; collapsing this playground's own nav from script |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the
@@ -74,6 +80,8 @@ prerendered build.
    </Page>
    ```
 
+   The side nav lists the new entry by itself.
+
 3. **Update `e2e/playground.spec.ts`:** add the title to its list of
    expected dashboard buttons. It opens every scenario, checks that its
    source is shown, and fails on any page or console error.
@@ -98,3 +106,10 @@ prerendered build.
   `toggleThemeTone()` persists while you navigate.
 - **Compile errors** show in Vite's overlay, with the file, line and
   column.
+- **The App shell demos** are a second page, `layouts.html?layout=<name>`
+  (`src/layouts.tsx`), one App per file in `src/layouts/`. Each layout is a
+  whole App, and the shell's state is per page, so they can't be routes of
+  the playground. They share `LayoutDemoLinks` and `LayoutDemoPages`
+  (`src/components/`). `LayoutPreview` (`src/react/`) frames them;
+  `e2e/app-shell.spec.ts` measures them. The production build has both
+  pages; only `index.html` is prerendered.

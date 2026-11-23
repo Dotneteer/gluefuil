@@ -23,6 +23,13 @@ export default defineConfig({
             },
           },
         },
+        LayoutPreview: {
+          module: "src/react/LayoutPreview.tsx",
+          metadata: {
+            description: "Shows each App shell demo (src/layouts/*.pfui) in a frame, at desktop or phone width, with its source.",
+            props: {},
+          },
+        },
         ScenarioSource: {
           module: "src/react/ScenarioSource.tsx",
           metadata: {
@@ -40,5 +47,9 @@ export default defineConfig({
   server: { port: 5190, ...(process.env.PFUI_E2E ? { forwardConsole: false } : {}) },
   preview: { port: 5191 },
   // React, ReactDOM, Mantine and (for the live compiler) the compiler: one ~670 kB chunk; fine here.
-  build: { chunkSizeWarningLimit: 900 },
+  // Two pages: the playground, and the App shell demos (layouts.html?layout=…, not prerendered).
+  build: {
+    chunkSizeWarningLimit: 900,
+    rolldownOptions: { input: { main: "index.html", layouts: "layouts.html" } },
+  },
 });

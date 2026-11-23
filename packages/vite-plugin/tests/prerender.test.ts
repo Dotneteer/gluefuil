@@ -42,7 +42,7 @@ describe("injectPrerendered", () => {
 });
 
 describe("when it runs", () => {
-  type Hook = { order: string; handler: (html: string) => Promise<string> };
+  type Hook = { order: string; handler: (html: string, context?: { path: string }) => Promise<string> };
   const hookOf = (options: Parameters<typeof pfui>[0], config: object) => {
     const plugin = pfui(options);
     (plugin.configResolved as (c: unknown) => void)({ build: { sourcemap: false }, ...config });
@@ -60,5 +60,9 @@ describe("when it runs", () => {
     ["SSR build", { prerender: true }, { command: "build", build: { ssr: true } }],
   ])("not for: %s", async (_, options, config) => {
     expect(await hookOf(options, config).handler(HTML)).toBe(HTML);
+  });
+
+  test("not for another page of a multi-page build (only index.html)", async () => {
+    expect(await hookOf({ prerender: true }, { command: "build", build: {} }).handler(HTML, { path: "/layouts.html" })).toBe(HTML);
   });
 });

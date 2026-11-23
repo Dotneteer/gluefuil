@@ -361,6 +361,25 @@ shell remain. Plan and findings: [poc-19-routing.md](poc-19-routing.md).
   - E2E: each of the 8 XMLUI layouts expressed with the new settings, at
     desktop and mobile widths: what scrolls, what sticks, and the drawer.
 
+### Steps 19A–19C: The App shell, redesigned (inserted) ✅
+
+Inserted at the user's request, before step 20, and built together on one
+branch. They replace the App-shell half of step 19 with a structure
+modelled on Mantine's `AppShell`: XMLUI's markup, without the `layout`
+property. Plan and findings: [poc-19a-app-shell.md](poc-19a-app-shell.md).
+
+- **19A, the shell structure:** the regions as compile-time slots, one CSS
+  grid, `scroll`, per-region `sticky`, `NavPanel placement`/`fullHeight`,
+  migration errors for `layout`.
+- **19B, navigation and small screens:** `NavLink` (with the active state, so
+  step 21's "active links" is done),
+  `NavGroup`, `drawerBelow`, `collapsible`, the logo.
+- **19C, playground and docs:** the playground on the new shell, a
+  layouts scenario.
+- **Tests:** E2E: each of the 8 XMLUI layouts expressed with the new
+  settings, at desktop and phone widths (what scrolls, what sticks, the
+  drawer), and prerendering at both widths.
+
 ---
 
 ## Phase E: Data, routing, forms
@@ -381,8 +400,9 @@ shell remain. Plan and findings: [poc-19-routing.md](poc-19-routing.md).
 
 Partly done in step 19 (reduced): `Pages`/`Page`, dynamic segments, query
 parameters, `navigate()`, hash and standard modes, deep links, back button,
-fallback ([poc-19-routing.md](poc-19-routing.md)). Remaining: active links,
-`willNavigate`/`didNavigate`, prerendering every static route.
+fallback ([poc-19-routing.md](poc-19-routing.md)). Active links came with
+`NavLink` (steps 19A–19C). Remaining: `willNavigate`/`didNavigate`,
+prerendering every static route.
 
 
 - **Subject:** `Pages`/`Page`, dynamic segments, query parameters, active

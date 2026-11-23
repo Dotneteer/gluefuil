@@ -12,8 +12,9 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
-  // Every button on the dashboard opens a scenario.
-  const titles = await page.getByRole("button").allTextContents();
+  // Every button on the dashboard opens a scenario (the header's buttons are not the dashboard's).
+  const main = page.getByRole("main");
+  const titles = await main.getByRole("button").allTextContents();
   expect(titles).toEqual([
     "Markup",
     "Expressions",
@@ -32,13 +33,14 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Theming",
     "Behaviors",
     "Routing",
+    "App shell",
   ]);
   for (const title of titles) {
-    await page.getByRole("button", { name: title, exact: true }).click();
+    await main.getByRole("button", { name: title, exact: true }).click();
     // The page title is the first h1 (a scenario may show more, such as the H1 example).
     await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText(title);
     // The scenario's own source, as monospace text with its line breaks and indentation.
-    const source = page.locator("pre code").first();
+    const source = page.locator(".playground-ScenarioSource pre code").first();
     await expect(source).toContainText('<Component name="');
     const text = (await source.textContent())!;
     expect(text.split("\n").length).toBeGreaterThan(5);
@@ -48,4 +50,17 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
   }
   expect(errors).toEqual([]);
+});
+
+test("the side nav lists the dashboard and every scenario, and follows the route", async ({ page }) => {
+  await page.goto("/");
+  const nav = page.getByRole("navigation", { name: "Main" });
+  const dashboard = await page.getByRole("main").getByRole("button").allTextContents();
+  // The visible label of each link (each also has a hidden initial for the collapsed nav).
+  expect(await nav.locator(".pfui-NavLink-label").allTextContents()).toEqual(["Dashboard", ...dashboard]);
+  await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+  await nav.getByRole("link", { name: "Theming" }).click();
+  await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText("Theming");
+  await expect(nav.getByRole("link", { name: "Theming" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current", /.*/);
 });

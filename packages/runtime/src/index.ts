@@ -84,6 +84,7 @@ export {
   setThemeTone,
   toggleThemeTone,
 } from "./render/theme-state";
+export { navDrawerOpen, navPanelCollapsed, resetShellState, setNavDrawerOpen, setNavPanelCollapsed } from "./render/shell-state";
 export {
   coerceLiteral,
   wrapComponent,

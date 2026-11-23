@@ -32,7 +32,9 @@ export default defineConfig({
     { name: "routing-dev", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5177" } },
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
     // The manual-testing playground: every scenario still opens (smoke).
-    { name: "playground", testMatch: /playground(-scenarios)?\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    // The App shell prerendered (steps 19A–19C): the playground's production build.
+    { name: "playground-build", testMatch: /app-shell-prerender\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5181" } },
   ],
   webServer: [
     {
@@ -75,6 +77,12 @@ export default defineConfig({
       command: "npx vite --config playground/vite.config.ts --configLoader runner --port 5180 --strictPort",
       env: { PFUI_E2E: "1" },
       url: "http://localhost:5180",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command:
+        "npx vite build --config playground/vite.config.ts --configLoader runner --outDir ../.tmp/playground-dist --emptyOutDir && npx vite preview --config playground/vite.config.ts --configLoader runner --outDir ../.tmp/playground-dist --port 5181 --strictPort",
+      url: "http://localhost:5181",
       reuseExistingServer: !process.env.CI,
     },
   ],

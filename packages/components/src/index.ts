@@ -5,5 +5,7 @@ export { Button, Checkbox, MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF, Select, 
 export { H1, H2, H3, H4, H5, H6, Heading, headingLevel, Text, TEXT_VARIANT_ELEMENTS } from "./text";
 export { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
 export { App, Theme } from "./theme";
+export { AppHeader, Footer, isActiveRoute, NavGroup, NavLink, NavPanel, NavPanelCollapseButton, type ShellConfig } from "./shell";
+export { Icon, ICON_NAMES } from "./icons";
 export { Items } from "./items";
 export { LabelBehavior, TooltipBehavior, VariantBehavior, variantVariable } from "./behaviors";
