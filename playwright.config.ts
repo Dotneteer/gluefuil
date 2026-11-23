@@ -25,5 +25,12 @@ export default defineConfig({
       url: "http://localhost:5174",
       reuseExistingServer: !process.env.CI,
     },
+    {
+      // Standalone mode: build dist/pfui.js, then serve a temp copy of the fixture site.
+      command:
+        "npm run build:standalone && node tools/static-server.mjs --port 5175 --site e2e/fixtures/standalone-site --work .tmp/standalone-site --bundle packages/standalone/dist",
+      url: "http://localhost:5175",
+      reuseExistingServer: !process.env.CI,
+    },
   ],
 });

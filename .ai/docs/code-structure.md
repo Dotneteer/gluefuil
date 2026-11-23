@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 10 (conditional rendering, templates).
+> **Last updated:** step 11 (standalone mode).
 
 ## What this repository is
 
@@ -44,6 +44,9 @@ Current state:
   `onMount`/`onUnmount`, template properties and `Items` with
   component-injected context variables
   ([visibility-templates.md](visibility-templates.md)).
+- **Standalone mode:** `pfui.js` (one file, React included) fetches,
+  compiles, caches and watches `Main.pfui` in the browser
+  ([standalone.md](standalone.md)).
 
 ## Subsystem documents
 
@@ -53,6 +56,7 @@ Current state:
 | [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
+| [standalone.md](standalone.md) | `packages/standalone`: the one-file engine, loading, the compile cache, watching, the bundle |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle, templates and context variables, `Items` |
 | [source-maps.md](source-maps.md) | Source markers, Source Map v3, delivery through Vite and `loadModule`, the evidence |
 | [scoping.md](scoping.md) | Name resolution (compile time), the scope chain (runtime), component IDs and APIs |
@@ -78,15 +82,16 @@ Current state:
 │   │   ├── src/render/      what compiled modules render with (Bound, TextNode, useScope, loadModule), handler runtime, app globals
 │   │   ├── src/errors.ts    the runtime error reporter
 │   │   └── bench/           benchmarks (npm run bench)
+│   ├── standalone/      @patchfuil/standalone  the one-file engine (dist/pfui.js): fetch, compile, cache, watch
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 │       ├── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
 │       ├── src/text-box.tsx TextBox (the first component with an API)
 │       └── src/items.tsx    Items (templates with $item)
-├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test
+├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, static-server.mjs (E2E)
 ├── test-apps/
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
 │   └── hello/           @patchfuil/hello-app   E2E fixture: the first compiled app (Main.pfui + minimal Vite plugin)
-├── e2e/                 Playwright specs
+├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
 ├── README.md            product overview and quick start
 ├── package.json         workspace root: scripts, pinned dev dependencies
@@ -105,6 +110,7 @@ version `0.0.0`.
 | `@patchfuil/compiler` | Turns `.pfui` markup and scripts into JS modules. | `.` → `src/index.ts` | Node (build tools, static generation, editor) **and** the browser (standalone mode) |
 | `@patchfuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts` | Browser; Node for server rendering |
 | `@patchfuil/components` | Built-in components (own and Mantine-wrapped). | `.` → `src/index.ts`; `./metadata` → `src/metadata.ts` | Browser; Node for server rendering |
+| `@patchfuil/standalone` | The one-file engine for standalone mode; built into `dist/pfui.js` (IIFE, global `pfui`). | `.` → `src/index.ts` | Browser |
 
 **Current contents:**
 
@@ -167,6 +173,7 @@ compiled app ──► @patchfuil/runtime ◄── @patchfuil/components
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
 | components | runtime, React (later Mantine) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
+| standalone | compiler, runtime, components, React | (nothing imports it) |
 
 **Why:** the packages ship in different combinations. Standalone mode
 bundles all three; a build-time compiled app ships only runtime plus
@@ -215,6 +222,7 @@ All dev dependencies are pinned to exact versions in the root `package.json`.
 |----------|-----------------------|
 | `packages/compiler` | `lib: ["ES2023"]` (no DOM); includes `src`, `tests` and `bench` |
 | `packages/runtime` | includes `src`, `tests` and `bench` |
+| `packages/standalone` | `types: ["node"]`; includes `src`, `tests` and `vite.config.ts` |
 | `packages/components`, `test-apps/smoke` | none |
 | `test-apps/hello` | `types: ["node"]` (its `vite.config.ts` holds the plugin) |
 | `tools` | `lib: ["ES2023"]`, `types: ["node"]` |
@@ -229,7 +237,8 @@ Run from the repository root.
 | `npm install` | Installs everything and links the workspace packages |
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | Playwright; starts a Vite dev server per fixture app: `test-apps/smoke` on port 5173, `test-apps/hello` on 5174 |
+| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175) |
+| `npm run build:standalone` | Builds `packages/standalone/dist/pfui.js` (also run by the E2E web server) |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
 | `npm run typecheck` | `tsc -p` for each package and folder, each with its own settings |
 | `npm run check` | typecheck, then unit tests, then E2E. Must pass before a step is done. |
@@ -247,6 +256,7 @@ One-time machine setup for E2E: `npx playwright install chromium`.
 | `compiler` | `packages/compiler` | `node` (no DOM, matching the compiler's constraint) | `tests/**/*.test.ts`; benchmarks: `bench/**/*.bench.ts` |
 | `runtime` | `packages/runtime` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}`; benchmarks: `bench/**/*.bench.{ts,tsx}` |
 | `components` | `packages/components` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
+| `standalone` | `packages/standalone` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
 | `tools` | `tools` | `node` | `**/*.test.ts` |
 
 Test files run **isolated** (`isolate: true`, set explicitly in
@@ -287,18 +297,16 @@ Conventions:
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 10: 1,548 unit tests in 47 files.
+Count after step 11: 1,567 unit tests in 49 files.
 
 - Compiler: 803, of which markup 115, script 331, codegen 207, module 128
   and source 22.
 - Runtime: 342, of which the script sandbox and async arrays are 210,
-  reactivity 65, rendering (handlers, component APIs, source maps,
-  visibility, templates, lifecycle) 65, and the smoke test 2.
+  reactivity 65, rendering 65, and the smoke test 2.
+- Standalone: 19 (the cache 10, the loader 8, the hash 1).
 - Tools: 355, of which the corpus is 327, the boundaries 23 and the
   sandbox drift test 5.
-- Components: 48, of which conditionals and templates are 6, IDs and
-  scoping 5, async handlers 9, variables and handlers 12, the first app 14
-  and the smoke test 2.
+- Components: 48.
 
 ### Benchmarks (Vitest 5)
 
@@ -333,6 +341,7 @@ Count after step 10: 1,548 unit tests in 47 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/standalone.spec.ts` | Standalone mode against the built `pfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery (serial: the tests edit the served files) |
 | `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |
 | `e2e/source-maps.spec.ts` | Through CDP: a handler's exception resolves to its `throw` line in `Main.pfui` |
 | `e2e/ids.spec.ts` | Reading and writing another component through its id |

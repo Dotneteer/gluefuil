@@ -239,7 +239,9 @@ Plan and findings: [poc-10-conditionals-templates.md](poc-10-conditionals-templa
 
 ## Phase C: Delivery modes (proven early, so the architecture can't drift away from them)
 
-### Step 11: Standalone mode
+### Step 11: Standalone mode ✅
+
+Plan and findings: [poc-11-standalone.md](poc-11-standalone.md).
 
 - **Subject:** one HTML file plus one JS file. Fetches `Main.pfui` and the
   components, compiles them in the browser, caches the result in

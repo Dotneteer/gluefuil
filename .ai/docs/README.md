@@ -11,6 +11,7 @@ on this repository. Plans (what we intend to build) live in
 | [script-parser.md](script-parser.md) | The script parser: entry points, positions, the supported language, ASI, implementation, interpolation, diagnostics, tests. |
 | [reactivity.md](reactivity.md) | The reactivity core: signal store algorithm, React integration, scope object, tests, measurements. |
 | [modules.md](modules.md) | Compiled modules: `compileModule`, generated code, compilation rules, `Bound`/`TextNode`/`loadModule`, built-in components, the fixture Vite plugin. |
+| [standalone.md](standalone.md) | Standalone mode: `pfui.js`, loading, the compile cache, watching, the error overlay, the bundle. |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle handlers, templates, `Items`. |
 | [source-maps.md](source-maps.md) | Source maps: markers, encoding, delivery (Vite, `loadModule`), evidence. |
 | [scoping.md](scoping.md) | Scoping: name resolution order, the scope chain, component IDs and APIs, `TextBox`. |
