@@ -5,6 +5,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
+  // Pre-bundled at startup: otherwise the first page load discovers them,
+  // and Vite reloads the page mid-test (a cold cache).
+  optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime"] },
   // prerender: a build renders Main.pfui into index.html (step 13).
   plugins: [pfui({ prerender: true }), react()],
   // `vite preview` serves the built app under a strict CSP: build-time

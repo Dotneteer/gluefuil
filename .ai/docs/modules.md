@@ -52,7 +52,8 @@ use file offsets.
 
 | Component | Props | Renders |
 |-----------|-------|---------|
-| `App` | `defaultTheme`, `defaultTone` | `<div class="pfui-App">` with the active theme's variables, and the stylesheet ([theming.md](theming.md)) |
+| `Pages`, `Page`, `Link` | `fallbackPath`; `url`; `to`, `label` | Routing ([routing.md](routing.md)) |
+| `App` | `defaultTheme`, `defaultTone`, `useHashBasedRouting` | `<div class="pfui-App">` with the active theme's variables, and the stylesheet ([theming.md](theming.md)) |
 | `Theme` | `themeId`, `tone`, theme variables | `<div class="pfui-Theme" style="display: contents">` with scoped variables |
 | `Text` | `value`, `variant`, `maxLines` | The variant's semantic element (default `<span class="pfui-Text">`) with `value` or the children ([mantine.md](mantine.md)) |
 | `Heading`, `H1`–`H6` | `value`, `level`, `maxLines` | `<hN class="pfui-Heading">` |

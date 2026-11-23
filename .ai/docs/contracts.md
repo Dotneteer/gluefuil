@@ -29,6 +29,7 @@ interface PropMetadata {
   availableValues?: readonly string[];            // a closed enum
   isRequired?: boolean;
   deprecationMessage?: string;
+  isLiteral?: boolean;                           // E026: no `{…}` (step 19)
 }
 interface EventMetadata { description: string; deprecationMessage?: string }
 ```
@@ -65,6 +66,8 @@ props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 | E023 | A literal outside `availableValues` (the message lists them) | the value |
 | E024 | A deprecated prop or event: **always a warning**, with the message | the attribute |
 | E025 | A `<Theme>` attribute that is neither a prop nor a known theme variable ([theming.md](theming.md#contracts)) | the attribute name |
+| E026 | A literal-only prop (`isLiteral`) given an expression: `Page url` ([routing.md](routing.md)) | the value |
+| E027 | A route (`isRoute`: `Page`) using `when` or variables, which would wrap it | the attribute or `<variable>` |
 | C015 | An unknown member of a component ID (`box.valu`, `c.rest()`), with "did you mean"; a component without `api` has no members | the member |
 
 - **Bound values are not type-checked:** their values are known only at

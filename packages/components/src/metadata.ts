@@ -41,6 +41,8 @@ export interface ComponentMetadata {
   themeVarAttributes?: boolean;
   /** Renders no visual element of its own: behaviors never attach (`Items`, `Theme`). */
   nonVisual?: boolean;
+  /** A route of `Pages` (`Page`): it may not use `when` or variables, which would wrap it (E027). */
+  isRoute?: boolean;
 }
 
 /** The literal value types the compiler checks (an attribute without `{…}`). */
@@ -56,6 +58,8 @@ export interface PropMetadata {
   isRequired?: boolean;
   /** Using it is a warning with this message. */
   deprecationMessage?: string;
+  /** Only a literal value is accepted (no `{…}`): E026. Route patterns, for example. */
+  isLiteral?: boolean;
 }
 
 export interface EventMetadata {
@@ -100,6 +104,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     props: {
       defaultTheme: { description: "The theme until `setTheme()`.", valueType: "string", availableValues: THEME_IDS },
       defaultTone: { description: "The tone until `setThemeTone()`.", valueType: "string", availableValues: TONES },
+      useHashBasedRouting: { description: "Routes after `#` (default true: any static server works); false: the path and the History API.", valueType: "boolean" },
     },
     themeVars: {
       "backgroundColor-App": "$backgroundColor",
@@ -254,6 +259,36 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     },
     childrenTemplate: "itemTemplate",
     nonVisual: true,
+  },
+  Pages: {
+    description: "Renders the first Page whose url matches the current route (and every other child).",
+    props: {
+      fallbackPath: { description: "Where an unmatched route goes (default \"/\").", valueType: "string" },
+    },
+    nonVisual: true,
+  },
+  Page: {
+    description: "One route of Pages: its content shows while its url matches.",
+    props: {
+      url: {
+        description: "The route pattern: /static, /users/:id, /users/:id? (optional), /files/* (the rest, as $routeParams['*']).",
+        valueType: "string",
+        isRequired: true,
+        isLiteral: true,
+      },
+    },
+    nonVisual: true,
+    isRoute: true,
+  },
+  Link: {
+    description: "A link to a route: `label`, or the nested content.",
+    props: {
+      to: { description: "The route to go to: /tests/theming.", valueType: "string", isRequired: true },
+      label: { description: "The link's text. Nested content is used when it is absent.", valueType: "string" },
+    },
+    themeVars: {
+      "textColor-Link": "$color-primary-600",
+    },
   },
   Stack: {
     description: "Lays out its children in a column or a row.",

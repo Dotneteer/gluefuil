@@ -1,0 +1,30 @@
+<!-- Step 19: routing. A dashboard of buttons and links; each opens a page. -->
+<App>
+  <Text variant="secondary">Route: {$pathname}</Text>
+  <Pages fallbackPath="/">
+    <Page url="/">
+      <Stack gap="8px">
+        <H1>Dashboard</H1>
+        <Stack orientation="horizontal" gap="8px">
+          <Button label="Counter scenario" onClick="navigate('/scenarios/counter')"/>
+          <Button label="Greeting scenario" onClick="navigate('/scenarios/greeting')"/>
+          <Link to="/scenarios/unknown?from=link">A link to an unknown scenario</Link>
+        </Stack>
+      </Stack>
+    </Page>
+    <Page url="/scenarios/counter">
+      <Stack var.count="{0}" gap="8px">
+        <H1>Counter scenario</H1>
+        <Button label="{'Clicked ' + count + ' times'}" onClick="count++"/>
+        <Button label="Back to the dashboard" onClick="navigate('/')"/>
+      </Stack>
+    </Page>
+    <Page url="/scenarios/:name">
+      <Stack gap="8px">
+        <H1>Scenario: {$routeParams.name}</H1>
+        <Text>Query: {JSON.stringify($queryParams)}</Text>
+        <Link to="/">Back to the dashboard</Link>
+      </Stack>
+    </Page>
+  </Pages>
+</App>

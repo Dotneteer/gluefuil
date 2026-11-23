@@ -695,6 +695,13 @@ class ModuleCompiler {
       this.report(node.name, "E001", name, didYouMean(name, [...Object.keys(this.components), ...this.userComponents.keys()]));
       return "null";
     }
+    // A route (Page) must stay a direct element for Pages to read its url (E027).
+    if (this.metadataOf(name)?.isRoute) {
+      const wrapping = node.attributes.find((a) => a.name.full === "when" || a.name.full.startsWith("when-") || a.name.full.startsWith("var."));
+      const variable = node.children.find((c) => c.kind === "element" && c.name.full === "variable");
+      if (wrapping) this.report(wrapping.name, "E027", wrapping.name.full.startsWith("var.") ? "variables" : "when");
+      else if (variable && variable.kind === "element") this.report(variable.name, "E027", "variables");
+    }
     // `when` / `when-*` are evaluated in the enclosing scope, before the element exists.
     const visibility = this.visibility(node);
     if (visibility === "never") return "null";
@@ -939,6 +946,7 @@ class ModuleCompiler {
         if (prop) this.checkPropLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
         constants.push([attributeName, value.constant]);
       } else {
+        if (prop?.isLiteral) this.reportContract(attribute.value, "E026", attributeName, name);
         bindings.push([attributeName, value.binding]);
       }
     }
