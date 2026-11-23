@@ -10,6 +10,9 @@ for the humans steering them). Project source code never lives here.
 | [`plan/`](plan/) | Plans: proposals, designs and implementation plans. See [`plan/README.md`](plan/README.md). |
 | [`docs/`](docs/) | Development documentation of the code as it is. **The cornerstone is [`docs/code-structure.md`](docs/code-structure.md)**, updated after every step. See [`docs/README.md`](docs/README.md). |
 
+[`handoff.md`](handoff.md) is the session handoff: where the work stands, for
+the next AI session. Update it when handing off.
+
 More folders will be added as needs appear.
 
 ## Conventions

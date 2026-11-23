@@ -16,10 +16,12 @@ from XMLUI, record the decision and the reason (see *Decisions* below).
 
 ## Status
 
-Early proof-of-concept phase. The framework is being built step by step
-following [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md). **Stop after each
-step so the user can review it.** Each step is developed on its own branch
-(`poc/NN-topic`).
+Proof-of-concept phase: steps 0–19 of
+[.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and 19 with a
+reduced scope). **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+the current state, how the user works, practical notes, open questions.
+**Stop after each step so the user can review it.** Each step is developed on
+its own branch (`poc/NN-topic`).
 
 Only what is recorded under *Decisions* is chosen. Do not assume anything
 else (for example the signals library) until it is recorded here or in an

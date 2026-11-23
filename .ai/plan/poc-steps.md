@@ -379,6 +379,12 @@ shell remain. Plan and findings: [poc-19-routing.md](poc-19-routing.md).
 
 ### Step 21: Routing
 
+Partly done in step 19 (reduced): `Pages`/`Page`, dynamic segments, query
+parameters, `navigate()`, hash and standard modes, deep links, back button,
+fallback ([poc-19-routing.md](poc-19-routing.md)). Remaining: active links,
+`willNavigate`/`didNavigate`, prerendering every static route.
+
+
 - **Subject:** `Pages`/`Page`, dynamic segments, query parameters, active
   links, `navigate()`, hash and standard modes, and `willNavigate` and
   `didNavigate`.
