@@ -1,0 +1,83 @@
+// Public entry points for compiling bindings. See .ai/plan/poc-03-codegen.md.
+
+import type { Expression } from "../script/ast";
+import type { InterpolationSegment } from "../script/interpolation";
+import type { Diagnostic } from "../source/diagnostic";
+import { Emitter, type ScopeNames } from "./emitter";
+
+/** Emit at assignment level: a top-level sequence expression gets parentheses. */
+const ASSIGNMENT_PRECEDENCE = 2;
+
+export interface CompileOptions {
+  /**
+   * Names the binding can read besides its locals and the allowed globals:
+   * component variables, ids, context variables (`$item`), app globals.
+   */
+  scope: ScopeNames;
+}
+
+export interface CompileResult {
+  /**
+   * JavaScript source of one arrow function, `($$s) => …`. Its free names are
+   * `$$g` (sandbox globals) and `$$r` (runtime helpers); the runtime binds them.
+   */
+  code: string;
+  /** The scope names the binding reads, sorted. */
+  dependencies: string[];
+  /** True when the value contains no expression; `value` holds it. */
+  constant: boolean;
+  value?: string;
+  diagnostics: Diagnostic[];
+}
+
+/** Compiles one expression (an attribute value that is exactly `{expr}`). */
+export function compileExpression(expression: Expression, options: CompileOptions): CompileResult {
+  const emitter = new Emitter(options.scope);
+  const body = emitter.expression(expression, ASSIGNMENT_PRECEDENCE);
+  return {
+    code: `($$s) => ${body.startsWith("{") ? `(${body})` : body}`,
+    dependencies: [...emitter.dependencies].sort(),
+    constant: false,
+    diagnostics: emitter.diagnostics,
+  };
+}
+
+/**
+ * Compiles an interpolated value (from `parseInterpolation`) with XMLUI's rules
+ * (`extractParam.ts`):
+ *   - a whitespace-only literal at either end is dropped;
+ *   - a lone expression yields its raw value;
+ *   - otherwise the parts are joined into a string, where `null`, `undefined`
+ *     and values without `toString` contribute "".
+ * A segment with a syntax error (`expression: null`) compiles to `undefined`;
+ * its diagnostic comes from the parser.
+ */
+export function compileInterpolation(segments: InterpolationSegment[], options: CompileOptions): CompileResult {
+  let parts = segments;
+  if (parts[0]?.kind === "literal" && parts[0].value.trim() === "") parts = parts.slice(1);
+  const last = parts[parts.length - 1];
+  if (last?.kind === "literal" && last.value.trim() === "") parts = parts.slice(0, -1);
+
+  if (parts.every((p) => p.kind === "literal")) {
+    // No expression: the text itself (a whitespace-only value is kept as is).
+    const value = (parts.length === 0 ? segments : parts).map((p) => (p.kind === "literal" ? p.value : "")).join("");
+    return { code: `($$s) => ${JSON.stringify(value)}`, dependencies: [], constant: true, value, diagnostics: [] };
+  }
+
+  const emitter = new Emitter(options.scope);
+  const emit = (expression: Expression | null) => (expression ? emitter.expression(expression, ASSIGNMENT_PRECEDENCE) : "undefined");
+  let body: string;
+  if (parts.length === 1 && parts[0]!.kind === "expression") {
+    body = emit(parts[0]!.expression);
+    if (body.startsWith("{")) body = `(${body})`;
+  } else {
+    // `$$r.str()` returns a string, so the sum is always a string.
+    body = parts.map((p) => (p.kind === "literal" ? JSON.stringify(p.value) : `$$r.str(${emit(p.expression)})`)).join(" + ");
+  }
+  return {
+    code: `($$s) => ${body}`,
+    dependencies: [...emitter.dependencies].sort(),
+    constant: false,
+    diagnostics: emitter.diagnostics,
+  };
+}

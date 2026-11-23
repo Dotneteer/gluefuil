@@ -148,6 +148,17 @@ Standalone mode also compiles in the browser and so needs `new Function`
 (`unsafe-eval`). That needs an explicit answer, such as using build-time
 compilation whenever a strict CSP is required.
 
+*Step 3 outcome* ([poc-03-codegen.md](poc-03-codegen.md)): built this way.
+- **Names:** a closed allowlist of globals; an unknown name is a compile
+  error.
+- **Members:** banned member names are checked statically; computed keys
+  go through a runtime guard.
+- **`new`:** a static allowlist.
+- **Writes:** member writes refuse function objects at runtime.
+- **Cost:** compiled code runs within about 10–15% of hand-written JS.
+- **Open:** host functions need explicit registration (XMLUI reaches them
+  through `globalThis`).
+
 | Guarantee | What it does | Source |
 |-----------|--------------|--------|
 | Code-injection prevention | `eval`, `new Function` and the `Function` constructor are unreachable from expressions. | `code-injection-prevention.md` |
