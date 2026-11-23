@@ -52,7 +52,8 @@ use file offsets.
 
 | Component | Props | Renders |
 |-----------|-------|---------|
-| `App` | | `<div class="pfui-App">` |
+| `App` | `defaultTheme`, `defaultTone` | `<div class="pfui-App">` with the active theme's variables, and the stylesheet ([theming.md](theming.md)) |
+| `Theme` | `themeId`, `tone`, theme variables | `<div class="pfui-Theme" style="display: contents">` with scoped variables |
 | `Text` | `value` | `<span class="pfui-Text">`, showing `value` or the children |
 | `Button` | `label`; event `click` | `<button type="button" class="pfui-Button">`, showing `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
 | `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="pfui-Stack">` |

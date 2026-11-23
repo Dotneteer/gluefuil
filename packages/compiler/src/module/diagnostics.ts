@@ -32,6 +32,8 @@ export const ModuleDiagnostics = {
   E023: (prop: string, value: string, problem: string) => `'${value}' is not a valid value for '${prop}': ${problem}`,
   /** A warning: the prop or event is deprecated. */
   E024: (what: string, message: string) => `${what} is deprecated: ${message}`,
+  /** `<Theme>` (step 17): an attribute that is neither a prop nor a known theme variable. */
+  E025: (name: string, hint: string) => `'${name}' is not a theme variable.${hint}`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

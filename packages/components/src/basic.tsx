@@ -1,11 +1,7 @@
-// Minimal built-in components for the first running app (step 5). Plain React
-// components: compiled code passes them resolved prop values. They are
-// replaced by Mantine-based ones with theme variables later (steps 16-17).
+// Minimal built-in components (step 5). Plain React components: compiled code
+// passes them resolved prop values. Styled through theme variables (step 17,
+// styles.ts); App is in theme.tsx.
 import type { ReactNode } from "react";
-
-export function App({ children }: { children?: ReactNode }) {
-  return <div className="pfui-App">{children}</div>;
-}
 
 export function Text({ value, children }: { value?: unknown; children?: ReactNode }) {
   return <span className="pfui-Text">{value !== undefined && value !== null ? String(value) : children}</span>;

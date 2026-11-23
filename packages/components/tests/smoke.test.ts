@@ -7,7 +7,7 @@ test("components package loads", () => {
 });
 
 test("every component has metadata, and the metadata entry point loads on its own", () => {
-  expect(Object.keys(componentMetadata).sort()).toEqual(["App", "Button", "Items", "Stack", "Text", "TextBox"]);
+  expect(Object.keys(componentMetadata).sort()).toEqual(["App", "Button", "Items", "Stack", "Text", "TextBox", "Theme"]);
   for (const name of Object.keys(componentMetadata)) expect(typeof (components as Record<string, unknown>)[name], name).toBe("function");
 });
 

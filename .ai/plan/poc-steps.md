@@ -305,7 +305,10 @@ Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
 - **Reference:** `pages/managed-react/verified-type-contracts.md`,
   `build-validation-analyzers.md`.
 
-### Step 16: Wrapping React components (Mantine)
+### Step 16: Wrapping React components (Mantine) — skipped for now
+
+Skipped at the user's request (after step 15); steps 17 and 18 use our own
+built-in components instead of Mantine ones.
 
 - **Subject:** the lightweight wrapper API. Covers forwarding by default,
   renames, events, controlled values (`value`/`onChange`), exposed methods
@@ -317,7 +320,9 @@ Plan and findings: [poc-15-contracts.md](poc-15-contracts.md).
     variable.
 - **Reference:** `.ai/xmlui/wrapcomponent.md`.
 
-### Step 17: Theming
+### Step 17: Theming ✅
+
+Plan and findings: [poc-17-theming.md](poc-17-theming.md).
 
 - **Subject:** theme definitions (`extends`, tones, derived tokens, `$ref`)
   compiled to CSS variables; XMLUI-style variable names mapped onto

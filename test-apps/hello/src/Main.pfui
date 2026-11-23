@@ -103,5 +103,18 @@
     <Panel title="with content"><Text>Panel content: count is {count}</Text></Panel>
     <Panel title="empty"/>
     <Text>{shout('code-behind')}</Text>
+
+    <!-- Step 17: theming -->
+    <Stack orientation="horizontal" gap="4px">
+      <Button label="Toggle tone" onClick="toggleThemeTone()"/>
+      <Text>Tone: {activeThemeTone}</Text>
+    </Stack>
+    <Theme backgroundColor-Button="rgb(220, 38, 38)">
+      <Button label="Themed button"/>
+    </Theme>
+    <Theme tone="dark">
+      <Text>Dark region</Text>
+    </Theme>
+
   </Stack>
 </App>

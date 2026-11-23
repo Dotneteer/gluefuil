@@ -18,7 +18,7 @@
 //   }
 //   footer (export default, or return)
 
-import { componentMetadata, type ComponentMetadata, type PropMetadata } from "@patchfuil/components/metadata";
+import { componentMetadata, themeVariableNames, type ComponentMetadata, type PropMetadata } from "@patchfuil/components/metadata";
 import { compileExpression, compileFunction, compileHandler, compileInterpolation } from "../codegen/compile";
 import { extractMarkers, jsString, mark } from "../codegen/markers";
 import { APP_GLOBALS } from "../codegen/names";
@@ -899,7 +899,11 @@ class ModuleCompiler {
         continue;
       }
       const prop = Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : undefined;
-      if (!prop && !metadata.allowArbitraryProps) {
+      if (!prop && metadata.themeVarAttributes) {
+        // `<Theme backgroundColor-Button="…">`: a theme variable (step 17).
+        const known = this.themeVariables();
+        if (!known.has(attributeName)) this.reportContract(attribute.name, "E025", attributeName, didYouMean(attributeName, known));
+      } else if (!prop && !metadata.allowArbitraryProps) {
         this.reportContract(attribute.name, "E020", attributeName, name, didYouMean(attributeName, Object.keys(metadata.props)));
       }
       if (prop?.deprecationMessage !== undefined) {
@@ -1040,6 +1044,13 @@ class ModuleCompiler {
   private empty(): string {
     this.usesEmpty = true;
     return "$$empty";
+  }
+
+  private knownThemeVariables: Set<string> | undefined;
+
+  /** Every theme variable name of the components this compilation knows (E025). */
+  private themeVariables(): Set<string> {
+    return (this.knownThemeVariables ??= new Set(themeVariableNames(this.components)));
   }
 
   /** A literal value against the prop's type and enum (E022, E023). */
