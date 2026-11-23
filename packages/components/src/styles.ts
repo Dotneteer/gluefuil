@@ -59,6 +59,11 @@ export const BASE_STYLESHEET = `
 .pfui-Text[data-variant="caption"],
 .pfui-Text[data-variant="small"] { font-size: 0.85em; }
 .pfui-Text[data-variant="paragraph"] { display: block; margin: 0; }
+.pfui-Link {
+  color: var(--pfui-textColor-Link);
+  text-decoration: underline;
+  cursor: pointer;
+}
 .pfui-Heading {
   color: var(--pfui-textColor-Heading);
   font-weight: var(--pfui-fontWeight-Heading);

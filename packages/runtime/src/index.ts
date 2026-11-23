@@ -93,6 +93,21 @@ export {
   type WrapTemplate,
   type WrapValue,
 } from "./render/wrap";
+export {
+  currentLocation,
+  currentRouteParams,
+  findRoute,
+  hrefFor,
+  matchRoute,
+  navigate,
+  parseLocation,
+  registerRoutes,
+  resetRouter,
+  routingMode,
+  setRoutingMode,
+  type RouteLocation,
+  type RoutingMode,
+} from "./render/router";
 export { mountApp, PRERENDERED_ATTRIBUTE, READY_ATTRIBUTE, type MountOptions } from "./render/mount";
 export {
   BoundUser,

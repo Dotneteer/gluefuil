@@ -1,6 +1,6 @@
 // App-level theming and the <Theme> element (step 17). The engine compiles the
 // active theme and tone (runtime theme state) to CSS custom properties.
-import { activeThemeId, activeThemeTone, setThemeDefaults, useSignal } from "@patchfuil/runtime";
+import { activeThemeId, activeThemeTone, setRoutingMode, setThemeDefaults, useSignal } from "@patchfuil/runtime";
 import { MantineProvider } from "@mantine/core";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
@@ -24,7 +24,19 @@ function useActiveTheme(): { themeId: string; tone: Tone; style: CSSProperties }
   return { themeId, tone, style };
 }
 
-export function App({ defaultTheme, defaultTone, children }: { defaultTheme?: unknown; defaultTone?: unknown; children?: ReactNode }) {
+export function App({
+  defaultTheme,
+  defaultTone,
+  useHashBasedRouting,
+  children,
+}: {
+  defaultTheme?: unknown;
+  defaultTone?: unknown;
+  useHashBasedRouting?: unknown;
+  children?: ReactNode;
+}) {
+  // Routing mode (step 19): hash-based unless explicitly false.
+  setRoutingMode(useHashBasedRouting === false || useHashBasedRouting === "false" ? "browser" : "hash");
   // Before reading the state, so this render (and a server render) uses them.
   setThemeDefaults(typeof defaultTheme === "string" ? defaultTheme : undefined, typeof defaultTone === "string" ? defaultTone : undefined);
   const { tone, style } = useActiveTheme();

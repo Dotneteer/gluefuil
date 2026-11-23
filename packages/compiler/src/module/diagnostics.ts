@@ -34,6 +34,10 @@ export const ModuleDiagnostics = {
   E024: (what: string, message: string) => `${what} is deprecated: ${message}`,
   /** `<Theme>` (step 17): an attribute that is neither a prop nor a known theme variable. */
   E025: (name: string, hint: string) => `'${name}' is not a theme variable.${hint}`,
+  /** A prop that takes only a literal (step 19: Page url). */
+  E026: (prop: string, component: string) => `'${component}' needs a literal '${prop}', not an expression`,
+  /** A route (Page) wrapped by when or variables (step 19). */
+  E027: (what: string) => `A Page cannot use ${what}: put it on the page's content`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

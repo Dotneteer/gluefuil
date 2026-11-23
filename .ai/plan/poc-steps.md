@@ -347,7 +347,11 @@ Plan and findings: [poc-18-behaviors.md](poc-18-behaviors.md).
   - E2E: a tooltip on a wrapped component.
 - **Reference:** `.ai/xmlui/behaviors.md`.
 
-### Step 19: Layout model and App shell
+### Step 19: Layout model and App shell — reduced to routing ✅
+
+At the user's request only rudimentary routing was built (Pages, Page, Link,
+navigate, $pathname/$routeParams/$queryParams); the layout model and App
+shell remain. Plan and findings: [poc-19-routing.md](poc-19-routing.md).
 
 - **Subject:** the new layout primitives (area 6 design) and the App shell
   with region-owned settings (`placement`, `span`, `sticky`, `scroll`,

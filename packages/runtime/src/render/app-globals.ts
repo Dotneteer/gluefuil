@@ -1,9 +1,10 @@
 // App globals: functions every binding and handler can call (XMLUI globals.md).
-// `delay` (step 7); the theme and tone (step 17).
+// `delay` (step 7); the theme and tone (step 17); routing (step 19).
 
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 import { APP_GLOBAL_NAMES } from "./app-global-names";
 import { delay } from "./handlers";
+import { currentLocation, currentRouteParams, navigate } from "./router";
 import { activeThemeId, activeThemeTone, setTheme, setThemeTone, toggleThemeTone } from "./theme-state";
 
 const APP_GLOBALS: Record<string, ScopeEntry> = {
@@ -13,6 +14,10 @@ const APP_GLOBALS: Record<string, ScopeEntry> = {
   setTheme: { value: setTheme },
   setThemeTone: { value: setThemeTone },
   toggleThemeTone: { value: toggleThemeTone },
+  navigate: { value: navigate },
+  $pathname: { get: () => currentLocation().pathname },
+  $queryParams: { get: () => currentLocation().query },
+  $routeParams: { get: currentRouteParams },
 };
 
 /** The root scope of a compiled module: the app globals. */
