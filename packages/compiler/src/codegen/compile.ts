@@ -4,6 +4,7 @@ import type { Expression, Program } from "../script/ast";
 import type { InterpolationSegment } from "../script/interpolation";
 import type { Diagnostic } from "../source/diagnostic";
 import { Emitter, type ScopeNames } from "./emitter";
+import { bare, jsString } from "./markers";
 
 /** Emit at assignment level: a top-level sequence expression gets parentheses. */
 const ASSIGNMENT_PRECEDENCE = 2;
@@ -14,6 +15,11 @@ export interface CompileOptions {
    * component variables, ids, context variables (`$item`), app globals.
    */
   scope: ScopeNames;
+  /**
+   * Keep source markers in `code` (internal: compileModule turns them into a
+   * source map; see ./markers.ts). Default false: clean code.
+   */
+  markers?: boolean;
 }
 
 export interface CompileResult {
@@ -32,10 +38,11 @@ export interface CompileResult {
 
 /** Compiles one expression (an attribute value that is exactly `{expr}`). */
 export function compileExpression(expression: Expression, options: CompileOptions): CompileResult {
-  const emitter = new Emitter(options.scope);
+  const emitter = new Emitter(options.scope, { markers: options.markers });
   const body = emitter.expression(expression, ASSIGNMENT_PRECEDENCE);
+  const code = `($$s) => ${bare(body).startsWith("{") ? `(${body})` : body}`;
   return {
-    code: `($$s) => ${body.startsWith("{") ? `(${body})` : body}`,
+    code,
     dependencies: [...emitter.dependencies].sort(),
     constant: false,
     diagnostics: emitter.diagnostics,
@@ -61,21 +68,22 @@ export function compileInterpolation(segments: InterpolationSegment[], options: 
   if (parts.every((p) => p.kind === "literal")) {
     // No expression: the text itself (a whitespace-only value is kept as is).
     const value = (parts.length === 0 ? segments : parts).map((p) => (p.kind === "literal" ? p.value : "")).join("");
-    return { code: `($$s) => ${JSON.stringify(value)}`, dependencies: [], constant: true, value, diagnostics: [] };
+    return { code: `($$s) => ${jsString(value)}`, dependencies: [], constant: true, value, diagnostics: [] };
   }
 
-  const emitter = new Emitter(options.scope);
+  const emitter = new Emitter(options.scope, { markers: options.markers });
   const emit = (expression: Expression | null) => (expression ? emitter.expression(expression, ASSIGNMENT_PRECEDENCE) : "undefined");
   let body: string;
   if (parts.length === 1 && parts[0]!.kind === "expression") {
     body = emit(parts[0]!.expression);
-    if (body.startsWith("{")) body = `(${body})`;
+    if (bare(body).startsWith("{")) body = `(${body})`;
   } else {
     // `$$r.str()` returns a string, so the sum is always a string.
-    body = parts.map((p) => (p.kind === "literal" ? JSON.stringify(p.value) : `$$r.str(${emit(p.expression)})`)).join(" + ");
+    body = parts.map((p) => (p.kind === "literal" ? jsString(p.value) : `$$r.str(${emit(p.expression)})`)).join(" + ");
   }
+  const code = `($$s) => ${body}`;
   return {
-    code: `($$s) => ${body}`,
+    code,
     dependencies: [...emitter.dependencies].sort(),
     constant: false,
     diagnostics: emitter.diagnostics,
@@ -93,7 +101,8 @@ export interface CompileHandlerOptions extends CompileOptions {
  * Emitter.handlerFunction for the shapes.
  */
 export function compileHandler(program: Program, options: CompileHandlerOptions): CompileResult {
-  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables });
+  const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers });
   const fn = emitter.handlerFunction(program);
-  return { code: `($$s) => ${fn}`, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
+  const code = `($$s) => ${fn}`;
+  return { code, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
 }

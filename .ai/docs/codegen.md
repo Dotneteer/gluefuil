@@ -5,7 +5,7 @@
 > rationale and XMLUI comparison:
 > [`../plan/poc-03-codegen.md`](../plan/poc-03-codegen.md).
 >
-> **Last updated:** step 7 (async handlers).
+> **Last updated:** step 9 (source markers).
 
 ## Role
 
@@ -80,6 +80,10 @@ Hi {name}!                       →  ($$s) => "Hi " + $$r.str($$s.name) + "!"
 
 **Calls through `$$s` or `$$g`** use `(0, …)?.()`, so the scope object or
 the globals object is never `this`.
+
+**Source markers:** with `markers: true` (internal; `compileModule` uses
+it), every expression and statement start carries a marker for source
+maps. See [source-maps.md](source-maps.md).
 
 **Precedence:** the emitter tracks the precedence of each emitted
 expression and adds parentheses only where JavaScript needs them. Special

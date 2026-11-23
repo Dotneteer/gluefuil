@@ -210,7 +210,9 @@ Plan and findings: [poc-08-scoping-ids.md](poc-08-scoping-ids.md).
   - E2E: cross-component reads and writes by `id`.
 - **Reference:** `pages/scoping.md`, `pages/context-variables.md`.
 
-### Step 9: Source maps
+### Step 9: Source maps ✅
+
+Plan and findings: [poc-09-source-maps.md](poc-09-source-maps.md).
 
 - **Subject:** compiled modules carry source maps back to the `.pfui` file
   (attributes, handlers and code-behind).

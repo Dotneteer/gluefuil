@@ -9,6 +9,7 @@
 import type * as A from "../script/ast";
 import type { Diagnostic } from "../source/diagnostic";
 import { CodegenDiagnostics, type CodegenDiagnosticCode } from "./diagnostics";
+import { bare, escapeMarkerChars, mark } from "./markers";
 import {
   ALLOWED_GLOBALS,
   BANNED_GLOBALS,
@@ -31,6 +32,8 @@ export interface EmitterOptions {
   mode?: "binding" | "handler";
   /** The scope names that are variables (writable in handler mode). */
   variables?: ReadonlySet<string>;
+  /** Insert source markers (see ./markers.ts) for source maps. Default false. */
+  markers?: boolean;
 }
 
 /** Array methods compiled to `$$r.mutate` when called on a variable path (runtime ARRAY_MUTATORS). */
@@ -144,6 +147,7 @@ export class Emitter {
   private lexical: LexicalScope | undefined;
   private readonly isScopeName: (name: string) => boolean;
   private readonly handlerMode: boolean;
+  private readonly markers: boolean;
   private readonly variables: ReadonlySet<string>;
   private tempCount = 0;
   /**
@@ -156,7 +160,13 @@ export class Emitter {
   constructor(scope: ScopeNames, options: EmitterOptions = {}) {
     this.isScopeName = typeof scope === "function" ? scope : (name) => scope.has(name);
     this.handlerMode = options.mode === "handler";
+    this.markers = options.markers ?? false;
     this.variables = options.variables ?? new Set();
+  }
+
+  /** A source marker for `offset`, when markers are on. */
+  private mark(offset: number, text: string): string {
+    return this.markers ? mark(offset, text) : text;
   }
 
   // --- Diagnostics and resolution --------------------------------------------------
@@ -208,7 +218,8 @@ export class Emitter {
   /** Emits an expression; parenthesized when it binds looser than `minPrec`. */
   expression(node: A.Expression, minPrec: number = P.sequence): string {
     const { text, prec } = this.emit(node);
-    return prec < minPrec ? `(${text})` : text;
+    // A source marker for the node's start (see ./markers.ts); stripped before output.
+    return this.mark(node.start, prec < minPrec ? `(${text})` : text);
   }
 
   private emit(node: A.Expression): Emitted {
@@ -296,14 +307,15 @@ export class Emitter {
   }
 
   private literal(node: A.Literal): string {
-    if (node.regex) return `/${node.regex.pattern}/${node.regex.flags}`;
-    return node.raw;
+    // Verbatim user text: the marker characters are escaped.
+    if (node.regex) return escapeMarkerChars(`/${node.regex.pattern}/${node.regex.flags}`);
+    return escapeMarkerChars(node.raw);
   }
 
   private template(node: A.TemplateLiteral): string {
     let text = "`";
     node.quasis.forEach((quasi, i) => {
-      text += quasi.value.raw;
+      text += escapeMarkerChars(quasi.value.raw);
       const expression = node.expressions[i];
       if (expression) text += "${" + this.expression(expression) + "}";
     });
@@ -399,7 +411,7 @@ export class Emitter {
         return `${prefix}${params} => ${this.withFunction(true, () => this.asyncBody(`return ${this.expression(expressionBody)};`, prologue))}`;
       }
       let body = this.withFunction(false, () => this.expression(expressionBody, P.assign));
-      if (body.startsWith("{")) body = `(${body})`;
+      if (bare(body).startsWith("{")) body = `(${body})`;
       return `${params} => ${body}`;
     });
   }
@@ -476,7 +488,7 @@ export class Emitter {
     const argument = this.expression(node.argument, P.unary);
     if (node.operator === "typeof") return `typeof ${argument}`;
     // Keep `- -a` and `+ +a` (and `- --a`) apart.
-    const space = (node.operator === "-" || node.operator === "+") && /^[-+]/.test(argument) ? " " : "";
+    const space = (node.operator === "-" || node.operator === "+") && /^[-+]/.test(bare(argument)) ? " " : "";
     return `${node.operator}${space}${argument}`;
   }
 
@@ -498,7 +510,7 @@ export class Emitter {
     const operand = (child: A.Expression, minPrec: number) => {
       const { text, prec } = this.emit(child);
       const mixes = child.type === "LogicalExpression" && (child.operator === "??") !== (node.operator === "??");
-      return mixes || prec < minPrec ? `(${text})` : text;
+      return this.mark(child.start, mixes || prec < minPrec ? `(${text})` : text);
     };
     return { text: `${operand(node.left, prec)} ${node.operator} ${operand(node.right, prec + 1)}`, prec };
   }
@@ -806,12 +818,17 @@ export class Emitter {
     return node.type === "BlockStatement" ? this.block(node.body) : this.block([node]);
   }
 
+  /** A statement, with a source marker at its start (see ./markers.ts). */
   statement(node: A.Statement): string {
+    return this.mark(node.start, this.statementText(node));
+  }
+
+  private statementText(node: A.Statement): string {
     switch (node.type) {
       case "ExpressionStatement": {
         const text = this.expression(node.expression);
         // `{`, `function` and `let [` cannot start an expression statement.
-        return /^(\{|function\b|let\s*\[)/.test(text) ? `(${text});` : `${text};`;
+        return /^(\{|function\b|let\s*\[)/.test(bare(text)) ? `(${text});` : `${text};`;
       }
       case "BlockStatement":
         return this.block(node.body);

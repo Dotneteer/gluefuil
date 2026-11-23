@@ -42,3 +42,20 @@ test("evaluation: compiled vs hand-written", async ({ bench }) => {
   }).run();
   if (sink.length === 0) throw new Error("unreachable");
 });
+
+test("compileModule with and without a source map", async ({ bench }) => {
+  const { compileModule } = await import("../src/module/compile-module");
+  const markup = `<App var.count="{0}" var.items="{[1, 2, 3]}">
+  <Text>Count: {count}</Text>
+  <Stack gap="4px">
+    <Text value="{items.filter(i => i > count).map(i => i * 2).join(', ')}"/>
+    <Button label="Increment" onClick="count++; if (count > 2) items.push(count)"/>
+  </Stack>
+</App>`;
+  await bench("compileModule (source map)", () => {
+    compileModule(markup);
+  }).run();
+  await bench("compileModule (no source map)", () => {
+    compileModule(markup, { sourceMap: false });
+  }).run();
+});

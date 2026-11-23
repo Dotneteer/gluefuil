@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 8 (component IDs).
+> **Last updated:** step 9 (source maps).
 
 ## Role
 
@@ -27,7 +27,9 @@ compileModule(markup, {
   components?: Record<string, ComponentMetadata>,  // default: built-in metadata
   runtimeModule?: string,               // default "@patchfuil/runtime"
   componentsModule?: string,            // default "@patchfuil/components"
-}): { code: string; diagnostics: Diagnostic[] }
+  fileName?: string,                    // the source map's source; default "Main.pfui"
+  sourceMap?: boolean,                  // default true
+}): { code: string; map?: SourceMap; diagnostics: Diagnostic[] }
 ```
 
 Diagnostics include everything found while compiling, sorted by position:
@@ -42,7 +44,7 @@ use file offsets.
 | `createAppScope()` | The root scope: app globals |
 | `useScope(parent, definitions)` | A container's scope: creates its variables (`{ init }` binding or `{ value }` constant) once per instance |
 | `TextNode` | Text content with bindings: `null`/`undefined` render nothing, other values as text |
-| `loadModule(code, { components })` | Instantiates the `"function"` format with `new Function`, passing the runtime itself and `components` |
+| `loadModule(code, { components, map?, sourceURL? })` | Instantiates the `"function"` format with `new Function`, passing the runtime itself and `components`; with `map`, embeds it inline ([source-maps.md](source-maps.md)) |
 | `assertBindingValue` | The shared check: a promise as a binding value throws a `BindingError` |
 | `createElement`, `Fragment` | Re-exported from React; compiled code never imports React itself |
 
@@ -147,7 +149,8 @@ export default Main;
 
 `test-apps/hello/vite.config.ts` contains a minimal Vite plugin:
 
-- it compiles `.pfui` files with `compileModule` (format `"esm"`);
+- it compiles `.pfui` files with `compileModule` (format `"esm"`) and
+  returns the source map to Vite;
 - it fails the transform with `file:line:col` messages on errors.
 
 The real plugin arrives in step 12. The dev server needs Vite's
