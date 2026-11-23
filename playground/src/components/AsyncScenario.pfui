@@ -1,0 +1,17 @@
+<Component name="AsyncScenario">
+  <Stack gap="16px">
+    <ScenarioHeader title="Async handlers" description="Handlers wait implicitly (delay); double-click the policy buttons to compare them."/>
+    <Stack gap="8px" var.status="Idle">
+      <Stack orientation="horizontal" gap="8px">
+        <Button label="Save (1 s)" onClick="status = 'Saving…'; delay(1000); status = 'Saved at ' + new Date().toLocaleTimeString()"/>
+        <Text>Status: {status}</Text>
+      </Stack>
+      <Stack orientation="horizontal" gap="8px" var.log="{[]}">
+        <Button label="queue" handlerPolicy="queue" onClick="log.push('start'); delay(500); log.push('end')"/>
+        <Button label="drop-while-running" handlerPolicy="drop-while-running" onClick="log.push('start'); delay(500); log.push('end')"/>
+        <Button label="Clear" onClick="log = []"/>
+        <Text>{log.join(', ')}</Text>
+      </Stack>
+    </Stack>
+  </Stack>
+</Component>

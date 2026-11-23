@@ -31,6 +31,8 @@ export default defineConfig({
     // Routing (step 19): the same spec on the dev server and the prerendered build.
     { name: "routing-dev", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5177" } },
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
+    // The manual-testing playground: every scenario still opens (smoke).
+    { name: "playground", testMatch: /playground\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
   ],
   webServer: [
     {
@@ -67,6 +69,11 @@ export default defineConfig({
       command:
         "npx vite build --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --emptyOutDir && npx vite preview --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --port 5178 --strictPort",
       url: "http://localhost:5178",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npx vite --config playground/vite.config.ts --configLoader runner --port 5180 --strictPort",
+      url: "http://localhost:5180",
       reuseExistingServer: !process.env.CI,
     },
   ],
