@@ -157,18 +157,11 @@ export default Main;
 | E014 | `id` inside a template |
 | E015 | Unknown `when-*` breakpoint |
 
-## Build-time integration (fixture only)
+## Build-time integration
 
-`test-apps/hello/vite.config.ts` contains a minimal Vite plugin:
-
-- it compiles `.pfui` files with `compileModule` (format `"esm"`) and
-  returns the source map to Vite;
-- it fails the transform with `file:line:col` messages on errors.
-
-The real plugin arrives in step 12. The dev server needs Vite's
-`--configLoader runner`: the default config loader treats the workspace
-packages as external, and Node cannot load their TypeScript source
-(extensionless imports).
+`@patchfuil/vite-plugin` compiles `.pfui` files with `compileModule`
+(format `"esm"`): see [build-time.md](build-time.md). `test-apps/hello`
+uses it.
 
 ## Files
 
@@ -193,4 +186,4 @@ packages as external, and Node cannot load their TypeScript source
 | `components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM, for the first app and a table of constructs |
 | `e2e/async-handlers.spec.ts` | `test-apps/hello`: a slow handler, responsiveness, double-click under each policy |
 | `e2e/variables.spec.ts` | `test-apps/hello`: counter and source/mirror with real clicks in Chromium |
-| `e2e/first-app.spec.ts` | `test-apps/hello`: `Main.pfui` compiled by the Vite plugin renders in Chromium without errors, with a horizontal `Stack` laid out in a row |
+| `e2e/first-app.spec.ts` | `test-apps/hello`: `Main.pfui` compiled by `@patchfuil/vite-plugin` renders in Chromium without errors, with a horizontal `Stack` laid out in a row |

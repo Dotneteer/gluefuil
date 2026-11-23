@@ -1,5 +1,5 @@
 // The error overlay: compile errors (or a failed fetch) shown in place of the app.
-import { formatDiagnostic, LineMap, type Diagnostic } from "@patchfuil/compiler";
+import { codeFrame, formatDiagnostic, LineMap, type Diagnostic } from "@patchfuil/compiler";
 import type { CSSProperties } from "react";
 
 export interface LoadError {
@@ -27,11 +27,8 @@ export function ErrorOverlay({ error }: { error: LoadError }) {
   const lines: string[] = [];
   if (error.diagnostics && error.source !== undefined) {
     const lineMap = new LineMap(error.source);
-    const sourceLines = error.source.split("\n");
     for (const diagnostic of error.diagnostics) {
-      lines.push(formatDiagnostic(diagnostic, lineMap, error.file));
-      const { line, column } = lineMap.positionAt(diagnostic.start);
-      lines.push(`  ${sourceLines[line] ?? ""}`, `  ${" ".repeat(column)}^`);
+      lines.push(formatDiagnostic(diagnostic, lineMap, error.file), codeFrame(error.source, lineMap, diagnostic.start));
     }
   } else {
     lines.push(`${error.file}: ${error.error instanceof Error ? error.error.message : String(error.error)}`);

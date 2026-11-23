@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // test-apps/hello (step 6): variables and handlers in a real browser.
 test.beforeEach(async ({ page }) => {
-  await page.goto("http://localhost:5174/");
+  await page.goto("/");
 });
 
 test("counter", async ({ page }) => {

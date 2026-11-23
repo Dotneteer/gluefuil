@@ -43,7 +43,7 @@ Put `Main.pfui` next to it and serve the folder with any static server.
 
 **CSP:** compiling in the browser runs code through `new Function`, which
 needs `'unsafe-eval'`. For a strict Content Security Policy, use
-build-time compilation (step 12).
+build-time compilation ([build-time.md](build-time.md)).
 
 ## How a load works (`StandaloneApp`)
 
@@ -84,7 +84,7 @@ build, and the cache removes other builds' entries when it writes.
   This is a full app reload without a page reload, so app state is lost.
 - **Errors** (network, compile) show the **error overlay**: every
   diagnostic as `file:line:col: error CODE: message`, with the source line
-  and a caret. Polling continues, and the next good version replaces the
+  and a caret (the compiler's `codeFrame`). Polling continues, and the next good version replaces the
   overlay.
 - **`stop()`** ends polling and unmounts.
 

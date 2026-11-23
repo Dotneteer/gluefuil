@@ -5,6 +5,9 @@
 //   runtime    -> must not import the compiler or components
 //   components -> must not import the compiler
 //   components/metadata (and everything it reaches) -> no bare imports at all
+//   vite-plugin -> the compiler, components/metadata, vite and Node built-ins only
+//                  (it runs in the build: no React, no runtime, no components)
+//   standalone, vite-plugin -> delivery packages: no other package imports them
 //
 // The checker works on an in-memory map of file path -> source text, so the
 // rules themselves can be unit-tested with fixtures.
@@ -107,6 +110,25 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
     for (const specifier of collectImports(files.get(file)!)) {
       if (startsWithAny(specifier, ["@patchfuil/compiler"])) {
         report(file, specifier, "components must not import the compiler");
+      }
+    }
+  }
+
+  const VITE_PLUGIN_ALLOWED = ["@patchfuil/compiler", "@patchfuil/components/metadata", "vite"];
+  for (const file of filesUnder(files, "packages/vite-plugin/src")) {
+    for (const specifier of collectImports(files.get(file)!)) {
+      if (isRelative(specifier) || specifier.startsWith("node:")) continue;
+      if (VITE_PLUGIN_ALLOWED.includes(specifier)) continue;
+      report(file, specifier, "vite-plugin may only import the compiler, components/metadata, vite and node: built-ins");
+    }
+  }
+
+  const DELIVERY = ["@patchfuil/standalone", "@patchfuil/vite-plugin"];
+  for (const file of filesUnder(files, "packages")) {
+    if (!/^packages\/[^/]+\/src\//.test(file)) continue;
+    for (const specifier of collectImports(files.get(file)!)) {
+      if (startsWithAny(specifier, DELIVERY)) {
+        report(file, specifier, "no package may import a delivery package (standalone, vite-plugin)");
       }
     }
   }

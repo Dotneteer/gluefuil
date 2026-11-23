@@ -68,5 +68,5 @@ export {
 } from "./source/source-map";
 
 // --- Source positions and diagnostics ---------------------------------------------
-export { formatDiagnostic, type Diagnostic, type Severity } from "./source/diagnostic";
+export { codeFrame, formatDiagnostic, type Diagnostic, type Severity } from "./source/diagnostic";
 export { LineMap, type Position } from "./source/line-map";

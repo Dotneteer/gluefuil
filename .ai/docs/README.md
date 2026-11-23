@@ -10,7 +10,8 @@ on this repository. Plans (what we intend to build) live in
 | [markup-parser.md](markup-parser.md) | The markup parser: API, syntax tree, lexical rules, diagnostics, recovery, tests, measurements. |
 | [script-parser.md](script-parser.md) | The script parser: entry points, positions, the supported language, ASI, implementation, interpolation, diagnostics, tests. |
 | [reactivity.md](reactivity.md) | The reactivity core: signal store algorithm, React integration, scope object, tests, measurements. |
-| [modules.md](modules.md) | Compiled modules: `compileModule`, generated code, compilation rules, `Bound`/`TextNode`/`loadModule`, built-in components, the fixture Vite plugin. |
+| [modules.md](modules.md) | Compiled modules: `compileModule`, generated code, compilation rules, `Bound`/`TextNode`/`loadModule`, built-in components, build-time integration. |
+| [build-time.md](build-time.md) | Build-time compilation: the Vite plugin, its options and errors, what a production build contains (no compiler, no eval). |
 | [standalone.md](standalone.md) | Standalone mode: `pfui.js`, loading, the compile cache, watching, the error overlay, the bundle. |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle handlers, templates, `Items`. |
 | [source-maps.md](source-maps.md) | Source maps: markers, encoding, delivery (Vite, `loadModule`), evidence. |

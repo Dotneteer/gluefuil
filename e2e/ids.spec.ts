@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // test-apps/hello (step 8): reading and writing another component through its id.
 test.beforeEach(async ({ page }) => {
-  await page.goto("http://localhost:5174/");
+  await page.goto("/");
 });
 
 test("typing in a TextBox updates a Text declared before it", async ({ page }) => {

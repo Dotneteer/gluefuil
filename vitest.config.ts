@@ -63,6 +63,14 @@ export default defineConfig({
       },
       {
         test: {
+          name: "vite-plugin",
+          root: "packages/vite-plugin",
+          environment: "node",
+          include: ["tests/**/*.test.ts"],
+        },
+      },
+      {
+        test: {
           name: "tools",
           root: "tools",
           environment: "node",

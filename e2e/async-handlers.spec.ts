@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // test-apps/hello (step 7): async handlers and policies in a real browser.
 test.beforeEach(async ({ page }) => {
-  await page.goto("http://localhost:5174/");
+  await page.goto("/");
 });
 
 test("a slow handler shows its progress, then its result", async ({ page }) => {

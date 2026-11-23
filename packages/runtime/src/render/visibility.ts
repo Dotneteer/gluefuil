@@ -4,7 +4,7 @@
 import type { ReactNode } from "react";
 import { useComputed } from "../reactivity/react";
 import { signal, type ReadonlySignal, type Signal } from "../reactivity/signals";
-import { assertBindingValue } from "../script/load";
+import { assertBindingValue } from "../script/binding-value";
 import type { BindingFunction } from "./elements";
 
 /** Breakpoints, mobile-first (min-width in px). */
