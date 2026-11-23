@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 7 (async handlers).
+> **Last updated:** step 8 (scoping, component IDs).
 
 ## What this repository is
 
@@ -33,6 +33,10 @@ Current state:
 - **Handlers are async** with implicit await, segment batching that cannot
   freeze the store, `$cancel`, handler policies, timeouts and unmount
   cancellation ([async-handlers.md](async-handlers.md)).
+- **Component IDs** expose APIs to the whole file (`box.value`,
+  `box.setValue()`), and name resolution is complete for variables, IDs,
+  app globals and context variables ([scoping.md](scoping.md)). `TextBox`
+  is the first component with an API.
 
 ## Subsystem documents
 
@@ -42,6 +46,7 @@ Current state:
 | [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
 | [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
+| [scoping.md](scoping.md) | Name resolution (compile time), the scope chain (runtime), component IDs and APIs |
 | [async-handlers.md](async-handlers.md) | Handlers at runtime: implicit await, segments (batching across `await`), the watchdog, `$cancel`, policies, timeouts, async-aware array methods, app globals |
 | [codegen.md](codegen.md) | `packages/compiler/src/codegen/` and `packages/runtime/src/script/`: bindings compiled to JavaScript, static name resolution, the sandbox, dependencies |
 
@@ -65,7 +70,8 @@ Current state:
 │   │   ├── src/errors.ts    the runtime error reporter
 │   │   └── bench/           benchmarks (npm run bench)
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
-│       └── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
+│       ├── src/basic.tsx    App, Text, Button, Stack (minimal; Mantine in step 16)
+│       └── src/text-box.tsx TextBox (the first component with an API)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test
 ├── test-apps/
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
@@ -95,9 +101,9 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
-| `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`; re-exports the metadata |
-| `packages/components/src/metadata.ts` | `componentMetadata` (the four components and their props), `ComponentMetadata` |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
+| `packages/components/src/index.ts` | `App`, `Text`, `Button`, `Stack`, `TextBox`; re-exports the metadata |
+| `packages/components/src/metadata.ts` | `componentMetadata` (the five components: props, events, API), `ComponentMetadata` |
 
 ### Compiler source layout
 
@@ -271,16 +277,17 @@ Conventions:
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 
-Count after step 7: 1,420 unit tests in 37 files.
+Count after step 8: 1,453 unit tests in 40 files.
 
-- Compiler: 721, of which markup 115, script 331, codegen 200, module 67
+- Compiler: 744, of which markup 115, script 331, codegen 200, module 90
   and source 8.
-- Runtime: 307, of which the script sandbox and async arrays are 210,
-  reactivity 65, rendering and handlers 30, and the smoke test 2.
+- Runtime: 314, of which the script sandbox and async arrays are 210,
+  reactivity 65, rendering, handlers and component APIs 37, and the smoke
+  test 2.
 - Tools: 355, of which the corpus is 327, the boundaries 23 and the
   sandbox drift test 5.
-- Components: 37, of which async handlers are 9, variables and handlers
-  12, the first app 14 and the smoke test 2.
+- Components: 42, of which IDs and scoping are 5, async handlers 9,
+  variables and handlers 12, the first app 14 and the smoke test 2.
 
 ### Benchmarks (Vitest 5)
 
@@ -315,6 +322,7 @@ Count after step 7: 1,420 unit tests in 37 files.
 | Spec | Covers |
 |------|--------|
 | `e2e/smoke.spec.ts` | The smoke app loads all three packages and **runs the markup parser in a real browser** (it renders a parse summary), with no page or console errors |
+| `e2e/ids.spec.ts` | Reading and writing another component through its id |
 | `e2e/async-handlers.spec.ts` | A slow handler's progress, responsiveness while waiting, double-click under each handler policy |
 | `e2e/variables.spec.ts` | Counter and source/mirror (follow until assigned) in the hello app, with real clicks |
 | `e2e/first-app.spec.ts` | **The first compiled app**: `test-apps/hello/src/Main.pfui`, compiled by the fixture's Vite plugin, renders the expected texts and buttons, lays out a horizontal `Stack` in a row, with no errors |

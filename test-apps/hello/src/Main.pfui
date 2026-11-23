@@ -22,6 +22,14 @@
       <Button label="Override mirror" onClick="mirror = 999"/>
     </Stack>
 
+    <!-- Step 8: component IDs (file-scoped, order-independent) -->
+    <Text>Greeting: Hello, {nameBox.value || 'stranger'}!</Text>
+    <Stack orientation="horizontal" gap="4px">
+      <TextBox id="nameBox" placeholder="Your name"/>
+      <Button label="Shout" onClick="nameBox.setValue(nameBox.value.toUpperCase())"/>
+      <Button label="Reset name" onClick="nameBox.setValue(''); nameBox.focus()"/>
+    </Stack>
+
     <!-- Step 7: a slow handler (implicit await) -->
     <Stack orientation="horizontal" gap="4px">
       <Button label="Save" onClick="status = 'Saving…'; delay(300); status = 'Saved'"/>

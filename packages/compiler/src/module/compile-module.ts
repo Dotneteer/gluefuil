@@ -12,7 +12,10 @@
 //     const $$c = $$useScope($$p, $$v0);
 //     return $$h(…);
 //   }
-//   function Main() { return $$h(…); }
+//   function Main() {                                // with ids: a file scope holding them
+//     const $$f = $$useFileScope($$scope, ["textBox"]);
+//     return $$h(…);
+//   }
 //   footer (export default, or return)
 
 import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
@@ -53,6 +56,7 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["TextNode", "$$TextNode"],
   ["createAppScope", "$$createAppScope"],
   ["useScope", "$$useScope"],
+  ["useFileScope", "$$useFileScope"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
 ];
@@ -62,7 +66,7 @@ function unsupportedAttribute(name: string): string | undefined {
   for (const prefix of ["method.", "event."]) {
     if (name.startsWith(prefix)) return `The '${prefix}' attribute '${name}'`;
   }
-  if (name === "when" || name === "id") return `The '${name}' attribute`;
+  if (name === "when") return `The '${name}' attribute`;
   return undefined;
 }
 
@@ -101,6 +105,8 @@ class ModuleCompiler {
   private readonly hoisted: string[] = [];
   /** Variables declared by the enclosing containers, innermost last. */
   private readonly frames: Set<string>[] = [];
+  /** The component IDs of the file (collected before compiling: their order doesn't matter). */
+  private readonly ids = new Set<string>();
   private counter = 0;
   private usesEmpty = false;
 
@@ -117,9 +123,9 @@ class ModuleCompiler {
     this.diagnostics.push({ code, severity: "error", message, start: span.start, end: span.end });
   }
 
-  /** Every name visible at this point: the app globals and the variables in scope. */
+  /** Every name visible at this point: app globals, the file's IDs, and the variables in scope. */
   private visibleNames(): Set<string> {
-    const names = new Set<string>(APP_GLOBALS);
+    const names = new Set<string>([...APP_GLOBALS, ...this.ids]);
     for (const frame of this.frames) for (const name of frame) names.add(name);
     return names;
   }
@@ -135,13 +141,16 @@ class ModuleCompiler {
     const parsed = parseMarkup(markup);
     this.diagnostics.push(...parsed.diagnostics);
     const root = this.findRoot(parsed.document.children, parsed.document);
-    const body = root ? this.node(root, "$$scope", true) : "null";
+    if (root) this.collectIds(root);
+    const fileScope = this.ids.size > 0 ? "$$f" : "$$scope";
+    const body = root ? this.node(root, fileScope, true) : "null";
+    const prologue = this.ids.size > 0 ? `  const $$f = $$useFileScope($$scope, ${JSON.stringify([...this.ids])});\n` : "";
     const code = [
       this.header(),
       "const $$scope = $$createAppScope();",
       ...(this.usesEmpty ? ["const $$empty = Object.freeze({});"] : []),
       ...this.hoisted,
-      `function Main() {\n  return ${body};\n}`,
+      `function Main() {\n${prologue}  return ${body};\n}`,
       this.options.format === "function" ? "return Main;" : "export default Main;",
       "",
     ].join("\n");
@@ -210,6 +219,22 @@ class ModuleCompiler {
       : { binding: result.code, dependencies: result.dependencies };
   }
 
+  /** Collects the file's IDs (E010 duplicate, E011 invalid). */
+  private collectIds(node: ElementNode): void {
+    const attribute = node.attributes.find((a) => a.name.full === "id");
+    if (attribute) {
+      const value = attribute.value?.value;
+      if (value === undefined || !VARIABLE_NAME.test(value)) {
+        this.report(attribute.value ?? attribute.name, "E011", value ?? "");
+      } else if (this.ids.has(value)) {
+        this.report(attribute.value!, "E010", value);
+      } else {
+        this.ids.add(value);
+      }
+    }
+    for (const child of node.children) if (child.kind === "element") this.collectIds(child);
+  }
+
   // --- Elements -------------------------------------------------------------------------
 
   /** An element rendered in the runtime scope held by the JavaScript variable `scopeVar`. */
@@ -243,6 +268,10 @@ class ModuleCompiler {
       }
       if (seen.has(name)) {
         this.report(span, "E007", name);
+        return;
+      }
+      if (this.ids.has(name)) {
+        this.report(span, "E012", name);
         return;
       }
       seen.add(name);
@@ -333,6 +362,7 @@ class ModuleCompiler {
     for (const attribute of node.attributes) {
       const attributeName = attribute.name.full;
       if (attributeName.startsWith("var.") || attributeName.startsWith("global.")) continue;
+      if (attributeName === "id") continue; // collected by collectIds; passed to Bound below
       const concurrency = attribute.name.prefix ?? attribute.name.local;
       if (concurrency === "handlerPolicy" || concurrency === "handlerTimeoutMs") {
         this.concurrencyAttribute(attribute, metadata, name, concurrency === "handlerPolicy" ? policies : timeouts);
@@ -375,7 +405,9 @@ class ModuleCompiler {
     const component = `$$C_${name}`;
     const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${JSON.stringify(k)}: ${v}`).join(", ")} }` : "null";
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
-    if (bindings.length === 0 && handlers.length === 0) return `$$h(${component}, ${props}${args})`;
+    const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
+    const id = idValue !== undefined && this.ids.has(idValue) ? idValue : undefined;
+    if (bindings.length === 0 && handlers.length === 0 && id === undefined) return `$$h(${component}, ${props}${args})`;
     const bindingsName = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
     let handlersPart = "";
     if (handlers.length > 0) {
@@ -390,7 +422,8 @@ class ModuleCompiler {
       if (policyEntries.length > 0) handlersPart += `, policies: { ${policyEntries.join(", ")} }`;
       if (timeoutEntries.length > 0) handlersPart += `, timeouts: { ${timeoutEntries.join(", ")} }`;
     }
-    return `$$h($$Bound, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}, scope: ${scopeVar} }${args})`;
+    const idPart = id === undefined ? "" : `, id: ${JSON.stringify(id)}`;
+    return `$$h($$Bound, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}, scope: ${scopeVar} }${args})`;
   }
 
   /**

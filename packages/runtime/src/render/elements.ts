@@ -11,6 +11,7 @@ import { useComputed } from "../reactivity/react";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 import { variable } from "../reactivity/variable";
 import { assertBindingValue } from "../script/load";
+import { apiRegistrar } from "./component-api";
 import { HandlerSlot, type HandlerFunction, type HandlerPolicy } from "./handlers";
 
 /** A compiled binding: `($$s) => value`. */
@@ -32,6 +33,8 @@ export interface BoundProps {
   policies?: Record<string, HandlerPolicy> | null;
   /** Handler timeouts in ms by handler prop (`handlerTimeoutMs`); 0 disables. Default: the runtime default. */
   timeouts?: Record<string, number> | null;
+  /** The element's `id`: the component receives a `registerApi` prop to publish its API. */
+  id?: string;
   /** The scope the bindings read and the handlers write. */
   scope: object;
   children?: ReactNode;
@@ -41,7 +44,7 @@ export interface BoundProps {
  * Renders `type` with its constant props and the current values of its
  * bindings. It re-renders only when one of those values changes.
  */
-export function Bound({ type, props, bindings, handlers, policies, timeouts, scope, children }: BoundProps) {
+export function Bound({ type, props, bindings, handlers, policies, timeouts, id, scope, children }: BoundProps) {
   const values = useComputed(() => {
     const result: Record<string, unknown> = {};
     for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
@@ -69,7 +72,9 @@ export function Bound({ type, props, bindings, handlers, policies, timeouts, sco
     for (const name in slots) result[name] = (...args) => slots[name]!.invoke(args);
     return result;
   }, [slots]);
-  return createElement(type, { ...props, ...values, ...handlerProps }, children);
+  const registerApi = useMemo(() => (id === undefined ? undefined : apiRegistrar(scope, id)), [id, scope]);
+  const extra = registerApi ? { registerApi } : undefined;
+  return createElement(type, { ...props, ...values, ...handlerProps, ...extra }, children);
 }
 
 /** How a container declares one variable: an initializer binding or a constant. */

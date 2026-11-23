@@ -49,6 +49,14 @@ export {
   type HandlerPolicy,
 } from "./render/handlers";
 export { APP_GLOBAL_NAMES, createAppScope } from "./render/app-globals";
+export {
+  API_REFS,
+  apiRegistrar,
+  createFileScope,
+  useComponentApi,
+  useFileScope,
+  type RegisterApi,
+} from "./render/component-api";
 export { reportRuntimeError, setErrorReporter, type ErrorReporter } from "./errors";
 export { loadModule, type ModuleImports } from "./render/module";
 // Compiled code creates elements through the runtime, never through React directly.

@@ -198,7 +198,9 @@ Plan, design of the async batching, and findings: [poc-07-async-handlers.md](poc
 - **Reference:** `.ai/xmlui/expression-eval.md` §5–6,
   `.ai/xmlui/concurrency.md`.
 
-### Step 8: Scoping, component IDs, context variables
+### Step 8: Scoping, component IDs, context variables ✅
+
+Plan and findings: [poc-08-scoping-ids.md](poc-08-scoping-ids.md).
 
 - **Subject:** downward scope flow; `id` exposes a component's values and
   methods (`input.value`, `dialog.open()`); `$`-context variables injected

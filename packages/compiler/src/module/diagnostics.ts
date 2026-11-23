@@ -10,6 +10,9 @@ export const ModuleDiagnostics = {
   E007: (name: string) => `The variable '${name}' is declared twice on this element`,
   E008: (detail: string) => detail,
   E009: (detail: string) => detail,
+  E010: (id: string) => `The id '${id}' is already used in this file`,
+  E011: (id: string) => `'${id}' is not a valid id: use a name starting with a letter or '_'`,
+  E012: (name: string) => `The variable '${name}' has the same name as a component id`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

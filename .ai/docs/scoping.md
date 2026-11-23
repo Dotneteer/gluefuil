@@ -1,0 +1,95 @@
+# Scoping and component IDs
+
+> Subsystem reference: how names resolve, at compile time and at runtime,
+> and how component IDs expose APIs. Describes the code as it is. Design
+> and XMLUI comparison: [`../plan/poc-08-scoping-ids.md`](../plan/poc-08-scoping-ids.md).
+>
+> **Last updated:** step 8.
+
+## Name resolution (compile time)
+
+A name in a binding or handler resolves to the first match:
+
+| # | Kind | Declared by | Writable in handlers |
+|---|------|-------------|----------------------|
+| 1 | Local | Parameters, `let`/`const`, functions, catch and `for` heads; handler locals `$param`, `$params`, `$cancel` | Yes (plain JavaScript) |
+| 2 | Variable | `var.x` / `<variable>` / `global.x` / `<global>` on the element or an ancestor; the innermost declaration wins | Yes (through scope setters and path helpers) |
+| 3 | Component ID | `id="x"` **anywhere in the file** | No (C012); use API methods |
+| 4 | App global | The runtime (`delay`) | No (C012) |
+| 5 | Sandbox global | `Math`, `JSON`, … ([codegen.md](codegen.md)) | No (C010) |
+
+- **Anything else is a compile error:**
+  - a known platform global: C002;
+  - a `$`-name: C014 ("context variable … is not available here");
+  - otherwise: C001.
+- **Variables flow downward:** they are visible to the declaring element
+  (its own attributes too) and its descendants, not to its siblings.
+- **IDs are file-scoped and order-independent:** the module compiler
+  collects them before compiling (`collectIds`).
+- **Conflicts:**
+  - a variable named like an ID is E012;
+  - a duplicate ID is E010;
+  - an invalid ID (not a constant identifier, or `$`-prefixed) is E011.
+
+## Scope objects (runtime)
+
+The scope objects form a prototype chain that mirrors compile-time
+resolution:
+
+```
+app scope (createAppScope: delay)
+  └─ file scope (useFileScope: one getter per ID)        — only when the file has IDs
+       └─ container scope (useScope: variables, getters + setters)
+            └─ nested container scope …
+```
+
+- **Every scope object is frozen.**
+- **A child sees its ancestors' names**, and inner names shadow outer ones.
+- **The file scope** holds a signal per ID (`API_REFS`, a symbol-keyed map
+  inherited by nested scopes). Each getter reads its signal, tracked: a
+  binding re-evaluates when the component registers or unregisters its
+  API, and when a value read through the API (a getter over the
+  component's signals) changes.
+
+## Component APIs
+
+| Piece | What it does |
+|-------|--------------|
+| `Bound` with `id` | Passes the component a `registerApi` prop (from `apiRegistrar(scope, id)`) |
+| `useComponentApi(registerApi, api)` | Publishes `api` after mount (frozen) and clears it on unmount |
+| `api` | Stable object (`useMemo`); values are getters over the component's signals, methods are plain functions |
+
+- **Not React's `ref`:** a `ref` may be forwarded to a DOM element, and raw
+  platform objects must never reach script. `registerApi` is explicit and
+  opt-in.
+- **Before mount and after unmount** the ID reads `undefined`, so
+  `box.value` is `undefined` (optional chaining).
+- **Metadata** declares the API (`ComponentMetadata.api`). Checking
+  `box.member` against it at compile time is step 15.
+
+`TextBox` is the reference implementation:
+
+- its text is a signal that drives both the input and `api.value`;
+- its API is `value`, `setValue(v)` and `focus()`;
+- its event is `didChange` (`$param` is the new text).
+
+## Files
+
+| File | Contents |
+|------|----------|
+| `runtime/src/render/component-api.ts` | `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi` |
+| `runtime/src/render/elements.ts` | `Bound` (`id` prop), `useScope` |
+| `runtime/src/reactivity/scope.ts` | `createScope` (the prototype chain) |
+| `runtime/src/render/app-globals.ts` | `createAppScope` |
+| `compiler/src/module/compile-module.ts` | `collectIds`, `visibleNames`/`visibleVariables`, the file-scope prologue in `Main`, E010–E012 |
+| `compiler/src/codegen/emitter.ts` | `resolve`, `reportUnresolved` (C001/C002/C005/C014) |
+| `components/src/text-box.tsx` | `TextBox` |
+
+## Tests
+
+| File | Covers |
+|------|--------|
+| `compiler/tests/module/ids-scoping.test.ts` | ID emission, visibility (siblings in either order, nested containers, inside to outside), E010–E012, IDs are read-only, shadowing, context variables (C014) |
+| `runtime/tests/render/component-api.test.tsx` | File scope (undefined until registered, read-only, inheritance), registration and unregistration through `Bound`, reactivity of API reads, frozen APIs |
+| `components/tests/ids-scoping.test.tsx` | Typing updates readers before and after the TextBox and in nested containers; IDs inside containers visible outside; API methods from handlers; `onDidChange`/`$param`; `focus()`; shadowing |
+| `e2e/ids.spec.ts` | Chromium: a Text before a TextBox follows typing; handlers call `setValue` and `focus` |
