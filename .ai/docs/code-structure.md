@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 21B (globals in user components).
+> **Last updated:** step 22 (client-side forms).
 
 ## What this repository is
 
@@ -83,6 +83,12 @@ Current state:
   history under the same guard, `navigate(to, { target: "_blank" })` opens
   a new tab, and an app under a sub-path takes its basename from Vite's
   `base`.
+- **Forms:** `Form` edits a copy of `data`; any input with a value API binds
+  a path of it with `bindTo` (the `formBinding` and `validation` behaviors;
+  no `FormItem`). XMLUI's rules with severities, late error display,
+  `onValidate` (async too), `$data`, dirty tracking, reset, and a submit
+  that validates first ([forms.md](forms.md)). `submitUrl` and server errors
+  come in step 22B.
 - **The App shell:** `AppHeader`, `NavPanel` and `Footer` around the
   content, placed by a few literal settings (`scroll`, `sticky`,
   `placement`, `fullHeight`, `drawerBelow`, `collapsible`) instead of
@@ -102,7 +108,7 @@ Current state:
   (`@patchfuil/mock-backend`: a service worker, dev-server middleware or a
   test server answer real `fetch` requests; faults, holds and a request log
   under `/__mock`) ([mock-backend.md](mock-backend.md)).
-- **Behaviors:** `label`, `tooltip` and `variant` attach by trigger props,
+- **Behaviors:** `label`, `formBinding`, `validation`, `tooltip` and `variant` attach by trigger props,
   decided at compile time and compiled to `Bound` wrappers, on built-ins
   and user-defined components ([behaviors.md](behaviors.md)).
 
@@ -122,6 +128,7 @@ Current state:
 | [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `pfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
 | [mantine.md](mantine.md) | `runtime/src/render/wrap.ts`, `components/src/mantine.tsx`, `text.tsx` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
+| [forms.md](forms.md) | `runtime/src/forms/`, `runtime/src/render/context-scope.ts`, the field binding in `wrap.ts`, `components/src/forms.tsx`, `childContextVars` in the compiler, `test-apps/forms` |
 | [theming.md](theming.md) | `components/src/theming/` (the engine, built-in themes), `styles.ts`, `App`/`Theme`, `runtime/src/render/theme-state.ts` |
 | [contracts.md](contracts.md) | `ComponentMetadata`; the contract checks (E001, E004, E020–E024, C015); `strictContracts` |
 | [user-components.md](user-components.md) | `<Component>` definitions, analysis, compilation, `BoundUser`/`useComponent`/`Slot`, discovery in the plugin and standalone, code-behind |
@@ -166,12 +173,14 @@ Current state:
 │       ├── src/theme.tsx    App, Theme; src/styles.ts the stylesheet; src/theming/ the theme engine (React-free)
 │       ├── src/behaviors.tsx  LabelBehavior, TooltipBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
 │       ├── src/data.tsx     DataSource, APICall, DataUrl
+│       ├── src/forms.tsx    Form, FormBindingBehavior, ValidationBehavior (the store is runtime/src/forms/)
 │       └── src/items.tsx    Items (templates with $item; a URL in data loads it)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, build-output check, static-server.mjs (E2E)
 ├── test-apps/
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
 │   ├── routing/         @patchfuil/routing-app E2E fixture: a dashboard of buttons and links opening routed pages, a navigation guard and log (dev and prerendered build)
 │   ├── routing-browser/ @patchfuil/routing-browser-app E2E fixture: browser routing, every static route prerendered, a guard and log
+│   ├── forms/           @patchfuil/forms-app   E2E fixture: a sign-up form with bound inputs (dev 5186, prerendered build 5187)
 │   ├── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui (+ components/, code-behind), compiled by @patchfuil/vite-plugin, prerendered in builds
 │   └── data/            @patchfuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
 ├── playground/          @patchfuil/playground  manual testing: a dashboard of 19 scenarios (steps 2–19F), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
@@ -204,7 +213,7 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **Forms:** `FormStore`, `FormField`, `FieldOptions`, `DEFAULT_FIELD_OPTIONS`, `ValidationSummary`, `validateRules`, `customResults`, `highestSeverity`, `isEmptyValue`, `parseRegex`, `PATTERNS`, `FieldRules`, `RuleResult`, `Severity`, `isShown`, `INITIAL_FLAGS`, `InteractionFlags`, `ValidationMode`, `parseFieldPath`, `getAt`, `setAt`, `deleteAt`, `FormProvider`, `useFormStore`, `FieldBindingProvider`, `useFieldBinding`, `FieldBinding`; `createContextScope`, `useContextScope`, `provideContext`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
 | `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, `TextBox`, `Select`, `Checkbox`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `Pages`, `Page`, `Link`, the behavior components, `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
 | `packages/components/src/metadata.ts` | `componentMetadata` (every built-in, with `themeVars` defaults; props with value types and enums, events, API, templates; App's `regions` and `removedProps`), `LAYOUT_EQUIVALENTS`, `DRAWER_BREAKPOINTS`, `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
@@ -334,7 +343,7 @@ Run from the repository root.
 | `npm install` | Installs everything and links the workspace packages (`packages/*`, `test-apps/*`, `playground`) |
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176), the routing fixture (dev 5177, build 5178), the browser-routing fixture's prerendered build (5184) and the same built under `base: "/app/"` (5185), the playground (dev 5180, production build 5181), the data fixture (worker host 5182, middleware host 5183) |
+| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176), the routing fixture (dev 5177, build 5178), the forms fixture (dev 5186, build 5187), the browser-routing fixture's prerendered build (5184) and the same built under `base: "/app/"` (5185), the playground (dev 5180, production build 5181), the data fixture (worker host 5182, middleware host 5183) |
 | `npm run playground` | The manual-testing playground on the Vite dev server, port 5190 (`playground:build`, and `playground:preview` on 5191, for the prerendered build) |
 | `npm run build:standalone` | Builds `packages/standalone/dist/pfui.js` (also run by the E2E web server) |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
@@ -413,14 +422,15 @@ Conventions:
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
 
-Count after step 21B: 2,392 unit tests in 83 files. The totals per package
+Count after step 22: 2,523 unit tests in 88 files. The totals per package
 are current; the breakdowns in parentheses were last counted after steps
-19A–19C and are updated only where steps 21 and 21B changed them.
+19A–19C and are updated only where steps 21, 21B and 22 changed them.
 
-- Compiler: 1,087, of which markup 115, script 331, codegen 207, module 360
-  (user components 57, contracts 74, behaviors 19, the shell 33, globals 41) and
+- Compiler: 1,105, of which markup 115, script 331, codegen 207, module 378
+  (user components 57, contracts 74, behaviors 19, the shell 33, globals 41,
+  forms 18) and
   source 26.
-- Runtime: 506, of which the script sandbox and async arrays are 210,
+- Runtime: 601, of which forms 95, the script sandbox and async arrays 210,
   reactivity 65, rendering 148 (the server view and `mountApp` 12,
   `wrapComponent` 19, the router 72, of which its events, history moves,
   new tabs and the basename are 45), and the
@@ -431,7 +441,7 @@ are current; the breakdowns in parentheses were last counted after steps
 - Tools: 383, of which the corpus is 327, the boundaries 35, the build
   output 14, the data build 2 and the sandbox drift test 5.
 - Mock backend: 20.
-- Components: 260 (static generation 12, user components 11, globals 9, the theme
+- Components: 278 (static generation 12, user components 11, globals 9, forms 18, the theme
   engine 29, theme components 5, behaviors 7, Mantine 6, Text and Heading
   21, routing 12, the shell 36).
 
@@ -474,6 +484,8 @@ are current; the breakdowns in parentheses were last counted after steps
   - `routing-base-build` (5185): `routing-base.spec.ts` against the same
     fixture built with `--base /app/` (`.tmp/routing-base-dist`): the
     router's basename;
+  - `forms-dev` (5186) and `forms-build` (5187): `forms.spec.ts` against
+    `test-apps/forms` (`.tmp/forms-dist`, prerendered);
   - `playground` (5180): `playground.spec.ts` (every scenario opens without
     errors and shows its source; the side nav), `playground-scenarios.spec.ts`
     (each scenario does what its page says), `app-shell.spec.ts` (the
@@ -514,6 +526,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/routing.spec.ts` | Routing in the routing fixture, dev and build (projects `routing-dev`, `routing-build`), the navigation guard and log |
 | `e2e/routing-browser.spec.ts` | Browser routing and prerendered routes (project `routing-browser-build`) |
 | `e2e/routing-base.spec.ts` | The browser-routing fixture under `base: "/app/"` (project `routing-base-build`) |
+| `e2e/forms.spec.ts` | Forms (step 22): late errors, Save with errors, keyboard only with Enter, an async check, the select and required marks (projects `forms-dev`, `forms-build`) |
 | `e2e/data.spec.ts` | Data binding against the mock backend in both hosts: real requests, deduplication, slow network, out-of-order answers, retries, offline, hang and cancel, a rename with invalidation, validation errors, a slow double click (see [data.md](data.md#tests)) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select, Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |

@@ -28,6 +28,12 @@ export interface ComponentMetadata {
   templates?: Record<string, { description: string; contextVars: string[] }>;
   /** The template the element's children are, when given as plain children (`Items`: itemTemplate). */
   childrenTemplate?: string;
+  /**
+   * Context variables the element's attributes and children see, without
+   * being a template (step 22: Form's `$data`). The compiler gives the
+   * component a `contextScope` to fill; IDs inside stay file-scoped.
+   */
+  childContextVars?: readonly string[];
   /** Any attribute is accepted as a prop (no unknown-prop check). */
   allowArbitraryProps?: boolean;
   /** Any event is accepted (no unknown-event check). */
@@ -497,6 +503,47 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       setValue: { description: "Checks or unchecks it." },
     },
   },
+  Form: {
+    description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",
+    props: {
+      data: { description: "The initial data (an object). Later changes are not applied (XMLUI).", valueType: "any" },
+      enabled: { description: "false: every bound input and the buttons are disabled.", valueType: "boolean" },
+      saveLabel: { description: 'The Save button\'s label. Default "Save".', valueType: "string" },
+      saveInProgressLabel: { description: 'The Save button\'s label while submitting. Default "Saving...".', valueType: "string" },
+      cancelLabel: { description: 'The Cancel button\'s label. Default "Cancel".', valueType: "string" },
+      hideButtonRow: { description: "Hide the Save and Cancel buttons.", valueType: "boolean" },
+      dataAfterSubmit: { description: "After a successful submit: keep the data, reset it to the baseline, or clear it.", valueType: "string", availableValues: ["keep", "reset", "clear"] },
+    },
+    events: {
+      willSubmit: { description: "Before submitting, after validation: `(data, allData)`. `false` cancels; an object replaces the submitted data." },
+      submit: { description: "Submits: `(data)`. Its result is passed to `success`; a throw is a failed submit." },
+      success: { description: "The submit succeeded: `(result)`." },
+      submitError: { description: "The submit failed: `(error)`." },
+      cancel: { description: "The Cancel button was clicked. The data stays." },
+      reset: { description: "The form was reset (the `reset()` method, or `dataAfterSubmit`)." },
+      dirtyChanged: { description: "The form became dirty or clean: `(dirty)`." },
+    },
+    eventResults: true,
+    templates: {
+      buttonRowTemplate: { description: "Replaces the Save and Cancel buttons.", contextVars: ["$data"] },
+    },
+    childContextVars: ["$data"],
+    api: {
+      reset: { description: "Back to the initial data, or to the given object (which becomes the new baseline)." },
+      update: { description: "Changes values by path: `update({ name: 'Ann', 'address.city': 'Paris' })`." },
+      validate: { description: "Validates every input, waiting for pending checks: a promise of `{ isValid, errors, warnings, data }`." },
+      getData: { description: "The data to submit (without `noSubmit` inputs)." },
+      isDirty: { description: "Whether the user changed anything since the last reset or submit (reactive)." },
+      setDirty: { description: "Marks the form dirty or clean." },
+      submit: { description: "Submits, as the Save button does." },
+      isSubmitting: { description: "A submit is running (reactive)." },
+      hasErrors: { description: "Some input has an error (reactive)." },
+    },
+    themeVars: {
+      "gap-Form": "$space-3",
+      "gap-Form-buttons": "$space-2",
+    },
+  },
   DataSource: {
     description: "Loads data from a URL and keeps it: value, inProgress, loaded, error; refetch() and cancel().",
     props: {
@@ -672,7 +719,8 @@ export function attachedBehaviors(metadata: ComponentMetadata, attributes: Reado
   return BEHAVIORS.filter(
     (behavior) =>
       behavior.triggerProps.some((prop) => attributes.has(prop) && !Object.hasOwn(metadata.props, prop)) &&
-      (!behavior.requiresThemeVars || Object.keys(metadata.themeVars ?? {}).length > 0),
+      (!behavior.requiresThemeVars || Object.keys(metadata.themeVars ?? {}).length > 0) &&
+      (!behavior.requiresValueApi || (Object.hasOwn(metadata.api ?? {}, "value") && Object.hasOwn(metadata.api ?? {}, "setValue"))),
   );
 }
 

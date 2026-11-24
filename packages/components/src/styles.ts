@@ -418,6 +418,40 @@ ${LAYOUT}
   color: var(--pfui-textColor-Label);
   font-size: var(--pfui-fontSize-Label);
 }
+.pfui-Form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pfui-gap-Form);
+}
+.pfui-Form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--pfui-gap-Form-buttons);
+}
+.pfui-Field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--pfui-gap-Field);
+}
+.pfui-Field-messages {
+  display: contents;
+}
+.pfui-ValidationMessage {
+  font-size: var(--pfui-fontSize-ValidationMessage);
+}
+.pfui-ValidationMessage[data-severity="error"] {
+  color: var(--pfui-textColor-ValidationMessage-error);
+}
+.pfui-ValidationMessage[data-severity="warning"] {
+  color: var(--pfui-textColor-ValidationMessage-warning);
+}
+.pfui-ValidationMessage[data-stale] {
+  opacity: 0.5;
+}
+.pfui-Field[data-required] > .pfui-Label > .pfui-Label-text::after {
+  content: " *";
+  color: var(--pfui-textColor-ValidationMessage-error);
+}
 .pfui-TooltipAnchor {
   position: relative;
   display: inline-flex;

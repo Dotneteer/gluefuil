@@ -14,13 +14,16 @@
 //                          an `on*` handler without configuration is forwarded but
 //                          called WITHOUT arguments: native arguments (DOM events)
 //                          never reach script (the step 3 sandbox invariant)
-//   value                  a controlled value in a signal: initialValue, didChange, API value/setValue
+//   value                  a controlled value in a signal: initialValue, didChange, API value/setValue;
+//                          in a form (step 22, `bindTo`): the field's value instead, with focus,
+//                          blur, the form's enabled state and the validation status
 //   api                    more methods, with a ref to the native component
 //   templates              pfui templates as native render props
 //   fixed                  native props always passed (styling hooks)
 
-import { createElement, useMemo, useRef, useState, type ComponentType, type ReactNode, type Ref } from "react";
-import { useSignal } from "../reactivity/react";
+import { createElement, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode, type Ref } from "react";
+import { FieldBindingProvider, useFieldBinding } from "../forms/react";
+import { useComputed, useSignal } from "../reactivity/react";
 import { signal, type Signal } from "../reactivity/signals";
 import { useComponentApi, type RegisterApi } from "./component-api";
 import type { TemplateRenderer } from "./templates";
@@ -116,20 +119,54 @@ export function wrapComponent(Native: ComponentType<never>, config: WrapConfig =
 
   function Wrapped(props: Props) {
     const ref = useRef<unknown>(null);
-    // The controlled value: created once from initialValue.
-    const [state] = useState(() => (value ? signal(value.parse ? value.parse(props[initialProp]) : props[initialProp]) : undefined));
-    const current = useSignal(state ?? NO_VALUE);
+    // A form field (step 22): bound inputs read and write it instead of their own signal.
+    const binding = value ? useFieldBinding() : null;
+    const field = binding?.field;
+    // The controlled value: created once from initialValue (in a form: the field's initial value).
+    const [state] = useState(() => {
+      if (!value) return undefined;
+      const initial = value.parse ? value.parse(props[initialProp]) : props[initialProp];
+      if (field) {
+        if (props[initialProp] !== undefined) field.setInitial(initial);
+        return undefined;
+      }
+      return signal(initial);
+    });
+    const current = useSignal(field?.value ?? state ?? NO_VALUE);
+    const status = useComputed(
+      () => (field ? { shown: field.shown.get(), severity: field.severity.get(), enabled: field.form.enabled.get() } : undefined),
+      [field],
+    );
     const latest = useRef(props);
     latest.current = props;
+    useEffect(() => {
+      if (!field) return undefined;
+      field.focusTarget = () => (ref.current as { focus?: () => void } | null)?.focus?.();
+      return () => {
+        field.focusTarget = undefined;
+      };
+    }, [field]);
+    // aria-describedby → the messages: set on the element, since Mantine's inputs set their own
+    // (undefined unless they render a description), which would override a prop.
+    const describedBy = binding && status?.shown ? binding.messagesId : undefined;
+    useEffect(() => {
+      const element = ref.current as Element | null;
+      if (!field || !element || typeof element.setAttribute !== "function") return;
+      if (describedBy) element.setAttribute("aria-describedby", describedBy);
+      else element.removeAttribute("aria-describedby");
+    }, [field, describedBy]);
 
     const api = useMemo(() => {
       const methods: Record<string, unknown> = {};
-      if (state) {
+      if (field) {
+        Object.defineProperty(methods, "value", { get: () => field.value.get(), enumerable: true });
+        methods.setValue = (next: unknown) => field.change(value!.parse ? value!.parse(next) : next);
+      } else if (state) {
         Object.defineProperty(methods, "value", { get: () => state.get(), enumerable: true });
         methods.setValue = (next: unknown) => state.set(value!.parse ? value!.parse(next) : next);
       }
       return Object.assign(methods, config.api?.({ ref, ...(state ? { value: state } : {}) }));
-    }, [state]);
+    }, [state, field]);
     useComponentApi(props.registerApi, api);
 
     const native: Record<string, unknown> = {};
@@ -150,22 +187,34 @@ export function wrapComponent(Native: ComponentType<never>, config: WrapConfig =
       const handler = props[eventProp(event)] as ((...args: unknown[]) => unknown) | undefined;
       if (handler) native[spec.prop] = (...args: never[]) => handler(...(spec.args ? spec.args(...args) : args));
     }
-    if (value && state) {
-      native[value.prop] = current;
+    if (value && (state || field)) {
+      native[value.prop] = field && value.parse ? value.parse(current) : current;
       native[value.change] = (...args: never[]) => {
         const next = value.read ? value.read(...args) : (args[0] as unknown);
-        state.set(next);
+        if (field) field.change(next);
+        else state!.set(next);
         (latest.current[eventProp(valueEvent)] as ((v: unknown) => unknown) | undefined)?.(next);
       };
     }
+    if (field && binding && status) {
+      const onFocus = native.onFocus as ((...a: unknown[]) => unknown) | undefined;
+      const onBlur = native.onBlur as ((...a: unknown[]) => unknown) | undefined;
+      native.onFocus = (...args: unknown[]) => (field.focus(), onFocus?.(...args));
+      native.onBlur = (...args: unknown[]) => (field.blur(), onBlur?.(...args));
+      if (!status.enabled) Object.assign(native, typeof config.rename?.enabled === "function" ? config.rename.enabled(false) : { disabled: true });
+      // Mantine's inputs: a red border and aria-invalid, without a message of their own.
+      if (status.shown && status.severity === "error") native.error = true;
+    }
     for (const [template, spec] of Object.entries(config.templates ?? {})) {
       const renderer = props[template] as TemplateRenderer | undefined;
-      if (renderer) native[spec.prop] = (...args: never[]) => renderer(spec.context(...args));
+      // Inputs inside a template (an option template) are not this field's.
+      if (renderer) native[spec.prop] = (...args: never[]) => (field ? createElement(FieldBindingProvider, { binding: null }, renderer(spec.context(...args))) : renderer(spec.context(...args)));
     }
     Object.assign(native, config.fixed);
-    if (config.withRef) native.ref = ref as Ref<unknown>;
+    if (config.withRef || field) native.ref = ref as Ref<unknown>;
     // Children only when given: a rename may have produced `children` (label → children).
-    return props.children === undefined ? createElement(NativeAny, native) : createElement(NativeAny, native, props.children);
+    const children = field && props.children !== undefined ? createElement(FieldBindingProvider, { binding: null }, props.children) : props.children;
+    return children === undefined ? createElement(NativeAny, native) : createElement(NativeAny, native, children);
   }
   Wrapped.displayName = `Wrapped(${Native.displayName ?? Native.name ?? "Component"})`;
   return Wrapped;

@@ -440,7 +440,7 @@ route constraints and nested pages moved to Phase G (step 38).
   - E2E: navigation, deep links, the back button and the fallback route.
 - **Reference:** `pages/routing-and-links.md`.
 
-### Step 21B: Global variables in user components (inserted) ✅ (awaiting review)
+### Step 21B: Global variables in user components (inserted) ✅
 
 Plan: [poc-21b-globals.md](poc-21b-globals.md).
 
@@ -456,15 +456,29 @@ Plan: [poc-21b-globals.md](poc-21b-globals.md).
   - E2E: a user component writes a global that `App` reads.
 - **Reference:** `pages/scoping.md`, `pages/globals.md`, `pages/app-globals.md`.
 
-### Step 22: Forms
+### Step 22: Forms ✅ (client side; awaiting review)
 
-- **Subject:** `Form`/`FormItem`, `bindTo`, `$data`, declarative validation,
-  submit to `APICall`, server-side validation errors.
+Plan: [poc-22-forms.md](poc-22-forms.md). No `FormItem`: inputs bind through the
+`formBinding` and `validation` behaviors. Step 22 is the client side;
+step 22B (inserted) is submission and server errors.
+
+- **Subject:** `Form`, `bindTo` on any input with a value API, `$data`,
+  declarative validation with severities and late display, `onValidate`,
+  dirty tracking, reset, and a validating submit through `onSubmit`.
 - **Tests:**
-  - Unit: the validation rules table.
-  - E2E: fill in, validate, submit, and see server errors on the right
-    fields.
+  - Unit: the rules, display and error-shape tables; the store.
+  - E2E: fill in, validate, submit (`test-apps/forms`).
 - **Reference:** `pages/forms.md`.
+
+### Step 22B: Forms, submission and server errors (inserted)
+
+- **Subject:** `submitUrl`/`submitMethod` through the step 20 data layer,
+  `data` as a URL, `cancel()`, the server-error mapping onto inputs (RFC 7807
+  `invalid-params`, Spring, Laravel, `issues`) and the summary; a playground
+  Forms scenario with the routing guard using `isDirty()`.
+- **Tests:** tables for the error shapes; E2E against the mock backend (422
+  on the right inputs, a general error, a slow server).
+- **Plan:** [poc-22-forms.md](poc-22-forms.md) part B.
 
 ---
 

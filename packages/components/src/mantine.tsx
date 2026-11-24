@@ -68,11 +68,11 @@ const focusApi = ({ ref }: { ref: { current: unknown } }) => ({
   },
 });
 
-export const Button = withLayout(wrapComponent(MantineButton as never, {
+const buttonConfig = (type: "button" | "submit") => ({
   props: componentMetadata.Button!.props,
-  rename: { label: (label) => (label === undefined || label === null ? {} : { children: String(label) }), enabled: enabledToDisabled },
+  rename: { label: (label: unknown) => (label === undefined || label === null ? {} : { children: String(label) }), enabled: enabledToDisabled },
   fixed: {
-    type: "button",
+    type,
     className: "pfui-Button",
     vars: () => ({
       root: {
@@ -84,7 +84,12 @@ export const Button = withLayout(wrapComponent(MantineButton as never, {
       },
     }),
   },
-}));
+});
+
+export const Button = withLayout(wrapComponent(MantineButton as never, buttonConfig("button")));
+
+/** A Form's Save button (step 22): a Button that submits its form (Enter in an input submits too). Not in the markup. */
+export const SubmitButton = wrapComponent(MantineButton as never, buttonConfig("submit"));
 
 export const TextBox = withLayout(wrapComponent(TextInput as never, {
   props: componentMetadata.TextBox!.props,
