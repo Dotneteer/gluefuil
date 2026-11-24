@@ -283,6 +283,8 @@ test("Source maps: the handler's exception resolves to its line in SourceMapsSce
 });
 
 test("App shell: the preview frames each layout; the playground's own nav collapses", async ({ page }) => {
+  // The frame is as wide as the content: at 1280px (minus the nav and the page gutter) it would be below lg, a drawer.
+  await page.setViewportSize({ width: 1440, height: 900 });
   await open(page, "/app-shell");
   const frame = page.frameLocator('iframe[title^="Layout:"]');
   // Each layout runs as its own page in the frame.
@@ -306,4 +308,23 @@ test("App shell: the preview frames each layout; the playground's own nav collap
   expect((await nav.boundingBox())!.width).toBe(48);
   await page.getByRole("button", { name: "Expand navigation" }).click();
   await expect(button(page, "Collapse this playground's nav: false")).toBeVisible();
+});
+
+test("Layout and spacing: the demo in a frame, at desktop and phone width, with the inspector", async ({ page }) => {
+  await open(page, "/layout");
+  const frame = page.frameLocator('iframe[title="Layout: spacing"]');
+  await expect(frame.getByRole("heading", { name: "Automatic spacing" })).toBeVisible();
+  await expect(text(page, "layouts/spacing.pfui")).toBeVisible();
+  // One demo: no layout choice, only the widths.
+  await expect(page.getByRole("group", { name: "Layout" })).toBeHidden();
+  const page0 = frame.locator(".pfui-AppContent > .pfui-Theme > .pfui-Stack");
+  await expect(page0).toHaveAttribute("data-level", "0");
+  await expect(page0).toHaveCSS("row-gap", "24px");
+  await button(page, "Phone").click();
+  await expect(page0).toHaveCSS("row-gap", "16px");
+  // The inspector labels the stacks inside the frame; space-base rescales them.
+  await frame.getByRole("button", { name: "Spacing inspector: off" }).click();
+  await expect(page0).toHaveAttribute("data-inspect", "L0 v · gap 16px");
+  await frame.getByRole("button", { name: "5px", exact: true }).click();
+  await expect(page0).toHaveAttribute("data-inspect", "L0 v · gap 20px");
 });

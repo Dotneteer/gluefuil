@@ -2,14 +2,14 @@
 <Component name="LayoutDemoPages">
   <Pages fallbackPath="/">
     <Page url="/">
-      <Stack gap="12px">
+      <VStack>
         <H1>Home</H1>
         <Text variant="secondary">Scroll down: watch what moves and what stays in view.</Text>
         <Items data="{Array.from({ length: 80 }, (_, i) => i + 1)}">
           <Text variant="paragraph">Paragraph {$item}. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</Text>
         </Items>
         <H2>The end</H2>
-      </Stack>
+      </VStack>
     </Page>
     <Page url="/orders"><H1>Orders</H1></Page>
     <Page url="/reports/:name"><H1>Report: {$routeParams.name}</H1></Page>

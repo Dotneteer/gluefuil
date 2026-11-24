@@ -1,17 +1,17 @@
 <Component name="BehaviorsScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Behaviors" description="Step 18: label, tooltip and variant attach to any component through their props."/>
-    <Stack gap="12px">
+    <VStack>
       <Button label="Hover me" tooltip="A tooltip, from the tooltip behavior"/>
       <TextBox label="A labeled input (click the label to focus)" placeholder="type here"/>
       <TextBox label="Label at the start" labelPosition="start" placeholder="…"/>
       <Theme backgroundColor-Button-danger="$color-danger-600" backgroundColor-Button-danger--hover="$color-danger-700">
-        <Stack orientation="horizontal" gap="8px">
+        <HStack>
           <Button label="variant=danger" variant="danger" tooltip="Theme variables with a variant segment"/>
           <Button label="variant=nothing (falls back)" variant="nothing"/>
-        </Stack>
+        </HStack>
       </Theme>
       <DemoRating label="A tooltip on a user-defined component" value="{2}" tooltip="Behaviors apply to user components too"/>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

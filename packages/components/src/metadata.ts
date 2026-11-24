@@ -3,6 +3,7 @@
 // or @patchfuil/runtime. The boundary test in tools/ enforces this.
 
 import { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
+import { LAYOUT_PROPS, type LayoutValueKind } from "./layout-metadata";
 import { themeVariables, TONES } from "./theming/engine";
 import { BUILT_IN_THEME_MAP, THEME_IDS } from "./theming/themes";
 
@@ -56,6 +57,21 @@ export interface ComponentMetadata {
    * gives a more specific message for a literal value (`layout="vertical"`).
    */
   removedProps?: Record<string, { message: string; byValue?: Record<string, string> }>;
+  /** The component no longer exists: using it is E032 with this message (`FlowLayout`). */
+  removed?: string;
+  /**
+   * The component is another one with fixed props (`HStack` is `Stack`
+   * with `orientation="horizontal"`). The compiler renders `component`;
+   * markup values win over `props`.
+   */
+  alias?: { component: string; props: Record<string, string> };
+  /** `false`: the layout props (LAYOUT_PROPS: width, padding, …) are not accepted. Non-visual components never accept them. */
+  layoutProps?: false;
+  /**
+   * Theme variables the component reads that have no default (`gap-Stack`):
+   * known names, so a theme can set them, but undefined until it does.
+   */
+  optionalThemeVars?: readonly string[];
 }
 
 /** The literal value types the compiler checks (an attribute without `{…}`). */
@@ -73,6 +89,10 @@ export interface PropMetadata {
   deprecationMessage?: string;
   /** Only a literal value is accepted (no `{…}`): E026. Route patterns, for example. */
   isLiteral?: boolean;
+  /** A CSS value: literals are checked as one (E031), `$name` is a theme variable. */
+  cssKind?: LayoutValueKind;
+  /** With `cssKind: "size"`: star sizes (`*`, `2*`) are allowed. */
+  star?: boolean;
 }
 
 export interface EventMetadata {
@@ -135,6 +155,7 @@ const STICKY_PROP: PropMetadata = {
 
 const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
   AppHeader: {
+    layoutProps: false,
     description: "The App's header bar: the drawer toggle, the logo, the title, your content and the profile menu.",
     props: {
       sticky: STICKY_PROP,
@@ -148,7 +169,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     },
     isRegion: true,
     themeVars: {
-      "height-AppHeader": "56px",
+      "height-AppHeader": "$space-14",
       "backgroundColor-AppHeader": "$backgroundColor",
       "textColor-AppHeader": "$textColor",
       "borderColor-AppHeader": "$borderColor",
@@ -157,6 +178,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     },
   },
   NavPanel: {
+    layoutProps: false,
     description: "The App's navigation: NavLink and NavGroup items, placed by `placement`.",
     props: {
       placement: {
@@ -198,11 +220,12 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     },
   },
   Footer: {
+    layoutProps: false,
     description: "The App's footer.",
     props: { sticky: STICKY_PROP },
     isRegion: true,
     themeVars: {
-      "height-Footer": "48px",
+      "height-Footer": "$space-12",
       "backgroundColor-Footer": "$backgroundColor",
       "textColor-Footer": "$textColor-secondary",
       "borderColor-Footer": "$borderColor",
@@ -210,6 +233,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     },
   },
   NavLink: {
+    layoutProps: false,
     description: "A navigation item: a link to a route, highlighted while its route is active.",
     props: {
       label: { description: "The link's text. Nested content is used when it is absent.", valueType: "string" },
@@ -228,6 +252,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     },
   },
   NavGroup: {
+    layoutProps: false,
     description: "A group of navigation items under a label: expands in place in a side nav or a drawer, drops down in a bar.",
     props: {
       label: { description: "The group's text.", valueType: "string" },
@@ -236,6 +261,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     },
   },
   NavPanelCollapseButton: {
+    layoutProps: false,
     description: "Collapses the side nav to icons and back (a collapsible side NavPanel only).",
     props: {
       "aria-label": { description: "The accessible name while expanded (default \"Collapse navigation\").", valueType: "string" },
@@ -244,8 +270,37 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
   },
 };
 
+const ALIGNMENTS = ["start", "center", "end", "stretch"];
+
+/** The props of every stack (Stack and its aliases). The layout props (width, padding, …) come on top. */
+const STACK_PROPS: Record<string, PropMetadata> = {
+  gap: { description: "The space between the children. Default: automatic, by the nesting level (the spacing ladder).", valueType: "string", cssKind: "spacing" },
+  horizontalAlignment: { description: "start (default), center, end, or stretch (the children fill the width; the default in a vertical stack).", valueType: "string", availableValues: ALIGNMENTS },
+  verticalAlignment: { description: "start (default), center, end, or stretch (the children fill the height; the default in a horizontal stack).", valueType: "string", availableValues: ALIGNMENTS },
+  wrapContent: { description: "The children wrap into new rows (columns in a vertical stack): a flow layout.", valueType: "boolean" },
+  itemWidth: { description: "The width of the children of a wrapping stack, unless they set their own (25% for four per row).", valueType: "string", cssKind: "size" },
+  reverse: { description: "Lays the children out in reverse order.", valueType: "boolean" },
+  density: {
+    description: "compact: this stack and everything inside it one spacing step tighter; comfortable: one step looser; normal: back to the default.",
+    valueType: "string",
+    availableValues: ["compact", "normal", "comfortable"],
+  },
+};
+
+/** VStack, HStack, CVStack, CHStack: a Stack with a fixed orientation (and centered). */
+function stackAlias(orientation: "vertical" | "horizontal", centered: boolean): ComponentMetadata {
+  const props: Record<string, string> = { orientation };
+  if (centered) Object.assign(props, { horizontalAlignment: "center", verticalAlignment: "center" });
+  return {
+    description: `A ${orientation} Stack${centered ? " with its content centered" : ""}.`,
+    props: STACK_PROPS,
+    alias: { component: "Stack", props },
+  };
+}
+
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   App: {
+    layoutProps: false,
     description: "The root of an application: the shell (AppHeader, NavPanel, Footer around the content), the theme and the tone.",
     props: {
       scroll: {
@@ -275,13 +330,13 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     },
     themeVars: {
       "maxWidth-content-App": "none",
-      "paddingHorizontal-content-App": "$space-4",
-      "paddingVertical-content-App": "$space-4",
       "backgroundColor-App": "$backgroundColor",
       "textColor-App": "$textColor",
       "fontFamily-App": "$fontFamily",
       "fontSize-App": "$fontSize",
     },
+    // Default: the page level of the spacing ladder (space-level0, smaller on phones; styles.ts).
+    optionalThemeVars: ["paddingHorizontal-content-App", "paddingVertical-content-App"],
   },
   Theme: {
     description: "Scopes theme variables, a tone, or another theme to its children.",
@@ -462,12 +517,27 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   ...SHELL_COMPONENTS,
   Stack: {
-    description: "Lays out its children in a column or a row.",
+    description: "Lays out its children in a column or a row, or wraps them into rows (a flow). Gaps and paddings are automatic.",
     props: {
+      ...STACK_PROPS,
       orientation: { description: '"vertical" (default) or "horizontal".', valueType: "string", availableValues: ["vertical", "horizontal"] },
-      gap: { description: "Space between children, as a CSS length.", valueType: "string" },
     },
+    optionalThemeVars: ["gap-Stack"],
   },
+  VStack: stackAlias("vertical", false),
+  HStack: stackAlias("horizontal", false),
+  CVStack: stackAlias("vertical", true),
+  CHStack: stackAlias("horizontal", true),
+  SpaceFiller: {
+    description: "Takes the free space of a stack, pushing what follows to the end; in a wrapping stack, a line break.",
+    props: {},
+  },
+  FlowLayout: {
+    description: "Removed: a wrapping stack does its job.",
+    props: {},
+    removed: `use <HStack wrapContent="true">; the gaps are automatic (or use gap), and itemWidth sets the children's width`,
+  },
+
 };
 
 /** Every component's (and behavior's) theme variable defaults, merged (the first layer of every theme). */
@@ -502,6 +572,18 @@ export function attachedBehaviors(metadata: ComponentMetadata, attributes: Reado
 }
 
 export { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
+export * from "./layout-metadata";
+
+/** Whether elements of the component accept the layout props (LAYOUT_PROPS). */
+export function acceptsLayoutProps(metadata: ComponentMetadata): boolean {
+  return !metadata.nonVisual && metadata.layoutProps !== false && metadata.removed === undefined;
+}
+
+/** A layout prop's metadata, when the component accepts it and has no own prop of that name. */
+export function layoutProp(metadata: ComponentMetadata, name: string): PropMetadata | undefined {
+  if (Object.hasOwn(metadata.props, name) || !acceptsLayoutProps(metadata) || !Object.hasOwn(LAYOUT_PROPS, name)) return undefined;
+  return LAYOUT_PROPS[name];
+}
 
 /** Every known theme variable name (`<Theme>` attributes are checked against them). */
 export function themeVariableNames(metadata: Readonly<Record<string, ComponentMetadata>> = componentMetadata): string[] {
@@ -511,6 +593,7 @@ export function themeVariableNames(metadata: Readonly<Record<string, ComponentMe
       for (const name of Object.keys(themeVariables({ themeId, tone, themes: BUILT_IN_THEME_MAP, componentDefaults: componentThemeDefaults(metadata) }))) names.add(name);
     }
   }
+  for (const component of Object.values(metadata)) for (const name of component.optionalThemeVars ?? []) names.add(name);
   return [...names].sort();
 }
 

@@ -26,6 +26,10 @@ interface ComponentMetadata {
   regions?: Record<string, string>;               // App: region children become these props (steps 19A–19C)
   isRegion?: boolean;                             // E028: only as a direct child of App
   removedProps?: Record<string, { message: string; byValue?: Record<string, string> }>;   // E030
+  removed?: string;                               // E032: the component no longer exists (FlowLayout)
+  alias?: { component: string; props: Record<string, string> };   // HStack → Stack (steps 19D–19F)
+  layoutProps?: false;                            // no LAYOUT_PROPS (App, the shell regions, nav items)
+  optionalThemeVars?: readonly string[];          // known theme variables without a default (gap-Stack)
 }
 interface PropMetadata {
   description: string;
@@ -34,12 +38,18 @@ interface PropMetadata {
   isRequired?: boolean;
   deprecationMessage?: string;
   isLiteral?: boolean;                           // E026: no `{…}` (step 19)
+  cssKind?: "size" | "spacing" | "color" | "border";   // E031: a literal is checked as CSS of this kind
+  star?: boolean;                                // with "size": star sizes (*, 2*) allowed
 }
 interface EventMetadata { description: string; deprecationMessage?: string }
 ```
 
 - **The built-ins** declare a `valueType` for every prop (a test enforces
   this). `Stack.orientation` is the enum `vertical | horizontal`.
+- **The layout props** (`LAYOUT_PROPS`, `layout-metadata.ts`: `width`,
+  `padding`, `backgroundColor`, …) are accepted by every visual component
+  without being in its `props` (`layoutProp()`), unless `nonVisual` or
+  `layoutProps: false`. A component's own prop of the same name wins.
 - **User-defined components** get metadata derived from their analysis
   (`UserComponentInfo`):
   - **props:** the `$props.x` members their code reads;
@@ -75,6 +85,8 @@ props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 | E028 | The App shell: a region (`isRegion`) not a direct child of `App`, or twice; `fullHeight`/`collapsible` without a side nav; `NavPanelCollapseButton` without a collapsible side nav ([app-shell.md](app-shell.md)) | the element or attribute name |
 | E029 | A warning: `sticky` on a region when `App scroll` is not `page` | the attribute name |
 | E030 | A removed prop (`removedProps`: App `layout`, `scrollWholePage`, `fitContent`), with what to write instead | the attribute name |
+| E031 | A literal layout value (a prop with `cssKind`: the layout props, `Stack gap`, `itemWidth`) that is not valid for its kind, or names an unknown theme variable (`$space-forty`) ([layout.md](layout.md)) | the value |
+| E032 | A removed component (`removed`: `FlowLayout`), with what to write instead | the tag name |
 | C015 | An unknown member of a component ID (`box.valu`, `c.rest()`), with "did you mean"; a component without `api` has no members | the member |
 
 - **Bound values are not type-checked:** their values are known only at

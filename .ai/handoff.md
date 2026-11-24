@@ -5,22 +5,25 @@
 > Update this file when you hand off again.
 >
 > **Written:** after proof-of-concept steps 0–19 (2026-11-23); updated
-> after the inserted steps 19A–19C (the App shell).
+> after the inserted steps 19A–19C (the App shell) and 19D–19F (the layout
+> system).
 
 ## State
 
-- **`master` holds steps 0–19 and 19A–19C (the App shell), merged.**
-  Earlier branches were deleted after their merges, by the user's request;
-  `poc/19a-app-shell` still exists. Step 20 has not started.
+- **`master` holds steps 0–19, 19A–19C (the App shell) and 19D–19F (the
+  layout system), merged.** Earlier branches were deleted after their
+  merges, by the user's request; `poc/19d-layout` still exists. Step 20 has
+  not started.
 - **The remote `origin`** (github.com/Dotneteer/patchfuil) **has nothing
   pushed.** Pushing is the user's decision.
-- **`npm run check` passes and prints no warnings:** 2,035 unit tests in
-  69 files and 122 E2E tests. A new warning is worth a look:
+- **`npm run check` passes and prints no warnings:** 2,121 unit tests in
+  71 files and 129 E2E tests. A new warning is worth a look:
   `code-structure.md` § E2E says why the output is quiet.
 - **Steps 0–19 of [`plan/poc-steps.md`](plan/poc-steps.md) are done**
   (✅), each with its plan `plan/poc-NN-*.md`, which ends in *Outcome*,
   *Findings* and *Open for later steps*. The inserted 19A–19C have one
-  plan, [`plan/poc-19a-app-shell.md`](plan/poc-19a-app-shell.md).
+  plan, [`plan/poc-19a-app-shell.md`](plan/poc-19a-app-shell.md), and so do
+  19D–19F, [`plan/poc-19d-layout.md`](plan/poc-19d-layout.md).
 
 ### Where the work deviated from `poc-steps.md`
 
@@ -31,8 +34,8 @@
   - Steps 17 and 18 were first built on our own components, then adapted.
 - **Step 19 was reduced to routing:** `Pages`/`Page`/`Link`, `navigate`,
   `$pathname`/`$routeParams`/`$queryParams`, on our own small router with
-  hash mode by default. **The layout model and the App shell remain.**
-  Step 21 (Routing) is therefore partly done.
+  hash mode by default. The App shell and the layout model were done as
+  the inserted 19A–19C and 19D–19F. Step 21 (Routing) is partly done.
 - **Done beyond the steps:**
   - **IDs inside templates:** each template instance has its own ID scope,
     and E014 is retired.
@@ -45,10 +48,13 @@
 
 - **`npm run playground`** starts it on http://localhost:5190 (use
   `playground:preview` for the prerendered build, on 5191).
-- **A dashboard of 18 scenarios,** one per concept of steps 2–19C, on the
+- **A dashboard of 19 scenarios,** one per concept of steps 2–19F, on the
   App shell (a side nav lists them). `layouts.html?layout=…` is a second
-  page: one App shell demo per XMLUI layout. Each page
-  shows its own source (`ScenarioSource`, an app React component).
+  page: one App shell demo per XMLUI layout, and the spacing demo
+  (`?layout=spacing`, with the `SpacingInspector`). Each page shows its own
+  source (`ScenarioSource`, an app React component).
+- **The playground sets no `gap` or `padding`:** the spacing is automatic
+  (19D–19F). Keep it that way in new scenarios.
 - **"Live compiler"** compiles markup in the browser (`LiveMarkup`).
 - **Tests:** `e2e/playground.spec.ts` (smoke) and
   `e2e/playground-scenarios.spec.ts` (one interaction test per scenario).
@@ -136,8 +142,6 @@
 
 - **Step 20: data binding** (`DataSource`, `APICall`). It needs a decision:
   `@tanstack/react-query` is in the plan.
-- **The rest of step 19:** the layout model (`Stack` sizing, star sizing).
-  The App shell was done as the inserted steps 19A–19C.
 - **The rest of step 21:** `willNavigate`/`didNavigate`, prerendering every
   static route. (Active links came with `NavLink`.)
 - **Gaps recorded in the plans' "Open for later steps":**
@@ -152,4 +156,7 @@
   - the App shell's open items (`poc-19a-app-shell.md`, *Open for later
     steps*): RTL drawer, scroll lock, more NavLink props, an `Aside`,
     an icon library;
+  - the layout system's open items (`poc-19d-layout.md`): responsive layout
+    props (`width-md`), `dock`, `Card`/`ModalDialog` as surfaces; the
+    context's cost (about 5 µs per stack in jsdom);
   - runtime contract checks of bound values.

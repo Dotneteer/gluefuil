@@ -2,6 +2,7 @@
 // Heading.md). Text variants render the semantic element where one exists;
 // all styling comes from theme variables (styles.ts).
 import { createElement, type CSSProperties, type ReactNode } from "react";
+import { useLayout, type LayoutProps } from "./layout";
 
 /** Text variants and the element each renders (default: span). */
 export const TEXT_VARIANT_ELEMENTS: Readonly<Record<string, string>> = {
@@ -38,11 +39,20 @@ function clamp(maxLines: unknown): CSSProperties | undefined {
 
 const content = (value: unknown, children: ReactNode) => (value !== undefined && value !== null ? String(value) : children);
 
-export function Text({ value, variant, maxLines, children }: { value?: unknown; variant?: unknown; maxLines?: unknown; children?: ReactNode }) {
+/** A style from the layout props and a component's own, merged (the component's own win). */
+function merge(layout: CSSProperties | undefined, own: CSSProperties | undefined): CSSProperties | undefined {
+  return layout && own ? { ...layout, ...own } : (layout ?? own);
+}
+
+type TextProps = LayoutProps & { value?: unknown; variant?: unknown; maxLines?: unknown; children?: ReactNode };
+
+export function Text(props: TextProps) {
+  const { value, variant, maxLines, children } = props;
+  const layout = useLayout(props);
   const name = typeof variant === "string" && Object.hasOwn(TEXT_VARIANT_ELEMENTS, variant) ? variant : undefined;
   return createElement(
     name ? TEXT_VARIANT_ELEMENTS[name]! : "span",
-    { className: "pfui-Text", "data-variant": name, style: clamp(maxLines) },
+    { className: "pfui-Text", "data-variant": name, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
     content(value, children),
   );
 }
@@ -53,13 +63,21 @@ export function headingLevel(level: unknown): number {
   return match ? Number(match[1]) : 1;
 }
 
-export function Heading({ value, level, maxLines, children }: { value?: unknown; level?: unknown; maxLines?: unknown; children?: ReactNode }) {
+type HeadingProps = LayoutProps & { value?: unknown; level?: unknown; maxLines?: unknown; children?: ReactNode };
+
+export function Heading(props: HeadingProps) {
+  const { value, level, maxLines, children } = props;
+  const layout = useLayout(props);
   const n = headingLevel(level);
-  return createElement(`h${n}`, { className: "pfui-Heading", "data-level": n, style: clamp(maxLines) }, content(value, children));
+  return createElement(
+    `h${n}`,
+    { className: "pfui-Heading", "data-level": n, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
+    content(value, children),
+  );
 }
 
 const shortcut = (n: number) => {
-  const H = (props: { value?: unknown; maxLines?: unknown; children?: ReactNode }) => Heading({ ...props, level: n });
+  const H = (props: Omit<HeadingProps, "level">) => createElement(Heading, { ...props, level: n });
   H.displayName = `H${n}`;
   return H;
 };

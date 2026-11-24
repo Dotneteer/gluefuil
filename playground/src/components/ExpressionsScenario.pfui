@@ -1,7 +1,7 @@
 <Component name="ExpressionsScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Expressions" description="Steps 2-3: the script language in bindings, compiled to sandboxed JavaScript."/>
-    <Stack gap="8px" var.items="{[3, 1, 2]}" var.user="{({ name: 'Ada', address: { city: 'London' } })}">
+    <VStack var.items="{[3, 1, 2]}" var.user="{({ name: 'Ada', address: { city: 'London' } })}">
       <Text>Arithmetic: 1 + 2 * 3 = {1 + 2 * 3}; 7 % 3 = {7 % 3}; (1 + 2) * 3 = {(1 + 2) * 3}</Text>
       <Text>Template literal: {`Hello, ${user.name} from ${user.address.city}!`}</Text>
       <Text>Optional chaining by default: user.phone.number is {user.phone.number ?? 'missing, no error'}</Text>
@@ -11,6 +11,6 @@
       <Text>Allowed globals: Math.max = {Math.max(...items)}; Number.isInteger(2) = {Number.isInteger(2)}; new Date(0) = {new Date(0).toISOString()}</Text>
       <Text>typeof, in, instanceof: {typeof items}, {'name' in user}, {items instanceof Array}</Text>
       <Text variant="secondary">Banned names (window, document, eval, …) are compile errors: try them in the "Live compiler" scenario.</Text>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

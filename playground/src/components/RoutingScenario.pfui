@@ -1,14 +1,14 @@
 <Component name="RoutingScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Routing" description="Step 19: navigate(), Link, route parameters and query parameters."/>
-    <Stack gap="8px">
+    <VStack>
       <Text>$pathname = {$pathname}</Text>
-      <Stack orientation="horizontal" gap="8px">
+      <HStack>
         <Button label="Item 1" onClick="navigate('/routing/1')"/>
         <Button label="Item 42 with a query" onClick="navigate('/routing/42?color=green&amp;size=L')"/>
         <Link to="/routing/hello%20world">A link with an encoded segment</Link>
-      </Stack>
+      </HStack>
       <Link to="/no/such/page">An unknown route (falls back to the dashboard)</Link>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

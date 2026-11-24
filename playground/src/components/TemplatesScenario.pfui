@@ -1,25 +1,25 @@
 <Component name="TemplatesScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Items and templates" description="Step 10: Items renders a template per item with $item, $itemIndex, $isFirst, $isLast; ids in a template belong to its row."/>
-    <Stack gap="8px" var.todos="{['Write tests', 'Fix bugs', 'Ship it']}" var.reversed="{false}">
-      <Stack orientation="horizontal" gap="8px">
+    <VStack var.todos="{['Write tests', 'Fix bugs', 'Ship it']}" var.reversed="{false}">
+      <HStack>
         <Button label="Add" onClick="todos.push('Todo ' + (todos.length + 1))"/>
         <Button label="{reversed ? 'Normal order' : 'Reverse'}" onClick="reversed = !reversed"/>
-      </Stack>
+      </HStack>
       <Items data="{todos}" reverse="{reversed}">
-        <Stack orientation="horizontal" gap="8px">
+        <HStack>
           <Text>#{$itemIndex + 1}{$isFirst ? ' (first)' : ''}{$isLast ? ' (last)' : ''}: {$item}</Text>
           <TextBox id="note" placeholder="A note for this row"/>
           <Text variant="secondary">{note.value ? 'note: ' + note.value : ''}</Text>
           <Button label="Remove" onClick="todos.splice(todos.indexOf($item), 1)"/>
-        </Stack>
+        </HStack>
       </Items>
-    </Stack>
+    </VStack>
     <H3>An explicit template property</H3>
     <Items data="{[{ name: 'Ada' }, { name: 'Grace' }]}">
       <property name="itemTemplate">
         <Text>Hello, {$item.name}!</Text>
       </property>
     </Items>
-  </Stack>
+  </VStack>
 </Component>

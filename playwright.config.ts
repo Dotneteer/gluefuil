@@ -31,8 +31,8 @@ export default defineConfig({
     // Routing (step 19): the same spec on the dev server and the prerendered build.
     { name: "routing-dev", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5177" } },
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
-    // The manual-testing playground: every scenario still opens (smoke).
-    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    // The manual-testing playground: every scenario still opens (smoke); the App shell and layout demos.
+    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
     // The App shell prerendered (steps 19A–19C): the playground's production build.
     { name: "playground-build", testMatch: /app-shell-prerender\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5181" } },
   ],

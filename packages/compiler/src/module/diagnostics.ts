@@ -1,5 +1,5 @@
 // Module (element tree) diagnostic codes. See .ai/plan/poc-05-first-app.md and
-// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030).
+// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030), poc-19d-layout.md (E031–E032).
 
 export const ModuleDiagnostics = {
   E001: (name: string, hint = "") => `Unknown component '${name}'${hint ? `.${hint}` : ""}`,
@@ -44,6 +44,10 @@ export const ModuleDiagnostics = {
   E029: (detail: string) => detail,
   /** A prop that no longer exists, with what to use instead (App layout). */
   E030: (prop: string, component: string, instead: string) => `'${component}' has no '${prop}' any more: ${instead}`,
+  /** A layout value (width, padding, gap, …) that is not valid CSS of its kind, or names an unknown theme variable (steps 19D–19E). */
+  E031: (prop: string, value: string, problem: string) => `'${value}' is not a valid value for '${prop}': ${problem}`,
+  /** A component that no longer exists, with what to use instead (FlowLayout). */
+  E032: (component: string, instead: string) => `'${component}' is not a component any more: ${instead}`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

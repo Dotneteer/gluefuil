@@ -1,0 +1,144 @@
+<!--
+  Automatic spacing (steps 19D–19F): no gap and no padding anywhere below,
+  except where a section says so. The levels follow the nesting; the values
+  follow space-base. Turn the inspector on to see each stack's level and gap.
+  e2e/layout.spec.ts measures this page.
+-->
+<App var.base="4px">
+  <Theme space-base="{base}">
+    <VStack>
+      <H1>Automatic spacing</H1>
+      <Text variant="secondary">
+        Nothing on this page sets a gap or a padding. Deeper is tighter, a row of
+        controls is tighter than a column, and only a box with an edge gets padding.
+      </Text>
+      <HStack verticalAlignment="center" wrapContent="true">
+        <Text>space-base: {base}</Text>
+        <Button label="3px" onClick="base = '3px'"/>
+        <Button label="4px" onClick="base = '4px'"/>
+        <Button label="5px" onClick="base = '5px'"/>
+        <SpacingInspector/>
+      </HStack>
+
+      <H2>A dashboard</H2>
+      <HStack>
+        <Button label="New report"/>
+        <Button label="Import"/>
+      </HStack>
+      <HStack>
+        <VStack width="*">
+          <H3>Sales</H3>
+          <Text>Up 12% on last month.</Text>
+          <Text variant="secondary">Updated an hour ago.</Text>
+        </VStack>
+        <VStack width="*">
+          <H3>Visitors</H3>
+          <Text>4,210 this week.</Text>
+          <Text variant="secondary">Updated an hour ago.</Text>
+        </VStack>
+      </HStack>
+
+      <H2>Surfaces</H2>
+      <HStack wrapContent="true" itemWidth="50%">
+        <VStack backgroundColor="$color-surface-50" border="1px solid $borderColor" borderRadius="$borderRadius">
+          <H3>Account</H3>
+          <HStack verticalAlignment="center">
+            <Text>Plan: Pro</Text>
+            <SpaceFiller/>
+            <Button label="Change"/>
+          </HStack>
+        </VStack>
+        <VStack backgroundColor="$color-surface-50" border="1px solid $borderColor" borderRadius="$borderRadius">
+          <H3>Billing</H3>
+          <HStack verticalAlignment="center">
+            <Text>Next invoice: 1 December</Text>
+            <SpaceFiller/>
+            <Button label="Details"/>
+          </HStack>
+        </VStack>
+      </HStack>
+
+      <H2>A form</H2>
+      <VStack maxWidth="32rem">
+        <TextBox placeholder="Name"/>
+        <TextBox placeholder="Email"/>
+        <HStack>
+          <SpaceFiller/>
+          <Button label="Cancel"/>
+          <Button label="Save"/>
+        </HStack>
+      </VStack>
+
+      <H2>A flow</H2>
+      <HStack wrapContent="true">
+        <Items data="{['layout', 'spacing', 'stack', 'flow', 'theme', 'space-base', 'density', 'surface', 'gap', 'padding']}">
+          <Text backgroundColor="$color-primary-50" paddingHorizontal="$space-2" borderRadius="$borderRadius">{$item}</Text>
+        </Items>
+      </HStack>
+      <HStack wrapContent="true" itemWidth="25%">
+        <Items data="{[1, 2, 3, 4, 5, 6, 7, 8]}">
+          <VStack backgroundColor="$color-surface-50" border="1px solid $borderColor" borderRadius="$borderRadius">
+            <H4>Tile {$item}</H4>
+            <Text variant="secondary">Four per row; one per row on a phone.</Text>
+          </VStack>
+        </Items>
+      </HStack>
+      <HStack wrapContent="true">
+        <TextBox placeholder="First name" width="50%"/>
+        <TextBox placeholder="Last name" width="50%"/>
+        <SpaceFiller/>
+        <TextBox placeholder="Street" width="100%"/>
+      </HStack>
+
+      <H2>Star sizes and percentages</H2>
+      <HStack height="48px">
+        <VStack width="*" backgroundColor="$color-primary-200"/>
+        <Text>Natural width</Text>
+        <VStack width="2*" backgroundColor="$color-primary-400"/>
+      </HStack>
+      <HStack height="48px">
+        <VStack width="25%" backgroundColor="$color-success-200"/>
+        <VStack width="50%" backgroundColor="$color-success-400"/>
+        <VStack width="25%" backgroundColor="$color-success-200"/>
+      </HStack>
+
+      <H2>Density</H2>
+      <HStack>
+        <VStack width="*">
+          <H3>Normal</H3>
+          <Text>First line</Text>
+          <Text>Second line</Text>
+          <Text>Third line</Text>
+        </VStack>
+        <VStack width="*" density="compact">
+          <H3>Compact</H3>
+          <Text>First line</Text>
+          <Text>Second line</Text>
+          <Text>Third line</Text>
+        </VStack>
+        <VStack width="*" density="comfortable">
+          <H3>Comfortable</H3>
+          <Text>First line</Text>
+          <Text>Second line</Text>
+          <Text>Third line</Text>
+        </VStack>
+      </HStack>
+
+      <H2>Overrides</H2>
+      <HStack gap="0">
+        <Button label="gap=0"/>
+        <Button label="side"/>
+        <Button label="by side"/>
+      </HStack>
+      <Theme gap-Stack="$space-4">
+        <VStack>
+          <Text>A Theme with gap-Stack: every stack inside it has the same gap (XMLUI's behavior).</Text>
+          <HStack>
+            <Button label="Flat"/>
+            <Button label="gaps"/>
+          </HStack>
+        </VStack>
+      </Theme>
+    </VStack>
+  </Theme>
+</App>

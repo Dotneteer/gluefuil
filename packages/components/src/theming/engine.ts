@@ -52,7 +52,7 @@ export function themeChain(themeId: string, themes: ReadonlyMap<string, ThemeDef
 export const COLOR_TONES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
 
 /** Spacing steps derived from `space-base`. */
-export const SPACE_STEPS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12] as const;
+export const SPACE_STEPS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14] as const;
 
 /** `space-1_5` (dots become underscores, as in XMLUI). */
 export const spaceName = (step: number) => `space-${String(step).replace(".", "_")}`;

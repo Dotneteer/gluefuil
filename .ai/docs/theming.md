@@ -46,8 +46,10 @@ The pipeline is `themeVariables()`, then `compileTheme()`:
    4. the overrides.
 2. **Derived tokens** (`derivedTokens`). An explicit variable always wins
    over a derived one.
-   - **Spacing:** `space-0`, `space-0_5` … `space-12` =
-     `calc(var(--pfui-space-base) * n)`.
+   - **Spacing:** `space-0`, `space-0_5` … `space-12`, `space-14` =
+     `calc(var(--pfui-space-base) * n)`. Every spacing value the framework
+     produces is one of them (the layout ladder `space-level0`–`3`, XMLUI's
+     `gap-*`/`padding-*` names; [layout.md](layout.md)).
    - **Color tones:** for every `color-<family>`, `color-<family>-50` …
      `-950`, using `color-mix(in srgb, var(--pfui-color-<family>) p%,
      white|black)`; tone 500 is the color itself. **This differs from

@@ -51,6 +51,10 @@ export default defineConfig({
           environment: "jsdom",
           setupFiles: ["tests/jsdom-setup.ts"],
           include: ["tests/**/*.test.{ts,tsx}"],
+          benchmark: {
+            include: ["bench/**/*.bench.{ts,tsx}"],
+            suppressExportGetterWarnings: true,
+          },
         },
       },
       {

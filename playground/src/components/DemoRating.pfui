@@ -1,9 +1,9 @@
 <!-- A demo component for the "User-defined components" scenario: $props with defaults, emitEvent. -->
 <Component name="DemoRating">
-  <Stack orientation="horizontal" gap="4px">
+  <HStack>
     <Text>{$props.label ?? 'Rating'}:</Text>
     <Items data="{[1, 2, 3, 4, 5]}">
       <Button label="{$item &lt;= ($props.value ?? 0) ? '★' : '☆'}" onClick="emitEvent('rate', $item)"/>
     </Items>
-  </Stack>
+  </HStack>
 </Component>

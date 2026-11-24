@@ -14,6 +14,22 @@ export const ROOT_THEME: ThemeDefinition = {
     "color-danger": "#dc2626",
     "color-surface": "#64748b",
     "space-base": "4px",
+    // The spacing ladder (steps 19D–19E): automatic gaps and paddings by
+    // nesting level (styles.ts LAYOUT). Steps of space-base, so it scales.
+    "space-level0": "$space-6",
+    "space-level0-phone": "$space-4",
+    "space-level1": "$space-4",
+    "space-level2": "$space-3",
+    "space-level3": "$space-2",
+    // XMLUI's named sizes (xmlui/src/components-core/theming/themes/root.ts L254-266).
+    "gap-none": "$space-0",
+    "gap-tight": "$space-2",
+    "gap-normal": "$space-4",
+    "gap-loose": "$space-8",
+    "padding-none": "$space-0",
+    "padding-tight": "$space-2",
+    "padding-normal": "$space-4",
+    "padding-loose": "$space-8",
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
     fontSize: "15px",
     lineHeight: "1.5",

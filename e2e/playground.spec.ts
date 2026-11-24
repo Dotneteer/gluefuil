@@ -34,6 +34,7 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Behaviors",
     "Routing",
     "App shell",
+    "Layout and spacing",
   ]);
   for (const title of titles) {
     await main.getByRole("button", { name: title, exact: true }).click();

@@ -39,6 +39,12 @@ for (const [name, viewport] of [["desktop", DESKTOP], ["phone", PHONE]] as const
     await expect(page.locator("#root")).toHaveAttribute("data-pfui-prerendered", "xs");
     await expect(page.getByRole("banner")).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
+    // The layout levels (steps 19D–19F) are in the HTML, so the spacing is right before any script:
+    // the dashboard's root stack is the page (level 0, 24px; 16px on a phone), its rows level 2.
+    const dashboard = page.locator(".pfui-AppContent > .pfui-Stack");
+    await expect(dashboard).toHaveAttribute("data-level", "0");
+    await expect(dashboard).toHaveCSS("row-gap", name === "desktop" ? "24px" : "16px");
+    await expect(dashboard.locator("> .pfui-Stack > .pfui-Stack").first()).toHaveAttribute("data-level", "2");
     const nav = page.getByRole("navigation", { name: "Main" });
     if (name === "desktop") {
       await expect(nav).toBeVisible();

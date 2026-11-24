@@ -1,14 +1,14 @@
 <Component name="CounterScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Counter" description="Steps 5-6: a first app. Click to change a variable; the texts follow it."/>
-    <Stack gap="8px" var.count="{0}">
-      <Stack orientation="horizontal" gap="8px">
+    <VStack var.count="{0}">
+      <HStack>
         <Button label="Increment" onClick="count++"/>
         <Button label="Reset" onClick="count = 0"/>
-      </Stack>
+      </HStack>
       <Text>Count: {count}</Text>
       <Text>Doubled: {count * 2}</Text>
       <Text when="{count >= 5}" variant="strong">Five or more!</Text>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

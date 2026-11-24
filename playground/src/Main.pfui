@@ -27,7 +27,8 @@
     { path: '/theming', step: '17', title: 'Theming', description: 'Tone switching, scoped themes, variants.' },
     { path: '/behaviors', step: '18', title: 'Behaviors', description: 'label, tooltip and variant on any component.' },
     { path: '/routing', step: '19', title: 'Routing', description: 'navigate, Link, route and query parameters.' },
-    { path: '/app-shell', step: '19A–C', title: 'App shell', description: 'Header, nav, footer: every XMLUI layout, desktop and phone.' }
+    { path: '/app-shell', step: '19A–C', title: 'App shell', description: 'Header, nav, footer: every XMLUI layout, desktop and phone.' },
+    { path: '/layout', step: '19D–F', title: 'Layout and spacing', description: 'Stacks, flows and sizes; automatic gaps and paddings.' }
   ]}">
   <AppHeader title="pfui playground">
     <NavPanelCollapseButton/>
@@ -43,46 +44,49 @@
   </NavPanel>
   <Pages fallbackPath="/">
     <Page url="/">
-      <Stack gap="16px">
+      <VStack>
         <H1>pfui playground</H1>
         <Text variant="secondary">Pick a scenario. Each page shows its source and has a way back to this dashboard.</Text>
-        <Items data="{scenarios}">
-          <Stack orientation="horizontal" gap="12px">
-            <Text variant="mono">Step {$item.step}</Text>
-            <Button label="{$item.title}" onClick="navigate($item.path)"/>
-            <Text variant="secondary">{$item.description}</Text>
-          </Stack>
-        </Items>
-      </Stack>
+        <VStack>
+          <Items data="{scenarios}">
+            <HStack verticalAlignment="center">
+              <Text variant="mono">Step {$item.step}</Text>
+              <Button label="{$item.title}" onClick="navigate($item.path)"/>
+              <Text variant="secondary">{$item.description}</Text>
+            </HStack>
+          </Items>
+        </VStack>
+      </VStack>
     </Page>
 
-    <Page url="/markup"><Stack gap="24px"><MarkupScenario/><ScenarioSource file="MarkupScenario"/></Stack></Page>
-    <Page url="/expressions"><Stack gap="24px"><ExpressionsScenario/><ScenarioSource file="ExpressionsScenario"/></Stack></Page>
-    <Page url="/reactivity"><Stack gap="24px"><ReactivityScenario/><ScenarioSource file="ReactivityScenario"/></Stack></Page>
-    <Page url="/counter"><Stack gap="24px"><CounterScenario/><ScenarioSource file="CounterScenario"/></Stack></Page>
-    <Page url="/variables"><Stack gap="24px"><VariablesScenario/><ScenarioSource file="VariablesScenario"/></Stack></Page>
-    <Page url="/async"><Stack gap="24px"><AsyncScenario/><ScenarioSource file="AsyncScenario"/></Stack></Page>
-    <Page url="/ids"><Stack gap="24px"><IdsScenario/><ScenarioSource file="IdsScenario"/></Stack></Page>
-    <Page url="/source-maps"><Stack gap="24px"><SourceMapsScenario/><ScenarioSource file="SourceMapsScenario"/></Stack></Page>
-    <Page url="/conditionals"><Stack gap="24px"><ConditionalsScenario/><ScenarioSource file="ConditionalsScenario"/></Stack></Page>
-    <Page url="/templates"><Stack gap="24px"><TemplatesScenario/><ScenarioSource file="TemplatesScenario"/></Stack></Page>
+    <Page url="/markup"><VStack><MarkupScenario/><ScenarioSource file="MarkupScenario"/></VStack></Page>
+    <Page url="/expressions"><VStack><ExpressionsScenario/><ScenarioSource file="ExpressionsScenario"/></VStack></Page>
+    <Page url="/reactivity"><VStack><ReactivityScenario/><ScenarioSource file="ReactivityScenario"/></VStack></Page>
+    <Page url="/counter"><VStack><CounterScenario/><ScenarioSource file="CounterScenario"/></VStack></Page>
+    <Page url="/variables"><VStack><VariablesScenario/><ScenarioSource file="VariablesScenario"/></VStack></Page>
+    <Page url="/async"><VStack><AsyncScenario/><ScenarioSource file="AsyncScenario"/></VStack></Page>
+    <Page url="/ids"><VStack><IdsScenario/><ScenarioSource file="IdsScenario"/></VStack></Page>
+    <Page url="/source-maps"><VStack><SourceMapsScenario/><ScenarioSource file="SourceMapsScenario"/></VStack></Page>
+    <Page url="/conditionals"><VStack><ConditionalsScenario/><ScenarioSource file="ConditionalsScenario"/></VStack></Page>
+    <Page url="/templates"><VStack><TemplatesScenario/><ScenarioSource file="TemplatesScenario"/></VStack></Page>
     <Page url="/user-components">
-      <Stack gap="24px">
+      <VStack>
         <UserComponentsScenario/>
         <ScenarioSource file="UserComponentsScenario"/>
         <ScenarioSource file="DemoRating"/>
         <ScenarioSource file="DemoCounter"/>
         <ScenarioSource file="DemoCard"/>
-      </Stack>
+      </VStack>
     </Page>
-    <Page url="/live"><Stack gap="24px"><LiveCompilerScenario/><ScenarioSource file="LiveCompilerScenario"/></Stack></Page>
-    <Page url="/inputs"><Stack gap="24px"><InputsScenario/><ScenarioSource file="InputsScenario"/></Stack></Page>
-    <Page url="/text"><Stack gap="24px"><TextScenario/><ScenarioSource file="TextScenario"/></Stack></Page>
-    <Page url="/theming"><Stack gap="24px"><ThemingScenario/><ScenarioSource file="ThemingScenario"/></Stack></Page>
-    <Page url="/behaviors"><Stack gap="24px"><BehaviorsScenario/><ScenarioSource file="BehaviorsScenario"/></Stack></Page>
-    <Page url="/routing"><Stack gap="24px"><RoutingScenario/><ScenarioSource file="RoutingScenario"/></Stack></Page>
-    <Page url="/routing/:item"><Stack gap="24px"><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></Stack></Page>
-    <Page url="/app-shell"><Stack gap="24px"><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></Stack></Page>
+    <Page url="/live"><VStack><LiveCompilerScenario/><ScenarioSource file="LiveCompilerScenario"/></VStack></Page>
+    <Page url="/inputs"><VStack><InputsScenario/><ScenarioSource file="InputsScenario"/></VStack></Page>
+    <Page url="/text"><VStack><TextScenario/><ScenarioSource file="TextScenario"/></VStack></Page>
+    <Page url="/theming"><VStack><ThemingScenario/><ScenarioSource file="ThemingScenario"/></VStack></Page>
+    <Page url="/behaviors"><VStack><BehaviorsScenario/><ScenarioSource file="BehaviorsScenario"/></VStack></Page>
+    <Page url="/routing"><VStack><RoutingScenario/><ScenarioSource file="RoutingScenario"/></VStack></Page>
+    <Page url="/routing/:item"><VStack><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></VStack></Page>
+    <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
+    <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>
   <Footer sticky="false">
     <Text variant="secondary">pfui playground: manual testing for the proof-of-concept steps.</Text>

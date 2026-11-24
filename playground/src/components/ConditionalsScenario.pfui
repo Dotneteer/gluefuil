@@ -1,22 +1,22 @@
 <Component name="ConditionalsScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Conditionals" description="Step 10: when, responsive when-* rules, onMount and onUnmount."/>
     <H3>when and lifecycle</H3>
-    <Stack gap="8px" var.show="{true}" var.log="{[]}">
+    <VStack var.show="{true}" var.log="{[]}">
       <Button label="{show ? 'Hide the panel' : 'Show the panel'}" onClick="show = !show"/>
-      <Stack when="{show}" onMount="log.push('mounted')" onUnmount="log.push('unmounted')">
+      <VStack when="{show}" onMount="log.push('mounted')" onUnmount="log.push('unmounted')">
         <Text variant="strong">The panel (its component does not exist while hidden)</Text>
-      </Stack>
+      </VStack>
       <Text>Lifecycle log: {log.join(', ')}</Text>
-    </Stack>
+    </VStack>
     <H3>Responsive (resize the window)</H3>
-    <Stack gap="4px">
+    <VStack>
       <Text when-sm="false">xs: narrower than 576 px</Text>
       <Text when="false" when-sm="true" when-md="false">sm: 576–767 px</Text>
       <Text when="false" when-md="true" when-lg="false">md: 768–991 px</Text>
       <Text when="false" when-lg="true" when-xl="false">lg: 992–1199 px</Text>
       <Text when="false" when-xl="true" when-xxl="false">xl: 1200–1399 px</Text>
       <Text when="false" when-xxl="true">xxl: 1400 px and wider</Text>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

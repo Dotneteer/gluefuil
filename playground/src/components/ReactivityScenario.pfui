@@ -1,15 +1,15 @@
 <Component name="ReactivityScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Reactivity" description="Step 4: derived values recompute glitch-free; a handler's writes are batched."/>
-    <Stack gap="8px" var.a="{1}" var.b="{a * 2}" var.c="{a + 1}" var.d="{b + c}">
+    <VStack var.a="{1}" var.b="{a * 2}" var.c="{a + 1}" var.d="{b + c}">
       <Text>a = {a}; b = 2a = {b}; c = a + 1 = {c}; d = b + c = {d}</Text>
       <Text>The diamond invariant d = 3a + 1: {d === 3 * a + 1 ? 'holds' : 'BROKEN'}</Text>
-      <Stack orientation="horizontal" gap="8px">
+      <HStack>
         <Button label="a++" onClick="a++"/>
         <Button label="a++ three times in one handler" onClick="a++; a++; a++"/>
         <Button label="Reset" onClick="a = 1"/>
-      </Stack>
+      </HStack>
       <Text variant="secondary">Every Text re-renders only when its own value changes; the invariant never shows an intermediate state.</Text>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

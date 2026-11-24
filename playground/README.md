@@ -39,6 +39,7 @@ One or more per concept of proof-of-concept steps 2–19
 | 18 | Behaviors | Tooltip, label, variant, on built-ins and a user component |
 | 19 | Routing | `navigate`, `Link`, `$routeParams`, `$queryParams`, replace, back and forward |
 | 19A–C | App shell | Every XMLUI layout with the new settings, in a frame at desktop or phone width; collapsing this playground's own nav from script |
+| 19D–F | Layout and spacing | A page with no gap or padding anywhere, in a frame at desktop or phone width: stacks, surfaces, a form, flows, star sizes, density, overrides; space-base 3/4/5 px; a spacing inspector that labels each stack with its level and gap |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the
@@ -51,15 +52,18 @@ prerendered build.
 
    ```xml
    <Component name="ClockScenario">
-     <Stack gap="16px">
+     <VStack>
        <ScenarioHeader title="Clock" description="What this scenario checks."/>
-       <Stack var.time="{new Date().toLocaleTimeString()}">
+       <VStack var.time="{new Date().toLocaleTimeString()}">
          <Button label="Refresh" onClick="time = new Date().toLocaleTimeString()"/>
          <Text>{time}</Text>
-       </Stack>
-     </Stack>
+       </VStack>
+     </VStack>
    </Component>
    ```
+
+   - **No `gap` or `padding`:** the spacing is automatic (steps 19D–19F).
+     Set one only when a section really needs another value.
 
    - **The `title` should match the dashboard entry.** The smoke test
      checks it.
@@ -76,7 +80,7 @@ prerendered build.
 
    ```xml
    <Page url="/clock">
-     <Stack gap="24px"><ClockScenario/><ScenarioSource file="ClockScenario"/></Stack>
+     <VStack><ClockScenario/><ScenarioSource file="ClockScenario"/></VStack>
    </Page>
    ```
 
@@ -92,6 +96,10 @@ prerendered build.
 
 - **`LiveMarkup`** (`src/react/LiveMarkup.tsx`) compiles markup in the browser
   (the live compiler scenario), so the playground bundle includes the compiler.
+- **`SpacingInspector`** (`src/react/SpacingInspector.tsx`) outlines every
+  stack and labels it with its level, orientation and computed gap (and a
+  surface's padding). The spacing demo (`src/layouts/spacing.pfui`) has it;
+  `LayoutPreview group="spacing"` shows that demo in a frame.
 - **`ScenarioSource`** (`src/react/ScenarioSource.tsx`) is the playground's own
   React component, used from markup. It is registered with the pfui Vite
   plugin's `extensions` option (`vite.config.ts`), with its metadata (its

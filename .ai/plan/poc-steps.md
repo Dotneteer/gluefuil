@@ -351,7 +351,9 @@ Plan and findings: [poc-18-behaviors.md](poc-18-behaviors.md).
 
 At the user's request only rudimentary routing was built (Pages, Page, Link,
 navigate, $pathname/$routeParams/$queryParams); the layout model and App
-shell remain. Plan and findings: [poc-19-routing.md](poc-19-routing.md).
+shell remained, and were done as the inserted steps 19A–19C (the App shell)
+and 19D–19F (the layout system). Plan and findings:
+[poc-19-routing.md](poc-19-routing.md).
 
 - **Subject:** the new layout primitives (area 6 design) and the App shell
   with region-owned settings (`placement`, `span`, `sticky`, `scroll`,
@@ -379,6 +381,23 @@ property. Plan and findings: [poc-19a-app-shell.md](poc-19a-app-shell.md).
 - **Tests:** E2E: each of the 8 XMLUI layouts expressed with the new
   settings, at desktop and phone widths (what scrolls, what sticks, the
   drawer), and prerendering at both widths.
+
+### Steps 19D–19F: The layout system, with automatic spacing (inserted) ✅
+
+Inserted at the user's request, before step 20. This is the layout half of
+step 19: `Stack` and its variants, wrapping instead of `FlowLayout`, layout
+props, and gaps and paddings that follow the nesting automatically. Plan:
+[poc-19d-layout.md](poc-19d-layout.md).
+
+- **19D, containers and layout props:** `Stack`/`VStack`/`HStack`/
+  `CVStack`/`CHStack`, `SpaceFiller`, `wrapContent`, sizing (percentages,
+  star sizes), alignment, `$token` values, E031/E032.
+- **19E, automatic spacing:** levels from a layout context, a four-step
+  ladder of theme variables, surfaces, the phone step, `density`.
+- **19F, playground and docs:** the playground without hand-written gaps, a
+  layout scenario with a spacing inspector.
+- **Tests:** E2E: measured gaps and paddings at desktop and phone widths,
+  sizing, wrapping, prerendering.
 
 ---
 
