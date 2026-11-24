@@ -45,6 +45,12 @@ export interface ModuleAnalysis {
   components: UserComponentInfo[];
   /** Every component name the file uses (element names starting with an uppercase letter), sorted. */
   references: string[];
+  /**
+   * An app file's global variables (step 21B): `global.*` and `<global>` on its
+   * root element, then the `var` and `function` names of `Globals.xs`
+   * (`globalsCode`). Every other file sees them. Empty for a component file.
+   */
+  globals: string[];
 }
 
 /** Valid component names (XMLUI): an uppercase letter, then letters, digits, `_` and `$`. */
@@ -61,11 +67,38 @@ const constantAttribute = (node: ElementNode, name: string): string | undefined 
  * Analyzes markup (and, for a component file, its code-behind). Problems are
  * not reported here: `compileModule` reports them.
  */
-export function analyzeModule(markup: string, options: { codeBehind?: string } = {}): ModuleAnalysis {
-  return analyzeDocument(parseMarkup(markup).document, options.codeBehind);
+export function analyzeModule(markup: string, options: { codeBehind?: string; globalsCode?: string } = {}): ModuleAnalysis {
+  return analyzeDocument(parseMarkup(markup).document, options.codeBehind, options.globalsCode);
 }
 
-export function analyzeDocument(document: DocumentNode, codeBehind?: string): ModuleAnalysis {
+/** The names a root element declares with `global.*` and `<global name>`, in order. */
+export function rootGlobalNames(root: ElementNode): string[] {
+  const names: string[] = [];
+  for (const attribute of root.attributes) {
+    if (attribute.name.full.startsWith("global.")) names.push(attribute.name.full.slice("global.".length));
+  }
+  for (const child of root.children) {
+    if (isElement(child) && child.name.full === "global") {
+      const name = constantAttribute(child, "name");
+      if (name !== undefined) names.push(name);
+    }
+  }
+  return names;
+}
+
+/** The top-level `var` and `function` names of a `Globals.xs` source, in order (problems are the compiler's). */
+export function globalsCodeNames(source: string): string[] {
+  const names: string[] = [];
+  for (const statement of parseStatements(source).program.body) {
+    if (statement.type === "FunctionDeclaration") names.push(statement.id.name);
+    else if (statement.type === "VariableDeclaration" && statement.kind === "var") {
+      for (const declarator of statement.declarations) if (declarator.id.type === "Identifier") names.push(declarator.id.name);
+    }
+  }
+  return names;
+}
+
+export function analyzeDocument(document: DocumentNode, codeBehind?: string, globalsCode?: string): ModuleAnalysis {
   const topLevel = document.children.filter(isElement);
   const definitions = topLevel.filter((e) => e.name.full === "Component");
   const components: UserComponentInfo[] = [];
@@ -84,7 +117,9 @@ export function analyzeDocument(document: DocumentNode, codeBehind?: string): Mo
   };
   for (const element of topLevel) visit(element);
   const kind = topLevel.length === definitions.length && definitions.length === 1 ? "component" : "app";
-  return { kind, components, references: [...references].sort() };
+  const root = topLevel.find((e) => e.name.full !== "Component");
+  const globals = kind === "app" ? [...new Set([...(root ? rootGlobalNames(root) : []), ...(globalsCode !== undefined ? globalsCodeNames(globalsCode) : [])])] : [];
+  return { kind, components, references: [...references].sort(), globals };
 }
 
 /** Every `<Slot>` in a definition's body (in templates too): name → context variables. */

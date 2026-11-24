@@ -15,6 +15,7 @@ import { computed, type ReadonlySignal } from "../reactivity/signals";
 import { assertBindingValue } from "../script/binding-value";
 import { createFileScope, useComponentApi, type RegisterApi } from "./component-api";
 import { createVariableScope, useWiring, type BindingFunction, type BoundProps, type HandlerFactory, type VariableDefinition } from "./elements";
+import { useGlobalScope } from "./global-scope";
 import { HandlerSlot } from "./handlers";
 import type { TemplateRenderer } from "./templates";
 
@@ -93,9 +94,11 @@ export function useComponent(
   // a ref keeps emitEvent and the slots right even if it is not.
   const latest = useRef(input);
   latest.current = input;
+  // The app's globals (step 21B) sit between this scope and the file's app scope.
+  const globals = useGlobalScope();
   const [instance] = useState(() => {
     const api: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
-    const base = Object.create(appScope) as Record<string | symbol, unknown>;
+    const base = Object.create(globals ?? appScope) as Record<string | symbol, unknown>;
     Object.defineProperties(base, {
       $props: { get: () => latest.current.props.get(), enumerable: true },
       $self: { value: api, enumerable: true },

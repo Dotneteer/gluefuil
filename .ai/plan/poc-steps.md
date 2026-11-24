@@ -440,7 +440,9 @@ route constraints and nested pages moved to Phase G (step 38).
   - E2E: navigation, deep links, the back button and the fallback route.
 - **Reference:** `pages/routing-and-links.md`.
 
-### Step 21B: Global variables in user components (inserted)
+### Step 21B: Global variables in user components (inserted) ✅ (awaiting review)
+
+Plan: [poc-21b-globals.md](poc-21b-globals.md).
 
 - **Subject:** `global.*` variables declared on the root of `Main.pfui`
   are readable and writable in every file, user components included, and

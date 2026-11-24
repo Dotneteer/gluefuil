@@ -1,0 +1,4 @@
+<!-- Step 21B: reads the globals; its own variable `visitor` shadows the global one. -->
+<Component name="LikeCount" var.visitor="local">
+  <Text>Likes so far: {likeLabel()}, visitor {visitor}</Text>
+</Component>

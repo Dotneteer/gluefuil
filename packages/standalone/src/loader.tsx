@@ -57,6 +57,8 @@ interface Source {
 /** Everything one load fetched. `fingerprint` changes when any file (or a 404) changes. */
 interface Fetched {
   main: Source;
+  /** `Globals.xs` beside the entry (step 21B), if it exists. */
+  globalsCode: string | undefined;
   components: Map<string, Source>;
   fingerprint: string;
 }
@@ -158,7 +160,10 @@ export class StandaloneApp {
       const [markup, codeBehind] = await Promise.all([this.fetchText(path, noStore, optional), this.fetchText(`${path}.xs`, noStore, true)]);
       return markup === undefined ? undefined : { path, markup, codeBehind };
     };
-    const main = (await fetchSource(this.file, false))!;
+    const [main, globalsCode] = await Promise.all([
+      fetchSource(this.file, false).then((source) => source!),
+      this.fetchText(`${this.base}Globals.xs`, noStore, true),
+    ]);
     const components = new Map<string, Source>();
     const fingerprint: string[] = [];
     const seen = new Set<string>();
@@ -179,8 +184,9 @@ export class StandaloneApp {
       }
       for (const file of found) if (file) await visit(file);
     };
+    fingerprint.push("Globals.xs", globalsCode === undefined ? "-" : hashText(globalsCode));
     await visit(main);
-    return { main, components, fingerprint: fingerprint.join("|") };
+    return { main, globalsCode, components, fingerprint: fingerprint.join("|") };
   }
 
   /** Compiles (or takes from the cache) every file, then renders the entry component. */
@@ -196,10 +202,17 @@ export class StandaloneApp {
     const components: Record<string, unknown> = { ...builtIns };
     let compiled = false;
     let compileMs = 0;
+    // The app's globals (step 21B): the entry's global.* and Globals.xs, seen by every component file.
+    const globalsCode = fetched.globalsCode;
+    const globalsPath = `${this.base}Globals.xs`;
+    const globals = analyzeModule(fetched.main.markup, globalsCode !== undefined ? { globalsCode } : {}).globals;
     const compile = (source: Source, own: string | undefined): ComponentType | undefined => {
+      const isMain = source === fetched.main;
       const userComponents = Object.fromEntries(Object.entries(infos).filter(([name]) => name !== own));
-      // The code depends on the markup, the code-behind and the interfaces of the components it uses.
-      const hash = hashText(`${source.markup}\u0000${source.codeBehind ?? ""}\u0000${JSON.stringify(userComponents)}`);
+      // The code depends on the markup, the code-behind, the interfaces of the components it uses,
+      // and the globals (the entry: Globals.xs; any other file: the global names).
+      const globalsKey = isMain ? (globalsCode ?? "") : JSON.stringify(globals);
+      const hash = hashText(`${source.markup}\u0000${source.codeBehind ?? ""}\u0000${JSON.stringify(userComponents)}\u0000${globalsKey}`);
       let entry = this.cache.get(source.path, hash);
       if (!entry) {
         const started = performance.now();
@@ -208,13 +221,16 @@ export class StandaloneApp {
           fileName: source.path,
           userComponents,
           ...(source.codeBehind !== undefined ? { codeBehind: source.codeBehind } : {}),
+          ...(isMain ? (globalsCode !== undefined ? { globalsCode } : {}) : { globals }),
           ...(this.options.strictContracts !== undefined ? { strictContracts: this.options.strictContracts } : {}),
         });
         this.logWarnings(source.path, source.markup, result.diagnostics);
         if (source.codeBehind !== undefined) this.logWarnings(`${source.path}.xs`, source.codeBehind, result.codeBehindDiagnostics ?? []);
+        if (isMain && globalsCode !== undefined) this.logWarnings(globalsPath, globalsCode, result.globalsDiagnostics ?? []);
         compileMs += performance.now() - started;
         if (this.showDiagnostics(source.path, source.markup, result.diagnostics)) return undefined;
         if (source.codeBehind !== undefined && this.showDiagnostics(`${source.path}.xs`, source.codeBehind, result.codeBehindDiagnostics ?? [])) return undefined;
+        if (isMain && globalsCode !== undefined && this.showDiagnostics(globalsPath, globalsCode, result.globalsDiagnostics ?? [])) return undefined;
         const map = result.map ? { ...result.map } : undefined;
         if (map) delete map.sourcesContent;
         entry = { hash, code: result.code, ...(map ? { map: map as CacheEntry["map"] } : {}) };

@@ -6,7 +6,7 @@
   </Stack>
 </Component>
 
-<App var.count="{0}" var.source="{0}" var.mirror="{source}" var.status="Idle">
+<App var.count="{0}" var.source="{0}" var.mirror="{source}" var.status="Idle" global.likes="{0}">
   <Stack gap="8px">
     <H1>pfui demo app</H1>
     <H2>Step 5 · Bindings</H2>
@@ -169,5 +169,12 @@
     <H3>A level 3 heading</H3>
     <Heading level="h4" value="A level 4 heading"/>
     <Text maxLines="1">A long text clamped to one line: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</Text>
+
+    <!-- Step 21B: globals. likes is a global of this root; visitor, likeLabel()
+         and like() come from Globals.xs. Two component files use them. -->
+    <H2>Step 21B · Globals</H2>
+    <Text>Likes in Main: {likes} ({visitor})</Text>
+    <LikeButton/>
+    <LikeCount/>
   </Stack>
 </App>

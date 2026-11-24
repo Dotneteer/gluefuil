@@ -5,7 +5,7 @@
 > Design rationale and XMLUI comparison:
 > [`../plan/poc-05-first-app.md`](../plan/poc-05-first-app.md).
 >
-> **Last updated:** step 15 (contracts).
+> **Last updated:** step 21B (globals).
 
 ## Role
 
@@ -128,7 +128,7 @@ export default Main;
 | `attr="…{expr}…"` | A binding (step 3 interpolation rules) |
 | `attr` with no value | The string `"true"` (as XMLUI) |
 | `var.x="…"`, `<variable name="x" value="…"/>` | A variable of the element (which becomes a container). Its value is interpolated: constant or binding. A key-only `var.x` is `"true"`; `<variable>` without `value` is `undefined`. |
-| `global.x`, `<global>` | The same, allowed only on the root element (E006). Not visible inside user-defined components yet. |
+| `global.x`, `<global>` | A global: allowed only on the root element (E006). The root's globals (and `Globals.xs`) form their own container around the root's variables, which provides `GlobalScope`; every file and inline component sees them ([scoping.md § Globals](scoping.md#globals)). |
 | `onClick="…"` | A handler (`compileHandler`, statements, async: see [async-handlers.md](async-handlers.md)). The event must be in the component's metadata `events` (E004). |
 | `handlerPolicy="…"`, `handlerPolicy:onClick="…"`, `handlerTimeoutMs`, `handlerTimeoutMs:onClick` | `policies: { onClick: "queue" }`, `timeouts: { onClick: 500 }` on the `Bound` element. The per-handler form wins. Constants only; unknown policy or non-numeric timeout: E009. |
 | `<event name="click">…</event>` | The same. Text or CDATA content, not whitespace-collapsed; components inside are E002. |

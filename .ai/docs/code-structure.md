@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 21, part 2 (`navigate(-1)`, new tabs, the basename).
+> **Last updated:** step 21B (globals in user components).
 
 ## What this repository is
 
@@ -30,6 +30,8 @@ Current state:
 - **Variables and handlers** work: `var.*`, `<variable>`, `global.*`,
   `<global>` (follow until assigned), `on*` and `<event>` handlers with
   deep writes and array mutations (copy-on-write on frozen values).
+  Globals (the app root's `global.*` and `Globals.xs`) reach every file and
+  user component, known at compile time ([scoping.md § Globals](scoping.md#globals)).
 - **Handlers are async** with implicit await, segment batching that cannot
   freeze the store, `$cancel`, handler policies, timeouts and unmount
   cancellation ([async-handlers.md](async-handlers.md)).
@@ -202,7 +204,7 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
 | `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, `TextBox`, `Select`, `Checkbox`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `Pages`, `Page`, `Link`, the behavior components, `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
 | `packages/components/src/metadata.ts` | `componentMetadata` (every built-in, with `themeVars` defaults; props with value types and enums, events, API, templates; App's `regions` and `removedProps`), `LAYOUT_EQUIVALENTS`, `DRAWER_BREAKPOINTS`, `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
@@ -408,26 +410,28 @@ Conventions:
 | `mock-backend/tests/*.test.ts`, `runtime/tests/data/*.test.ts`, `compiler/tests/module/data.test.ts`, `components/tests/data.test.tsx` | The mock backend and its hosts; the HTTP gate, retries, Loader and ApiCaller; the compiler's data features; DataSource and APICall in markup (see [data.md](data.md#tests), [mock-backend.md](mock-backend.md#tests)) |
 | `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.pfui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
+| `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
 
-Count after step 21, part 2: 2,330 unit tests in 80 files. The totals per package
+Count after step 21B: 2,392 unit tests in 83 files. The totals per package
 are current; the breakdowns in parentheses were last counted after steps
-19A–19C and are updated only where step 21 changed them.
+19A–19C and are updated only where steps 21 and 21B changed them.
 
-- Compiler: 1,046, of which markup 115, script 331, codegen 207, module 319
-  (user components 57, contracts 74, behaviors 19, the shell 33) and
+- Compiler: 1,087, of which markup 115, script 331, codegen 207, module 360
+  (user components 57, contracts 74, behaviors 19, the shell 33, globals 41) and
   source 26.
 - Runtime: 506, of which the script sandbox and async arrays are 210,
   reactivity 65, rendering 148 (the server view and `mountApp` 12,
   `wrapComponent` 19, the router 72, of which its events, history moves,
   new tabs and the basename are 45), and the
   smoke test 2.
-- Standalone: 25 (the cache 10, the loader 14, the hash 1).
-- Vite plugin: 99 (the transform 27, the prerender 62, components 10).
+- Standalone: 28 (the cache 10, the loader 17, the hash 1).
+- Vite plugin: 108 (the transform 27, the prerender 62, components 10,
+  globals 9).
 - Tools: 383, of which the corpus is 327, the boundaries 35, the build
   output 14, the data build 2 and the sandbox drift test 5.
 - Mock backend: 20.
-- Components: 251 (static generation 12, user components 11, the theme
+- Components: 260 (static generation 12, user components 11, globals 9, the theme
   engine 29, theme components 5, behaviors 7, Mantine 6, Text and Heading
   21, routing 12, the shell 36).
 
@@ -458,7 +462,7 @@ are current; the breakdowns in parentheses were last counted after steps
   - `smoke` (5173);
   - `hello-dev` (5174: the hello specs `first-app`, `variables`,
     `async-handlers`, `ids`, `conditionals-templates`, `user-components`,
-    `theming`, `behaviors` and `mantine`, plus `source-maps`);
+    `theming`, `behaviors`, `mantine` and `globals`, plus `source-maps`);
   - `hello-build` (5176: the same hello specs plus `build` and `ssg`,
     against the prerendered production build under `script-src 'self'`);
   - `standalone` (5175, full URLs);
@@ -515,6 +519,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
 | `e2e/user-components.spec.ts` | The XMLUI user-defined-components examples (component files, code-behind, an inline component; `$props`, events, methods, slots), in dev and in the prerendered build |
+| `e2e/globals.spec.ts` | Globals (step 21B) in the hello app: a component file writes them, Main and another component read them, a local variable shadows one; dev and prerendered build |
 | `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled; takeover at the prerendered breakpoint changes no DOM node; at desktop width only the responsive text switches; the app is live afterwards |
 | `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.pfui` fetched |
 | `e2e/standalone.spec.ts` | Standalone mode against the built `pfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files) |

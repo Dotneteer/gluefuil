@@ -43,7 +43,7 @@ import { parseStatements } from "../script/parse";
 import type { Diagnostic } from "../source/diagnostic";
 import { buildSourceMap, type SourceMap } from "../source/source-map";
 import { didYouMean } from "../source/suggest";
-import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, type UserComponentInfo } from "./analyze";
+import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, rootGlobalNames, type UserComponentInfo } from "./analyze";
 import { checkLiteral } from "./contracts";
 import { ModuleDiagnostics, type ModuleDiagnosticCode } from "./diagnostics";
 import { shellConfig, type ShellConfig } from "./shell";
@@ -87,6 +87,17 @@ export interface CompileModuleOptions {
    * warnings. See .ai/plan/poc-15-contracts.md.
    */
   strictContracts?: boolean;
+  /**
+   * The app's global variables (step 21B: `analyzeModule(entry).globals`),
+   * visible inside every `<Component>` body of this file below the
+   * component's own names. An app file's own globals need not be listed.
+   */
+  globals?: readonly string[];
+  /**
+   * `Globals.xs` (an app file only): top-level `var` and `function`
+   * declarations that become globals, beside the root's `global.*`.
+   */
+  globalsCode?: string;
 }
 
 export interface CompileModuleResult {
@@ -100,6 +111,8 @@ export interface CompileModuleResult {
   diagnostics: Diagnostic[];
   /** Diagnostics of the code-behind, in positions of the code-behind source (when given). */
   codeBehindDiagnostics?: Diagnostic[];
+  /** Diagnostics of `Globals.xs`, in its positions (when `globalsCode` is given). */
+  globalsDiagnostics?: Diagnostic[];
 }
 
 /** The runtime names compiled code uses, as `[export, local]`. */
@@ -115,6 +128,7 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["Slot", "$$Slot"],
   ["useComponent", "$$useComponent"],
   ["Fragment", "$$Fragment"],
+  ["GlobalScope", "$$GlobalScope"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
   ["deferredValue", "$$deferred"],
@@ -174,6 +188,8 @@ interface Declaration {
   value?: ValuedAttribute;
   /** True for `var.x` without a value: the string "true" (as any key-only attribute). */
   keyOnly: boolean;
+  /** `global.x` / `<global>` (step 21B): declared in the app's global container. */
+  global: boolean;
 }
 
 type ValuedAttribute = AttributeNode & { value: NonNullable<AttributeNode["value"]> };
@@ -211,6 +227,13 @@ class ModuleCompiler {
   private codeBehind: CodeBehind | undefined;
   private codeBehindTarget: ElementNode | undefined;
   private readonly codeBehindDiagnostics: Diagnostic[] = [];
+  /** Where code-behind problems go: the file's code-behind, or `Globals.xs` while it compiles. */
+  private codeBehindSink: Diagnostic[] = this.codeBehindDiagnostics;
+  /** `Globals.xs`, parsed (an app file with `globalsCode`), and its diagnostics. */
+  private globalsCode: CodeBehind | undefined;
+  private readonly globalsDiagnostics: Diagnostic[] = [];
+  /** The globals every `<Component>` body sees (step 21B): the options' and this app file's own. */
+  private readonly componentGlobals = new Set<string>();
   /** True while compiling a direct region child of App (AppHeader, NavPanel, Footer): E028 elsewhere. */
   private regionAllowed = false;
   /** The App's shell settings, once compiled; NavPanelCollapseButton elements, checked against them. */
@@ -268,6 +291,7 @@ class ModuleCompiler {
   /** Every name visible at this point: app globals, the file's IDs, and the variables in scope. */
   private visibleNames(): Set<string> {
     const names = new Set<string>([...APP_GLOBALS, ...this.ids.keys()]);
+    if (this.inComponent) for (const name of this.componentGlobals) names.add(name);
     for (const frame of this.templateIds) for (const id of frame.keys()) names.add(id);
     for (const frame of this.frames) for (const name of frame) names.add(name);
     for (const frame of this.contextFrames) for (const name of frame) names.add(name);
@@ -278,6 +302,13 @@ class ModuleCompiler {
   private visibleVariables(): Set<string> {
     const names = new Set<string>();
     for (const frame of this.frames) for (const name of frame) names.add(name);
+    // A global in a component body (rank 3b) is writable unless a name of the component shadows it.
+    if (this.inComponent) {
+      const shadowing = new Set<string>([...COMPONENT_NAMES, ...this.ids.keys()]);
+      for (const frame of this.templateIds) for (const id of frame.keys()) shadowing.add(id);
+      for (const frame of this.contextFrames) for (const name of frame) shadowing.add(name);
+      for (const name of this.componentGlobals) if (!shadowing.has(name) || names.has(name)) names.add(name);
+    }
     return names;
   }
 
@@ -289,6 +320,18 @@ class ModuleCompiler {
     if (this.options.codeBehind !== undefined) {
       this.codeBehind = this.parseCodeBehind(this.options.codeBehind);
       this.codeBehindTarget = app ?? (definitions.length === 1 ? definitions[0] : undefined);
+    }
+    // Globals (step 21B): the entry's (options), and an app file's own root and Globals.xs.
+    for (const name of this.options.globals ?? []) this.componentGlobals.add(name);
+    if (app) {
+      for (const name of rootGlobalNames(app)) this.componentGlobals.add(name);
+      if (this.options.globalsCode !== undefined) {
+        this.codeBehindSink = this.globalsDiagnostics;
+        this.globalsCode = this.parseCodeBehind(this.options.globalsCode);
+        this.codeBehindSink = this.codeBehindDiagnostics;
+        for (const variable of this.globalsCode.variables) this.componentGlobals.add(variable.name);
+        for (const fn of this.globalsCode.functions) this.componentGlobals.add(fn.id.name);
+      }
     }
     // Component definitions first (hoisted functions); then the app.
     const defined: string[] = [];
@@ -337,6 +380,7 @@ class ModuleCompiler {
       ...(map ? { map } : {}),
       diagnostics,
       ...(this.options.codeBehind !== undefined ? { codeBehindDiagnostics: this.codeBehindDiagnostics.sort((a, b) => a.start - b.start) } : {}),
+      ...(this.options.globalsCode !== undefined ? { globalsDiagnostics: this.globalsDiagnostics.sort((a, b) => a.start - b.start) } : {}),
     };
   }
 
@@ -555,13 +599,13 @@ class ModuleCompiler {
         continue;
       }
       const result = compileExpression(variable.init, { scope: this.visibleNames(), markers: false, ...this.contractOptions() });
-      this.codeBehindDiagnostics.push(...result.diagnostics);
+      this.codeBehindSink.push(...result.diagnostics);
       entries.push([variable.name, `{ init: ${result.code} }`]);
       graph.set(variable.name, result.dependencies.filter((d) => own.has(d)));
     }
     for (const fn of functions) {
       const result = compileFunction(fn, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: false, ...this.contractOptions() });
-      this.codeBehindDiagnostics.push(...result.diagnostics);
+      this.codeBehindSink.push(...result.diagnostics);
       entries.push([fn.id.name, `{ fn: ${result.code} }`]);
     }
     this.reportCycles(graph, (name, cycle) => {
@@ -574,13 +618,13 @@ class ModuleCompiler {
 
   /** A code-behind diagnostic (positions in the code-behind source). */
   private reportCodeBehind(span: { start: number; end: number }, message: string, code: ModuleDiagnosticCode = "E019"): void {
-    this.codeBehindDiagnostics.push({ code, severity: "error", message, start: span.start, end: span.end });
+    this.codeBehindSink.push({ code, severity: "error", message, start: span.start, end: span.end });
   }
 
   /** Parses code-behind: top-level `var` and `function` declarations only (E019). */
   private parseCodeBehind(source: string): CodeBehind {
     const parsed = parseStatements(source, { offset: 0 });
-    this.codeBehindDiagnostics.push(...parsed.diagnostics);
+    this.codeBehindSink.push(...parsed.diagnostics);
     const result: CodeBehind = { variables: [], functions: [] };
     for (const statement of parsed.program.body) {
       if (statement.type === "FunctionDeclaration") {
@@ -793,11 +837,14 @@ class ModuleCompiler {
     const visibility = this.metadataOf(name)?.whenIsProp ? this.whenAsProp(node) : this.visibility(node);
     if (visibility === "never") return "null";
     const declarations = this.declarations(node, isRoot);
+    const locals = declarations.filter((d) => !d.global);
     const hasCodeBehind = node === this.codeBehindTarget && this.codeBehind !== undefined;
+    const inner = (scope: string) => (locals.length === 0 && !hasCodeBehind ? this.element(node, scope) : this.container(node, locals, scope));
+    const globals = declarations.filter((d) => d.global);
     // A source marker at the element's start: render errors map to the tag.
     const element = this.mark(
       node.start,
-      declarations.length === 0 && !hasCodeBehind ? this.element(node, scopeVar) : this.container(node, declarations, scopeVar),
+      isRoot && (globals.length > 0 || this.globalsCode !== undefined) ? this.globalContainer(globals, locals, scopeVar, inner) : inner(scopeVar),
     );
     if (!visibility) return element;
     return this.mark(node.start, `$$h($$When, { test: ${visibility}.test, responsive: ${visibility}.responsive, scope: ${scopeVar} }, ${element})`);
@@ -867,7 +914,7 @@ class ModuleCompiler {
         return;
       }
       seen.add(name);
-      found.push({ name, span, value, keyOnly });
+      found.push({ name, span, value, keyOnly, global });
     };
     for (const attribute of node.attributes) {
       const full = attribute.name.full;
@@ -888,6 +935,33 @@ class ModuleCompiler {
       add(name, nameAttribute!.value!, child.name.full === "global", value?.value ? (value as ValuedAttribute) : undefined, false);
     }
     return found;
+  }
+
+  /**
+   * The app's globals (step 21B): `global.*` / `<global>` of the root and
+   * `Globals.xs`, in a container around the root's own variables. Its scope
+   * holds only the globals; it provides that scope (`GlobalScope`) to the user
+   * components below, whose scopes inherit from it.
+   */
+  private globalContainer(globals: Declaration[], locals: Declaration[], scopeVar: string, inner: (scope: string) => string): string {
+    // A Globals.xs name the root also declares as its own (var.*, Main.pfui.xs) would be hidden in Main.
+    if (this.globalsCode) {
+      const rootNames = new Set([...locals.map((d) => d.name), ...(this.codeBehind?.variables.map((v) => v.name) ?? []), ...(this.codeBehind?.functions.map((f) => f.id.name) ?? [])]);
+      this.codeBehindSink = this.globalsDiagnostics;
+      for (const item of [...this.globalsCode.variables, ...this.globalsCode.functions.map((f) => ({ name: f.id.name, start: f.id.start, end: f.id.end }))]) {
+        if (rootNames.has(item.name)) this.reportCodeBehind(item, `'${item.name}' is also declared on the app's root element or in its code-behind`, "E007");
+      }
+      this.codeBehindSink = this.codeBehindDiagnostics;
+    }
+    this.codeBehindSink = this.globalsDiagnostics;
+    const definitions = this.scopeEntries(globals, this.globalsCode);
+    this.codeBehindSink = this.codeBehindDiagnostics;
+    const body = inner("$$c");
+    this.frames.pop();
+    this.contextFrames.pop();
+    const component = `$$K${this.counter++}`;
+    this.hoisted.push(`function ${component}({ $$p }) {\n  const $$c = $$useScope($$p, ${definitions});\n  return $$h($$GlobalScope, { scope: $$c }, ${body});\n}`);
+    return `$$h(${component}, { $$p: ${scopeVar} })`;
   }
 
   /** An element declaring variables: its own component, which creates them once per instance. */

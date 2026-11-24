@@ -4,7 +4,7 @@
 
 import { analyzeModule, type UserComponentInfo } from "@patchfuil/compiler";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 
 export interface FoundComponent {
   file: string;
@@ -53,3 +53,38 @@ export function readCodeBehind(file: string): string | undefined {
 }
 
 
+
+/** The file beside the entry whose top-level `var` and `function` declarations are globals (step 21B). */
+export const GLOBALS_FILE = "Globals.xs";
+
+/**
+ * The app's globals (step 21B): `global.*`/`<global>` on the entry's root and
+ * the declarations of `Globals.xs` beside it. Every other file is compiled
+ * knowing them. Read once per modification of either file.
+ */
+export class AppGlobals {
+  private cached: { stamp: string; globals: string[] } | undefined;
+
+  constructor(readonly entry: string) {}
+
+  /** `Globals.xs` beside the entry. */
+  get globalsFile(): string {
+    return join(dirname(this.entry), GLOBALS_FILE);
+  }
+
+  /** The source of `Globals.xs`, if it exists. */
+  readGlobalsCode(): string | undefined {
+    return existsSync(this.globalsFile) ? readFileSync(this.globalsFile, "utf8") : undefined;
+  }
+
+  /** The global names; none when the entry does not exist. */
+  names(): string[] {
+    const stamp = [this.entry, this.globalsFile].map((file) => (existsSync(file) ? statSync(file).mtimeMs : "-")).join("|");
+    if (this.cached?.stamp !== stamp) {
+      const globalsCode = this.readGlobalsCode();
+      const globals = existsSync(this.entry) ? analyzeModule(readFileSync(this.entry, "utf8"), globalsCode !== undefined ? { globalsCode } : {}).globals : [];
+      this.cached = { stamp, globals };
+    }
+    return this.cached.globals;
+  }
+}

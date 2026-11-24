@@ -22,9 +22,10 @@ describe("containers", () => {
 
   test("<variable> and <global> children declare like attributes; key-only var.x is \"true\"", () => {
     const code = lines('<App global.g="{1}" var.flag><variable name="v" value="{g + 1}"/><global name="h"/></App>');
-    expect(code).toContain(
-      'const $$v0 = { "g": { init: ($$s) => 1 }, "flag": { value: "true" }, "v": { init: ($$s) => $$s.g + 1 }, "h": { value: undefined } };',
-    );
+    // Globals (step 21B): their own container around the root's variables, providing GlobalScope.
+    expect(code).toContain('const $$v0 = { "g": { init: ($$s) => 1 }, "h": { value: undefined } };');
+    expect(code).toContain('const $$v1 = { "flag": { value: "true" }, "v": { init: ($$s) => $$s.g + 1 } };');
+    expect(code).toContain("  return $$h($$GlobalScope, { scope: $$c }, $$h($$K2, { $$p: $$c }));");
   });
 
   test("nested containers receive the enclosing scope", () => {

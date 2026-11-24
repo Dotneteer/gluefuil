@@ -5,7 +5,7 @@
 > as it is. Design and XMLUI comparison:
 > [`../plan/poc-14-user-components.md`](../plan/poc-14-user-components.md).
 >
-> **Last updated:** step 15 (derived contracts).
+> **Last updated:** step 21B (globals reach component bodies).
 
 ## Writing one
 
@@ -46,7 +46,7 @@ function label(n) { return 'Counter: ' + n; }
 | Events | `emitEvent('name', ...args)` calls the caller's `onName` and returns a promise of its result (`undefined` without a handler). `hasEventHandler('name')`. The caller may use any event name. |
 | Methods | `method.x="…"` or `<method name="x">…</method>`: handlers in the component's scope. The caller calls them through the element's `id` (`c.reset()`), the component through `$self.x()`. Both return a promise of the result. |
 | Slots | `<Slot/>` renders the caller's children; `<Slot name="xTemplate"/>` renders the caller's `<property name="xTemplate">`. The Slot's children are the fallback. Other Slot attributes become context variables (`count="{count}"` gives `$count`) in the caller's content, which renders in the **caller's** scope. |
-| Isolation | The body sees its own variables, functions and IDs, `$props`, `$self`, `emitEvent`, `hasEventHandler`, app globals and sandbox globals. Anything of the caller is C001. |
+| Isolation | The body sees its own variables, functions and IDs, `$props`, `$self`, `emitEvent`, `hasEventHandler`, the app's globals (`global.*` of the app root, `Globals.xs`: [scoping.md § Globals](scoping.md#globals)), app globals and sandbox globals. Anything else of the caller is C001. |
 | Code-behind | `<file>.pfui.xs`, also for `Main.pfui` (the app root): top-level `var` (a variable) and `function` (a function in scope; synchronous unless it awaits; it may write variables) |
 
 ## Compiling (`compileModule`)

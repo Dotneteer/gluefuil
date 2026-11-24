@@ -10,15 +10,22 @@ import {
   type UserComponentInfo,
 } from "@patchfuil/compiler";
 import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
+import { existsSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
-import { ComponentFolder, importSpecifier, readCodeBehind } from "./components";
+import { AppGlobals, ComponentFolder, GLOBALS_FILE, importSpecifier, readCodeBehind } from "./components";
 import { addRootAttributes, basenameOf, injectPrerendered, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
 
 export { basenameOf, injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
 export { pfuiMockBackend, type MockBackendOptions } from "./mock";
 
 export interface PfuiPluginOptions {
+  /**
+   * The app's root file, relative to the Vite root. Default "src/Main.pfui".
+   * Its root's `global.*` and the `Globals.xs` beside it are the globals every
+   * other file sees (step 21B); the prerender renders it.
+   */
+  entry?: string;
   /** The components markup may use. Default: the built-in components. */
   components?: Readonly<Record<string, ComponentMetadata>>;
   /**
@@ -76,7 +83,7 @@ export function formatErrors(errors: readonly Diagnostic[], source: string, file
 
 export function pfui(options: PfuiPluginOptions = {}): Plugin {
   const sourceMapOption = options.sourceMap ?? "auto";
-  const prerender = resolvePrerender(options.prerender);
+  const prerender = resolvePrerender(options.prerender, options.entry);
   let sourceMap = true;
   let config: ResolvedConfig | undefined;
   let folder: ComponentFolder | undefined;
@@ -94,6 +101,8 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
     return { components, componentModules };
   };
   const componentsFolder = () => (folder ??= new ComponentFolder(resolve(config?.root ?? process.cwd(), options.componentsDir ?? "src/components")));
+  let appGlobals: AppGlobals | undefined;
+  const globalsOf = () => (appGlobals ??= new AppGlobals(resolve(config?.root ?? process.cwd(), options.entry ?? "src/Main.pfui")));
   return {
     name: "pfui",
     // Before other transforms (React's), which expect JavaScript.
@@ -117,6 +126,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
         // The render's own server uses only the compile step (no prerender, no maps).
         const transform = pfui({
           sourceMap: false,
+          ...(options.entry ? { entry: options.entry } : {}),
           ...(options.components ? { components: options.components } : {}),
           ...(options.extensions ? { extensions: options.extensions } : {}),
           ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
@@ -162,7 +172,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
       // A component file (or code-behind) appearing or disappearing changes what
       // other files compile to: recompile every .pfui module and reload.
       const changed = (path: string) => {
-        if (!path.endsWith(".pfui") && !path.endsWith(".pfui.xs")) return;
+        if (!path.endsWith(".pfui") && !path.endsWith(".pfui.xs") && basename(path) !== GLOBALS_FILE) return;
         for (const [id, module] of server.moduleGraph.idToModuleMap) {
           if (pfuiFilePath(id)) server.moduleGraph.invalidateModule(module);
         }
@@ -183,35 +193,46 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
       }
       const codeBehind = readCodeBehind(file);
       if (codeBehind !== undefined) this.addWatchFile(`${file}.xs`);
-      const { code, map, diagnostics, codeBehindDiagnostics } = compileModule(source, {
+      // Globals (step 21B): the entry compiles Globals.xs; every other file gets the global names.
+      const app = globalsOf();
+      const isEntry = file === app.entry;
+      const globalsCode = isEntry ? app.readGlobalsCode() : undefined;
+      if (globalsCode !== undefined) this.addWatchFile(app.globalsFile);
+      if (!isEntry) {
+        this.addWatchFile(app.entry);
+        if (existsSync(app.globalsFile)) this.addWatchFile(app.globalsFile);
+      }
+      const { code, map, diagnostics, codeBehindDiagnostics, globalsDiagnostics } = compileModule(source, {
         format: "esm",
         // The map's source resolves relative to the module's URL.
         fileName: basename(file),
         sourceMap,
         userComponents,
         ...(codeBehind !== undefined ? { codeBehind } : {}),
+        ...(globalsCode !== undefined ? { globalsCode } : {}),
+        ...(isEntry ? {} : { globals: app.names() }),
         ...extensionOptions(file),
         ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
       });
-      if (codeBehind !== undefined) {
-        const xsLines = new LineMap(codeBehind);
-        for (const warning of (codeBehindDiagnostics ?? []).filter((d) => d.severity === "warning")) {
-          const { line, column } = xsLines.positionAt(warning.start);
-          this.warn({ message: formatDiagnostic(warning, xsLines, `${file}.xs`), loc: { file: `${file}.xs`, line: line + 1, column } });
+      // Problems of a side file (the code-behind, Globals.xs), at its own positions.
+      const reportSide = (sideSource: string, path: string, sideDiagnostics: readonly Diagnostic[]) => {
+        const sideLines = new LineMap(sideSource);
+        for (const warning of sideDiagnostics.filter((d) => d.severity === "warning")) {
+          const { line, column } = sideLines.positionAt(warning.start);
+          this.warn({ message: formatDiagnostic(warning, sideLines, path), loc: { file: path, line: line + 1, column } });
         }
-      }
-      const codeBehindErrors = (codeBehindDiagnostics ?? []).filter((d) => d.severity === "error");
-      if (codeBehind !== undefined && codeBehindErrors.length > 0) {
-        const xs = `${file}.xs`;
-        const xsLines = new LineMap(codeBehind);
-        const { line, column } = xsLines.positionAt(codeBehindErrors[0]!.start);
+        const sideErrors = sideDiagnostics.filter((d) => d.severity === "error");
+        if (sideErrors.length === 0) return;
+        const { line, column } = sideLines.positionAt(sideErrors[0]!.start);
         this.error({
-          message: `${codeBehindErrors.length} error${codeBehindErrors.length === 1 ? "" : "s"} in ${basename(xs)}:\n${formatErrors(codeBehindErrors, codeBehind, xs)}`,
-          id: xs,
-          loc: { file: xs, line: line + 1, column },
-          frame: codeFrame(codeBehind, xsLines, codeBehindErrors[0]!.start),
+          message: `${sideErrors.length} error${sideErrors.length === 1 ? "" : "s"} in ${basename(path)}:\n${formatErrors(sideErrors, sideSource, path)}`,
+          id: path,
+          loc: { file: path, line: line + 1, column },
+          frame: codeFrame(sideSource, sideLines, sideErrors[0]!.start),
         });
-      }
+      };
+      if (codeBehind !== undefined) reportSide(codeBehind, `${file}.xs`, codeBehindDiagnostics ?? []);
+      if (globalsCode !== undefined) reportSide(globalsCode, app.globalsFile, globalsDiagnostics ?? []);
       const lineMap = new LineMap(source);
       for (const warning of diagnostics.filter((d) => d.severity === "warning")) {
         const { line, column } = lineMap.positionAt(warning.start);

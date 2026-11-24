@@ -6,7 +6,8 @@
 
   Navigation events (step 21): while `unsavedChanges` is set (the Routing
   scenario's checkbox), willNavigate cancels every navigation; didNavigate
-  keeps the last five paths for that scenario to show.
+  keeps the last five paths for that scenario to show. Both are globals
+  (step 21B), so the scenario reads and writes them directly.
 
   The App shell (steps 19A–19C): a header with the tone toggle, a collapsible
   side nav built from `scenarios`, and a footer. Below the lg breakpoint the
@@ -35,8 +36,8 @@
     { path: '/layout', step: '19D–F', title: 'Layout and spacing', description: 'Stacks, flows and sizes; automatic gaps and paddings.' },
     { path: '/data', step: '20', title: 'Data', description: 'DataSource and APICall against a mock backend; slow and broken networks.' }
   ]}"
-  var.unsavedChanges="{false}"
-  var.navigationLog="{[]}"
+  global.unsavedChanges="{false}"
+  global.navigationLog="{[]}"
   onWillNavigate="(to) => { if (unsavedChanges) return false; }"
   onDidNavigate="(to) => { navigationLog = [to, ...navigationLog].slice(0, 5); }">
   <AppHeader title="pfui playground">
@@ -92,7 +93,7 @@
     <Page url="/text"><VStack><TextScenario/><ScenarioSource file="TextScenario"/></VStack></Page>
     <Page url="/theming"><VStack><ThemingScenario/><ScenarioSource file="ThemingScenario"/></VStack></Page>
     <Page url="/behaviors"><VStack><BehaviorsScenario/><ScenarioSource file="BehaviorsScenario"/></VStack></Page>
-    <Page url="/routing"><VStack><RoutingScenario unsavedChanges="{unsavedChanges}" navigationLog="{navigationLog}" onUnsavedChange="(value) => unsavedChanges = value"/><ScenarioSource file="RoutingScenario"/></VStack></Page>
+    <Page url="/routing"><VStack><RoutingScenario/><ScenarioSource file="RoutingScenario"/></VStack></Page>
     <Page url="/routing/:item"><VStack><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></VStack></Page>
     <Page url="/data"><VStack><DataScenario/><ScenarioSource file="DataScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>

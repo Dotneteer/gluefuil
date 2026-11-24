@@ -1,0 +1,4 @@
+<!-- Step 21B: writes the global `likes` (through like() from Globals.xs) and `visitor`. -->
+<Component name="LikeButton">
+  <Button label="Like" onClick="like(); visitor = 'member'"/>
+</Component>

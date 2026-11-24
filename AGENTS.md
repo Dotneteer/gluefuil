@@ -106,6 +106,7 @@ here as one line each, with a link to the plan that justified them:
 - **Layout: `Stack` (with `VStack`/`HStack`/`CVStack`/`CHStack`) is the only layout container; `wrapContent` replaces `FlowLayout`.** Gaps and paddings are automatic: a four-level ladder (`space-level0`–`3`) chosen by nesting, orientation, surfaces and screen size, and every spacing value is a multiple of `space-base`. See [.ai/plan/poc-19d-layout.md](.ai/plan/poc-19d-layout.md).
 - **Data: `@tanstack/query-core` bridged to our signals, behind one HTTP gate.** `DataSource` and `APICall` keep XMLUI's markup. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
 - **Mock backend: a Fetch-API handler (`Request` → `Response`) in `@patchfuil/mock-backend`, hosted by a service worker (MSW), dev-server middleware or a test server (MSW node).** The app makes real requests and can't tell; faults and holds are driven through `/__mock`. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
+- **Globals are known at compile time.** Every file sees the globals of `Main.pfui`'s root and `Globals.xs` (an unknown name stays an error); React context carries their scope to user components. See [.ai/plan/poc-21b-globals.md](.ai/plan/poc-21b-globals.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements
