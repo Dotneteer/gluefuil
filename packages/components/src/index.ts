@@ -1,5 +1,5 @@
 export * from "./metadata";
-export { Stack } from "./basic";
+export { BAR_SCOPE, childCount, LayoutContext, layoutStyle, SpaceFiller, Stack, useLayout, withoutLayoutProps, type LayoutContextValue } from "./layout";
 export { Link, Page, Pages } from "./routing";
 export { Button, Checkbox, MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF, Select, TextBox } from "./mantine";
 export { H1, H2, H3, H4, H5, H6, Heading, headingLevel, Text, TEXT_VARIANT_ELEMENTS } from "./text";

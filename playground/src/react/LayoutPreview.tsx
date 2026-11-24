@@ -1,4 +1,4 @@
-// The App shell scenario's preview: each layout demo (src/layouts/*.pfui) runs
+// The layout scenarios' preview: each layout demo (src/layouts/*.pfui) runs
 // as its own page (layouts.html?layout=…) in a frame, at desktop or phone
 // width, with its source. An app's own React component, used from markup: see
 // `extensions` in vite.config.ts.
@@ -6,7 +6,7 @@ import { useState, type CSSProperties } from "react";
 
 const sources = import.meta.glob("../layouts/*.pfui", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 
-/** The demos, in the order of the comparison table in .ai/plan/poc-19a-app-shell.md. */
+/** The App shell demos, in the order of the comparison table in .ai/plan/poc-19a-app-shell.md. */
 export const LAYOUTS = [
   "condensed-sticky",
   "condensed",
@@ -18,6 +18,9 @@ export const LAYOUTS = [
   "desktop",
   "condensed-content",
 ];
+
+/** The demos of each group: the App shell's layouts, and the automatic spacing (steps 19D–19F). */
+const GROUPS: Record<string, string[]> = { shell: LAYOUTS, spacing: ["spacing"] };
 
 const WIDTHS = { Desktop: "100%", Phone: "390px" } as const;
 
@@ -43,19 +46,22 @@ const code: CSSProperties = {
   borderRadius: "var(--pfui-borderRadius)",
 };
 
-export function LayoutPreview() {
-  const [layout, setLayout] = useState(LAYOUTS[0]!);
+export function LayoutPreview({ group }: { group?: unknown }) {
+  const demos = GROUPS[typeof group === "string" ? group : "shell"] ?? LAYOUTS;
+  const [layout, setLayout] = useState(demos[0]!);
   const [width, setWidth] = useState<keyof typeof WIDTHS>("Desktop");
   const source = sources[`../layouts/${layout}.pfui`] ?? "";
   return (
     <section className="playground-LayoutPreview" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <div style={row} role="group" aria-label="Layout">
-        {LAYOUTS.map((name) => (
-          <button key={name} type="button" style={choice(name === layout)} aria-pressed={name === layout} onClick={() => setLayout(name)}>
-            {name}
-          </button>
-        ))}
-      </div>
+      {demos.length > 1 ? (
+        <div style={row} role="group" aria-label="Layout">
+          {demos.map((name) => (
+            <button key={name} type="button" style={choice(name === layout)} aria-pressed={name === layout} onClick={() => setLayout(name)}>
+              {name}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div style={row} role="group" aria-label="Width">
         {(Object.keys(WIDTHS) as (keyof typeof WIDTHS)[]).map((name) => (
           <button key={name} type="button" style={choice(name === width)} aria-pressed={name === width} onClick={() => setWidth(name)}>
@@ -68,7 +74,7 @@ export function LayoutPreview() {
         key={layout}
         title={`Layout: ${layout}`}
         src={`layouts.html?layout=${layout}`}
-        style={{ width: WIDTHS[width], maxWidth: "100%", height: "480px", border: "1px solid var(--pfui-borderColor)", borderRadius: "var(--pfui-borderRadius)" }}
+        style={{ width: WIDTHS[width], maxWidth: "100%", height: demos.length === 1 ? "720px" : "480px", border: "1px solid var(--pfui-borderColor)", borderRadius: "var(--pfui-borderRadius)" }}
       />
       <figure style={{ margin: 0 }}>
         <figcaption style={{ fontSize: "0.85em", color: "var(--pfui-textColor-secondary)", margin: "0 0 4px" }}>layouts/{layout}.pfui</figcaption>

@@ -3,7 +3,7 @@
   the header, the footer). Each layout below is its own App, in a frame.
 -->
 <Component name="AppShellScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader
       title="App shell"
       description="XMLUI's App layouts expressed with placement, fullHeight, sticky and scroll. Pick one, scroll inside the frame, try the phone width."/>
@@ -11,9 +11,9 @@
       The nav goes in one of four places; everything else stays put. Below the
       breakpoint (drawerBelow, default lg) the nav becomes a drawer opened from the header.
     </Text>
-    <Stack orientation="horizontal" gap="12px">
+    <HStack>
       <Button label="Collapse this playground's nav: {navPanelCollapsed}" onClick="setNavPanelCollapsed(!navPanelCollapsed)"/>
-    </Stack>
+    </HStack>
     <LayoutPreview/>
-  </Stack>
+  </VStack>
 </Component>

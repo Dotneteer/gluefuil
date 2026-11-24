@@ -21,7 +21,24 @@ import popoverCss from "@mantine/core/styles/Popover.layer.css?inline";
 import scrollAreaCss from "@mantine/core/styles/ScrollArea.layer.css?inline";
 import unstyledButtonCss from "@mantine/core/styles/UnstyledButton.layer.css?inline";
 import { wrapComponent } from "@patchfuil/runtime";
+import { createElement, type ComponentType } from "react";
+import { useLayout, withoutLayoutProps, type LayoutProps } from "./layout";
 import { componentMetadata } from "./metadata";
+
+/**
+ * The layout props (width, padding, …) for a wrapped component: applied to the
+ * Mantine component's root as `style`; the rest of the props go through the
+ * wrapper unchanged.
+ */
+function withLayout(Wrapped: ComponentType<Record<string, unknown>>): ComponentType<LayoutProps> {
+  function Layout(props: LayoutProps) {
+    // Only the style: Mantine puts it on the root, but other attributes on the input (TextInput).
+    const { style } = useLayout(props);
+    return createElement(Wrapped, { ...withoutLayoutProps(props), ...(style ? { style } : {}) });
+  }
+  Layout.displayName = Wrapped.displayName;
+  return Layout;
+}
 
 /** The CSS of the Mantine components in use (all in `@layer mantine`). */
 export const MANTINE_STYLESHEET = [
@@ -51,7 +68,7 @@ const focusApi = ({ ref }: { ref: { current: unknown } }) => ({
   },
 });
 
-export const Button = wrapComponent(MantineButton as never, {
+export const Button = withLayout(wrapComponent(MantineButton as never, {
   props: componentMetadata.Button!.props,
   rename: { label: (label) => (label === undefined || label === null ? {} : { children: String(label) }), enabled: enabledToDisabled },
   fixed: {
@@ -67,16 +84,16 @@ export const Button = wrapComponent(MantineButton as never, {
       },
     }),
   },
-});
+}));
 
-export const TextBox = wrapComponent(TextInput as never, {
+export const TextBox = withLayout(wrapComponent(TextInput as never, {
   props: componentMetadata.TextBox!.props,
   rename: { enabled: enabledToDisabled },
   value: { prop: "value", change: "onChange", read: (event: { currentTarget: { value: string } }) => event.currentTarget.value, parse: asText },
   withRef: true,
   api: focusApi,
   fixed: { className: "pfui-TextBox", vars: () => ({ wrapper: { "--input-radius": "var(--pfui-borderRadius-TextBox)" } }) },
-});
+}));
 
 /** `options`: strings or `{ value, label }` objects → Mantine's `data`. */
 function toData(options: unknown): { value: string; label: string }[] {
@@ -88,7 +105,7 @@ function toData(options: unknown): { value: string; label: string }[] {
   );
 }
 
-export const Select = wrapComponent(MantineSelect as never, {
+export const Select = withLayout(wrapComponent(MantineSelect as never, {
   props: componentMetadata.Select!.props,
   rename: { options: (options) => ({ data: toData(options) }), enabled: enabledToDisabled },
   value: { prop: "value", change: "onChange", parse: (value) => (value === undefined || value === null || value === "" ? null : String(value)) },
@@ -100,9 +117,9 @@ export const Select = wrapComponent(MantineSelect as never, {
     comboboxProps: { withinPortal: false },
     vars: () => ({ wrapper: { "--input-radius": "var(--pfui-borderRadius-Select)" } }),
   },
-});
+}));
 
-export const Checkbox = wrapComponent(MantineCheckbox as never, {
+export const Checkbox = withLayout(wrapComponent(MantineCheckbox as never, {
   props: componentMetadata.Checkbox!.props,
   rename: { enabled: enabledToDisabled },
   value: {
@@ -115,4 +132,4 @@ export const Checkbox = wrapComponent(MantineCheckbox as never, {
     className: "pfui-Checkbox",
     vars: () => ({ root: { "--checkbox-color": "var(--pfui-backgroundColor-Checkbox--checked)", "--checkbox-radius": "var(--pfui-borderRadius-Checkbox)" } }),
   },
-});
+}));

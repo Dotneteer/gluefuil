@@ -123,13 +123,14 @@ div.pfui-App                    data-scroll, data-nav, data-nav-full-height,
 
 **Theme variables** (defaults in `metadata.ts`):
 
-- `height-AppHeader` 56px;
+- `height-AppHeader` `$space-14` (56px at 4px; steps 19D–19F);
 - `width-navPanel-App` 256px;
 - `width-navPanel-collapsed-App` 48px;
-- `height-Footer` 48px;
+- `height-Footer` `$space-12` (48px);
 - `maxWidth-content-App` none;
-- `paddingHorizontal-content-App` and `paddingVertical-content-App`
-  `$space-4`;
+- `paddingHorizontal-content-App` and `paddingVertical-content-App`: no
+  default; unset, the content's padding is the page level of the spacing
+  ladder ([layout.md](layout.md));
 - the regions' and NavLink's colors, borders and paddings.
 
 ## The drawer's behavior (`useDrawer`)

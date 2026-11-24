@@ -181,7 +181,7 @@ uses it.
 | `compiler/src/module/diagnostics.ts` | `ModuleDiagnostics` |
 | `runtime/src/render/elements.ts` | `Bound`, `TextNode`, `BindingFunction` |
 | `runtime/src/render/module.ts` | `loadModule` |
-| `components/src/basic.tsx` | `App`, `Text`, `Button`, `Stack` |
+| `components/src/layout.tsx` | `Stack`, `SpaceFiller`, the layout context and props ([layout.md](layout.md)); `App` is in `theme.tsx`, `Text` in `text.tsx`, `Button` in `mantine.tsx` |
 | `components/src/metadata.ts` | `componentMetadata`, `ComponentMetadata` |
 
 ## Tests

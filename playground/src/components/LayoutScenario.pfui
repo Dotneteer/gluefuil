@@ -1,0 +1,18 @@
+<!--
+  The layout system (steps 19D–19F): stacks with automatic gaps and paddings.
+  The demo is its own App, in a frame, so the phone width is real.
+-->
+<Component name="LayoutScenario">
+  <VStack>
+    <ScenarioHeader
+      title="Layout and spacing"
+      description="VStack, HStack and wrapping stacks; gaps and paddings follow the nesting, the orientation and space-base. Try the phone width and the inspector."/>
+    <Text>
+      This playground sets no gap or padding either. A page's sections get space-level0,
+      groups inside them level1, and so on down to level3; a row of controls uses the next
+      tighter step; a box with a background or a border gets padding. All of it is a multiple
+      of space-base.
+    </Text>
+    <LayoutPreview group="spacing"/>
+  </VStack>
+</Component>

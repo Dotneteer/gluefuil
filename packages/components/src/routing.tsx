@@ -3,10 +3,13 @@
 // .ai/plan/poc-19-routing.md
 import { currentLocation, findRoute, hrefFor, navigate, registerRoutes, useComputed } from "@patchfuil/runtime";
 import { Children, isValidElement, useEffect, type MouseEvent, type ReactNode } from "react";
+import { LayoutScope, useLayout, useRecountedScope, type LayoutProps } from "./layout";
 
 /** A Page's content; Pages decides whether it is rendered. */
 export function Page({ children }: { url?: unknown; children?: ReactNode }) {
-  return <>{children}</>;
+  // A fragment: the page's roots are the content's children. Counted again for
+  // the layout's wrapper rule (layout.tsx).
+  return <LayoutScope value={useRecountedScope(children)}>{children}</LayoutScope>;
 }
 
 /**
@@ -43,7 +46,9 @@ export function Pages({ fallbackPath, children }: { fallbackPath?: unknown; chil
 }
 
 /** A link to a route: a real href (`#/x` in hash mode); a plain click navigates without a page load. */
-export function Link({ to, label, children }: { to?: unknown; label?: unknown; children?: ReactNode }) {
+export function Link(props: LayoutProps & { to?: unknown; label?: unknown; children?: ReactNode }) {
+  const { to, label, children } = props;
+  const layout = useLayout(props);
   const target = typeof to === "string" ? to : "/";
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     // Let the browser handle new tabs and windows.
@@ -52,7 +57,7 @@ export function Link({ to, label, children }: { to?: unknown; label?: unknown; c
     navigate(target);
   };
   return (
-    <a className="pfui-Link" href={hrefFor(target)} onClick={onClick}>
+    <a className="pfui-Link" href={hrefFor(target)} onClick={onClick} {...layout.attributes} style={layout.style}>
       {label !== undefined && label !== null ? String(label) : children}
     </a>
   );

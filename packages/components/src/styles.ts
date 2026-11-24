@@ -7,6 +7,9 @@ import { BREAKPOINTS } from "@patchfuil/runtime";
 
 export const BASE_STYLESHEET_HREF = "pfui-base";
 
+/** Below md: a phone. The spacing ladder's page level steps down, and flows go one item per row. */
+const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
+
 /**
  * The App shell (shell.tsx; design: .ai/plan/poc-19a-app-shell.md).
  *
@@ -42,7 +45,12 @@ const SHELL = `
   width: 100%;
   max-width: var(--pfui-maxWidth-content-App);
   margin-inline: auto;
-  padding: var(--pfui-paddingVertical-content-App) var(--pfui-paddingHorizontal-content-App);
+  /* The page: level 0 of the spacing ladder (LAYOUT below). */
+  display: flex;
+  flex-direction: column;
+  --pfui-gap: var(--pfui-l0);
+  gap: var(--pfui-gap);
+  padding: var(--pfui-paddingVertical-content-App, var(--pfui-l0)) var(--pfui-paddingHorizontal-content-App, var(--pfui-l0));
 }
 :where(.pfui-App[data-scroll="content"]) .pfui-AppMain { overflow: auto; }
 :where(.pfui-App[data-scroll="content"]) .pfui-NavPanel { overflow-y: auto; }
@@ -76,7 +84,7 @@ const SHELL = `
   flex-direction: column;
   background-color: var(--pfui-backgroundColor-NavPanel);
 }
-.pfui-NavPanel-items { display: flex; flex-direction: column; gap: 2px; padding: var(--pfui-padding-NavPanel); flex: 1; }
+.pfui-NavPanel-items { display: flex; flex-direction: column; gap: var(--pfui-space-0_5); padding: var(--pfui-padding-NavPanel); flex: 1; }
 .pfui-NavPanel-logo { display: flex; align-items: center; min-height: var(--pfui-height-AppHeader); padding: 0 var(--pfui-paddingHorizontal-AppHeader); box-sizing: border-box; }
 .pfui-NavPanel-footer { padding: var(--pfui-padding-NavPanel); }
 .pfui-NavPanel[data-placement="side"] {
@@ -148,7 +156,7 @@ const SHELL = `
 .pfui-NavGroup-label::-webkit-details-marker { display: none; }
 .pfui-NavGroup-chevron { margin-inline-start: auto; transition: transform 150ms; }
 .pfui-NavGroup[open] > .pfui-NavGroup-label .pfui-NavGroup-chevron { transform: rotate(180deg); }
-.pfui-NavGroup-items { display: flex; flex-direction: column; gap: 2px; padding-inline-start: var(--pfui-space-4); }
+.pfui-NavGroup-items { display: flex; flex-direction: column; gap: var(--pfui-space-0_5); padding-inline-start: var(--pfui-space-4); }
 :where(.pfui-NavPanel[data-placement="header"], .pfui-NavPanel[data-placement="below-header"]) .pfui-NavGroup { position: relative; }
 :where(.pfui-NavPanel[data-placement="header"], .pfui-NavPanel[data-placement="below-header"]) .pfui-NavGroup-items {
   position: absolute;
@@ -216,6 +224,91 @@ function shellDrawer(name: string, min: number): string {
 }`;
 }
 
+
+/**
+ * The layout system (layout.tsx; design: .ai/plan/poc-19d-layout.md).
+ *
+ * - The spacing ladder: a container's data-level (0-3) and orientation pick
+ *   --pfui-step from the space-level* theme variables. A vertical stack and a
+ *   horizontal stack of columns (one with a container child) use their level's
+ *   step; a horizontal stack of items the next tighter one. A surface (a
+ *   background or a border) gets its level's step as padding.
+ * - --pfui-gap is the gap in effect: an explicit gap (inline), else gap-Stack
+ *   (a theme's flat override, XMLUI's behavior), else the step.
+ * - Level 0 is smaller on phones (--pfui-l0); resolved on every container, so a
+ *   <Theme> below the App can change it.
+ * - Percentage widths in a flow (a child's width, layout.tsx flowWidth, or
+ *   itemWidth) are gap-aware: calc(W - gap * (1 - W/100%)), and 100% on
+ *   phones (--pfui-flow-wide is 0 there).
+ */
+const LAYOUT = `
+.pfui-AppContent,
+.pfui-Stack {
+  --pfui-l0: var(--pfui-space-level0);
+}
+@media (max-width: ${PHONE_MAX}px) {
+  .pfui-AppContent,
+  .pfui-Stack {
+    --pfui-l0: var(--pfui-space-level0-phone);
+  }
+}
+.pfui-Stack {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  --pfui-gap: var(--pfui-gap-Stack, var(--pfui-step));
+  gap: var(--pfui-gap);
+}
+.pfui-Stack[data-level="0"] { --pfui-step: var(--pfui-l0); --pfui-pad: var(--pfui-l0); }
+.pfui-Stack[data-level="1"] { --pfui-step: var(--pfui-space-level1); --pfui-pad: var(--pfui-space-level1); }
+.pfui-Stack[data-level="2"] { --pfui-step: var(--pfui-space-level2); --pfui-pad: var(--pfui-space-level2); }
+.pfui-Stack[data-level="3"] { --pfui-step: var(--pfui-space-level3); --pfui-pad: var(--pfui-space-level3); }
+.pfui-Stack[data-orientation="horizontal"][data-level="0"] { --pfui-step: var(--pfui-space-level1); }
+.pfui-Stack[data-orientation="horizontal"][data-level="1"] { --pfui-step: var(--pfui-space-level2); }
+.pfui-Stack[data-orientation="horizontal"][data-level="2"],
+.pfui-Stack[data-orientation="horizontal"][data-level="3"] { --pfui-step: var(--pfui-space-level3); }
+.pfui-Stack[data-orientation="horizontal"][data-level="0"]:has(> .pfui-Stack) { --pfui-step: var(--pfui-l0); }
+.pfui-Stack[data-orientation="horizontal"][data-level="1"]:has(> .pfui-Stack) { --pfui-step: var(--pfui-space-level1); }
+.pfui-Stack[data-orientation="horizontal"][data-level="2"]:has(> .pfui-Stack) { --pfui-step: var(--pfui-space-level2); }
+.pfui-Stack[data-surface] { padding: var(--pfui-pad); }
+.pfui-Stack[data-wrap] {
+  flex-wrap: wrap;
+  --pfui-flow-gap: var(--pfui-gap);
+  --pfui-flow-wide: 1;
+}
+@media (max-width: ${PHONE_MAX}px) {
+  .pfui-Stack[data-wrap] { --pfui-flow-wide: 0; }
+}
+.pfui-Stack[data-wrap] > * { max-width: 100%; box-sizing: border-box; }
+.pfui-Stack[data-wrap][data-item-width] > :not(.pfui-SpaceFiller) { flex-shrink: 0; }
+.pfui-Stack[data-wrap][data-item-width="fixed"] > :not(.pfui-SpaceFiller) { width: var(--pfui-item-width); }
+.pfui-Stack[data-wrap][data-item-width="%"] > :not(.pfui-SpaceFiller) {
+  width: calc((var(--pfui-item-width) - var(--pfui-flow-gap) * (1 - var(--pfui-item-fraction))) * var(--pfui-flow-wide) + 100% * (1 - var(--pfui-flow-wide)));
+}
+.pfui-SpaceFiller { flex: 1 1 0px; }
+/* A line break in a flow. Its zero-height line still has a row gap on each side (as XMLUI's FlowLayout .break). */
+.pfui-Stack[data-wrap] > .pfui-SpaceFiller {
+  flex: 0 0 100%;
+  height: 0;
+}
+/*
+ * A button keeps its own width: not stretched in a column (XMLUI: layout.md
+ * § VStack; width="100%" fills it), not squeezed in a row (Mantine's root
+ * clips its label, so it could shrink to nothing).
+ */
+.pfui-AppContent > .pfui-Button,
+.pfui-Stack[data-orientation="vertical"] > .pfui-Button {
+  width: fit-content;
+}
+.pfui-Stack > .pfui-Button { flex-shrink: 0; }
+/* A heading belongs to what follows it: more space above it than below. */
+.pfui-AppContent > .pfui-Heading:not(:first-child),
+.pfui-Stack[data-orientation="vertical"] > .pfui-Heading:not(:first-child) {
+  margin-block-start: var(--pfui-gap);
+}
+`;
+
 const SHELL_DRAWER = BREAKPOINTS.filter(([, min]) => min > 0)
   .map(([name, min]) => shellDrawer(name, min))
   .join("\n");
@@ -223,6 +316,7 @@ const SHELL_DRAWER = BREAKPOINTS.filter(([, min]) => min > 0)
 export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
+${LAYOUT}
 .pfui-App,
 .pfui-Theme {
   /* Mantine's global variables, redirected to the pfui theme. */
@@ -297,6 +391,10 @@ ${SHELL_DRAWER}
   --input-color: var(--pfui-textColor-Select);
   --input-bd: var(--pfui-borderColor-Select);
   --input-bd-focus: var(--pfui-borderColor-Select--focus);
+}
+/* Mantine expects its baseline.css (* { box-sizing: border-box }), which also styles <body>: only its input parts here. */
+.pfui-App :where(.mantine-InputWrapper-root, .mantine-Input-wrapper, .mantine-Input-input) {
+  box-sizing: border-box;
 }
 .pfui-TextBox .mantine-Input-input:focus,
 .pfui-Select .mantine-Input-input:focus {

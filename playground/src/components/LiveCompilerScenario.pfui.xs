@@ -1,7 +1,7 @@
 var examples = [
   {
     title: 'A working example (edit it!)',
-    markup: '<Stack var.count="{0}" gap="8px">\n  <Button label="{\'Clicked \' + count + \' times\'}" onClick="count++"/>\n  <Text variant="strong">count is {count}</Text>\n</Stack>'
+    markup: '<VStack var.count="{0}">\n  <Button label="{\'Clicked \' + count + \' times\'}" onClick="count++"/>\n  <Text variant="strong">count is {count}</Text>\n</VStack>'
   },
   {
     title: 'Sandbox: platform globals are compile errors (C002)',

@@ -1,11 +1,11 @@
 <!-- The top of every scenario page: a way back, the title and the description. -->
 <Component name="ScenarioHeader">
-  <Stack gap="8px">
-    <Stack orientation="horizontal" gap="12px">
+  <VStack>
+    <HStack>
       <Button label="← Dashboard" onClick="navigate('/')"/>
       <Text variant="secondary">{$pathname}</Text>
-    </Stack>
+    </HStack>
     <H1>{$props.title}</H1>
     <Text variant="secondary">{$props.description}</Text>
-  </Stack>
+  </VStack>
 </Component>

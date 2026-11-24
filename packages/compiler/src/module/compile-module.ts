@@ -19,9 +19,13 @@
 //   footer (export default, or return)
 
 import {
+  acceptsLayoutProps,
   attachedBehaviors,
+  checkLayoutValue,
   componentMetadata,
   isKnownThemeVariable,
+  LAYOUT_PROP_NAMES,
+  layoutProp,
   themeVariableNames,
   type BehaviorMetadata,
   type ComponentMetadata,
@@ -211,6 +215,8 @@ class ModuleCompiler {
   /** The App's shell settings, once compiled; NavPanelCollapseButton elements, checked against them. */
   private shell: ShellConfig | undefined;
   private readonly collapseButtons: Span[] = [];
+  /** The root element of the component being compiled: it applies the layout props given to the component's tag. */
+  private layoutRoot: ElementNode | undefined;
 
   /** Source markers on (a source map is wanted). */
   private readonly markers: boolean;
@@ -467,11 +473,15 @@ class ModuleCompiler {
     }
     const methodsName = methods.length > 0 ? this.hoist("$$m", methods) : this.empty();
 
+    // The layout props of the component's tag go to its root element (steps 19D–19E).
+    const savedLayoutRoot = this.layoutRoot;
+    this.layoutRoot = body.length === 1 ? body[0] : undefined;
     const parts: string[] = [];
     for (const child of content) {
       const compiled = this.child(child, "$$c");
       if (compiled !== undefined) parts.push(compiled);
     }
+    this.layoutRoot = savedLayoutRoot;
     const rendered = parts.length === 0 ? "null" : parts.length === 1 ? parts[0]! : `$$h($$Fragment, null, ${parts.join(", ")})`;
     const ids = JSON.stringify([...this.ids.keys()]);
 
@@ -759,6 +769,12 @@ class ModuleCompiler {
       this.report(node.name, "E001", name, didYouMean(name, [...Object.keys(this.components), ...this.userComponents.keys()]));
       return "null";
     }
+    // A component that no longer exists (FlowLayout): what to use instead.
+    const removed = this.metadataOf(name)?.removed;
+    if (removed !== undefined) {
+      this.reportContract(node.name, "E032", name, removed);
+      return "null";
+    }
     // Shell regions belong to App (step 19A).
     if (this.metadataOf(name)?.isRegion && !regionAllowed) {
       this.report(node.name, "E028", `<${name}> must be a direct child of <App>`);
@@ -952,10 +968,17 @@ class ModuleCompiler {
   private element(node: ElementNode, scopeVar: string): string {
     const name = node.name.full;
     const isUser = !Object.hasOwn(this.components, name);
-    if (!isUser) this.usedComponents.add(name);
     const metadata = this.metadataOf(name)!;
+    // An alias (HStack) renders another component (Stack) with fixed props, unless set.
+    const alias = isUser ? undefined : metadata.alias;
+    const rendered = alias?.component ?? name;
+    if (!isUser) this.usedComponents.add(rendered);
+    const isLayoutRoot = node === this.layoutRoot;
 
     const constants: [string, string][] = [];
+    for (const [prop, value] of Object.entries(alias?.props ?? {})) {
+      if (!node.attributes.some((a) => a.name.full === prop)) constants.push([prop, jsString(value)]);
+    }
     const bindings: [string, string][] = [];
     const handlers: [string, string][] = [];
     // Behaviors (step 18): decided from the attributes the element sets; their
@@ -1001,7 +1024,7 @@ class ModuleCompiler {
         this.behaviorAttribute(attribute, behavior.props[attributeName]!, behaviorValues.get(behavior)!);
         continue;
       }
-      const prop = Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : undefined;
+      const prop = Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : layoutProp(metadata, attributeName);
       if (!prop && metadata.themeVarAttributes) {
         // `<Theme backgroundColor-Button="…">`: a theme variable (step 17).
         const known = this.themeVariables();
@@ -1021,6 +1044,7 @@ class ModuleCompiler {
       const value = this.value(this.segments(attribute as ValuedAttribute));
       if ("constant" in value) {
         if (prop) this.checkPropLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
+        if (prop?.cssKind) this.checkCssLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
         constants.push([attributeName, value.constant]);
       } else {
         if (prop?.isLiteral) this.reportContract(attribute.value, "E026", attributeName, name);
@@ -1073,6 +1097,8 @@ class ModuleCompiler {
         if (compiled !== undefined) children.push(compiled);
       }
     }
+    // A component's root: the layout props of the component's tag, read from $props.
+    if (isLayoutRoot && acceptsLayoutProps(this.metadataOf(rendered) ?? metadata)) bindings.push(["$$layoutFrom", this.layoutFromProps()]);
     // The App shell's regions: props of their own, plus the settings (step 19A).
     if (metadata.regions) this.regions(node, regionNodes, metadata.regions, scopeVar, constants);
     // onMount / onUnmount (any element): not component props.
@@ -1085,7 +1111,7 @@ class ModuleCompiler {
       }
     }
 
-    const component = isUser ? this.userComponentRef(name, node.name) : `$$C_${name}`;
+    const component = isUser ? this.userComponentRef(name, node.name) : `$$C_${rendered}`;
     const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
@@ -1236,6 +1262,21 @@ class ModuleCompiler {
       result = `$$h($$Bound, { type: $$C_${behavior.component}, props: ${propsCode}, bindings: ${bindingsCode}, scope: ${scopeVar} }, ${result})`;
     }
     return result;
+  }
+
+  /** A CSS literal (a layout prop, a stack's gap): its form and its `$name` references (E031). */
+  private checkCssLiteral(prop: PropMetadata, propName: string, text: string, span: Span): void {
+    const known = this.themeVariables();
+    const problem = checkLayoutValue({ cssKind: prop.cssKind!, star: prop.star }, text, (ref) => isKnownThemeVariable(ref, known));
+    if (problem !== undefined) this.reportContract(span, "E031", propName, text, problem);
+  }
+
+  /** The binding `{ width: $props.width, … }`: a component's root applies what its tag was given. */
+  private layoutFromProps(): string {
+    const source = `{({ ${LAYOUT_PROP_NAMES.map((n) => `${n}: $props.${n}`).join(", ")} })}`;
+    const parsed = parseInterpolation(source);
+    const result = compileInterpolation(parsed.segments, { scope: this.visibleNames(), markers: false });
+    return result.code;
   }
 
   /** A literal value against the prop's type and enum (E022, E023). */

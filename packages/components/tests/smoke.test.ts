@@ -7,8 +7,17 @@ test("components package loads", () => {
 });
 
 test("every component has metadata, and the metadata entry point loads on its own", () => {
-  expect(Object.keys(componentMetadata).sort()).toEqual(["App", "AppHeader", "Button", "Checkbox", "Footer", "H1", "H2", "H3", "H4", "H5", "H6", "Heading", "Items", "Link", "NavGroup", "NavLink", "NavPanel", "NavPanelCollapseButton", "Page", "Pages", "Select", "Stack", "Text", "TextBox", "Theme"]);
-  for (const name of Object.keys(componentMetadata)) expect(typeof (components as Record<string, unknown>)[name], name).toBe("function");
+  expect(Object.keys(componentMetadata).sort()).toEqual([
+    "App", "AppHeader", "Button", "CHStack", "CVStack", "Checkbox", "FlowLayout", "Footer", "H1", "H2", "H3", "H4", "H5", "H6", "HStack", "Heading",
+    "Items", "Link", "NavGroup", "NavLink", "NavPanel", "NavPanelCollapseButton", "Page", "Pages", "Select", "SpaceFiller", "Stack", "Text", "TextBox",
+    "Theme", "VStack",
+  ]);
+  for (const [name, metadata] of Object.entries(componentMetadata)) {
+    // Aliases render another component (HStack → Stack); removed ones exist only for their migration error.
+    if (metadata.alias) expect(typeof (components as Record<string, unknown>)[metadata.alias.component], name).toBe("function");
+    else if (metadata.removed !== undefined) expect((components as Record<string, unknown>)[name], name).toBeUndefined();
+    else expect(typeof (components as Record<string, unknown>)[name], name).toBe("function");
+  }
 });
 
 test("every built-in prop declares its value type (contracts, step 15)", () => {

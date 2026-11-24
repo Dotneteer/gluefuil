@@ -1,16 +1,16 @@
 <Component name="IdsScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Component IDs" description="Step 8: an id exposes a component's API to the whole file, in any order."/>
-    <Stack gap="8px">
+    <VStack>
       <Text>Declared before the TextBox: "{nameBox.value}" ({nameBox.value.length} characters)</Text>
       <TextBox id="nameBox" placeholder="Type here" initialValue="pfui"/>
-      <Stack orientation="horizontal" gap="8px">
+      <HStack>
         <Button label="Upper-case" onClick="nameBox.setValue(nameBox.value.toUpperCase())"/>
         <Button label="Clear and focus" onClick="nameBox.setValue(''); nameBox.focus()"/>
-      </Stack>
+      </HStack>
       <Checkbox id="flag" label="A checkbox with an id"/>
       <Text>flag.value = {flag.value}</Text>
       <Button label="Toggle the checkbox from a handler" onClick="flag.setValue(!flag.value)"/>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

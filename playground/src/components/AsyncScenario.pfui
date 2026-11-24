@@ -1,34 +1,34 @@
 <Component name="AsyncScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Async handlers" description="Step 7: implicit await, handler policies, cancellation and timeouts."/>
     <H3>Implicit await</H3>
-    <Stack orientation="horizontal" gap="8px" var.status="Idle">
+    <HStack var.status="Idle">
       <Button label="Save (1 s)" onClick="status = 'Saving…'; delay(1000); status = 'Saved at ' + new Date().toLocaleTimeString()"/>
       <Text>Status: {status}</Text>
-    </Stack>
+    </HStack>
     <H3>Policies (click several times quickly)</H3>
-    <Stack gap="8px" var.log="{[]}">
-      <Stack orientation="horizontal" gap="8px">
+    <VStack var.log="{[]}">
+      <HStack>
         <Button label="parallel" onClick="const id = log.length; log.push('p' + id + ' start'); delay(800); log.push('p' + id + ' end')"/>
         <Button label="queue" handlerPolicy="queue" onClick="const id = log.length; log.push('q' + id + ' start'); delay(800); log.push('q' + id + ' end')"/>
         <Button label="single-flight" handlerPolicy="single-flight" onClick="const id = log.length; log.push('s' + id + ' start'); delay(800); log.push('s' + id + ' end')"/>
         <Button label="drop-while-running" handlerPolicy="drop-while-running" onClick="const id = log.length; log.push('d' + id + ' start'); delay(800); log.push('d' + id + ' end')"/>
         <Button label="Clear" onClick="log = []"/>
-      </Stack>
+      </HStack>
       <Text>{log.join(' · ') || '(nothing yet)'}</Text>
-    </Stack>
+    </VStack>
     <H3>Cancellation</H3>
-    <Stack gap="8px" var.progress="">
+    <VStack var.progress="">
       <Button
         label="Long job (click again to restart it)"
         handlerPolicy="single-flight"
         onClick="for (let i = 1; i &lt;= 5; i++) { progress = 'step ' + i + ' of 5'; delay(700); } progress = 'done'"/>
       <Text>Progress: {progress}</Text>
-      <Stack var.timed="" gap="8px">
+      <VStack var.timed="">
         <Button label="A 3 s job with a 1 s timeout" handlerTimeoutMs="1000" onClick="timed = 'started'; delay(3000); timed = 'finished (should not happen)'"/>
         <Text>Timed job: {timed || '(not started)'}</Text>
-      </Stack>
+      </VStack>
       <Text variant="secondary">A cancelled handler stops at its next await; navigating away from this page cancels running handlers too.</Text>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

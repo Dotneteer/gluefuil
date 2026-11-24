@@ -18,7 +18,7 @@ from XMLUI, record the decision and the reason (see *Decisions* below).
 
 Proof-of-concept phase: steps 0–19 and the inserted 19A–19C (the App
 shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
-19 with a reduced scope). **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+19 with a reduced scope); the inserted 19D–19F (the layout system) are done too. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).
@@ -102,6 +102,7 @@ here as one line each, with a link to the plan that justified them:
 - **Toolchain:** TypeScript 7, npm workspaces, Vite 8, Vitest 5 (jsdom for React packages), Playwright, React 19. Packages: `compiler`, `runtime`, `components` (see [.ai/docs/code-structure.md](.ai/docs/code-structure.md)). See [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) step 0.
 - **Reactivity: signals with one `useSyncExternalStore` subscription per component**, using our own small store (`packages/runtime/src/reactivity/`). Plain React state was measured and rejected. See [.ai/plan/poc-04-reactivity.md](.ai/plan/poc-04-reactivity.md).
 - **The App shell has no `layout` property.** `App`'s regions (`AppHeader`, `NavPanel`, `Footer`) each carry their own literal settings (`sticky`, `placement`, `fullHeight`, `drawerBelow`, `collapsible`; `App scroll`); the defaults are XMLUI's `condensed-sticky`; the compiler passes the regions to `App` and CSS does the layout. See [.ai/plan/poc-19a-app-shell.md](.ai/plan/poc-19a-app-shell.md).
+- **Layout: `Stack` (with `VStack`/`HStack`/`CVStack`/`CHStack`) is the only layout container; `wrapContent` replaces `FlowLayout`.** Gaps and paddings are automatic: a four-level ladder (`space-level0`–`3`) chosen by nesting, orientation, surfaces and screen size, and every spacing value is a multiple of `space-base`. See [.ai/plan/poc-19d-layout.md](.ai/plan/poc-19d-layout.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

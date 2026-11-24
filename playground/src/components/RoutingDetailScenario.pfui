@@ -1,15 +1,15 @@
 <Component name="RoutingDetailScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Routing: a detail page" description="Reached through /routing/:item."/>
-    <Stack gap="8px">
+    <VStack>
       <Text>$routeParams.item = {$routeParams.item}</Text>
       <Text>$queryParams = {JSON.stringify($queryParams)}</Text>
-      <Stack orientation="horizontal" gap="8px">
+      <HStack>
         <Button label="Next item (pushes history)" onClick="navigate('/routing/' + (Number($routeParams.item) + 1))"/>
         <Button label="Next item (replaces history)" onClick="navigate('/routing/' + (Number($routeParams.item) + 1), { replace: true })"/>
         <Button label="Back to the routing scenario" onClick="navigate('/routing')"/>
-      </Stack>
+      </HStack>
       <Text variant="secondary">Use the browser's back and forward buttons too.</Text>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>

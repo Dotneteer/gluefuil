@@ -33,8 +33,9 @@ import {
   useSignal,
   type TemplateRenderer,
 } from "@patchfuil/runtime";
-import { createContext, useContext, useEffect, useId, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { createContext, useContext, useEffect, useId, useMemo, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { Icon } from "./icons";
+import { BAR_SCOPE, childCount, LayoutScope, pageScope } from "./layout";
 
 /** The shell's settings, decided by the compiler (`$$shell`). */
 export interface ShellConfig {
@@ -109,19 +110,26 @@ export function Shell({ config = NO_SHELL, header, nav, footer, logo, root, chil
   const drawerOpen = useSignal(navDrawerOpen);
   useDrawer(config, drawerOpen, root);
   const theHeader = header ?? (needsGeneratedHeader(config, header !== undefined) ? <AppHeader $$generated /> : null);
+  // The layout levels (layout.tsx): the content is the page (level 0); the
+  // regions are bars, whose content starts at the deepest level.
+  const single = childCount(children) === 1;
+  const page = useMemo(() => pageScope(single), [single]);
+  const bar = (region: ReactNode) => (region === null || region === undefined ? null : <LayoutScope value={BAR_SCOPE}>{region}</LayoutScope>);
   return (
     <ShellContext.Provider value={{ config, nav, logo, navId }}>
-      {slot("side", true)}
+      {bar(slot("side", true))}
       <div className="pfui-AppColumn">
-        {theHeader}
-        {slot("below-header")}
+        {bar(theHeader)}
+        {bar(slot("below-header"))}
         <div className="pfui-AppBody">
-          {slot("side")}
+          {bar(slot("side"))}
           <main className="pfui-AppMain">
-            <div className="pfui-AppContent">{children}</div>
+            <div className="pfui-AppContent">
+              <LayoutScope value={page}>{children}</LayoutScope>
+            </div>
           </main>
         </div>
-        {footer ?? null}
+        {bar(footer)}
       </div>
       {drawerOpen && config.nav ? <div className="pfui-App-overlay" onClick={() => setNavDrawerOpen(false)} /> : null}
     </ShellContext.Provider>

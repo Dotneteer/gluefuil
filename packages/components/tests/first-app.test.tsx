@@ -30,7 +30,7 @@ test("the first app", () => {
         </Stack>
       </App>`);
   expect(html).toMatch(
-    /^<div class="pfui-App"><div class="pfui-Stack" style="display: flex; flex-direction: column; gap: 8px;"><span class="pfui-Text">3<\/span><span class="pfui-Text">Hello, PFUI!<\/span><button /,
+    /^<div class="pfui-App"><div class="pfui-Stack" data-orientation="vertical" data-level="0" style="flex-direction: column; --pfui-gap: 8px;"><span class="pfui-Text">3<\/span><span class="pfui-Text">Hello, PFUI!<\/span><button /,
   );
   // The Button is Mantine's (step 16), with the pfui class and the label.
   const button = screen.getByRole("button", { name: "Click me" });
@@ -63,7 +63,7 @@ test.each<[markup: string, html: string]>([
   // Layout
   [
     '<Stack orientation="{\'horizontal\'}"><Text>1</Text><Text>2</Text></Stack>',
-    '<div class="pfui-Stack" style="display: flex; flex-direction: row;"><span class="pfui-Text">1</span><span class="pfui-Text">2</span></div>',
+    '<div class="pfui-Stack" data-orientation="horizontal" data-level="0" style="flex-direction: row;"><span class="pfui-Text">1</span><span class="pfui-Text">2</span></div>',
   ],
 ])("%s", (inner, html) => {
   expect(renderMarkup(`<App>${inner}</App>`)).toBe(`<div class="pfui-App">${html}</div>`);

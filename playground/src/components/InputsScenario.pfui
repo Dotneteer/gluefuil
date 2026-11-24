@@ -1,7 +1,7 @@
 <Component name="InputsScenario">
-  <Stack gap="16px">
+  <VStack>
     <ScenarioHeader title="Inputs" description="Step 16: Mantine inputs bound to variables through their events and APIs."/>
-    <Stack gap="8px" var.fruit="none" var.agreed="{false}">
+    <VStack var.fruit="none" var.agreed="{false}">
       <TextBox id="nameBox" label="Name" placeholder="Type your name"/>
       <Text>Hello, {nameBox.value || 'stranger'}!</Text>
       <Button label="Shout" onClick="nameBox.setValue(nameBox.value.toUpperCase())"/>
@@ -14,6 +14,6 @@
       <Checkbox label="I agree" onDidChange="(v) => agreed = v"/>
       <Text>Agreed: {agreed}</Text>
       <Button label="Only enabled when you agree" enabled="{agreed}" onClick="fruit = 'button clicked'"/>
-    </Stack>
-  </Stack>
+    </VStack>
+  </VStack>
 </Component>
