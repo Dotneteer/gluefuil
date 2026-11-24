@@ -30,6 +30,19 @@ export class HandlerCancelledError extends Error {
   }
 }
 
+/**
+ * A handler whose caller waits for its result (`HandlerSlot.call`) ran past its
+ * timeout: the caller's promise rejects with this at once (step 21: a guard
+ * that times out cancels the navigation), while the handler itself is
+ * cancelled at its next suspension point.
+ */
+export class HandlerTimeoutError extends Error {
+  override name = "HandlerTimeoutError";
+  constructor(readonly timeoutMs: number) {
+    super(`The handler did not finish within ${timeoutMs} ms`);
+  }
+}
+
 /** `$cancel` in handler code. */
 export interface CancellationToken {
   readonly aborted: boolean;
@@ -158,7 +171,8 @@ export class HandlerSlot {
    * Like `invoke`, but resolves with the handler's result (`emitEvent`,
    * component methods). It resolves to `undefined` when the policy drops the
    * call, or the call is cancelled. A handler error rejects the promise and is
-   * not reported here: the caller receives it.
+   * not reported here: the caller receives it. A timeout rejects it at once
+   * with `HandlerTimeoutError`.
    */
   call(args: unknown[]): Promise<unknown> {
     return new Promise((resolve, reject) => this.dispatch(args, { resolve, reject }));
@@ -208,11 +222,21 @@ export class HandlerSlot {
     return this.running.size;
   }
 
-  private start(args: unknown[], settle?: Settle): void {
+  private start(args: unknown[], caller?: Settle): void {
     const invocation = new Invocation();
     this.running.add(invocation);
     const timeoutMs = this.timeoutMs ?? defaultTimeout;
-    const timer = timeoutMs > 0 ? setTimeout(() => invocation.abort("timeout"), timeoutMs) : undefined;
+    let settle = caller;
+    const timer =
+      timeoutMs > 0
+        ? setTimeout(() => {
+            // A waiting caller learns of the timeout now, not when the handler next resumes.
+            const waiting = settle;
+            settle = undefined;
+            waiting?.reject(new HandlerTimeoutError(timeoutMs));
+            invocation.abort("timeout");
+          }, timeoutMs)
+        : undefined;
     let settled = false;
     const done = (failed: boolean, value: unknown) => {
       if (settled) return;
@@ -222,7 +246,7 @@ export class HandlerSlot {
       if (!failed) settle?.resolve(value);
       else if (value instanceof HandlerCancelledError) settle?.resolve(undefined);
       else if (settle) settle.reject(value);
-      else reportRuntimeError(value);
+      else if (caller === undefined) reportRuntimeError(value);
       const next = this.queued.shift();
       if (next) scheduleMicrotask(next.run);
     };

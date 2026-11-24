@@ -1,7 +1,7 @@
 // Routing components (step 19, reduced): Pages, Page, Link. The router itself
 // (location, navigate, matching) is in the runtime. Design:
 // .ai/plan/poc-19-routing.md
-import { currentLocation, findRoute, hrefFor, navigate, registerRoutes, useComputed } from "@patchfuil/runtime";
+import { currentLocation, findRoute, hrefFor, navigate, redirect, registerRoutes, useComputed } from "@patchfuil/runtime";
 import { Children, isValidElement, useEffect, type MouseEvent, type ReactNode } from "react";
 import { LayoutScope, useLayout, useRecountedScope, type LayoutProps } from "./layout";
 
@@ -27,8 +27,8 @@ function routeOf(child: ReactNode): string | undefined {
 
 /**
  * Renders the first Page whose `url` matches the current path, and every child
- * that is not a Page. Nothing matching: navigates to `fallbackPath` (replacing
- * the history entry).
+ * that is not a Page. Nothing matching: redirects to `fallbackPath` (replacing
+ * the history entry; an internal redirect, so `willNavigate` does not run).
  */
 export function Pages({ fallbackPath, children }: { fallbackPath?: unknown; children?: ReactNode }) {
   const items = Children.toArray(children);
@@ -40,7 +40,7 @@ export function Pages({ fallbackPath, children }: { fallbackPath?: unknown; chil
   const activeIndex = active === undefined ? -1 : urls.indexOf(active);
   const fallback = typeof fallbackPath === "string" ? fallbackPath : "/";
   useEffect(() => {
-    if (activeIndex === -1 && pathname !== fallback) navigate(fallback, { replace: true });
+    if (activeIndex === -1 && pathname !== fallback) redirect(fallback);
   }, [activeIndex, pathname, fallback]);
   return <>{items.filter((_, index) => urls[index] === undefined || index === activeIndex)}</>;
 }
@@ -54,7 +54,7 @@ export function Link(props: LayoutProps & { to?: unknown; label?: unknown; child
     // Let the browser handle new tabs and windows.
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    navigate(target);
+    void navigate(target);
   };
   return (
     <a className="pfui-Link" href={hrefFor(target)} onClick={onClick} {...layout.attributes} style={layout.style}>

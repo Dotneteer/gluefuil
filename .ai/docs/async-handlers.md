@@ -98,7 +98,12 @@ are delivered as one batch:
   - `undefined` when the policy drops the call, the call is cancelled, or the
     slot is disposed while it is queued;
   - a handler error rejects the promise and is **not** reported (the caller
-    receives it).
+    receives it);
+  - a **timeout** rejects it at once with `HandlerTimeoutError` (step 21),
+    even when the handler is stuck on a promise that never settles; the
+    handler itself is cancelled (`"timeout"`) at its next resume, as
+    before. This lets a caller fail closed: a navigation guard that times
+    out cancels the navigation ([routing.md](routing.md#navigation-events)).
 
 | Policy | A call while one is running |
 |--------|-----------------------------|

@@ -7,7 +7,7 @@ import { createScope } from "../../src/reactivity/scope";
 import { computed, isBatching, watch } from "../../src/reactivity/signals";
 import { variable, type Variable } from "../../src/reactivity/variable";
 import { APP_GLOBAL_NAMES, createAppScope } from "../../src/render/app-globals";
-import { delay, HandlerCancelledError, HandlerSlot, type HandlerFunction, type HandlerPolicy } from "../../src/render/handlers";
+import { delay, HandlerCancelledError, HandlerSlot, HandlerTimeoutError, type HandlerFunction, type HandlerPolicy } from "../../src/render/handlers";
 import { loadBinding } from "../../src/script/load";
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -261,6 +261,21 @@ describe("HandlerSlot.call (emitEvent, component methods): a promise of the resu
       throw new Error("boom");
     }));
     await expect(slot.call([])).rejects.toThrow("boom");
+    expect(reported).toEqual([]);
+  });
+
+  test("a timeout rejects the call at once with HandlerTimeoutError, even if the handler never resumes (step 21)", async () => {
+    const hanging = new HandlerSlot(raw(() => new Promise(() => {})), "parallel", 15);
+    const started = Date.now();
+    const error = await hanging.call([]).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HandlerTimeoutError);
+    expect((error as HandlerTimeoutError).timeoutMs).toBe(15);
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(reported).toEqual([]);
+    // invoke() (no caller waiting) is unchanged: the handler is cancelled, nothing reported.
+    const fire = new HandlerSlot(raw(() => delay(50)), "parallel", 15);
+    fire.invoke([]);
+    await wait(80);
     expect(reported).toEqual([]);
   });
 

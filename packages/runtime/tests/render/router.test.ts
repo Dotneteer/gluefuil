@@ -59,12 +59,12 @@ test.each<[path: string, pathname: string, query: Record<string, string>]>([
 });
 
 describe("hash mode (the default)", () => {
-  test("the location is read from the hash, and follows hashchange", () => {
+  test("the location is read from the hash, and follows the browser (popstate)", () => {
     window.history.replaceState(null, "", "/#/start?x=1");
     setRoutingMode("hash");
     expect(currentLocation()).toEqual({ pathname: "/start", query: { x: "1" } });
     window.location.hash = "#/next";
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    window.dispatchEvent(new PopStateEvent("popstate"));
     expect(currentLocation().pathname).toBe("/next");
   });
 

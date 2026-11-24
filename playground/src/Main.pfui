@@ -4,6 +4,10 @@
   <ScenarioHeader>), add an entry to `scenarios` below, and a <Page> for it.
   See README.md.
 
+  Navigation events (step 21): while `unsavedChanges` is set (the Routing
+  scenario's checkbox), willNavigate cancels every navigation; didNavigate
+  keeps the last five paths for that scenario to show.
+
   The App shell (steps 19A–19C): a header with the tone toggle, a collapsible
   side nav built from `scenarios`, and a footer. Below the lg breakpoint the
   nav moves into a drawer, opened from the header.
@@ -26,11 +30,15 @@
     { path: '/text', step: '16', title: 'Text and headings', description: 'Text variants, Heading and H1–H6.' },
     { path: '/theming', step: '17', title: 'Theming', description: 'Tone switching, scoped themes, variants.' },
     { path: '/behaviors', step: '18', title: 'Behaviors', description: 'label, tooltip and variant on any component.' },
-    { path: '/routing', step: '19', title: 'Routing', description: 'navigate, Link, route and query parameters.' },
+    { path: '/routing', step: '19, 21', title: 'Routing', description: 'navigate, Link, route and query parameters; a navigation guard and log.' },
     { path: '/app-shell', step: '19A–C', title: 'App shell', description: 'Header, nav, footer: every XMLUI layout, desktop and phone.' },
     { path: '/layout', step: '19D–F', title: 'Layout and spacing', description: 'Stacks, flows and sizes; automatic gaps and paddings.' },
     { path: '/data', step: '20', title: 'Data', description: 'DataSource and APICall against a mock backend; slow and broken networks.' }
-  ]}">
+  ]}"
+  var.unsavedChanges="{false}"
+  var.navigationLog="{[]}"
+  onWillNavigate="(to) => { if (unsavedChanges) return false; }"
+  onDidNavigate="(to) => { navigationLog = [to, ...navigationLog].slice(0, 5); }">
   <AppHeader title="pfui playground">
     <NavPanelCollapseButton/>
     <property name="profileMenuTemplate">
@@ -84,7 +92,7 @@
     <Page url="/text"><VStack><TextScenario/><ScenarioSource file="TextScenario"/></VStack></Page>
     <Page url="/theming"><VStack><ThemingScenario/><ScenarioSource file="ThemingScenario"/></VStack></Page>
     <Page url="/behaviors"><VStack><BehaviorsScenario/><ScenarioSource file="BehaviorsScenario"/></VStack></Page>
-    <Page url="/routing"><VStack><RoutingScenario/><ScenarioSource file="RoutingScenario"/></VStack></Page>
+    <Page url="/routing"><VStack><RoutingScenario unsavedChanges="{unsavedChanges}" navigationLog="{navigationLog}" onUnsavedChange="(value) => unsavedChanges = value"/><ScenarioSource file="RoutingScenario"/></VStack></Page>
     <Page url="/routing/:item"><VStack><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></VStack></Page>
     <Page url="/data"><VStack><DataScenario/><ScenarioSource file="DataScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>

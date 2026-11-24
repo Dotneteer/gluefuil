@@ -335,6 +335,14 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       defaultTone: { description: "The tone until `setThemeTone()`.", valueType: "string", availableValues: TONES },
       useHashBasedRouting: { description: "Routes after `#` (default true: any static server works); false: the path and the History API.", valueType: "boolean" },
     },
+    events: {
+      willNavigate: {
+        description:
+          "Before a navigation (navigate(), a Link or NavLink click, back or forward; not the Pages fallback or the first load). Receives the target path (with its query) and the query parameters; returning false cancels it. A handler that throws or times out cancels it too.",
+      },
+      didNavigate: { description: "After a navigation (not the first load). Receives the path (with its query) and the query parameters." },
+    },
+    eventResults: true,
     templates: {
       logoTemplate: { description: "The logo, as markup (instead of an image).", contextVars: [] },
     },

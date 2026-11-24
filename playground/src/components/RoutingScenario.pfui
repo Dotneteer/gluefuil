@@ -1,6 +1,6 @@
 <Component name="RoutingScenario">
   <VStack>
-    <ScenarioHeader title="Routing" description="Step 19: navigate(), Link, route parameters and query parameters."/>
+    <ScenarioHeader title="Routing" description="Steps 19 and 21: navigate(), Link, route and query parameters; App willNavigate and didNavigate."/>
     <VStack>
       <Text>$pathname = {$pathname}</Text>
       <HStack>
@@ -9,6 +9,12 @@
         <Link to="/routing/hello%20world">A link with an encoded segment</Link>
       </HStack>
       <Link to="/no/such/page">An unknown route (falls back to the dashboard)</Link>
+    </VStack>
+    <VStack>
+      <Text variant="strong">A navigation guard (App onWillNavigate in Main.pfui)</Text>
+      <Checkbox label="Unsaved changes: block every navigation" initialValue="{$props.unsavedChanges}" onDidChange="(value) => emitEvent('unsavedChange', value)"/>
+      <Text variant="secondary">While checked, buttons, links, the nav panel and the browser's back button all stay on this page.</Text>
+      <Text>Last navigations (App onDidNavigate): {($props.navigationLog ?? []).join(' ← ') || 'none yet'}</Text>
     </VStack>
   </VStack>
 </Component>

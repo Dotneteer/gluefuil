@@ -67,13 +67,13 @@ test("an unknown route falls back (replacing the history entry)", async () => {
   expect(window.location.hash).toBe("#/");
 });
 
-test("a deep link opens its page; the browser's back button (hashchange) is followed", async () => {
+test("a deep link opens its page; the browser's back button (popstate) is followed", async () => {
   window.history.replaceState(null, "", "/#/tests/deep");
   show(DASHBOARD);
   expect(heading()).toBe("Test: deep");
   await act(async () => {
     window.location.hash = "#/";
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    window.dispatchEvent(new PopStateEvent("popstate"));
   });
   expect(heading()).toBe("Dashboard");
 });
@@ -131,4 +131,70 @@ test("contracts: Page url is required and literal; a Page cannot use when or var
   expect(codes('<App><Pages><Page url="/" var.x="1"/></Pages></App>')).toEqual([["E027", "var.x"]]);
   expect(codes('<App><Pages><Page url="/"><variable name="x" value="1"/></Page></Pages></App>')).toEqual([["E027", "variable"]]);
   expect(codes("<App><Link/></App>")).toEqual([["E021", "Link"]]);
+});
+
+// Step 21: App willNavigate / didNavigate through compiled markup.
+
+const GUARDED = `
+  <App
+    var.blocked="{false}"
+    var.log="{[]}"
+    onWillNavigate="(to, query) => { if (blocked) return false; }"
+    onDidNavigate="(to, query) => { log.push(to + ' ' + JSON.stringify(query)); }">
+    <Button label="block" onClick="blocked = true"/>
+    <Text>log: {log.join(' | ')}</Text>
+    <Pages fallbackPath="/">
+      <Page url="/">
+        <H1>Home</H1>
+        <Link to="/a?x=1">A link</Link>
+        <Button label="Go b" onClick="navigate('/b')"/>
+      </Page>
+      <Page url="/a"><H1>A</H1></Page>
+      <Page url="/b"><H1>B</H1></Page>
+    </Pages>
+  </App>`;
+
+const logText = () => screen.getByText(/^log:/).textContent;
+
+test("didNavigate receives the path and the query; the first load is not logged", async () => {
+  show(GUARDED);
+  expect(logText()).toBe("log: ");
+  await act(async () => fireEvent.click(screen.getByRole("link", { name: "A link" })));
+  expect(heading()).toBe("A");
+  expect(logText()).toBe('log: /a?x=1 {"x":"1"}');
+});
+
+test("willNavigate returning false blocks a Link click and navigate() in a handler", async () => {
+  show(GUARDED);
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "block" })));
+  await act(async () => fireEvent.click(screen.getByRole("link", { name: "A link" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Go b" })));
+  expect(heading()).toBe("Home");
+  expect(window.location.hash).toBe("");
+  expect(logText()).toBe("log: ");
+});
+
+test("the Pages fallback is not guarded, and is logged", async () => {
+  window.history.replaceState(null, "", "/#/nowhere");
+  show(GUARDED.replace('var.blocked="{false}"', 'var.blocked="{true}"'));
+  await act(async () => {});
+  expect(heading()).toBe("Home");
+  expect(window.location.hash).toBe("#/");
+  expect(logText()).toBe("log: / {}");
+});
+
+test("the App's handlers are removed when it unmounts", async () => {
+  const { unmount } = show(GUARDED.replace('var.blocked="{false}"', 'var.blocked="{true}"'));
+  unmount();
+  await act(async () => {
+    await navigate("/b");
+  });
+  expect(window.location.hash).toBe("#/b");
+});
+
+test("contracts: the navigation events are known App events (a typo is E004 with a suggestion)", () => {
+  expect(compileModule('<App onWillNavigate="(to) => false" onDidNavigate="(to) => 1"/>').diagnostics).toEqual([]);
+  const [typo] = compileModule('<App onWillNavigte="(to) => false"/>').diagnostics;
+  expect(typo?.code).toBe("E004");
+  expect(typo?.message).toContain("willNavigate");
 });

@@ -4,7 +4,8 @@
 > and taking that HTML over in the browser. Describes the code as it is.
 > Design and XMLUI comparison: [`../plan/poc-13-ssg.md`](../plan/poc-13-ssg.md).
 >
-> **Last updated:** step 13.
+> **Last updated:** step 21 (prerendered routes; design:
+> [`../plan/poc-21-routing.md`](../plan/poc-21-routing.md)).
 
 ## Using it
 
@@ -33,6 +34,7 @@ mountApp(document.getElementById("root")!, <Main />);
 | `entry` | `"src/Main.pfui"` | The root component's file, relative to the Vite root |
 | `rootId` | `"root"` | The id of the empty element in `index.html` to fill |
 | `breakpoint` | `"xs"` | The viewport the HTML is rendered for (mobile-first) |
+| `routes` | `[]` | More paths to render besides the static routes: concrete paths of routes with parameters (`["/users/1"]`). Browser routing only; each must match a `Page url` |
 
 ## The prerender (`vite-plugin/src/prerender.ts`)
 
@@ -59,12 +61,72 @@ build:
 An exception while rendering fails the build. The prerender adds about
 0.1 s to the hello app's build.
 
+## Prerendered routes
+
+With browser routing (`App useHashBasedRouting="false"`) every static route
+gets its own file, so it shows without JavaScript and search engines see
+it:
+
+```
+dist/index.html               /
+dist/about/index.html         /about
+dist/docs/intro/index.html    /docs/intro
+dist/users/1/index.html       /users/1   (prerender: { routes: ["/users/1"] })
+```
+
+1. **`renderEntry` renders `/` first,** as before. While it renders, `Pages`
+   registers its patterns and `App` sets the routing mode.
+2. **It reads `registeredRoutes()` and `routingMode()`** from
+   `@patchfuil/runtime/server`, in the same module graph.
+   - **Hash mode:** nothing more. The server never sees the route; every
+     URL loads `index.html` and a deep link switches after takeover.
+     `routes` is an error here.
+   - **Browser mode:** the static patterns (no `:` or `*`) and the
+     `routes` paths, normalized and deduplicated (`routesToRender`). A
+     `routes` path that matches no pattern fails the build.
+3. **Each path renders in the same temporary server** with
+   `renderStatic(Main, { breakpoint, path })`, after
+   `resetServerState()` (the router and its routes, the theme, the shell,
+   the data cache), so no route's HTML depends on the one before.
+4. **The plugin injects each into the processed `index.html` shell**
+   (`transformIndexHtml`) and emits the files from `generateBundle`
+   (`order: "post"`, after Vite's HTML plugin) as `<route>/index.html`
+   (`routeFileName`, as XMLUI's `ssg.ts` `getOutputHtmlPath`).
+
+- **Discovery is at render time,** not by parsing the markup as XMLUI's
+  `discoverRoutes.ts` does. It finds a `Pages` inside a user component; it
+  misses a `Pages` that is not rendered at `/` (under a `when` that is
+  false at build time). `routes` covers that case.
+- **The container's `data-pfui-path`** records the route; `mountApp` sets
+  the server path from it, so hydration renders the same route. Without it
+  (older output) the path is `/`.
+- **A relative `base`** (`./`) fails the build when there is more than one
+  route: the asset URLs in `about/index.html` would not resolve.
+- **`vite preview`** serves `about/index.html` only for `/about/`. The
+  plugin's `configurePreviewServer` rewrites `/about` to it when the file
+  exists (`previewRewrite`), as static hosts do (Netlify, GitHub Pages,
+  nginx `try_files $uri $uri/`). Other paths fall back to `index.html`,
+  where a route that was not prerendered switches after takeover.
+- **Under a base** (`base: "/app/"`, step 21 part 2): the files are the
+  same (`about/index.html` in the output folder, served at `/app/about`);
+  each route renders with `renderStatic(…, { basename: "/app" })`, so its
+  links carry the base, and the container records it as `data-pfui-base`.
+  `previewRewrite` strips the base before it looks for the file.
+- **No fallback file** for SPA hosts (XMLUI writes `200.html`): decided out
+  in [poc-21-routing.md](../plan/poc-21-routing.md) (decision 2). A route
+  that matters is prerendered with `routes`.
+
 ## Takeover (`runtime/src/render/mount.ts`)
 
-`mountApp(container, app, { onRecoverableError? })`:
+`mountApp(container, app, { onRecoverableError?, basename? })`:
+
+- **The basename** (browser routing under a sub-path): `options.basename`,
+  else the container's `data-pfui-base` (the Vite plugin writes it from
+  `base`, prerendered or not), else none. Set before the first render.
 
 - **With `data-pfui-prerendered="<breakpoint>"`:**
-  `setServerBreakpoint(…)`, then `hydrateRoot`. Recoverable errors, such as
+  `setServerBreakpoint(…)` and `setServerPath(data-pfui-path ?? "/")`, then
+  `hydrateRoot`. Recoverable errors, such as
   a mismatch React repaired by rendering on the client, go to
   `onRecoverableError`, by default `reportRuntimeError`.
 - **Without it:** `createRoot(container).render(app)`.
@@ -111,8 +173,9 @@ An exception while rendering fails the build. The prerender adds about
 | `runtime/src/reactivity/react.ts` | `useComputed`'s server snapshot |
 | `runtime/src/render/visibility.ts` | `setServerBreakpoint`, `currentBreakpoint`, `breakpointFromName` |
 | `runtime/src/render/mount.ts` | `mountApp`, `PRERENDERED_ATTRIBUTE`, `READY_ATTRIBUTE` |
-| `runtime/src/server.ts` | `@patchfuil/runtime/server`: `renderStatic` |
-| `vite-plugin/src/prerender.ts` | `resolvePrerender`, `injectPrerendered`, `renderEntry` |
+| `runtime/src/server.ts` | `@patchfuil/runtime/server`: `renderStatic` (with `path`), `resetServerState`, `registeredRoutes`, `routingMode`, `findRoute` |
+| `vite-plugin/src/prerender.ts` | `resolvePrerender`, `injectPrerendered`, `renderEntry` (every route), `isStaticRoute`, `routeFileName`, `routesToRender`, `previewRewrite` |
+| `test-apps/routing-browser/` | Browser routing with prerendered routes (E2E) |
 | `test-apps/hello/src/main.tsx` | `mountApp` in use |
 
 ## Tests
@@ -122,5 +185,8 @@ An exception while rendering fails the build. The prerender adds about
 | `runtime/tests/render/server-view.test.tsx` | `inServerView`; breakpoint names; `currentBreakpoint` in and out of the server view; server rendering reads the server snapshot; its cache (no React warning); `renderStatic` (elements, components, the marker); `mountApp` (fresh, hydrating, `data-pfui-ready`, mismatches reported) |
 | `components/tests/ssg.test.tsx` | Compile, render statically, take over in jsdom: the static HTML; no node replaced and the app interactive afterwards; responsive `When` switching only its own subtree, or nothing when prerendered for the client's breakpoint; the live breakpoint afterwards; a nondeterministic initializer reported; a container without the marker; an unknown breakpoint. **Control:** without the server snapshot, the responsive test fails |
 | `vite-plugin/tests/prerender.test.ts` | Options; `injectPrerendered` (attribute forms, escaping, refusals); the hook runs last and not in dev, without the option, or in SSR builds |
-| `tools/build-output.test.ts` | The built `index.html` holds the app rendered for xs; no `react-dom/server` or `runtime/server` in the bundle; a render error and a missing root fail the build |
+| `tools/build-output.test.ts` | The built `index.html` holds the app rendered for xs; no `react-dom/server` or `runtime/server` in the bundle; a render error and a missing root fail the build; prerendered routes: one file per static route and `routes` path with its own content and path, the same absolute script; hash mode writes only `index.html`; `routes` errors; a relative base refused |
+| `vite-plugin/tests/prerender.test.ts` (step 21 part) | `isStaticRoute`, `routeFileName`, `routesToRender` (both modes, errors), `previewRewrite` (also under a base), the `generateBundle` order; part 2: `basenameOf`, `addRootAttributes`, the hook writing `data-pfui-base` (dev, a build without prerender, a custom root id; nothing for a root base) |
+| `components/tests/ssg.test.tsx` (step 21 part) | A route prerendered at `/about` takes over with no change; control: without `data-pfui-path` hydration mismatches. Part 2: under a basename (links carry it, `data-pfui-base`, takeover at `/app/about` with no change, a live link click); `mountApp` reads `data-pfui-base`, its option overrides it |
+| `e2e/routing-browser.spec.ts` | See [routing.md](routing.md#tests) |
 | `e2e/ssg.spec.ts` (project `hello-build`) | JavaScript disabled: the content is visible and not live. At xs: takeover changes nothing (a MutationObserver installed before any script), then clicks and typing work. At desktop width: only the responsive text switches |

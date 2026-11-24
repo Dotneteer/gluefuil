@@ -299,7 +299,7 @@ export function NavLink({
     if (target === undefined) return;
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    navigate(target);
+    void navigate(target);
   };
   return (
     <a
