@@ -1,6 +1,6 @@
 <Component name="RoutingScenario">
   <VStack>
-    <ScenarioHeader title="Routing" description="Steps 19 and 21: navigate(), Link, route and query parameters; App willNavigate and didNavigate."/>
+    <ScenarioHeader title="Routing" description="Steps 19, 21 and 21B: navigate(), Link, route and query parameters; App willNavigate and didNavigate; the guard's flag and the log are globals of Main.pfui."/>
     <VStack>
       <Text>$pathname = {$pathname}</Text>
       <HStack>
@@ -12,9 +12,9 @@
     </VStack>
     <VStack>
       <Text variant="strong">A navigation guard (App onWillNavigate in Main.pfui)</Text>
-      <Checkbox label="Unsaved changes: block every navigation" initialValue="{$props.unsavedChanges}" onDidChange="(value) => emitEvent('unsavedChange', value)"/>
+      <Checkbox label="Unsaved changes: block every navigation" initialValue="{unsavedChanges}" onDidChange="(value) => unsavedChanges = value"/>
       <Text variant="secondary">While checked, buttons, links, the nav panel and the browser's back button all stay on this page.</Text>
-      <Text>Last navigations (App onDidNavigate): {($props.navigationLog ?? []).join(' ← ') || 'none yet'}</Text>
+      <Text>Last navigations (App onDidNavigate): {navigationLog.join(' ← ') || 'none yet'}</Text>
     </VStack>
   </VStack>
 </Component>

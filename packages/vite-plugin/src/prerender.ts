@@ -8,7 +8,7 @@ import { createServer, type Plugin } from "vite";
 export type BreakpointName = "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 
 export interface PrerenderOptions {
-  /** The root component's file, relative to the Vite root. Default "src/Main.pfui". */
+  /** The root component's file, relative to the Vite root. Default: the plugin's `entry` ("src/Main.pfui"). */
   entry?: string;
   /** The id of the empty element in index.html to fill. Default "root". */
   rootId?: string;
@@ -24,10 +24,10 @@ export interface PrerenderOptions {
 
 export type ResolvedPrerender = Required<PrerenderOptions>;
 
-export function resolvePrerender(option: boolean | PrerenderOptions | undefined): ResolvedPrerender | undefined {
+export function resolvePrerender(option: boolean | PrerenderOptions | undefined, appEntry?: string): ResolvedPrerender | undefined {
   if (!option) return undefined;
   const given = option === true ? {} : option;
-  return { entry: given.entry ?? "src/Main.pfui", rootId: given.rootId ?? "root", breakpoint: given.breakpoint ?? "xs", routes: given.routes ?? [] };
+  return { entry: given.entry ?? appEntry ?? "src/Main.pfui", rootId: given.rootId ?? "root", breakpoint: given.breakpoint ?? "xs", routes: given.routes ?? [] };
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

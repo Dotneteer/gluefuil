@@ -120,6 +120,7 @@ export {
   type RouteLocation,
   type RoutingMode,
 } from "./render/router";
+export { GlobalScope, useGlobalScope } from "./render/global-scope";
 export { BASE_ATTRIBUTE, mountApp, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE, READY_ATTRIBUTE, type MountOptions } from "./render/mount";
 export {
   BoundUser,

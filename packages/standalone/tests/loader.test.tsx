@@ -223,6 +223,44 @@ describe("component files and code-behind (step 14)", () => {
   });
 });
 
+describe("globals (step 21B)", () => {
+  const FILES = {
+    "app/Main.pfui": '<App global.count="{1}"><Text>main {count} {label()}</Text><Bump/></App>',
+    "app/Globals.xs": "function label() { return 'n=' + count; }",
+    "app/components/Bump.pfui": '<Component name="Bump"><Button label="{label()}" onClick="count++"/></Component>',
+  };
+
+  test("a component file reads and writes the entry's globals; Globals.xs is fetched beside the entry", async () => {
+    const files = server({ ...FILES });
+    await startApp({ fetch: files.fetch, main: "app/Main.pfui" });
+    expect(container.textContent).toBe("main 1 n=1n=1");
+    await act(async () => container.querySelector("button")!.click());
+    expect(container.textContent).toBe("main 2 n=2n=2");
+    expect(files.requests.map((r) => r.url)).toContain("app/Globals.xs");
+  });
+
+  test("a cached component file compiled against other globals is not reused", async () => {
+    const storage = new MemoryStorage();
+    const files = server({ ...FILES });
+    const first = await startApp({ fetch: files.fetch, main: "app/Main.pfui", storage });
+    act(() => first.stop());
+    // The global disappears: the component must compile again, and fail.
+    files.files["app/Main.pfui"] = "<App><Bump/></App>";
+    files.files["app/Globals.xs"] = "function label() { return 'x'; }";
+    await startApp({ fetch: files.fetch, main: "app/Main.pfui", storage });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("app/components/Bump.pfui:1:59: error C001: Cannot find name 'count'");
+  });
+
+  test("Globals.xs errors name the file; watching picks up its changes", async () => {
+    const files = server({ ...FILES, "app/Globals.xs": `${FILES["app/Globals.xs"]}\nlet x = 1;` });
+    const app = await startApp({ fetch: files.fetch, main: "app/Main.pfui" });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("app/Globals.xs:2:1: error E019:");
+    files.files["app/Globals.xs"] = FILES["app/Globals.xs"];
+    expect(await act(() => app.refresh())).toBe(true);
+    expect(container.textContent).toBe("main 1 n=1n=1");
+  });
+});
+
 describe("contracts (step 15)", () => {
   test("a contract violation is an error by default; with strictContracts: false a console warning, and the app runs", async () => {
     const markup = '<App><Text valu="x">ok</Text></App>';

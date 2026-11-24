@@ -5,7 +5,7 @@
 > as it is. Design and XMLUI comparison:
 > [`../plan/poc-11-standalone.md`](../plan/poc-11-standalone.md).
 >
-> **Last updated:** step 15 (`strictContracts`, warnings to the console).
+> **Last updated:** step 21B (`Globals.xs`, globals in the cache hash).
 
 ## Using it
 
@@ -49,7 +49,8 @@ build-time compilation ([build-time.md](build-time.md)).
 ## How a load works (`StandaloneApp`)
 
 1. **Fetch** the entry file (`cache: "no-cache"`: HTTP revalidates), with
-   its code-behind `<file>.xs` (a 404 means none). Then
+   its code-behind `<file>.xs` and the `Globals.xs` beside it (a 404 means
+   none). Then
    `analyzeModule` gives the component names it uses. Each one that is
    neither built-in nor inline is fetched as `components/<Name>.pfui`
    (next to the entry file), with code-behind, transitively. A missing file
@@ -58,10 +59,14 @@ build-time compilation ([build-time.md](build-time.md)).
    measure: it only decides whether to recompile, and `crypto.subtle`
    needs a secure context that plain `http://` hosts don't have.
 3. **Cache lookup**, per file, with the key `pfui:<buildId>:<file>`. The
-   hash covers the markup, the code-behind and the interfaces of the
-   components the file uses (they change what it compiles to):
+   hash covers the markup, the code-behind, the interfaces of the
+   components the file uses, and the globals (the entry: `Globals.xs`;
+   any other file: the entry's global names), since they change what it
+   compiles to:
    - **hit:** use the stored code;
-   - **miss:** `compileModule(…, { format: "function", fileName, userComponents, codeBehind })`.
+   - **miss:** `compileModule(…, { format: "function", fileName, userComponents, codeBehind })`,
+     plus `globalsCode` for the entry and `globals` for every other file
+     (step 21B). `Globals.xs` errors show the overlay for that file.
      On errors in the file or its code-behind, show the overlay for that
      file and don't cache. Otherwise store
      `{ hash, code, map without sourcesContent }`.
@@ -136,5 +141,5 @@ build, and the cache removes other builds' entries when it writes.
 | File | Covers |
 |------|--------|
 | `standalone/tests/cache.test.ts` | Hash; hit and miss; invalidation by content and by build; other apps' keys; corrupted entries; quota eviction; entries too big to fit; throwing or absent storage |
-| `standalone/tests/loader.test.tsx` | With a mocked server: compiled, then cached; recompiled on change; `cache: false`; entry file and fetch modes; the compile-error overlay (nothing cached); a missing file; `refresh()` (change, error, recovery); polling; component files and code-behind (fetched transitively, cached per file, errors naming their file, watched, a new component noticed) |
+| `standalone/tests/loader.test.tsx` | With a mocked server: compiled, then cached; recompiled on change; `cache: false`; entry file and fetch modes; the compile-error overlay (nothing cached); a missing file; `refresh()` (change, error, recovery); polling; component files and code-behind (fetched transitively, cached per file, errors naming their file, watched, a new component noticed); globals (a component file reading and writing the entry's globals and `Globals.xs`, a cache entry compiled against other globals not reused, `Globals.xs` errors and watching) |
 | `e2e/standalone.spec.ts` | Chromium against the real bundle: compile on the first load, cache on reload (and the app works); editing `Main.pfui` on the server updates the open app; an error shows the overlay and fixing it recovers |

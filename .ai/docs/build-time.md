@@ -4,7 +4,7 @@
 > during a Vite build or dev session. Describes the code as it is. Design and
 > XMLUI comparison: [`../plan/poc-12-build-time.md`](../plan/poc-12-build-time.md).
 >
-> **Last updated:** step 15 (`strictContracts`).
+> **Last updated:** step 21B (`entry`, `Globals.xs`).
 
 ## Using it
 
@@ -36,6 +36,7 @@ extensionless imports.
 
 | Option | Default | Meaning |
 |--------|---------|---------|
+| `entry` | `"src/Main.pfui"` | The app's root file (step 21B). Its root's `global.*` and the `Globals.xs` beside it are the globals every other file is compiled with (`AppGlobals`, re-read when either changes; each file watches both). The entry itself compiles `Globals.xs` (`globalsCode`), whose errors fail the transform at `Globals.xs`. The prerender renders it unless `prerender.entry` says otherwise. |
 | `components` | the built-in metadata | The components markup may use (`Record<string, ComponentMetadata>`) |
 | `sourceMap` | `"auto"` | `"auto"`: on while serving; in a build, on only when `build.sourcemap` is set. `true` / `false` force it |
 | `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint, routes }` ([ssg.md](ssg.md)); with browser routing, one file per static route ([ssg.md § Prerendered routes](ssg.md#prerendered-routes)) |
@@ -133,6 +134,7 @@ app's config):
 | File | Covers |
 |------|--------|
 | `vite-plugin/tests/plugin.test.ts` | Which ids are transformed; `enforce`; ESM output; custom components; the six source-map modes and identical code with and without; errors (location, frame, every error listed; markup errors); nothing reported for valid files |
+| `vite-plugin/tests/globals.test.ts` | Step 21B: `AppGlobals` (the entry's globals then `Globals.xs`, re-read on change, a missing entry); a component file compiled with them and watching both files, C001 without; the entry compiles `Globals.xs` and reports its errors at its positions; another app file doesn't; the `entry` option; the prerender's default entry |
 | `compiler/tests/source/line-map.test.ts` | `codeFrame` with `\n`, `\r\n` and `\r` line breaks; the last line |
 | `tools/build-output.test.ts` | A real `vite build` of the hello app: one chunk with the app, the runtime and the components; no compiler module; no eval; the standalone loader tree-shaken away; no markers and no map, or a map back to `Main.pfui` with `build.sourcemap` |
 | `tools/boundaries.test.ts` | vite-plugin imports only the compiler, components/metadata, vite and `node:*`; no package imports `standalone` or `vite-plugin` |
