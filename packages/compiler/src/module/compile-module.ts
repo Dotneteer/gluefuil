@@ -117,6 +117,7 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["Fragment", "$$Fragment"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
+  ["deferredValue", "$$deferred"],
 ];
 
 /** Attribute forms that later steps implement; reported instead of ignored. */
@@ -789,7 +790,7 @@ class ModuleCompiler {
       else if (variable && variable.kind === "element") this.report(variable.name, "E027", "variables");
     }
     // `when` / `when-*` are evaluated in the enclosing scope, before the element exists.
-    const visibility = this.visibility(node);
+    const visibility = this.metadataOf(name)?.whenIsProp ? this.whenAsProp(node) : this.visibility(node);
     if (visibility === "never") return "null";
     const declarations = this.declarations(node, isRoot);
     const hasCodeBehind = node === this.codeBehindTarget && this.codeBehind !== undefined;
@@ -994,7 +995,9 @@ class ModuleCompiler {
       const attributeName = attribute.name.full;
       if (attributeName.startsWith("var.") || attributeName.startsWith("global.")) continue;
       if (attributeName === "id") continue; // collected by collectIds; passed to Bound below
-      if (attributeName === "when" || attributeName.startsWith("when-")) continue; // see visibility()
+      if (attributeName === "when" && metadata.whenIsProp) {
+        // A loader's `when`: a prop (it stays mounted and doesn't fetch), see whenAsProp().
+      } else if (attributeName === "when" || attributeName.startsWith("when-")) continue; // see visibility()
       const concurrency = attribute.name.prefix ?? attribute.name.local;
       if (concurrency === "handlerPolicy" || concurrency === "handlerTimeoutMs") {
         this.concurrencyAttribute(attribute, metadata, name, concurrency === "handlerPolicy" ? policies : timeouts);
@@ -1041,11 +1044,14 @@ class ModuleCompiler {
         constants.push([attributeName, '"true"']);
         continue;
       }
-      const value = this.value(this.segments(attribute as ValuedAttribute));
+      const value = this.propValue(attribute as ValuedAttribute, prop);
       if ("constant" in value) {
         if (prop) this.checkPropLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
         if (prop?.cssKind) this.checkCssLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
         constants.push([attributeName, value.constant]);
+      } else if (prop?.deferred) {
+        // Evaluated when the component asks, with its context variables ($param): a function, not a binding.
+        constants.push([attributeName, `$$deferred(${scopeVar}, ${this.hoistRaw("$$d", value.binding)})`]);
       } else {
         if (prop?.isLiteral) this.reportContract(attribute.value, "E026", attributeName, name);
         bindings.push([attributeName, value.binding]);
@@ -1138,6 +1144,8 @@ class ModuleCompiler {
     const templatesPart = templates.length > 0 ? `, templates: ${this.hoistRaw("$$t", `{ ${templates.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }`)}` : "";
     const lifecyclePart = lifecycle.length > 0 ? `, lifecycle: ${this.hoist("$$l", lifecycle)}` : "";
     const bound = isUser ? "$$BoundUser" : "$$Bound";
+    // Handlers that return their result to the component (APICall's beforeRequest, success).
+    if (!isUser && metadata.eventResults && handlers.length > 0) handlersPart += ", results: true";
     return this.withBehaviors(
       `$$h(${bound}, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`,
       behaviors,
@@ -1262,6 +1270,43 @@ class ModuleCompiler {
       result = `$$h($$Bound, { type: $$C_${behavior.component}, props: ${propsCode}, bindings: ${bindingsCode}, scope: ${scopeVar} }, ${result})`;
     }
     return result;
+  }
+
+  /**
+   * A prop's value, by its metadata (step 20): `code` compiles a literal as an
+   * expression; `deferred` adds its context variables to the scope;
+   * `nullishUnresolved` makes an interpolation with a nullish part undefined.
+   */
+  private propValue(attribute: ValuedAttribute, prop: PropMetadata | undefined): { constant: string } | { binding: string; dependencies: string[] } {
+    let segments: InterpolationSegment[];
+    if (prop?.code && !attribute.value.value.includes("{")) {
+      const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
+      const offsets = [attribute.value.inner.start, ...decoded.offsets, attribute.value.inner.end];
+      const parsed = parseInterpolation(`{${decoded.value}}`, { offsets });
+      this.diagnostics.push(...parsed.diagnostics);
+      segments = parsed.segments;
+    } else segments = this.segments(attribute);
+    if (prop?.deferred) this.contextFrames.push(new Set(prop.deferred));
+    try {
+      const result = compileInterpolation(segments, {
+        scope: this.visibleNames(),
+        markers: this.markers,
+        ...this.contractOptions(),
+        ...(prop?.nullishUnresolved ? { nullishUnresolved: true } : {}),
+      });
+      this.diagnostics.push(...result.diagnostics);
+      return result.constant ? { constant: jsString(result.value!) } : { binding: result.code, dependencies: result.dependencies };
+    } finally {
+      if (prop?.deferred) this.contextFrames.pop();
+    }
+  }
+
+  /** A loader's `when` (`whenIsProp`): only `when` itself, as a prop; responsive variants are not supported. */
+  private whenAsProp(node: ElementNode): undefined {
+    for (const attribute of node.attributes) {
+      if (attribute.name.full.startsWith("when-")) this.report(attribute.name, "E002", `'${attribute.name.full}' on <${node.name.full}>`);
+    }
+    return undefined;
   }
 
   /** A CSS literal (a layout prop, a stack's gap): its form and its `$name` references (E031). */

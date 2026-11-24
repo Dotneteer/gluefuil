@@ -57,6 +57,13 @@ export interface ComponentMetadata {
    * gives a more specific message for a literal value (`layout="vertical"`).
    */
   removedProps?: Record<string, { message: string; byValue?: Record<string, string> }>;
+  /**
+   * `when` is a prop of the component (a loader that stays mounted and doesn't
+   * fetch), not the visibility of the element (step 20: DataSource).
+   */
+  whenIsProp?: boolean;
+  /** Its event handlers return the handler's result (APICall: `beforeRequest` false skips the call). */
+  eventResults?: boolean;
   /** The component no longer exists: using it is E032 with this message (`FlowLayout`). */
   removed?: string;
   /**
@@ -89,6 +96,16 @@ export interface PropMetadata {
   deprecationMessage?: string;
   /** Only a literal value is accepted (no `{…}`): E026. Route patterns, for example. */
   isLiteral?: boolean;
+  /**
+   * Evaluated when the component asks, with these context variables, not as
+   * a binding (APICall's `url` and `body` with `$param`, `$params`). The
+   * component receives a function of the context (step 20).
+   */
+  deferred?: readonly string[];
+  /** A literal without `{…}` is still an expression (`transformResult="(d) => d.items"`, as in XMLUI). */
+  code?: boolean;
+  /** An interpolation with a null or undefined part is undefined as a whole (a URL that can't be built yet). */
+  nullishUnresolved?: boolean;
   /** A CSS value: literals are checked as one (E031), `$name` is a theme variable. */
   cssKind?: LayoutValueKind;
   /** With `cssKind: "size"`: star sizes (`*`, `2*`) are allowed. */
@@ -271,6 +288,8 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
 };
 
 const ALIGNMENTS = ["start", "center", "end", "stretch"];
+
+const HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
 
 /** The props of every stack (Stack and its aliases). The layout props (width, padding, …) come on top. */
 const STACK_PROPS: Record<string, PropMetadata> = {
@@ -470,10 +489,88 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       setValue: { description: "Checks or unchecks it." },
     },
   },
+  DataSource: {
+    description: "Loads data from a URL and keeps it: value, inProgress, loaded, error; refetch() and cancel().",
+    props: {
+      url: {
+        description: "The URL; with an unresolved part (an interpolated null or undefined) there is no request yet.",
+        valueType: "string",
+        nullishUnresolved: true,
+      },
+      method: { description: "The HTTP method (default get).", valueType: "string", availableValues: HTTP_METHODS },
+      queryParams: { description: "Added to the URL; arrays repeat the key; null and undefined are left out.", valueType: "any" },
+      headers: { description: "Request headers.", valueType: "any" },
+      body: { description: "The request body: an object is sent as JSON.", valueType: "any" },
+      when: { description: "False: no request (the DataSource stays, with loaded false). Default true.", valueType: "any" },
+      resultSelector: { description: "The part of the response to keep, as a path: data.items.", valueType: "string" },
+      transformResult: { description: "A function from the (selected) response to the value: (data) => data.filter(…).", valueType: "any", code: true },
+      pollIntervalInSeconds: { description: "Fetches again this often (no overlap with a running fetch). Default: no polling.", valueType: "number" },
+      structuralSharing: { description: "Keeps unchanged parts of the value (and no loaded event when nothing changed). Default true.", valueType: "boolean" },
+      retries: { description: "Retries of retryable failures (network, timeout, 429, 5xx). Default 2 for get, 0 otherwise.", valueType: "integer" },
+      retryDelay: { description: "The first wait between attempts in ms, doubled each time (Retry-After wins). Default 500.", valueType: "integer" },
+      timeoutMs: { description: "Per attempt, in ms. Default 30000.", valueType: "integer" },
+    },
+    events: {
+      loaded: { description: "A fetch completed with new data: (data, isRefetch)." },
+      error: { description: "A fetch failed after its retries: (error)." },
+      cancel: { description: "cancel() stopped a fetch: (reason)." },
+    },
+    api: {
+      value: { description: "The data (after resultSelector and transformResult)." },
+      inProgress: { description: "A fetch is running." },
+      isRefetching: { description: "A fetch is running and there is data already." },
+      loaded: { description: "Data has arrived at least once." },
+      error: { description: "The last fetch's error, or undefined: { message, category, code, status, retryable, body, attempts }." },
+      cancelled: { description: "The last fetch was cancelled." },
+      lastCancelReason: { description: "The reason given to the last cancel()." },
+      responseHeaders: { description: "The last response's headers." },
+      refetch: { description: "Fetches again; resolves when done." },
+      cancel: { description: "Cancels the running fetch (true if there was one); the previous value stays." },
+    },
+    nonVisual: true,
+    whenIsProp: true,
+  },
+  APICall: {
+    description: "Sends a request when executed (create, update, delete): execute(...params), then success or error, and invalidation.",
+    props: {
+      url: { description: "The URL; may use $param and $params (the arguments of execute()).", valueType: "string", deferred: ["$param", "$params"] },
+      method: { description: "The HTTP method (default get, as in XMLUI).", valueType: "string", deferred: ["$param", "$params"] },
+      queryParams: { description: "Added to the URL; may use $param.", valueType: "any", deferred: ["$param", "$params"] },
+      headers: { description: "Request headers; may use $param.", valueType: "any", deferred: ["$param", "$params"] },
+      body: { description: "The request body (an object is sent as JSON); may use $param.", valueType: "any", deferred: ["$param", "$params"] },
+      invalidates: {
+        description: "URL paths whose DataSources refetch after success (and those below them). Default: every DataSource.",
+        valueType: "any",
+        deferred: ["$param", "$params"],
+      },
+      retries: { description: "Retries of retryable failures. Default 0: a write is not repeated unless asked.", valueType: "integer" },
+      retryDelay: { description: "The first wait between attempts in ms, doubled each time. Default 500.", valueType: "integer" },
+      timeoutMs: { description: "Per attempt, in ms. Default 30000.", valueType: "integer" },
+    },
+    events: {
+      beforeRequest: { description: "Before the request, with execute()'s arguments: returning false skips it." },
+      success: { description: "The request succeeded: (result). Returning false skips the invalidation." },
+      error: { description: "The request failed: (error). Without a handler, execute() rejects with the error." },
+      cancel: { description: "cancel() (or the calling handler's cancellation) stopped it: (reason)." },
+    },
+    api: {
+      execute: { description: "Sends the request: execute(...params); resolves to the result." },
+      cancel: { description: "Cancels the running calls (true if there were any)." },
+      inProgress: { description: "A call is running." },
+      loaded: { description: "A call has succeeded at least once." },
+      lastResult: { description: "The result of the call started last." },
+      lastError: { description: "The error of the call started last, or undefined." },
+      cancelled: { description: "The call started last was cancelled." },
+      lastCancelReason: { description: "Why it was cancelled: user, supersede, timeout, unmount." },
+      lastResponseHeaders: { description: "The headers of the last successful response." },
+    },
+    nonVisual: true,
+    eventResults: true,
+  },
   Items: {
     description: "Renders `data` through its item template, without a wrapper element.",
     props: {
-      data: { description: "The array of items.", valueType: "any" },
+      data: { description: "The array of items, or a URL to load it from (/api/users).", valueType: "any" },
       reverse: { description: "Render the items in reverse order.", valueType: "boolean" },
     },
     templates: {

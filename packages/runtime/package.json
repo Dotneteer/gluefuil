@@ -13,6 +13,10 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@patchfuil/compiler": "*"
+    "@patchfuil/compiler": "*",
+    "@patchfuil/mock-backend": "*"
+  },
+  "dependencies": {
+    "@tanstack/query-core": "5.108.4"
   }
 }

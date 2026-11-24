@@ -120,5 +120,19 @@ export {
   type SlotProps,
 } from "./render/user-components";
 export { inServerView, isServerView } from "./reactivity/server-view";
+// Data (step 20): the HTTP gate, the retry policy, the query engine, DataSource's and APICall's cores.
+export {
+  categoryOfStatus,
+  dataError,
+  isDataError,
+  type DataError,
+  type DataErrorCategory,
+} from "./data/errors";
+export { buildUrl, parseRetryAfter, RequestCancelledError, sendRequest, type HttpResult, type RequestSpec } from "./data/http";
+export { MAX_BACKOFF_MS, MAX_RETRY_AFTER_MS, retryDelay, runWithRetry, shouldRetry, type RetryOptions } from "./data/retry";
+export { invalidate, pathMatches, queryClient, queryKey, resetDataState, setDataDefaults, type DataDefaults } from "./data/client";
+export { Loader, type LoaderEvents, type LoaderOptions, type LoaderState } from "./data/loader";
+export { ApiCaller, type ApiCallEvents, type ApiCallOptions, type ApiCallState } from "./data/api-call";
+export { deferredValue, isDeferred, resolveDeferred, type DeferredValue } from "./render/deferred";
 // Compiled code creates elements through the runtime, never through React directly.
 export { createElement, Fragment } from "react";

@@ -8,6 +8,9 @@
 //   vite-plugin -> the compiler, components/metadata, vite and Node built-ins only
 //                  (it runs in the build: no React, no runtime, no components)
 //   standalone, vite-plugin -> delivery packages: no other package imports them
+//   mock-backend -> msw, node: built-ins and relative files only; and no app
+//                   package (compiler, runtime, components) imports it: the app
+//                   can't know it is talking to a mock (step 20)
 //
 // The checker works on an in-memory map of file path -> source text, so the
 // rules themselves can be unit-tested with fixtures.
@@ -114,12 +117,29 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
     }
   }
 
-  const VITE_PLUGIN_ALLOWED = ["@patchfuil/compiler", "@patchfuil/components/metadata", "vite"];
+  for (const file of filesUnder(files, "packages/mock-backend/src")) {
+    for (const specifier of collectImports(files.get(file)!)) {
+      if (isRelative(specifier) || specifier.startsWith("node:") || specifier === "msw" || specifier.startsWith("msw/")) continue;
+      report(file, specifier, "mock-backend may only import msw, node: built-ins and relative files");
+    }
+  }
+
+  for (const app of ["packages/compiler/src", "packages/runtime/src", "packages/components/src"]) {
+    for (const file of filesUnder(files, app)) {
+      for (const specifier of collectImports(files.get(file)!)) {
+        if (startsWithAny(specifier, ["@patchfuil/mock-backend", "msw"])) {
+          report(file, specifier, "the app's packages must not import the mock backend: the app can't know it is mocked");
+        }
+      }
+    }
+  }
+
+  const VITE_PLUGIN_ALLOWED = ["@patchfuil/compiler", "@patchfuil/components/metadata", "@patchfuil/mock-backend/middleware", "vite"];
   for (const file of filesUnder(files, "packages/vite-plugin/src")) {
     for (const specifier of collectImports(files.get(file)!)) {
       if (isRelative(specifier) || specifier.startsWith("node:")) continue;
       if (VITE_PLUGIN_ALLOWED.includes(specifier)) continue;
-      report(file, specifier, "vite-plugin may only import the compiler, components/metadata, vite and node: built-ins");
+      report(file, specifier, "vite-plugin may only import the compiler, components/metadata, the mock backend's middleware, vite and node: built-ins");
     }
   }
 

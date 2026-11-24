@@ -35,6 +35,7 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Routing",
     "App shell",
     "Layout and spacing",
+    "Data",
   ]);
   for (const title of titles) {
     await main.getByRole("button", { name: title, exact: true }).click();
@@ -55,6 +56,8 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
 
 test("the side nav lists the dashboard and every scenario, and follows the route", async ({ page }) => {
   await page.goto("/");
+  // The app mounts once the mock backend's service worker is ready (step 20).
+  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
   const nav = page.getByRole("navigation", { name: "Main" });
   const dashboard = await page.getByRole("main").getByRole("button").allTextContents();
   // The visible label of each link (each also has a hidden initial for the collapsed nav).

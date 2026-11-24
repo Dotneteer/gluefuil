@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@patchfuil/compiler": "0.0.0",
-    "@patchfuil/components": "0.0.0"
+    "@patchfuil/components": "0.0.0",
+    "@patchfuil/mock-backend": "0.0.0"
   },
   "peerDependencies": {
     "vite": "^8.0.0"

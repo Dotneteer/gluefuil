@@ -63,6 +63,11 @@ export async function renderEntry(root: string, options: ResolvedPrerender, tran
     logLevel: "error",
     appType: "custom",
     server: { middlewareMode: true, hmr: false, ws: false },
+    // Its own cache, and no client pre-bundling: it only renders on the server. (Sharing the app's
+    // node_modules/.vite rewrote a running dev server's pre-bundled dependencies under it: pages then
+    // failed with 504 "Outdated Optimize Dep". Found in step 20.)
+    cacheDir: resolve(root, "node_modules/.vite-pfui-prerender"),
+    optimizeDeps: { noDiscovery: true, include: [] },
     plugins: [transform],
   });
   try {

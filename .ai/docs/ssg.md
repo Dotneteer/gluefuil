@@ -42,6 +42,11 @@ build:
 1. **`renderEntry`** starts a temporary Vite server: middleware mode, no
    HMR, `configFile: false`, the same root. Its only plugin is a plain
    `pfui({ sourceMap: false })`: the compile step, without a prerender.
+   - It has its own cache (`node_modules/.vite-pfui-prerender`) and no client
+     pre-bundling (`optimizeDeps.noDiscovery`).
+   - Step 20 found why: sharing the app's `node_modules/.vite` let a build's
+     prerender rewrite a running dev server's pre-bundled dependencies, and
+     its pages then failed with 504 "Outdated Optimize Dep".
 2. It `ssrLoadModule`s the entry and `@patchfuil/runtime/server` **into
    the same module graph**, so both use one runtime (one signal store, one
    breakpoint) and one React.

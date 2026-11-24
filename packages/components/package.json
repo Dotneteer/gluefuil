@@ -18,6 +18,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@patchfuil/compiler": "*"
+    "@patchfuil/compiler": "*",
+    "@patchfuil/mock-backend": "*"
   }
 }

@@ -40,6 +40,7 @@ One or more per concept of proof-of-concept steps 2–19
 | 19 | Routing | `navigate`, `Link`, `$routeParams`, `$queryParams`, replace, back and forward |
 | 19A–C | App shell | Every XMLUI layout with the new settings, in a frame at desktop or phone width; collapsing this playground's own nav from script |
 | 19D–F | Layout and spacing | A page with no gap or padding anywhere, in a frame at desktop or phone width: stacks, surfaces, a form, flows, star sizes, density, overrides; space-base 3/4/5 px; a spacing inspector that labels each stack with its level and gap |
+| 20 | Data | People from a mock backend (`src/backend.ts`, a service worker in the page): search, details, rename. A network panel makes the backend slow, failing, offline, hanging or holding requests, and shows the requests it saw |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the
@@ -96,6 +97,10 @@ prerendered build.
 
 - **`LiveMarkup`** (`src/react/LiveMarkup.tsx`) compiles markup in the browser
   (the live compiler scenario), so the playground bundle includes the compiler.
+- **The mock backend** (`src/backend.ts`) runs in a service worker, in dev
+  and in the preview build (`pfuiMockBackend` in `vite.config.ts`). The app
+  makes ordinary requests to `/api/people`; the Data scenario's network
+  panel steers the backend through `/__mock` ([mock-backend.md](../.ai/docs/mock-backend.md)).
 - **`SpacingInspector`** (`src/react/SpacingInspector.tsx`) outlines every
   stack and labels it with its level, orientation and computed gap (and a
   surface's padding). The spacing demo (`src/layouts/spacing.pfui`) has it;

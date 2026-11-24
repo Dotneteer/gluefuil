@@ -7,5 +7,6 @@ export { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
 export { App, Theme } from "./theme";
 export { AppHeader, Footer, isActiveRoute, NavGroup, NavLink, NavPanel, NavPanelCollapseButton, type ShellConfig } from "./shell";
 export { Icon, ICON_NAMES } from "./icons";
+export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
 export { Items } from "./items";
 export { LabelBehavior, TooltipBehavior, VariantBehavior, variantVariable } from "./behaviors";

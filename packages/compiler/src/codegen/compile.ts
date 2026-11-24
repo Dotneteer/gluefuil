@@ -24,6 +24,12 @@ export interface CompileOptions {
   members?: MemberLookup;
   /** The severity of contract diagnostics (C015). Default "error". */
   contractSeverity?: "error" | "warning";
+  /**
+   * Interpolated text whose expression parts are null or undefined is
+   * undefined as a whole (a DataSource url that can't be built yet), instead
+   * of contributing "". Step 20.
+   */
+  nullishUnresolved?: boolean;
 }
 
 export interface CompileResult {
@@ -81,6 +87,13 @@ export function compileInterpolation(segments: InterpolationSegment[], options: 
   if (parts.length === 1 && parts[0]!.kind === "expression") {
     body = emit(parts[0]!.expression);
     if (bare(body).startsWith("{")) body = `(${body})`;
+  } else if (options.nullishUnresolved) {
+    // `/api/users/{id}` with `id` undefined is undefined, not "/api/users/".
+    const values = parts.filter((p) => p.kind === "expression").map((p) => emit(p.expression));
+    const names = values.map((_, i) => `$$u${i}`);
+    let next = 0;
+    const sum = parts.map((p) => (p.kind === "literal" ? jsString(p.value) : `$$r.str(${names[next++]})`)).join(" + ");
+    body = `((${names.join(", ")}) => ${names.map((n) => `${n} == null`).join(" || ")} ? undefined : ${sum})(${values.join(", ")})`;
   } else {
     // `$$r.str()` returns a string, so the sum is always a string.
     body = parts.map((p) => (p.kind === "literal" ? jsString(p.value) : `$$r.str(${emit(p.expression)})`)).join(" + ");

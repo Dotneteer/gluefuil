@@ -30,6 +30,8 @@ interface ComponentMetadata {
   alias?: { component: string; props: Record<string, string> };   // HStack → Stack (steps 19D–19F)
   layoutProps?: false;                            // no LAYOUT_PROPS (App, the shell regions, nav items)
   optionalThemeVars?: readonly string[];          // known theme variables without a default (gap-Stack)
+  whenIsProp?: boolean;                           // `when` is a prop (DataSource: stays mounted, doesn't fetch); `when-*` is E002
+  eventResults?: boolean;                         // handlers return their result to the component (APICall)
 }
 interface PropMetadata {
   description: string;
@@ -38,6 +40,9 @@ interface PropMetadata {
   isRequired?: boolean;
   deprecationMessage?: string;
   isLiteral?: boolean;                           // E026: no `{…}` (step 19)
+  deferred?: readonly string[];                  // evaluated when the component asks, with these context variables ($param)
+  code?: boolean;                                // a literal without {…} is an expression (transformResult)
+  nullishUnresolved?: boolean;                   // an interpolation with a null/undefined part is undefined (a URL not ready)
   cssKind?: "size" | "spacing" | "color" | "border";   // E031: a literal is checked as CSS of this kind
   star?: boolean;                                // with "size": star sizes (*, 2*) allowed
 }

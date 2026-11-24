@@ -50,6 +50,9 @@ describe("checkBoundaries", () => {
           "packages/components/src/button/metadata.ts": `export const buttonMd = {};`,
           "packages/vite-plugin/src/index.ts": `import { compileModule } from "@patchfuil/compiler"; import type { ComponentMetadata } from "@patchfuil/components/metadata"; import type { Plugin } from "vite"; import { basename } from "node:path"; import "./x";`,
           "packages/standalone/src/index.ts": `import "@patchfuil/compiler"; import "@patchfuil/runtime"; import "@patchfuil/components"; import "react";`,
+          "packages/mock-backend/src/worker.ts": `import { http } from "msw"; import { setupWorker } from "msw/browser"; import type { Backend } from "./index";`,
+          "packages/mock-backend/src/middleware.ts": `import type { IncomingMessage } from "node:http";`,
+          "packages/vite-plugin/src/mock.ts": `import { backendMiddleware } from "@patchfuil/mock-backend/middleware";`,
         }),
       ),
     ).toEqual([]);
@@ -70,6 +73,13 @@ describe("checkBoundaries", () => {
     ["packages/runtime/src/index.ts", "@patchfuil/vite-plugin"],
     ["packages/components/src/index.ts", "@patchfuil/standalone"],
     ["packages/standalone/src/index.ts", "@patchfuil/vite-plugin"],
+    // The app can't know it talks to a mock (step 20); the mock knows nothing of the app.
+    ["packages/runtime/src/index.ts", "@patchfuil/mock-backend"],
+    ["packages/components/src/index.ts", "@patchfuil/mock-backend/worker"],
+    ["packages/runtime/src/index.ts", "msw"],
+    ["packages/mock-backend/src/index.ts", "@patchfuil/runtime"],
+    ["packages/mock-backend/src/index.ts", "react"],
+    ["packages/vite-plugin/src/index.ts", "@patchfuil/mock-backend/worker"],
   ])("rejects %s importing %s", (file, specifier) => {
     const violations = checkBoundaries(files({ [file]: `import x from "${specifier}";` }));
     expect(violations).toHaveLength(1);

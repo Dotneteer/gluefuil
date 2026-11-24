@@ -403,7 +403,11 @@ props, and gaps and paddings that follow the nesting automatically. Plan:
 
 ## Phase E: Data, routing, forms
 
-### Step 20: Data binding: `DataSource`, `APICall`, `data` URL shorthand
+### Step 20: Data binding: `DataSource`, `APICall`, `data` URL shorthand ✅
+
+Plan and findings: [poc-20-data.md](poc-20-data.md), with a mock backend the app
+can't tell from a real one, and a catalog of the scenarios to test
+(cancellation, retry, errors, slow network, out-of-order responses).
 
 - **Subject:** loader state (`value`, `inProgress`, `loaded`, `error`),
   `refetch`, dependent queries, `transformResult`, `APICall.execute` with

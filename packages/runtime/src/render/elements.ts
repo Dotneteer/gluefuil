@@ -41,6 +41,8 @@ export interface BoundProps {
   templates?: Record<string, TemplateFunction> | null;
   /** `onMount` / `onUnmount` handlers (any element). */
   lifecycle?: { mount?: HandlerFactory; unmount?: HandlerFactory } | null;
+  /** Handler props return a promise of the handler's result (APICall's beforeRequest, success; step 20). */
+  results?: boolean;
   /** The scope the bindings read and the handlers write. */
   scope: object;
   children?: ReactNode;
@@ -50,13 +52,13 @@ export interface BoundProps {
  * Renders `type` with its constant props and the current values of its
  * bindings. It re-renders only when one of those values changes.
  */
-export function Bound({ type, props, bindings, handlers, policies, timeouts, id, templates, lifecycle, scope, children }: BoundProps) {
+export function Bound({ type, props, bindings, handlers, policies, timeouts, id, templates, lifecycle, results, scope, children }: BoundProps) {
   const values = useComputed(() => {
     const result: Record<string, unknown> = {};
     for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
     return result;
   }, [bindings, scope]);
-  const { handlerProps, templateProps, registerApi } = useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }, false);
+  const { handlerProps, templateProps, registerApi } = useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }, results === true);
   const extra = registerApi ? { registerApi } : undefined;
   return createElement(type, { ...props, ...values, ...handlerProps, ...templateProps, ...extra }, children);
 }

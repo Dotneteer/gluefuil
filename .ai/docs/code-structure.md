@@ -86,6 +86,13 @@ Current state:
   `backgroundColor`, …) on every visual component. Gaps and paddings are
   automatic: a four-level ladder by nesting, orientation, surfaces and
   screen size, all multiples of `space-base` ([layout.md](layout.md)).
+- **Data:** `DataSource` and `APICall` on one HTTP gate with structured
+  errors, retries, timeouts and cancellation (tied to the calling handler),
+  over `@tanstack/query-core` bridged to signals; `Items data="/api/…"`
+  ([data.md](data.md)). A **mock backend** the app can't tell from a server
+  (`@patchfuil/mock-backend`: a service worker, dev-server middleware or a
+  test server answer real `fetch` requests; faults, holds and a request log
+  under `/__mock`) ([mock-backend.md](mock-backend.md)).
 - **Behaviors:** `label`, `tooltip` and `variant` attach by trigger props,
   decided at compile time and compiled to `Bound` wrappers, on built-ins
   and user-defined components ([behaviors.md](behaviors.md)).
@@ -102,6 +109,8 @@ Current state:
 | [routing.md](routing.md) | `runtime/src/render/router.ts`, `components/src/routing.tsx` |
 | [app-shell.md](app-shell.md) | `components/src/shell.tsx`, `icons.tsx`, the shell CSS in `styles.ts`, `compiler/src/module/shell.ts`, `runtime/src/render/shell-state.ts` |
 | [layout.md](layout.md) | `components/src/layout.tsx`, `layout-metadata.ts`, the `LAYOUT` CSS in `styles.ts`, the Stack family in `metadata.ts`, aliases, layout props and E031/E032 in the compiler |
+| [data.md](data.md) | `runtime/src/data/`, `runtime/src/render/deferred.ts`, `components/src/data.tsx`; the compiler's `whenIsProp`, `deferred`, `code`, `nullishUnresolved`, `eventResults` |
+| [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `pfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
 | [mantine.md](mantine.md) | `runtime/src/render/wrap.ts`, `components/src/mantine.tsx`, `text.tsx` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
 | [theming.md](theming.md) | `components/src/theming/` (the engine, built-in themes), `styles.ts`, `App`/`Theme`, `runtime/src/render/theme-state.ts` |
@@ -131,12 +140,14 @@ Current state:
 │   ├── runtime/         @patchfuil/runtime     what compiled code calls into
 │   │   ├── src/script/      sandbox globals and helpers; the binding-value check; loadBinding (standalone only)
 │   │   ├── src/reactivity/  signal store, React hooks, scope object
-│   │   ├── src/render/      what compiled modules render with (Bound, BoundUser, useComponent, Slot, TextNode, useScope, loadModule), handler runtime, app globals, mountApp, wrapComponent, the router
+│   │   ├── src/render/      what compiled modules render with (Bound, BoundUser, useComponent, Slot, TextNode, useScope, loadModule, deferredValue), handler runtime, app globals, mountApp, wrapComponent, the router
+│   │   ├── src/data/        the HTTP gate, data errors, the retry policy, the query client, Loader (DataSource) and ApiCaller (APICall)
 │   │   ├── src/server.ts    @patchfuil/runtime/server: renderStatic (static generation; never in client bundles)
 │   │   ├── src/errors.ts    the runtime error reporter
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── standalone/      @patchfuil/standalone  the one-file engine (dist/pfui.js): fetch, compile, cache, watch
-│   ├── vite-plugin/     @patchfuil/vite-plugin build-time compilation: .pfui -> ES module in Vite; component discovery; prerendering
+│   ├── vite-plugin/     @patchfuil/vite-plugin build-time compilation: .pfui -> ES module in Vite; component discovery; prerendering; pfuiMockBackend
+│   ├── mock-backend/    @patchfuil/mock-backend a mock backend (Request -> Response) and its hosts: service worker, dev-server middleware, test server
 │   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
 │       ├── src/layout.tsx   Stack (VStack, HStack, … are compile-time aliases), SpaceFiller, the layout context and props (+ layout-metadata.ts, React-free)
 │       ├── src/mantine.tsx  Button, TextBox, Select, Checkbox (Mantine, through wrapComponent)
@@ -145,12 +156,14 @@ Current state:
 │       ├── src/shell.tsx    the App shell: AppHeader, NavPanel, Footer, NavLink, NavGroup, NavPanelCollapseButton (+ icons.tsx)
 │       ├── src/theme.tsx    App, Theme; src/styles.ts the stylesheet; src/theming/ the theme engine (React-free)
 │       ├── src/behaviors.tsx  LabelBehavior, TooltipBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
-│       └── src/items.tsx    Items (templates with $item)
+│       ├── src/data.tsx     DataSource, APICall, DataUrl
+│       └── src/items.tsx    Items (templates with $item; a URL in data loads it)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, build-output check, static-server.mjs (E2E)
 ├── test-apps/
 │   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
 │   ├── routing/         @patchfuil/routing-app E2E fixture: a dashboard of buttons and links opening routed pages (dev and prerendered build)
-│   └── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui (+ components/, code-behind), compiled by @patchfuil/vite-plugin, prerendered in builds
+│   ├── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui (+ components/, code-behind), compiled by @patchfuil/vite-plugin, prerendered in builds
+│   └── data/            @patchfuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
 ├── playground/          @patchfuil/playground  manual testing: a dashboard of 19 scenarios (steps 2–19F), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
@@ -173,7 +186,8 @@ version `0.0.0`.
 | `@patchfuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts`; `./server` → `src/server.ts` | Browser; `./server` in Node (static generation) |
 | `@patchfuil/components` | Built-in components (own and Mantine-wrapped). | `.` → `src/index.ts`; `./metadata` → `src/metadata.ts` | Browser; Node for server rendering |
 | `@patchfuil/standalone` | The one-file engine for standalone mode; built into `dist/pfui.js` (IIFE, global `pfui`). | `.` → `src/index.ts` | Browser |
-| `@patchfuil/vite-plugin` | Build-time compilation: the Vite plugin `pfui()`. | `.` → `src/index.ts` | Node (Vite) |
+| `@patchfuil/vite-plugin` | Build-time compilation: the Vite plugin `pfui()`; `pfuiMockBackend()`. | `.` → `src/index.ts` | Node (Vite) |
+| `@patchfuil/mock-backend` | A mock backend for development and tests, and its hosts. Never imported by the app's packages. | `.` → `src/index.ts`; `./worker`, `./node`, `./middleware` | Browser (worker host), Node (middleware and test hosts) |
 
 **Current contents:**
 
@@ -310,7 +324,7 @@ Run from the repository root.
 | `npm install` | Installs everything and links the workspace packages (`packages/*`, `test-apps/*`, `playground`) |
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176), the routing fixture (dev 5177, build 5178), the playground (dev 5180, production build 5181) |
+| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176), the routing fixture (dev 5177, build 5178), the playground (dev 5180, production build 5181), the data fixture (worker host 5182, middleware host 5183) |
 | `npm run playground` | The manual-testing playground on the Vite dev server, port 5190 (`playground:build`, and `playground:preview` on 5191, for the prerendered build) |
 | `npm run build:standalone` | Builds `packages/standalone/dist/pfui.js` (also run by the E2E web server) |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
@@ -382,6 +396,8 @@ Conventions:
 | `tools/boundaries.test.ts` | Import extraction, relative-import closure, every boundary rule (positive and negative), the real repo has no violations |
 | `tools/xmlui-corpus.test.ts` | Compatibility with the XMLUI repo (`$XMLUI_REPO` or the sibling folder `../xmlui`; skipped if absent). Every `.xmlui` file parses as markup, all script inside each file parses, and every `.xs` code-behind file parses, all with zero diagnostics. Every binding compiles to valid JavaScript; its expected findings (host functions) are listed in `EXPECTED_BINDING_DIAGNOSTICS`. Deliberate exclusions are listed, with reasons, in `EXCLUDED`. |
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
+| `tools/data-build.test.ts` | A production build of `test-apps/data` has no mock code and no worker script unless `build: true` (see [mock-backend.md](mock-backend.md#tests)) |
+| `mock-backend/tests/*.test.ts`, `runtime/tests/data/*.test.ts`, `compiler/tests/module/data.test.ts`, `components/tests/data.test.tsx` | The mock backend and its hosts; the HTTP gate, retries, Loader and ApiCaller; the compiler's data features; DataSource and APICall in markup (see [data.md](data.md#tests), [mock-backend.md](mock-backend.md#tests)) |
 | `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.pfui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs (see [ssg.md](ssg.md#tests)) |
@@ -441,7 +457,11 @@ Count after steps 19A–19C: 2,035 unit tests in 69 files.
     layout demos, measured) and `layout.spec.ts` (the spacing demo,
     measured);
   - `playground-build` (5181): `app-shell-prerender.spec.ts`, against the
-    playground's prerendered production build (`.tmp/playground-dist`).
+    playground's prerendered production build (`.tmp/playground-dist`);
+  - `data-worker` (5182) and `data-server` (5183): `data.spec.ts` against
+    `test-apps/data` with the mock backend in a service worker and in the
+    dev server. `data-server` runs one test at a time (`workers: 1`): its
+    backend is shared.
 - `webServer` starts one server per fixture (reused locally if already
   running).
 - **The output stays quiet (`npm run check` prints no warnings), on purpose:**
@@ -469,6 +489,7 @@ Count after steps 19A–19C: 2,035 unit tests in 69 files.
 | `e2e/layout.spec.ts` | The layout system: every gap and surface padding of the spacing demo measured against the ladder, at desktop and phone widths and three space-base values; star sizes, percentages, flows, density |
 | `e2e/playground.spec.ts` | The playground's dashboard lists its scenarios; each opens, shows its source (monospace, line breaks and indentation), has no page or console errors, and leads back |
 | `e2e/routing.spec.ts` | Routing in the routing fixture, dev and build (projects `routing-dev`, `routing-build`) |
+| `e2e/data.spec.ts` | Data binding against the mock backend in both hosts: real requests, deduplication, slow network, out-of-order answers, retries, offline, hang and cancel, a rename with invalidation, validation errors, a slow double click (see [data.md](data.md#tests)) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select, Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
