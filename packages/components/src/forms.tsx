@@ -1,0 +1,359 @@
+// Forms (step 22, .ai/plan/poc-22-forms.md): Form, and the behaviors that bind
+// an input to it (formBinding, validation), after XMLUI's Form,
+// FormBindingBehavior and ValidationBehavior. There is no FormItem.
+
+import {
+  FieldBindingProvider,
+  FormProvider,
+  provideContext,
+  reportRuntimeError,
+  useComponentApi,
+  useComputed,
+  useFormStore,
+  type FieldOptions,
+  type FormField,
+  type FormStore,
+  type RegisterApi,
+  type TemplateRenderer,
+  type Severity,
+  type ValidationMode,
+  FormStore as Store,
+  DEFAULT_FIELD_OPTIONS,
+  watch as watchSignal,
+} from "@patchfuil/runtime";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Button, SubmitButton } from "./mantine";
+
+type Handler = ((...args: unknown[]) => unknown) | undefined;
+
+export interface FormProps {
+  data?: unknown;
+  enabled?: unknown;
+  saveLabel?: unknown;
+  saveInProgressLabel?: unknown;
+  cancelLabel?: unknown;
+  hideButtonRow?: unknown;
+  dataAfterSubmit?: unknown;
+  buttonRowTemplate?: TemplateRenderer;
+  onWillSubmit?: Handler;
+  onSubmit?: Handler;
+  onSuccess?: Handler;
+  onSubmitError?: Handler;
+  onCancel?: Handler;
+  onReset?: Handler;
+  onDirtyChanged?: Handler;
+  contextScope?: unknown;
+  registerApi?: RegisterApi;
+  children?: ReactNode;
+}
+
+const isTrue = (value: unknown) => value === true || value === "true";
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));
+
+/**
+ * A form: edits a copy of `data`; inputs inside bind a path of it with
+ * `bindTo`. `$data` shows the current values to its children.
+ */
+export function Form(props: FormProps) {
+  const [store] = useState(() => new Store(props.data));
+  const latest = useRef(props);
+  latest.current = props;
+  // `$data` for the children (compiled with the Form's context scope).
+  provideContext(props.contextScope, { $data: () => store.data.get() });
+  useLayoutEffect(() => {
+    store.enabledProp.set(props.enabled !== false && props.enabled !== "false");
+  }, [store, props.enabled]);
+
+  // dirtyChanged: on each transition (not the first value).
+  useEffect(() => {
+    let previous = store.dirty.peek();
+    let first = true;
+    const check = () => {
+      const next = store.dirty.peek();
+      if (!first && next !== previous) void latest.current.onDirtyChanged?.(next);
+      first = false;
+      previous = next;
+    };
+    check();
+    return watchSignal(store.dirty, check);
+  }, [store]);
+
+  const submit = useSubmit(store, latest);
+
+  const api = useMemo(
+    () => ({
+      reset: (data?: unknown) => {
+        store.reset(data);
+        void latest.current.onReset?.();
+      },
+      update: (change: unknown) => store.update(change),
+      validate: () => store.validate(),
+      getData: () => store.getData(),
+      isDirty: () => store.dirty.get(),
+      setDirty: (dirty: unknown) => store.setDirty(dirty === true),
+      submit: () => submit(),
+      get isSubmitting() {
+        return store.submitting.get();
+      },
+      get hasErrors() {
+        return store.hasErrors.get();
+      },
+    }),
+    [store, submit],
+  );
+  useComponentApi(props.registerApi, api);
+
+  return (
+    <form
+      className="pfui-Form"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit();
+      }}
+    >
+      <ErrorSummary store={store} />
+      <FormProvider store={store}>{props.children}</FormProvider>
+      {isTrue(props.hideButtonRow) ? null : <ButtonRow store={store} props={props} />}
+    </form>
+  );
+}
+
+function ErrorSummary({ store }: { store: FormStore }) {
+  const errors = useComputed(() => store.generalErrors.get(), [store]);
+  if (errors.length === 0) return null;
+  return (
+    <div className="pfui-Form-summary" role="alert">
+      {errors.map((message, index) => (
+        <div key={index} className="pfui-ValidationMessage" data-severity="error">
+          {message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
+  const { submitting, enabled, data } = useComputed(
+    () => ({ submitting: store.submitting.get(), enabled: store.enabledProp.get(), data: props.buttonRowTemplate ? store.data.get() : undefined }),
+    [store, props.buttonRowTemplate],
+  );
+  if (props.buttonRowTemplate) return <div className="pfui-Form-buttons">{props.buttonRowTemplate({ $data: data })}</div>;
+  const saveLabel = submitting ? (props.saveInProgressLabel ?? "Saving...") : (props.saveLabel ?? "Save");
+  return (
+    <div className="pfui-Form-buttons">
+      <Button label={props.cancelLabel ?? "Cancel"} enabled={enabled && !submitting} onClick={() => void props.onCancel?.()} />
+      <SubmitButton label={saveLabel} enabled={enabled && !submitting} />
+    </div>
+  );
+}
+
+/**
+ * The submit flow (part A: no submitUrl yet). A submit while one runs is
+ * ignored. Validation waits for pending checks; an error stops it and moves
+ * the focus to the first invalid input; warnings show and don't block.
+ */
+function useSubmit(store: FormStore, latest: { current: FormProps }) {
+  return useMemo(
+    () => async (): Promise<void> => {
+      if (store.submitting.peek() || !store.enabledProp.peek()) return;
+      store.showAll();
+      const result = await store.validate();
+      if (!result.isValid) {
+        store.firstInvalid()?.focusTarget?.();
+        return;
+      }
+      const props = latest.current;
+      let payload = store.getData();
+      store.submitting.set(true);
+      try {
+        const answer = await props.onWillSubmit?.(payload, store.getAllData());
+        if (answer === false) {
+          store.generalErrors.set([]);
+          return;
+        }
+        if (isPlainObject(answer)) payload = answer;
+        const response = props.onSubmit ? await props.onSubmit(payload) : undefined;
+        store.markClean();
+        store.submitting.set(false);
+        await props.onSuccess?.(response);
+        const after = props.dataAfterSubmit;
+        if (after === "reset" || after === "clear") {
+          if (after === "reset") store.reset();
+          else store.clear();
+          await props.onReset?.();
+        }
+      } catch (error) {
+        const message = error instanceof Error && error.message ? error.message : "Couldn't save the form.";
+        store.generalErrors.set([message]);
+        if (props.onSubmitError) await props.onSubmitError(error);
+        else reportRuntimeError(error);
+      } finally {
+        store.submitting.set(false);
+      }
+    },
+    [store, latest],
+  );
+}
+
+// --- The behaviors ---------------------------------------------------------------
+
+interface ValidationSettings {
+  rules: FieldOptions["rules"];
+  validate: FieldOptions["validate"];
+  mode: ValidationMode;
+  debounceMs: number;
+  displayDelayMs: number;
+}
+
+const ValidationContext = createContext<ValidationSettings | undefined>(undefined);
+
+const number = (value: unknown): number | undefined => {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) return Number(value);
+  return undefined;
+};
+const text = (value: unknown): string | undefined => (value === undefined || value === null || value === "" ? undefined : String(value));
+const severity = (value: unknown): Severity | undefined => (value === "warning" ? "warning" : value === "error" ? "error" : undefined);
+
+export interface ValidationBehaviorProps {
+  required?: unknown;
+  requiredInvalidMessage?: unknown;
+  minLength?: unknown;
+  maxLength?: unknown;
+  lengthInvalidMessage?: unknown;
+  lengthInvalidSeverity?: unknown;
+  minValue?: unknown;
+  maxValue?: unknown;
+  rangeInvalidMessage?: unknown;
+  rangeInvalidSeverity?: unknown;
+  pattern?: unknown;
+  patternInvalidMessage?: unknown;
+  patternInvalidSeverity?: unknown;
+  regex?: unknown;
+  regexInvalidMessage?: unknown;
+  regexInvalidSeverity?: unknown;
+  matchValue?: unknown;
+  matchInvalidMessage?: unknown;
+  validationMode?: unknown;
+  customValidationsDebounce?: unknown;
+  validationDisplayDelay?: unknown;
+  onValidate?: Handler;
+  children?: ReactNode;
+}
+
+/** `validation`: the rules of the bound input inside (its formBinding wrapper applies them). No element of its own. */
+export function ValidationBehavior(props: ValidationBehaviorProps) {
+  const settings: ValidationSettings = {
+    rules: {
+      ...(isTrue(props.required) ? { required: true } : {}),
+      ...optional("requiredInvalidMessage", text(props.requiredInvalidMessage)),
+      ...optional("minLength", number(props.minLength)),
+      ...optional("maxLength", number(props.maxLength)),
+      ...optional("lengthInvalidMessage", text(props.lengthInvalidMessage)),
+      ...optional("lengthInvalidSeverity", severity(props.lengthInvalidSeverity)),
+      ...optional("minValue", number(props.minValue)),
+      ...optional("maxValue", number(props.maxValue)),
+      ...optional("rangeInvalidMessage", text(props.rangeInvalidMessage)),
+      ...optional("rangeInvalidSeverity", severity(props.rangeInvalidSeverity)),
+      ...optional("pattern", text(props.pattern)),
+      ...optional("patternInvalidMessage", text(props.patternInvalidMessage)),
+      ...optional("patternInvalidSeverity", severity(props.patternInvalidSeverity)),
+      ...optional("regex", text(props.regex)),
+      ...optional("regexInvalidMessage", text(props.regexInvalidMessage)),
+      ...optional("regexInvalidSeverity", severity(props.regexInvalidSeverity)),
+      ...(props.matchValue !== undefined ? { matchValue: props.matchValue } : {}),
+      ...optional("matchInvalidMessage", text(props.matchInvalidMessage)),
+    },
+    validate: props.onValidate,
+    mode: props.validationMode === "onChanged" || props.validationMode === "onLostFocus" ? props.validationMode : "errorLate",
+    debounceMs: number(props.customValidationsDebounce) ?? 0,
+    displayDelayMs: number(props.validationDisplayDelay) ?? 0,
+  };
+  return <ValidationContext.Provider value={settings}>{props.children}</ValidationContext.Provider>;
+}
+
+function optional<K extends string, V>(key: K, value: V | undefined): { [P in K]?: V } {
+  return (value === undefined ? {} : { [key]: value }) as { [P in K]?: V };
+}
+
+export interface FormBindingBehaviorProps {
+  bindTo?: unknown;
+  noSubmit?: unknown;
+  children?: ReactNode;
+}
+
+const reported = new WeakSet<object>();
+
+/**
+ * `formBinding`: binds the input inside to the enclosing form's data at
+ * `bindTo`, and shows its validation messages after it. Outside a Form the
+ * input works unbound (reported once).
+ */
+export function FormBindingBehavior(props: FormBindingBehaviorProps) {
+  const store = useFormStore();
+  const settings = useContext(ValidationContext);
+  const path = text(props.bindTo);
+  if (!store || path === undefined) {
+    if (!store) reportOnce(props, "An input with bindTo is not inside a Form: it works unbound");
+    return <>{props.children}</>;
+  }
+  return (
+    <BoundField store={store} path={path} noSubmit={isTrue(props.noSubmit)} settings={settings}>
+      {props.children}
+    </BoundField>
+  );
+}
+
+function reportOnce(key: object, message: string): void {
+  if (reported.has(key)) return;
+  reported.add(key);
+  reportRuntimeError(new Error(message));
+}
+
+function fieldOptions(path: string, noSubmit: boolean, settings: ValidationSettings | undefined): FieldOptions {
+  return {
+    ...DEFAULT_FIELD_OPTIONS,
+    path,
+    noSubmit,
+    ...(settings ? { rules: settings.rules, validate: settings.validate, mode: settings.mode, debounceMs: settings.debounceMs, displayDelayMs: settings.displayDelayMs } : {}),
+  };
+}
+
+function BoundField({ store, path, noSubmit, settings, children }: { store: FormStore; path: string; noSubmit: boolean; settings: ValidationSettings | undefined; children?: ReactNode }) {
+  const messagesId = useId();
+  // One field per path (a changed bindTo is a new field).
+  const field = useMemo(() => store.createField(fieldOptions(path, noSubmit, settings)), [store, path]);
+  const options = fieldOptions(path, noSubmit, settings);
+  useLayoutEffect(() => {
+    field.setOptions(options);
+  });
+  useLayoutEffect(() => {
+    field.attach();
+    return () => field.detach();
+  }, [field]);
+  const binding = useMemo(() => ({ field, messagesId }), [field, messagesId]);
+  const required = settings?.rules.required === true;
+  return (
+    <span className="pfui-Field" data-required={required ? "" : undefined}>
+      <FieldBindingProvider binding={binding}>{children}</FieldBindingProvider>
+      <Messages field={field} id={messagesId} />
+    </span>
+  );
+}
+
+function Messages({ field, id }: { field: FormField; id: string }) {
+  const visible = useComputed(() => (field.shown.get() ? field.results.get().filter((r) => !r.valid) : []), [field]);
+  return (
+    <span id={id} className="pfui-Field-messages" aria-live="polite">
+      {[...visible]
+        .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1))
+        .map((result, index) => (
+          <span key={index} className="pfui-ValidationMessage" data-severity={result.severity} data-stale={result.stale ? "" : undefined}>
+            {result.message}
+          </span>
+        ))}
+    </span>
+  );
+}

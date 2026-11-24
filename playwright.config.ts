@@ -31,6 +31,9 @@ export default defineConfig({
     // Routing (step 19): the same spec on the dev server and the prerendered build.
     { name: "routing-dev", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5177" } },
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
+    // Forms (step 22): the same spec on the dev server and the prerendered build.
+    { name: "forms-dev", testMatch: /forms\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5186" } },
+    { name: "forms-build", testMatch: /forms\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5187" } },
     // Browser routing (step 21): every static route prerendered, served by a static server.
     { name: "routing-browser-build", testMatch: /routing-browser\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5184" } },
     // The same app built under base /app/ (step 21, part 2): the router's basename.
@@ -79,6 +82,17 @@ export default defineConfig({
       command:
         "npx vite build --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --emptyOutDir && npx vite preview --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --port 5178 --strictPort",
       url: "http://localhost:5178",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npx vite --config test-apps/forms/vite.config.ts --configLoader runner --port 5186 --strictPort",
+      url: "http://localhost:5186",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command:
+        "npx vite build --config test-apps/forms/vite.config.ts --configLoader runner --outDir ../../.tmp/forms-dist --emptyOutDir && npx vite preview --config test-apps/forms/vite.config.ts --configLoader runner --outDir ../../.tmp/forms-dist --port 5187 --strictPort",
+      url: "http://localhost:5187",
       reuseExistingServer: !process.env.CI,
     },
     {

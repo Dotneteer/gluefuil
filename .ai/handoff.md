@@ -119,6 +119,8 @@
   | 5183 | data fixture, mock backend in the dev server |
   | 5184 | routing-browser fixture, prerendered build (step 21) |
   | 5185 | routing-browser fixture built under `base: "/app/"` (step 21, part 2) |
+  | 5186 | forms fixture, dev server (step 22) |
+  | 5187 | forms fixture, prerendered build (step 22) |
   | 5190 | playground for the user |
   | 5191 | playground preview |
 

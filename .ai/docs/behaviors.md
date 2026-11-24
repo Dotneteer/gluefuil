@@ -5,7 +5,7 @@
 > Design and XMLUI comparison:
 > [`../plan/poc-18-behaviors.md`](../plan/poc-18-behaviors.md).
 >
-> **Last updated:** step 18.
+> **Last updated:** step 22 (the form behaviors, behavior events, `requiresValueApi`).
 
 ## Using them
 
@@ -21,9 +21,13 @@
 | `label` | `label`, `labelPosition` (`top` \| `start`) | `label` is set and the component doesn't declare `label` (`Button` does) | `<label class="pfui-Label" data-position>` with `.pfui-Label-text` and the component: an input inside gets the label as its accessible name |
 | `tooltip` | `tooltip` | `tooltip` is set | `<span class="pfui-TooltipAnchor">` around the component; on hover or focus, `<span role="tooltip">` linked by `aria-describedby` |
 | `variant` | `variant` | `variant` is set and the component has `themeVars` | `<div class="pfui-Variant" style="display: contents">` setting each component variable to `var(--pfui-<name>-<variant>, <default>)` |
+| `formBinding` (step 22) | `bindTo`, `noSubmit` | `bindTo` is set and the component has a `value` and `setValue` API | `<span class="pfui-Field">`: the input bound to the enclosing Form's data, then its validation messages ([forms.md](forms.md)) |
+| `validation` (step 22) | the rules (`required`, `minLength`, …), `validationMode`, …; event `onValidate` | the same | Nothing: it gives the rules to `formBinding` by context |
 
-- **Order** (`BEHAVIORS`): label innermost, then tooltip, then variant
-  outermost, as in XMLUI.
+- **Order** (`BEHAVIORS`): label innermost, then formBinding, validation,
+  tooltip, and variant outermost. XMLUI registers its form behaviors after
+  variant, and its binding wrapper renders the label itself; here the label
+  wraps only the input, so the messages are not part of its accessible name.
 - **Their theme variables:**
   - `textColor-Label`, `fontSize-Label`, `gap-Label`;
   - `backgroundColor-Tooltip`, `textColor-Tooltip`, `borderRadius-Tooltip`,
@@ -45,7 +49,10 @@ is the whole rule:
 1. the element sets a trigger prop (literal or bound);
 2. the component's contract doesn't declare it;
 3. the component isn't `nonVisual` (`Items`, `Theme`);
-4. `requiresThemeVars` behaviors need `themeVars`.
+4. `requiresThemeVars` behaviors need `themeVars`;
+5. `requiresValueApi` behaviors (the form behaviors) need a `value` and a
+   `setValue` API in the component's metadata. UDCs have neither, so they
+   don't bind (as XMLUI, whose custom inputs need a `FormItem`).
 
 `compileModule` then:
 - sends the behavior's attributes to it, type-checked against its props
@@ -64,6 +71,11 @@ $$h($$Bound, { type: $$C_TooltipBehavior, props: null, bindings: $$b3, scope: $$
 - **`variant` also gets the component's name.**
 - **When a behavior doesn't attach,** its props are ordinary props (E020
   if unknown).
+- **Events** (step 22): a behavior may declare events (`validation`:
+  `validate`). An `on<Event>` attribute the component itself doesn't declare
+  goes to the attached behavior that does, compiled as a handler on its
+  `Bound` (`results: true` with `eventResults`). Unknown: E004. Only the
+  attribute form; `<event name="validate">` is not routed to behaviors.
 
 ## User-defined components (diverges from XMLUI)
 
@@ -80,6 +92,7 @@ unknown prop.
 | `components/src/behaviors-metadata.ts` | `BehaviorMetadata`, `BEHAVIORS` (React-free) |
 | `components/src/metadata.ts` | `attachedBehaviors`, `isKnownThemeVariable`; `nonVisual`; behavior theme defaults in `componentThemeDefaults` |
 | `components/src/behaviors.tsx` | `LabelBehavior`, `TooltipBehavior`, `VariantBehavior`, `variantVariable` |
+| `components/src/forms.tsx` | `FormBindingBehavior`, `ValidationBehavior` (and `Form`) |
 | `components/src/styles.ts` | `.pfui-Label*`, `.pfui-TooltipAnchor`, `.pfui-Tooltip` |
 | `compiler/src/module/compile-module.ts` | `behaviorAttribute`, `withBehaviors` (in `element`) |
 

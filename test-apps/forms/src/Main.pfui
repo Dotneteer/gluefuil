@@ -1,0 +1,19 @@
+<!-- Step 22: client-side forms. Inputs bind to the form with bindTo (the
+     formBinding and validation behaviors); there is no FormItem. -->
+<App var.result="">
+  <H1>Sign up</H1>
+  <Form id="signup"
+        data="{ { name: '', email: '', address: { city: '' }, role: 'user', agree: false } }"
+        onSubmit="(data) => { delay(300); result = JSON.stringify(data); return 'ok'; }"
+        onSuccess="(answer) => result += ' ' + answer">
+    <TextBox bindTo="name" label="Name" required minLength="2"/>
+    <TextBox bindTo="email" label="Email" required pattern="email"
+             onValidate="(value) => { delay(200); return value === 'taken@example.com' ? 'Already registered' : null; }"/>
+    <TextBox bindTo="address.city" label="City" maxLength="10" lengthInvalidSeverity="warning"/>
+    <Select bindTo="role" label="Role" options="{['user', 'admin']}"/>
+    <Checkbox bindTo="agree" label="I agree to the terms" required/>
+    <Text>Preview: {$data.name} from {$data.address.city} ({$data.role})</Text>
+  </Form>
+  <Text>Dirty: {signup.isDirty()}</Text>
+  <Text>Result: {result}</Text>
+</App>

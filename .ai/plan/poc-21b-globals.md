@@ -1,6 +1,6 @@
 # Step 21B: Global variables in user components
 
-**Status:** Done; awaiting review
+**Status:** Done
 
 Part of [poc-steps.md](poc-steps.md), inserted between step 21 (routing)
 and step 22 (forms). Forms will share state across user components (a

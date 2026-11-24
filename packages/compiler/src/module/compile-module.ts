@@ -129,6 +129,7 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["useComponent", "$$useComponent"],
   ["Fragment", "$$Fragment"],
   ["GlobalScope", "$$GlobalScope"],
+  ["useContextScope", "$$useContextScope"],
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
   ["deferredValue", "$$deferred"],
@@ -194,6 +195,13 @@ interface Declaration {
 
 type ValuedAttribute = AttributeNode & { value: NonNullable<AttributeNode["value"]> };
 
+/** What an element gives one of its behaviors: constant props, bindings and handlers. */
+interface BehaviorValues {
+  constants: [string, string][];
+  bindings: [string, string][];
+  handlers: [string, string][];
+}
+
 export function compileModule(markup: string, options: CompileModuleOptions = {}): CompileModuleResult {
   return new ModuleCompiler(options).compile(markup);
 }
@@ -239,6 +247,8 @@ class ModuleCompiler {
   /** The App's shell settings, once compiled; NavPanelCollapseButton elements, checked against them. */
   private shell: ShellConfig | undefined;
   private readonly collapseButtons: Span[] = [];
+  /** Elements whose context scope (`childContextVars`) is being compiled: the inner pass compiles the element itself. */
+  private readonly contextScoped = new Set<ElementNode>();
   /** The root element of the component being compiled: it applies the layout props given to the component's tag. */
   private layoutRoot: ElementNode | undefined;
 
@@ -1049,8 +1059,21 @@ class ModuleCompiler {
     const rendered = alias?.component ?? name;
     if (!isUser) this.usedComponents.add(rendered);
     const isLayoutRoot = node === this.layoutRoot;
+    // Context variables for the attributes and children (Form's $data, step 22): a container
+    // creates the scope, the component fills it; the element compiles inside it.
+    const contextVars = isUser ? undefined : metadata.childContextVars;
+    if (contextVars && contextVars.length > 0 && !this.contextScoped.has(node)) {
+      this.contextScoped.add(node);
+      this.contextFrames.push(new Set(contextVars));
+      const body = this.element(node, "$$c");
+      this.contextFrames.pop();
+      const container = `$$K${this.counter++}`;
+      this.hoisted.push(`function ${container}({ $$p }) {\n  const $$c = $$useContextScope($$p, ${JSON.stringify(contextVars)});\n  return ${body};\n}`);
+      return `$$h(${container}, { $$p: ${scopeVar} })`;
+    }
 
     const constants: [string, string][] = [];
+    if (contextVars && contextVars.length > 0) constants.push(["contextScope", scopeVar]);
     for (const [prop, value] of Object.entries(alias?.props ?? {})) {
       if (!node.attributes.some((a) => a.name.full === prop)) constants.push([prop, jsString(value)]);
     }
@@ -1059,9 +1082,7 @@ class ModuleCompiler {
     // Behaviors (step 18): decided from the attributes the element sets; their
     // props go to them, not to the component.
     const behaviors = attachedBehaviors(metadata, new Set(node.attributes.map((a) => a.name.full)));
-    const behaviorValues = new Map<BehaviorMetadata, { constants: [string, string][]; bindings: [string, string][] }>(
-      behaviors.map((b) => [b, { constants: [], bindings: [] }]),
-    );
+    const behaviorValues = new Map<BehaviorMetadata, BehaviorValues>(behaviors.map((b) => [b, { constants: [], bindings: [], handlers: [] }]));
     // `handlerPolicy` / `handlerTimeoutMs`, for all handlers ("*") or one (`:onClick`).
     const policies = new Map<string, string>();
     const timeouts = new Map<string, number>();
@@ -1079,6 +1100,14 @@ class ModuleCompiler {
       }
       if (/^on[A-Z]/.test(attributeName)) {
         const event = attributeName[2]!.toLowerCase() + attributeName.slice(3);
+        // An event of an attached behavior (onValidate, step 22): the behavior's handler.
+        const owner = Object.hasOwn(metadata.events ?? {}, event) ? undefined : behaviors.find((b) => Object.hasOwn(b.events ?? {}, event));
+        if (owner) {
+          if (!attribute.value) continue;
+          const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
+          behaviorValues.get(owner)!.handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets })]);
+          continue;
+        }
         if (!this.checkEvent(metadata, name, event, attribute.name) || !attribute.value) continue;
         const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
         handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets })]);
@@ -1306,7 +1335,7 @@ class ModuleCompiler {
   }
 
   /** A behavior's attribute: a literal (type-checked) or a binding, for the behavior's wrapper. */
-  private behaviorAttribute(attribute: AttributeNode, prop: PropMetadata, into: { constants: [string, string][]; bindings: [string, string][] }): void {
+  private behaviorAttribute(attribute: AttributeNode, prop: PropMetadata, into: BehaviorValues): void {
     const name = attribute.name.full;
     if (!attribute.value) {
       this.checkPropLiteral(prop, name, "true", attribute.name);
@@ -1330,18 +1359,19 @@ class ModuleCompiler {
   private withBehaviors(
     element: string,
     behaviors: readonly BehaviorMetadata[],
-    values: Map<BehaviorMetadata, { constants: [string, string][]; bindings: [string, string][] }>,
+    values: Map<BehaviorMetadata, BehaviorValues>,
     component: string,
     scopeVar: string,
   ): string {
     let result = element;
     for (const behavior of behaviors) {
       this.usedComponents.add(behavior.component);
-      const { constants, bindings } = values.get(behavior)!;
+      const { constants, bindings, handlers } = values.get(behavior)!;
       const props = behavior.requiresThemeVars ? [...constants, ["component", JSON.stringify(component)] as [string, string]] : constants;
       const propsCode = props.length > 0 ? `{ ${props.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
       const bindingsCode = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
-      result = `$$h($$Bound, { type: $$C_${behavior.component}, props: ${propsCode}, bindings: ${bindingsCode}, scope: ${scopeVar} }, ${result})`;
+      const handlersCode = handlers.length > 0 ? `, handlers: ${this.hoist("$$e", handlers)}${behavior.eventResults ? ", results: true" : ""}` : "";
+      result = `$$h($$Bound, { type: $$C_${behavior.component}, props: ${propsCode}, bindings: ${bindingsCode}${handlersCode}, scope: ${scopeVar} }, ${result})`;
     }
     return result;
   }
