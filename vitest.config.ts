@@ -15,6 +15,14 @@ export default defineConfig({
     projects: [
       {
         test: {
+          name: "mock-backend",
+          root: "packages/mock-backend",
+          environment: "node",
+          include: ["tests/**/*.test.ts"],
+        },
+      },
+      {
+        test: {
           name: "compiler",
           root: "packages/compiler",
           environment: "node",

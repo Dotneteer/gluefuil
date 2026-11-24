@@ -8,6 +8,7 @@
     "@patchfuil/compiler": "0.0.0",
     "@patchfuil/components": "0.0.0",
     "@patchfuil/runtime": "0.0.0",
-    "@patchfuil/vite-plugin": "0.0.0"
+    "@patchfuil/vite-plugin": "0.0.0",
+    "@patchfuil/mock-backend": "0.0.0"
   }
 }

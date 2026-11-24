@@ -1,0 +1,47 @@
+<!--
+  The data fixture (step 20): a users list with search, one user's details
+  (a dependent DataSource), renaming (an APICall that invalidates the list).
+  It doesn't know what answers its requests: e2e/data.spec.ts runs it against
+  a service worker (5182) and against the dev server (5183).
+-->
+<App var.q="" var.selected="{null}" var.message="">
+  <VStack>
+    <H1>Users</H1>
+    <HStack verticalAlignment="center">
+      <TextBox placeholder="Search" onDidChange="(text) => q = text"/>
+      <Button label="Reload" onClick="users.refetch()"/>
+      <Button label="Stop" when="{users.inProgress}" onClick="users.cancel()"/>
+    </HStack>
+    <DataSource id="users" url="/api/users" queryParams="{{ q }}" retryDelay="200"/>
+    <!-- The same request again: one request serves both. -->
+    <DataSource id="sameUsers" url="/api/users" queryParams="{{ q }}" retryDelay="200"/>
+    <Text when="{users.inProgress}">Loading users…</Text>
+    <Text when="{users.error}">Couldn't load users ({users.error.category}, {users.error.attempts} attempts): {users.error.message}</Text>
+    <Text when="{users.cancelled}">Loading stopped.</Text>
+    <Text>Users: {(users.value ?? []).map(u => u.name).join(', ')}</Text>
+    <Text>Count: {(sameUsers.value ?? []).length}</Text>
+    <HStack wrapContent="true">
+      <Items data="{users.value}">
+        <Button label="Open {$item.name}" onClick="selected = $item.id"/>
+      </Items>
+    </HStack>
+
+    <DataSource id="user" url="/api/users/{selected}"/>
+    <VStack when="{user.loaded}">
+      <H2>{user.value.name}</H2>
+      <Text>Role: {user.value.role}</Text>
+      <TextBox id="newName" placeholder="New name"/>
+      <Button label="Save" handlerPolicy="drop-while-running" onClick="rename.execute({ id: user.value.id, name: newName.value })"/>
+      <Text when="{rename.inProgress}">Saving…</Text>
+    </VStack>
+    <APICall
+      id="rename"
+      method="put"
+      url="/api/users/{$param.id}"
+      body="{{ name: $param.name }}"
+      invalidates="/api/users"
+      onSuccess="(user) => message = 'Saved ' + user.name"
+      onError="(error) => message = 'Not saved (' + error.category + '): ' + error.message"/>
+    <Text>{message}</Text>
+  </VStack>
+</App>

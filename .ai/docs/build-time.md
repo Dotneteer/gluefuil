@@ -43,6 +43,11 @@ extensionless imports.
 | `extensions` | none | The app's own React components: `{ Name: { module, metadata } }`. `module` is relative to the Vite root and exports `Name`; each `.pfui` file imports it with a relative path (`componentModules`), and its contracts are checked like a built-in's. Example: the playground's `ScenarioSource`. |
 | `componentsDir` | `"src/components"` | User-defined component files, relative to the Vite root ([user-components.md](user-components.md#delivery)) |
 
+**The mock backend** is a second plugin from the same package,
+`pfuiMockBackend({ module, host, build })`. It runs a backend for
+development (a service worker in the page, or dev-server middleware) and,
+with `build: true`, in a production build too ([mock-backend.md](mock-backend.md)).
+
 With source maps off, the compiler emits no position markers. The code is
 identical either way (tested). The transform then returns
 `{ mappings: "" }`, Rollup's "no meaningful map".

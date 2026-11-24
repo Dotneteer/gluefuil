@@ -328,3 +328,37 @@ test("Layout and spacing: the demo in a frame, at desktop and phone width, with 
   await frame.getByRole("button", { name: "5px", exact: true }).click();
   await expect(page0).toHaveAttribute("data-inspect", "L0 v · gap 20px");
 });
+
+test("Data: the list from the mock backend; failures from the network panel; renaming", async ({ page }) => {
+  await open(page, "/data");
+  await expect(button(page, "Ada Lovelace")).toBeVisible();
+  const log = page.getByText(/^GET \/api\/people/).first();
+  // Rendered text only: the page's source listing contains the same words.
+  const loadError = page.locator(".pfui-Text", { hasText: /Couldn't load people/ });
+  // 503 twice, then fine: the page retries; the backend's log shows it.
+  // Each panel button reports when the backend has its new setting; only then reload.
+  await button(page, "503 twice, then fine").click();
+  await expect(text(page, "Fault 1 added")).toBeVisible();
+  await button(page, "Reload").click();
+  await expect(page.getByText(/^GET \/api\/people\?q= → fault 503/)).toHaveCount(2);
+  await expect(loadError).toBeHidden();
+  await expect(log).toBeVisible();
+  // Offline: the error, after three attempts; the list stays.
+  await button(page, "Offline").click();
+  await expect(text(page, "Fault 2 added")).toBeVisible();
+  await button(page, "Reload").click();
+  // (The text spans lines in the markup: a collapsed space at each end.)
+  await expect(loadError).toHaveText(/Couldn't load people: .* \(network, 3 attempts, retryable: true\)/);
+  await expect(button(page, "Ada Lovelace")).toBeVisible();
+  await button(page, "Clear faults").click();
+  await expect(text(page, "Faults cleared")).toBeVisible();
+  await button(page, "Reload").click();
+  await expect(loadError).toBeHidden();
+  // Rename a field: the PUT, then the list and the details refetch.
+  await button(page, "Emmy Noether").click();
+  await expect(text(page, "Field: Mathematics")).toBeVisible();
+  await page.getByPlaceholder("New field").fill("Algebra");
+  await button(page, "Save").click();
+  await expect(text(page, "Saved: Emmy Noether, Algebra")).toBeVisible();
+  await expect(text(page, "Field: Algebra")).toBeVisible();
+});

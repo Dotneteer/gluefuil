@@ -1,0 +1,20 @@
+{
+  "name": "@patchfuil/mock-backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A mock backend for development and tests: a Fetch-API handler (Request -> Response) with faults, holds and a request log, hosted by a service worker, dev-server middleware or a test server. The app can't tell it from a real server.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./worker": "./src/worker.ts",
+    "./node": "./src/node.ts",
+    "./middleware": "./src/middleware.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "msw": "3.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6"
+  }
+}

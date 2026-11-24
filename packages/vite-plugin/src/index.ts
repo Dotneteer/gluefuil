@@ -16,6 +16,7 @@ import { ComponentFolder, importSpecifier, readCodeBehind } from "./components";
 import { injectPrerendered, renderEntry, resolvePrerender, type PrerenderOptions } from "./prerender";
 
 export { injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
+export { pfuiMockBackend, type MockBackendOptions } from "./mock";
 
 export interface PfuiPluginOptions {
   /** The components markup may use. Default: the built-in components. */

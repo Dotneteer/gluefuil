@@ -1,4 +1,4 @@
-import { pfui } from "@patchfuil/vite-plugin";
+import { pfui, pfuiMockBackend } from "@patchfuil/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -6,7 +6,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
   // Pre-bundled at startup, so the first page load is not interrupted by a reload.
-  optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime"] },
+  optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core"] },
   // prerender: `npm run playground:build` renders the dashboard into index.html.
   plugins: [
     pfui({
@@ -48,6 +48,9 @@ export default defineConfig({
         },
       },
     }),
+    // The Data scenario's backend (step 20): a service worker in the page, also in the preview build.
+    // The app doesn't know: it makes ordinary requests to /api/people.
+    pfuiMockBackend({ module: "src/backend.ts", build: true }),
     react(),
   ],
   // Its own ports: 5173 belongs to the E2E smoke app (Playwright reuses a running server).

@@ -33,6 +33,10 @@ export default defineConfig({
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
     // The manual-testing playground: every scenario still opens (smoke); the App shell and layout demos.
     { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    // Data binding (step 20): the same app and specs against the mock backend in two hosts.
+    { name: "data-worker", testMatch: /data\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5182" } },
+    // One backend in the dev server for all tests: they run one after another (each resets it).
+    { name: "data-server", testMatch: /data\.spec\.ts/, fullyParallel: false, workers: 1, use: { ...chrome, baseURL: "http://localhost:5183" } },
     // The App shell prerendered (steps 19A–19C): the playground's production build.
     { name: "playground-build", testMatch: /app-shell-prerender\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5181" } },
   ],
@@ -71,6 +75,18 @@ export default defineConfig({
       command:
         "npx vite build --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --emptyOutDir && npx vite preview --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --port 5178 --strictPort",
       url: "http://localhost:5178",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npx vite --config test-apps/data/vite.config.ts --configLoader runner --port 5182 --strictPort",
+      env: { PFUI_MOCK_HOST: "worker" },
+      url: "http://localhost:5182",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npx vite --config test-apps/data/vite.config.ts --configLoader runner --port 5183 --strictPort",
+      env: { PFUI_MOCK_HOST: "middleware" },
+      url: "http://localhost:5183",
       reuseExistingServer: !process.env.CI,
     },
     {

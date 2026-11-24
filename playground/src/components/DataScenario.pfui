@@ -1,0 +1,96 @@
+<!--
+  Data binding (step 20): DataSource and APICall against a mock backend the
+  app can't tell from a server (a service worker answers /api/people). The
+  network conditions panel steers that backend through /__mock with APICalls,
+  so it is itself built with the feature it shows.
+-->
+<Component name="DataScenario">
+  <VStack var.q="" var.selected="{null}" var.message="" var.panel="">
+    <ScenarioHeader
+      title="Data"
+      description="Step 20: DataSource and APICall against a mock backend. Make the network slow or broken and watch what the page does."/>
+    <HStack>
+      <VStack width="2*">
+        <H2>People</H2>
+        <HStack verticalAlignment="center" wrapContent="true">
+          <TextBox placeholder="Search people" onDidChange="(text) => q = text"/>
+          <Button label="Reload" onClick="people.refetch()"/>
+          <Button label="Stop" when="{people.inProgress}" onClick="people.cancel()"/>
+        </HStack>
+        <DataSource id="people" url="/api/people" queryParams="{{ q }}"/>
+        <Text when="{people.inProgress}" variant="secondary">Loading people…</Text>
+        <Text when="{people.cancelled}" variant="secondary">Loading stopped ({people.lastCancelReason}).</Text>
+        <Text when="{people.error}">
+          Couldn't load people: {people.error.message} ({people.error.category}, {people.error.attempts} attempts, retryable: {people.error.retryable})
+        </Text>
+        <HStack wrapContent="true">
+          <Items data="{people.value}">
+            <Button label="{$item.name}" onClick="selected = $item.id"/>
+          </Items>
+        </HStack>
+
+        <DataSource id="person" url="/api/people/{selected}"/>
+        <VStack when="{person.loaded}" backgroundColor="$color-surface-50" border="1px solid $borderColor" borderRadius="$borderRadius">
+          <H3>{person.value.name}</H3>
+          <Text>Field: {person.value.field}</Text>
+          <HStack verticalAlignment="center" wrapContent="true">
+            <TextBox id="field" placeholder="New field"/>
+            <Button label="Save" handlerPolicy="drop-while-running" onClick="saveField.execute({ id: person.value.id, field: field.value })"/>
+            <Text when="{saveField.inProgress}" variant="secondary">Saving…</Text>
+          </HStack>
+        </VStack>
+        <APICall
+          id="saveField"
+          method="put"
+          url="/api/people/{$param.id}"
+          body="{{ field: $param.field }}"
+          invalidates="/api/people"
+          onSuccess="(saved) => message = 'Saved: ' + saved.name + ', ' + saved.field"
+          onError="(error) => message = 'Not saved (' + error.category + '): ' + error.message"/>
+        <Text when="{message}">{message}</Text>
+      </VStack>
+
+      <VStack width="*" backgroundColor="$color-surface-50" border="1px solid $borderColor" borderRadius="$borderRadius">
+        <H2>Network conditions</H2>
+        <Text variant="secondary">Each button tells the mock backend how to misbehave; then search, reload or save.</Text>
+        <APICall id="latency" method="put" url="/__mock/latency" body="{{ latency: $param }}" invalidates="/__mock/requests" onSuccess="panel = 'Latency set'"/>
+        <APICall id="addFault" method="post" url="/__mock/faults" body="{$param}" invalidates="/__mock/requests" onSuccess="(added) => panel = 'Fault ' + added.id + ' added'"/>
+        <APICall id="clearFaults" method="delete" url="/__mock/faults" invalidates="/__mock/requests" onSuccess="panel = 'Faults cleared'"/>
+        <APICall id="releaseAll" method="post" url="/__mock/holds/release-all" invalidates="/__mock/requests" onSuccess="panel = 'Held requests released'"/>
+        <APICall id="resetBackend" method="post" url="/__mock/reset" onSuccess="panel = 'Data reset'"/>
+        <H4>Speed</H4>
+        <HStack wrapContent="true">
+          <Button label="Fast" onClick="latency.execute(0)"/>
+          <Button label="Slow (1.5 s)" onClick="latency.execute(1500)"/>
+          <Button label="Very slow (4 s)" onClick="latency.execute(4000)"/>
+        </HStack>
+        <H4>Failures</H4>
+        <HStack wrapContent="true">
+          <Button label="503 twice, then fine" onClick="addFault.execute({ route: 'GET /api/people', status: 503, times: 2 })"/>
+          <Button label="429, Retry-After 2 s" onClick="addFault.execute({ route: 'GET /api/people', status: 429, headers: { 'Retry-After': '2' }, times: 1 })"/>
+          <Button label="Offline" onClick="addFault.execute({ route: '/api/people', network: 'error' })"/>
+          <Button label="Hang once" onClick="addFault.execute({ route: 'GET /api/people', network: 'hang', times: 1 })"/>
+          <Button label="Broken body" onClick="addFault.execute({ route: 'GET /api/people', status: 200, contentType: 'text/html', body: '&lt;html&gt;Proxy error&lt;/html&gt;', times: 1 })"/>
+          <Button label="Flaky (30%)" onClick="addFault.execute({ route: '/api/people', status: 500, probability: 0.3 })"/>
+        </HStack>
+        <H4>Order</H4>
+        <HStack wrapContent="true">
+          <Button label="Hold searches" onClick="addFault.execute({ route: 'GET /api/people', hold: true })"/>
+          <Button label="Release held" onClick="releaseAll.execute()"/>
+        </HStack>
+        <HStack wrapContent="true">
+          <Button label="Clear faults" onClick="clearFaults.execute()"/>
+          <Button label="Reset data" onClick="resetBackend.execute()"/>
+        </HStack>
+        <Text when="{panel}" variant="strong">{panel}</Text>
+        <H4>Requests the backend saw</H4>
+        <DataSource id="requests" url="/__mock/requests" pollIntervalInSeconds="1" transformResult="(log) => log.slice(-10).reverse()"/>
+        <VStack density="compact">
+          <Items data="{requests.value}">
+            <Text variant="mono">{$item.method} {$item.url} → {$item.outcome}{$item.status ? ' ' + $item.status : ''}{$item.end ? ' (' + ($item.end - $item.start) + ' ms)' : ''}</Text>
+          </Items>
+        </VStack>
+      </VStack>
+    </HStack>
+  </VStack>
+</Component>
