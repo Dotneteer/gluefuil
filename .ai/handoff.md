@@ -11,15 +11,16 @@
 ## State
 
 - **`master` holds steps 0–20, with 19A–19C (the App shell) and 19D–19F
-  (the layout system), merged.** Earlier branches were deleted after their
-  merges, by the user's request; `poc/20-data` still exists. Step 21 has
+  (the layout system), merged.** Each step's branch was deleted after its
+  merge, by the user's request; `master` is the only branch. Step 21 has
   not started.
-- **The remote `origin`** (github.com/Dotneteer/patchfuil) **has nothing
-  pushed.** Pushing is the user's decision.
+- **The remote `origin`** (github.com/Dotneteer/patchfuil) has `master` up
+  to `1d8ac4d` (steps 0–19F), pushed by the user. Step 20's two commits are
+  not pushed. Pushing is the user's decision.
 - **`npm run check` passes and prints no warnings:** 2,228 unit tests in
   79 files and 148 E2E tests. A new warning is worth a look:
   `code-structure.md` § E2E says why the output is quiet.
-- **Steps 0–19 of [`plan/poc-steps.md`](plan/poc-steps.md) are done**
+- **Steps 0–20 of [`plan/poc-steps.md`](plan/poc-steps.md) are done**
   (✅), each with its plan `plan/poc-NN-*.md`, which ends in *Outcome*,
   *Findings* and *Open for later steps*. The inserted 19A–19C have one
   plan, [`plan/poc-19a-app-shell.md`](plan/poc-19a-app-shell.md), and so do
@@ -152,7 +153,8 @@
 - **Numeric character references** (`&#169;`) are kept literally, as in
   XMLUI, which decodes only `&amp; &lt; &gt; &quot; &apos; &nbsp;`. Should
   we decode them anyway?
-- **Push to GitHub?** Nothing has been pushed.
+- **Multi-line `<Text>`** keeps a collapsed space at each end (found in
+  step 20). Trim it? XMLUI's behavior is to be checked first.
 
 ## Candidates for what comes next (the user decides)
 
