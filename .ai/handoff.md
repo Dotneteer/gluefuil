@@ -11,8 +11,8 @@
 ## State
 
 - **`master` holds steps 0–19, 19A–19C (the App shell) and 19D–19F (the
-  layout system), merged.** Earlier branches were deleted after their
-  merges, by the user's request; `poc/19d-layout` still exists. Step 20 has
+  layout system), merged.** Each step's branch was deleted after its
+  merge, by the user's request; `master` is the only branch. Step 20 has
   not started.
 - **The remote `origin`** (github.com/Dotneteer/patchfuil) **has nothing
   pushed.** Pushing is the user's decision.
