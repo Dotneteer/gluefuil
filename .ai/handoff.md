@@ -117,6 +117,8 @@
   | 5181 | playground production build under E2E |
   | 5182 | data fixture, mock backend in a service worker |
   | 5183 | data fixture, mock backend in the dev server |
+  | 5184 | routing-browser fixture, prerendered build (step 21) |
+  | 5185 | routing-browser fixture built under `base: "/app/"` (step 21, part 2) |
   | 5190 | playground for the user |
   | 5191 | playground preview |
 
@@ -144,6 +146,13 @@
   (`tools/boundaries.ts`). The metadata module
   `@patchfuil/components/metadata` must stay React-free; the theme engine
   and the behavior metadata live there for that reason.
+- **`navigate()` returns a promise (step 21).** In jsdom tests, write
+  `act(() => { void navigate("/x"); })` or `await act(async () => …)`.
+  `act(() => navigate("/x"))` is an async act nobody awaits, and later
+  renders queue behind it (an empty `<div>`).
+- **Don't reset the router while an app is mounted** in a test: unmount
+  first. Otherwise the next render attaches the router inside a computed
+  value (`ReactivityError`).
 - **The sandbox invariant:** no platform object reaches script.
   `wrapComponent` calls an unconfigured `on*` handler without arguments for
   this reason.

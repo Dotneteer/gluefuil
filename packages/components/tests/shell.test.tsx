@@ -271,7 +271,7 @@ describe("NavLink and NavGroup", () => {
     expect(screen.getByText("at /orders")).toBeTruthy();
     expect(orders.getAttribute("aria-current")).toBe("page");
     expect(home.getAttribute("aria-current")).toBeNull();
-    act(() => navigate("/orders/12"));
+    act(() => { void navigate("/orders/12"); });
     expect(orders.hasAttribute("data-active")).toBe(true);
   });
 

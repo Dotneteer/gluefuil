@@ -1,8 +1,8 @@
 // App-level theming and the <Theme> element (step 17). The engine compiles the
 // active theme and tone (runtime theme state) to CSS custom properties.
-import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@patchfuil/runtime";
+import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setNavigationHandlers, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@patchfuil/runtime";
 import { MantineProvider } from "@mantine/core";
-import { useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
 import { componentMetadata, componentThemeDefaults } from "./metadata";
 import { appLogo, needsGeneratedHeader, Shell, shellAttributes, type ShellConfig } from "./shell";
@@ -43,6 +43,8 @@ export function App({
   $$nav,
   $$footer,
   $$shell,
+  onWillNavigate,
+  onDidNavigate,
   children,
 }: {
   defaultTheme?: unknown;
@@ -57,10 +59,18 @@ export function App({
   $$nav?: ReactNode;
   $$footer?: ReactNode;
   $$shell?: ShellConfig;
+  /** `willNavigate` (step 21): resolves to the handler's result; `false` cancels the navigation. */
+  onWillNavigate?: (to: string, queryParams: Readonly<Record<string, string>>) => unknown;
+  onDidNavigate?: (to: string, queryParams: Readonly<Record<string, string>>) => unknown;
   children?: ReactNode;
 }) {
   // Routing mode (step 19): hash-based unless explicitly false.
   setRoutingMode(useHashBasedRouting === false || useHashBasedRouting === "false" ? "browser" : "hash");
+  // Navigation events (step 21). Registered after commit: never in a server render.
+  useLayoutEffect(
+    () => setNavigationHandlers({ willNavigate: onWillNavigate, didNavigate: onDidNavigate }),
+    [onWillNavigate, onDidNavigate],
+  );
   // Before reading the state, so this render (and a server render) uses them.
   setThemeDefaults(typeof defaultTheme === "string" ? defaultTheme : undefined, typeof defaultTone === "string" ? defaultTone : undefined);
   const { tone, style } = useActiveTheme();

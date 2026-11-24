@@ -78,7 +78,7 @@ describe("a production build (no source maps)", () => {
     const html = output.find((o) => o.fileName === "index.html") as Rolldown.OutputAsset;
     const source = String(html.source);
     // The stylesheet (React 19 hoisted <style>) comes first, then the themed App.
-    expect(source).toContain('<div id="root" data-pfui-prerendered="xs"><style data-precedence="pfui" data-href="pfui-mantine pfui-base">');
+    expect(source).toContain('<div id="root" data-pfui-prerendered="xs" data-pfui-path="/"><style data-precedence="pfui" data-href="pfui-mantine pfui-base">');
     expect(source).toMatch(/<div class="pfui-App" data-tone="light" data-mantine-color-scheme="light" style="--pfui-/);
     expect(source).toContain('<span class="pfui-Text">Count: 0</span>');
     expect(source).toContain('<span class="pfui-Text">Todo #1: Write tests</span>');
@@ -138,5 +138,79 @@ describe("prerender failures fail the build", () => {
     await expect(buildApp("<App/>", '<div id="app"></div><script type="module" src="/src/main.ts"></script>')).rejects.toThrow(
       'index.html has no element with id="root"',
     );
+  }, 60_000);
+});
+
+describe("prerendered routes (step 21)", () => {
+  const app = join(repoRoot, ".tmp", "prerender-routes");
+  beforeAll(() => {
+    mkdirSync(join(app, "src"), { recursive: true });
+    writeFileSync(join(app, "index.html"), '<div id="root"></div><script type="module" src="/src/main.ts"></script>');
+    writeFileSync(join(app, "src", "main.ts"), 'import Main from "./Main.pfui";\nconsole.log(Main);\n');
+  });
+  afterAll(() => rmSync(app, { recursive: true, force: true }));
+
+  const markup = (hash: boolean) => `
+    <App useHashBasedRouting="${hash}">
+      <Text>at {$pathname}</Text>
+      <Pages>
+        <Page url="/"><H1>Home</H1></Page>
+        <Page url="/about/"><H1>About</H1></Page>
+        <Page url="/docs/intro"><H1>Intro</H1></Page>
+        <Page url="/users/:id"><H1>User {$routeParams.id}</H1></Page>
+        <Page url="/files/*"><H1>Files</H1></Page>
+      </Pages>
+    </App>`;
+
+  async function buildRoutes(source: string, prerender: object = {}, base?: string) {
+    writeFileSync(join(app, "src", "Main.pfui"), source);
+    const { pfui } = await import("../packages/vite-plugin/src/index");
+    const result = await build({
+      configFile: false,
+      root: app,
+      logLevel: "silent",
+      ...(base !== undefined ? { base } : {}),
+      plugins: [pfui({ prerender: { ...prerender } })],
+      build: { write: false },
+    });
+    const outputs = (Array.isArray(result) ? result : [result]).flatMap((o) => ("output" in o ? o.output : []));
+    return Object.fromEntries(
+      outputs.filter((o): o is Rolldown.OutputAsset => o.type === "asset" && o.fileName.endsWith(".html")).map((o) => [o.fileName, String(o.source)]),
+    );
+  }
+
+  const h1 = (html: string) => /<h1[^>]*>(.*?)<\/h1>/.exec(html)?.[1]?.replace(/<!-- -->/g, "");
+  const path = (html: string) => /data-pfui-path="([^"]*)"/.exec(html)?.[1];
+
+  test("browser routing: one file per static route (and per `routes` path), each with its own content", async () => {
+    const pages = await buildRoutes(markup(false), { routes: ["/users/1"] });
+    expect(Object.keys(pages).sort()).toEqual(["about/index.html", "docs/intro/index.html", "index.html", "users/1/index.html"]);
+    expect(Object.entries(pages).map(([file, html]) => [file, h1(html), path(html)]).sort()).toEqual([
+      ["about/index.html", "About", "/about"],
+      ["docs/intro/index.html", "Intro", "/docs/intro"],
+      ["index.html", "Home", "/"],
+      ["users/1/index.html", "User 1", "/users/1"],
+    ]);
+    // The same shell: the same script, absolute.
+    const scripts = Object.values(pages).map((html) => /<script[^>]*src="([^"]*)"/.exec(html)?.[1]);
+    expect(new Set(scripts).size).toBe(1);
+    expect(scripts[0]).toMatch(/^\/assets\//);
+  }, 60_000);
+
+  test("hash routing: only index.html (the server never sees the route)", async () => {
+    const pages = await buildRoutes(markup(true));
+    expect(Object.keys(pages)).toEqual(["index.html"]);
+  }, 60_000);
+
+  test("the `routes` option needs browser routing, and each path must match a Page", async () => {
+    await expect(buildRoutes(markup(true), { routes: ["/users/1"] })).rejects.toThrow('the "routes" option needs browser routing');
+    await expect(buildRoutes(markup(false), { routes: ["/nope"] })).rejects.toThrow('the route "/nope" (option "routes") matches no Page url');
+  }, 60_000);
+
+  test("a relative base is refused when there is more than one route", async () => {
+    await expect(buildRoutes(markup(false), {}, "./")).rejects.toThrow(/base "\.\/" is relative/);
+    // One route: fine.
+    const pages = await buildRoutes('<App useHashBasedRouting="false"><Pages><Page url="/"><H1>Only</H1></Page></Pages></App>', {}, "./");
+    expect(Object.keys(pages)).toEqual(["index.html"]);
   }, 60_000);
 });

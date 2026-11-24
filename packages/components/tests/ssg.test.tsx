@@ -1,7 +1,7 @@
 // Step 13 end to end in jsdom: compile, render to static HTML, take over.
 import { compileModule } from "@patchfuil/compiler";
-import { loadModule, mountApp, PRERENDERED_ATTRIBUTE } from "@patchfuil/runtime";
-import { renderStatic } from "@patchfuil/runtime/server";
+import { BASE_ATTRIBUTE, getBasename, loadModule, mountApp, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE, resetRouter } from "@patchfuil/runtime";
+import { renderStatic, resetServerState } from "@patchfuil/runtime/server";
 import { act, fireEvent, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import type { Root } from "react-dom/client";
@@ -155,4 +155,108 @@ test("a container without the marker gets a fresh render", async () => {
 
 test("renderStatic refuses an unknown breakpoint", () => {
   expect(() => renderStatic(<div />, { breakpoint: "huge" as "xs" })).toThrow("Unknown breakpoint 'huge'; expected one of xs, sm, md, lg, xl, xxl");
+});
+
+// Step 21: a route other than "/" prerenders and takes over at its own path.
+const ROUTED = `
+  <App useHashBasedRouting="false">
+    <Text>at {$pathname}</Text>
+    <Pages>
+      <Page url="/"><H1>Home</H1></Page>
+      <Page url="/about"><H1>About</H1></Page>
+    </Pages>
+  </App>`;
+
+test("a route prerendered at its path (data-pfui-path) takes over without a change", async () => {
+  const Main = load(ROUTED);
+  resetServerState();
+  const { html, attributes } = renderStatic(<Main />, { path: "/about" });
+  expect(attributes[PATH_ATTRIBUTE]).toBe("/about");
+  container.innerHTML = html;
+  for (const [name, value] of Object.entries(attributes)) container.setAttribute(name, value);
+  expect(container.querySelector("h1")!.textContent).toBe("About");
+  resetRouter();
+  window.history.replaceState(null, "", "/about");
+  const { changes } = observe();
+  const errors: unknown[] = [];
+  await takeOver(Main, (error) => errors.push(error));
+  expect(errors).toEqual([]);
+  expect(changes).toEqual([]);
+  expect(container.querySelector("h1")!.textContent).toBe("About");
+  act(() => root?.unmount());
+  root = undefined;
+  resetRouter();
+  window.history.replaceState(null, "", "/");
+});
+
+test("control: without data-pfui-path, the same HTML hydrates as '/' and the route switches after takeover", async () => {
+  const Main = load(ROUTED);
+  resetServerState();
+  const { html, attributes } = renderStatic(<Main />, { path: "/about" });
+  container.innerHTML = html;
+  container.setAttribute(PRERENDERED_ATTRIBUTE, attributes[PRERENDERED_ATTRIBUTE]!);
+  resetRouter();
+  window.history.replaceState(null, "", "/about");
+  const errors: unknown[] = [];
+  await takeOver(Main, (error) => errors.push(error));
+  // Hydration rendered "/" against About's HTML: React reports the mismatch.
+  expect(errors.length).toBeGreaterThan(0);
+  act(() => root?.unmount());
+  root = undefined;
+  resetRouter();
+  window.history.replaceState(null, "", "/");
+});
+
+// Step 21, part 2: an app served under a sub-path (Vite base "/app/").
+const UNDER_BASE = `
+  <App useHashBasedRouting="false">
+    <Text>at {$pathname}</Text>
+    <Link to="/">Home</Link>
+    <Link to="/about">About</Link>
+    <Pages>
+      <Page url="/"><H1>Home</H1></Page>
+      <Page url="/about"><H1>About</H1></Page>
+    </Pages>
+  </App>`;
+
+test("under a basename: links carry it, the container records it, and takeover at /app/about changes nothing", async () => {
+  const Main = load(UNDER_BASE);
+  resetServerState();
+  const { html, attributes } = renderStatic(<Main />, { path: "/about", basename: "/app/" });
+  expect(attributes[BASE_ATTRIBUTE]).toBe("/app");
+  container.innerHTML = html;
+  for (const [name, value] of Object.entries(attributes)) container.setAttribute(name, value);
+  expect([...container.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["/app/", "/app/about"]);
+  resetRouter();
+  window.history.replaceState(null, "", "/app/about");
+  const { changes } = observe();
+  const errors: unknown[] = [];
+  await takeOver(Main, (error) => errors.push(error));
+  expect(getBasename()).toBe("/app");
+  expect(errors).toEqual([]);
+  expect(changes).toEqual([]);
+  // Live: a link click moves under the base.
+  act(() => fireEvent.click(screen.getByText("Home")));
+  expect(window.location.pathname).toBe("/app/");
+  expect(container.querySelector("h1")!.textContent).toBe("Home");
+  act(() => root?.unmount());
+  root = undefined;
+  resetRouter();
+  window.history.replaceState(null, "", "/");
+});
+
+test("without a prerender, mountApp reads the basename from data-pfui-base; the option overrides it", async () => {
+  const Main = load(UNDER_BASE);
+  resetRouter();
+  window.history.replaceState(null, "", "/sub/about");
+  container.setAttribute(BASE_ATTRIBUTE, "/app");
+  await act(async () => {
+    root = mountApp(container, <Main />, { basename: "/sub" });
+  });
+  expect(container.querySelector("h1")!.textContent).toBe("About");
+  expect(container.querySelector("a")!.getAttribute("href")).toBe("/sub/");
+  act(() => root?.unmount());
+  root = undefined;
+  resetRouter();
+  window.history.replaceState(null, "", "/");
 });

@@ -1,0 +1,38 @@
+<!-- Step 21: browser routing, navigation events, prerendered routes;
+     navigate(-1), a new tab, and (built with base /app/) a basename. -->
+<App
+  useHashBasedRouting="false"
+  var.blocked="{false}"
+  var.log="{[]}"
+  onWillNavigate="(to) => { if (blocked) return false; }"
+  onDidNavigate="(to) => { log.push(to); }">
+  <Button label="{blocked ? 'Navigation blocked' : 'Navigation allowed'}" onClick="blocked = !blocked"/>
+  <Button label="History back" onClick="navigate(-1)"/>
+  <Button label="About in a new tab" onClick="navigate('/about', { target: '_blank' })"/>
+  <Text variant="secondary">Route: {$pathname}</Text>
+  <Text variant="secondary">Log: {log.join(' ')}</Text>
+  <Pages fallbackPath="/">
+    <Page url="/">
+      <H1>Home</H1>
+      <Link to="/about">About</Link>
+      <Link to="/docs/intro">Introduction</Link>
+      <Link to="/users/7">User 7</Link>
+      <Button label="Search" onClick="navigate('/docs/intro', { queryParams: { q: 'a b', page: 2 } })"/>
+    </Page>
+    <Page url="/about">
+      <H1>About</H1>
+      <Text>This page was prerendered.</Text>
+      <Link to="/">Home</Link>
+      <Button label="Go home" onClick="navigate('/')"/>
+    </Page>
+    <Page url="/docs/intro">
+      <H1>Introduction</H1>
+      <Text>Query: {JSON.stringify($queryParams)}</Text>
+      <Link to="/">Home</Link>
+    </Page>
+    <Page url="/users/:id">
+      <H1>User {$routeParams.id}</H1>
+      <Link to="/">Home</Link>
+    </Page>
+  </Pages>
+</App>

@@ -31,6 +31,10 @@ export default defineConfig({
     // Routing (step 19): the same spec on the dev server and the prerendered build.
     { name: "routing-dev", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5177" } },
     { name: "routing-build", testMatch: /routing\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5178" } },
+    // Browser routing (step 21): every static route prerendered, served by a static server.
+    { name: "routing-browser-build", testMatch: /routing-browser\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5184" } },
+    // The same app built under base /app/ (step 21, part 2): the router's basename.
+    { name: "routing-base-build", testMatch: /routing-base\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5185" } },
     // The manual-testing playground: every scenario still opens (smoke); the App shell and layout demos.
     { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
     // Data binding (step 20): the same app and specs against the mock backend in two hosts.
@@ -75,6 +79,18 @@ export default defineConfig({
       command:
         "npx vite build --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --emptyOutDir && npx vite preview --config test-apps/routing/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-dist --port 5178 --strictPort",
       url: "http://localhost:5178",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command:
+        "npx vite build --config test-apps/routing-browser/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-browser-dist --emptyOutDir && npx vite preview --config test-apps/routing-browser/vite.config.ts --configLoader runner --outDir ../../.tmp/routing-browser-dist --port 5184 --strictPort",
+      url: "http://localhost:5184",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command:
+        "npx vite build --config test-apps/routing-browser/vite.config.ts --configLoader runner --base /app/ --outDir ../../.tmp/routing-base-dist --emptyOutDir && npx vite preview --config test-apps/routing-browser/vite.config.ts --configLoader runner --base /app/ --outDir ../../.tmp/routing-base-dist --port 5185 --strictPort",
+      url: "http://localhost:5185/app/",
       reuseExistingServer: !process.env.CI,
     },
     {

@@ -13,9 +13,9 @@ import { componentMetadata, type ComponentMetadata } from "@patchfuil/components
 import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
 import { ComponentFolder, importSpecifier, readCodeBehind } from "./components";
-import { injectPrerendered, renderEntry, resolvePrerender, type PrerenderOptions } from "./prerender";
+import { addRootAttributes, basenameOf, injectPrerendered, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
 
-export { injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
+export { basenameOf, injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
 export { pfuiMockBackend, type MockBackendOptions } from "./mock";
 
 export interface PfuiPluginOptions {
@@ -57,6 +57,9 @@ const NON_MODULE_QUERY = /[?&](raw|url|inline|worker|sharedworker)\b/;
 
 const EXTENSION = ".pfui";
 
+/** The container attribute mountApp reads the basename from (runtime `BASE_ATTRIBUTE`). */
+const BASE_ATTRIBUTE = "data-pfui-base";
+
 /** The file path of a module id: without a `?query` or `#hash`. */
 export function pfuiFilePath(id: string): string | undefined {
   // `Main.pfui?raw` is the file's text (import.meta.glob of sources), not a module to compile.
@@ -77,6 +80,8 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
   let sourceMap = true;
   let config: ResolvedConfig | undefined;
   let folder: ComponentFolder | undefined;
+  // Prerendered routes other than "/" (step 21), emitted next to index.html.
+  let routePages: { fileName: string; source: string }[] = [];
   // Extensions: their metadata joins the built-ins'; each file imports them by a path relative to itself.
   const extensionOptions = (file: string) => {
     if (!options.extensions) return options.components ? { components: options.components } : {};
@@ -101,9 +106,14 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
       // After other plugins: the page is final except for the app's HTML.
       order: "post",
       async handler(html, context) {
-        if (!prerender || !config || config.command !== "build" || config.build.ssr) return html;
+        if (!config || config.build.ssr) return html;
         // Only index.html: other pages of a multi-page build have their own entries.
         if (context?.path !== undefined && context.path !== "/index.html") return html;
+        // The router's basename (step 21, part 2): Vite's base, on the container for mountApp.
+        const basename = basenameOf(config.base ?? "/");
+        if (!prerender || config.command !== "build") {
+          return basename === "" ? html : addRootAttributes(html, prerender?.rootId ?? "root", { [BASE_ATTRIBUTE]: basename });
+        }
         // The render's own server uses only the compile step (no prerender, no maps).
         const transform = pfui({
           sourceMap: false,
@@ -112,9 +122,41 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
           ...(options.strictContracts !== undefined ? { strictContracts: options.strictContracts } : {}),
           ...(options.componentsDir ? { componentsDir: options.componentsDir } : {}),
         });
-        const { html: inner, attributes } = await renderEntry(config.root, prerender, transform);
-        return injectPrerendered(html, prerender.rootId, inner, attributes);
+        // renderStatic writes the basename into each route's container attributes.
+        const rendered = await renderEntry(config.root, prerender, transform, basename);
+        if (rendered.size > 1 && !config.base.startsWith("/") && !/^[a-z]+:\/\//i.test(config.base)) {
+          throw new Error(
+            `pfui prerender: base "${config.base}" is relative, so the asset URLs in ${routeFileName([...rendered.keys()][1]!)} would not resolve; use an absolute base (for example "/") to prerender routes other than "/"`,
+          );
+        }
+        routePages = [];
+        let index = html;
+        for (const [path, { html: inner, attributes }] of rendered) {
+          const page = injectPrerendered(html, prerender.rootId, inner, attributes);
+          if (path === "/") index = page;
+          else routePages.push({ fileName: routeFileName(path), source: page });
+        }
+        return index;
       },
+    },
+    generateBundle: {
+      // After Vite's HTML plugin, whose generateBundle runs transformIndexHtml.
+      order: "post",
+      handler() {
+        for (const page of routePages) this.emitFile({ type: "asset", fileName: page.fileName, source: page.source });
+        routePages = [];
+      },
+    },
+    configurePreviewServer(server) {
+      // Prerendered routes (step 21): `/about` serves about/index.html, as static hosts do.
+      if (!prerender) return;
+      const outDir = resolve(server.config.root, server.config.build.outDir);
+      const basename = basenameOf(server.config.base);
+      server.middlewares.use((request, _response, next) => {
+        const rewritten = request.url !== undefined ? previewRewrite(request.url, outDir, basename) : undefined;
+        if (rewritten !== undefined) request.url = rewritten;
+        next();
+      });
     },
     configureServer(server) {
       // A component file (or code-behind) appearing or disappearing changes what

@@ -166,6 +166,27 @@ test("Routing: route and query parameters, replace, back to the scenario", async
   await expect(text(page, "$routeParams.item = hello world")).toBeVisible();
 });
 
+test("Routing: the unsaved-changes guard blocks buttons, links, the nav and back; the log shows the moves", async ({ page }) => {
+  await open(page, "/routing");
+  await button(page, "Item 1").click();
+  await expect(text(page, "$routeParams.item = 1")).toBeVisible();
+  await button(page, "Back to the routing scenario").click();
+  await expect(page.getByText(/^Last navigations/)).toHaveText("Last navigations (App onDidNavigate): /routing ← /routing/1");
+
+  await page.getByLabel("Unsaved changes: block every navigation").check();
+  await button(page, "Item 1").click();
+  await page.getByRole("link", { name: "A link with an encoded segment" }).click();
+  await page.locator(".pfui-NavLink", { hasText: "Dashboard" }).first().click();
+  await page.goBack();
+  await page.waitForTimeout(200);
+  await expect(page.getByRole("heading", { name: "Routing", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/#\/routing$/);
+
+  await page.getByLabel("Unsaved changes: block every navigation").uncheck();
+  await button(page, "Item 1").click();
+  await expect(text(page, "$routeParams.item = 1")).toBeVisible();
+});
+
 test("Counter: the texts follow the variable; a conditional text appears at five", async ({ page }) => {
   await open(page, "/counter");
   await expect(text(page, "Count: 0")).toBeVisible();

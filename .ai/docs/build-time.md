@@ -38,7 +38,8 @@ extensionless imports.
 |--------|---------|---------|
 | `components` | the built-in metadata | The components markup may use (`Record<string, ComponentMetadata>`) |
 | `sourceMap` | `"auto"` | `"auto"`: on while serving; in a build, on only when `build.sourcemap` is set. `true` / `false` force it |
-| `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint }` ([ssg.md](ssg.md)) |
+| `prerender` | off | Static generation: `true` or `{ entry, rootId, breakpoint, routes }` ([ssg.md](ssg.md)); with browser routing, one file per static route ([ssg.md § Prerendered routes](ssg.md#prerendered-routes)) |
+| (Vite `base`) | `/` | An absolute base other than `/` (`/app/`) becomes the router's basename: `transformIndexHtml` writes `data-pfui-base="/app"` on the root element (dev and build, with or without prerender; `basenameOf`, `addRootAttributes`), and `mountApp` reads it ([routing.md § The basename](routing.md#the-basename)). A relative or full-URL base gives none. |
 | `strictContracts` | `true` | `false`: contract violations are warnings ([contracts.md](contracts.md)) |
 | `extensions` | none | The app's own React components: `{ Name: { module, metadata } }`. `module` is relative to the Vite root and exports `Name`; each `.pfui` file imports it with a relative path (`componentModules`), and its contracts are checked like a built-in's. Example: the playground's `ScenarioSource`. |
 | `componentsDir` | `"src/components"` | User-defined component files, relative to the Vite root ([user-components.md](user-components.md#delivery)) |

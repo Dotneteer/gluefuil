@@ -3,14 +3,27 @@
 
 import { createElement, isValidElement, type ComponentType, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
-import { PRERENDERED_ATTRIBUTE } from "./render/mount";
+import { resetDataState } from "./data/client";
+import { BASE_ATTRIBUTE, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE } from "./render/mount";
+import { getBasename, getServerPath, resetRouter, setBasename, setServerPath } from "./render/router";
+import { resetShellState } from "./render/shell-state";
+import { resetThemeState } from "./render/theme-state";
 import { BREAKPOINT_NAMES, breakpointFromName, setServerBreakpoint, type BreakpointName } from "./render/visibility";
 
-export { PRERENDERED_ATTRIBUTE } from "./render/mount";
+export { BASE_ATTRIBUTE, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE } from "./render/mount";
+// For the prerender: which routes the app registered, and in which mode (step 21).
+export { findRoute, registeredRoutes, routingMode } from "./render/router";
 
 export interface RenderStaticOptions {
   /** The viewport to render for (default "xs", mobile-first). */
   breakpoint?: BreakpointName;
+  /** The route to render (default "/"); written to the container as `data-pfui-path`. */
+  path?: string;
+  /**
+   * The sub-path the app is served under (browser routing): links in the HTML
+   * carry it, and it is written to the container as `data-pfui-base`.
+   */
+  basename?: string;
 }
 
 export interface RenderStaticResult {
@@ -32,7 +45,25 @@ export function renderStatic(app: ReactNode | ComponentType, options: RenderStat
     throw new Error(`Unknown breakpoint '${name}'; expected one of ${BREAKPOINT_NAMES.join(", ")}`);
   }
   setServerBreakpoint(index);
+  setServerPath(options.path ?? "/");
+  if (options.basename !== undefined) setBasename(options.basename);
   // A component (a compiled module's default export) is rendered without props.
   const element = typeof app === "function" && !isValidElement(app) ? createElement(app as ComponentType) : (app as ReactNode);
-  return { html: renderToString(element), attributes: { [PRERENDERED_ATTRIBUTE]: name } };
+  const html = renderToString(element);
+  const attributes: Record<string, string> = { [PRERENDERED_ATTRIBUTE]: name, [PATH_ATTRIBUTE]: getServerPath() };
+  if (getBasename() !== "") attributes[BASE_ATTRIBUTE] = getBasename();
+  return { html, attributes };
+}
+
+/**
+ * Resets the runtime's module-level state (the router and its registered
+ * routes, the theme, the shell, the data cache) so the next `renderStatic`
+ * does not depend on what rendered before it: the prerender renders every
+ * route in one module graph.
+ */
+export function resetServerState(): void {
+  resetRouter();
+  resetThemeState();
+  resetShellState();
+  resetDataState();
 }

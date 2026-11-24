@@ -419,13 +419,18 @@ can't tell from a real one, and a catalog of the scenarios to test
     mutation, then invalidation and refresh; a stale response must not win.
 - **Reference:** `.ai/xmlui/data.md`, `pages/managed-react/fetch-lifecycle.md`.
 
-### Step 21: Routing
+### Step 21: Routing ✅ (part 2 awaiting review)
 
 Partly done in step 19 (reduced): `Pages`/`Page`, dynamic segments, query
 parameters, `navigate()`, hash and standard modes, deep links, back button,
 fallback ([poc-19-routing.md](poc-19-routing.md)). Active links came with
-`NavLink` (steps 19A–19C). Remaining: `willNavigate`/`didNavigate`,
-prerendering every static route.
+`NavLink` (steps 19A–19C). Step 21 added the rest:
+`willNavigate`/`didNavigate` (guarding back and forward too) and
+prerendering every static route with browser routing
+([poc-21-routing.md](poc-21-routing.md)). Part 2, added after the first
+review: `navigate(-1)`, `navigate(to, { target: "_blank" })` and a basename
+from Vite's `base`. A `200.html` fallback file is out; per-`Page` guards,
+route constraints and nested pages moved to Phase G (step 38).
 
 
 - **Subject:** `Pages`/`Page`, dynamic segments, query parameters, active
@@ -434,6 +439,20 @@ prerendering every static route.
 - **Tests:**
   - E2E: navigation, deep links, the back button and the fallback route.
 - **Reference:** `pages/routing-and-links.md`.
+
+### Step 21B: Global variables in user components (inserted)
+
+- **Subject:** `global.*` variables declared on the root of `Main.pfui`
+  are readable and writable in every file, user components included, and
+  can be shadowed by a local variable of the same name (XMLUI:
+  `website/content/docs/pages/scoping.md`, line 148). A `Globals.xs` file
+  is included if it is cheap. The playground's routing scenario drops its
+  `onUnsavedChange` event for a global.
+- **Tests:**
+  - Unit: compile-time resolution (global, shadowed, undeclared), reactivity
+    across files.
+  - E2E: a user component writes a global that `App` reads.
+- **Reference:** `pages/scoping.md`, `pages/globals.md`, `pages/app-globals.md`.
 
 ### Step 22: Forms
 
@@ -477,6 +496,7 @@ E2E tests for interaction-heavy ones.
 | 35 | Observability: trace stream emitted only when enabled, pointing at markup lines | `pages/managed-react/observability-substrate.md` |
 | 36 | Reactive cycle detection, versioning diagnostics, centralized HTTP, UDC sandbox | the matching `pages/managed-react/*.md` |
 | 37 | Enforced accessibility checks | `pages/managed-react/enforced-accessibility.md` |
+| 38 | Defended routing: per-`Page` guards, route and query constraints (`int`, `enum(...)`, `min`/`max`), nested pages (moved from step 21) | `pages/managed-react/defended-routing.md` |
 
 ---
 

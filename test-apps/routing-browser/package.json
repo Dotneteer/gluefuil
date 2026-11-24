@@ -1,0 +1,12 @@
+{
+  "name": "@patchfuil/routing-browser-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "E2E fixture (step 21): browser routing, a navigation guard and log, every static route prerendered.",
+  "dependencies": {
+    "@patchfuil/components": "0.0.0",
+    "@patchfuil/runtime": "0.0.0",
+    "@patchfuil/vite-plugin": "0.0.0"
+  }
+}
