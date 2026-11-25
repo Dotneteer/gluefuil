@@ -383,3 +383,23 @@ test("Data: the list from the mock backend; failures from the network panel; ren
   await expect(text(page, "Saved: Emmy Noether, Algebra")).toBeVisible();
   await expect(text(page, "Field: Algebra")).toBeVisible();
 });
+
+test("Forms: load, a server 422 on the inputs, save and refresh; unsaved changes block navigation", async ({ page }) => {
+  await page.request.post("/__mock/reset").catch(() => undefined);
+  await open(page, "/forms");
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Ada Lovelace");
+  await page.getByLabel("City").fill("Atlantis");
+  // Unsaved: leaving the page is blocked.
+  await page.locator(".pfui-NavLink", { hasText: "Dashboard" }).first().click();
+  await page.waitForTimeout(200);
+  await expect(page.getByRole("heading", { name: "Forms", exact: true })).toBeVisible();
+  await button(page, "Save").click();
+  await expect(page.locator(".pfui-Field-messages .pfui-ValidationMessage")).toHaveText(["We don't deliver to Atlantis"]);
+  await page.getByLabel("City").fill("Paris");
+  await button(page, "Save").click();
+  await expect(text(page, "Saved Ada Lovelace")).toBeVisible();
+  await expect(text(page, "Ada Lovelace · ada@example.com · Paris")).toBeVisible();
+  // Clean again: navigation works.
+  await page.locator(".pfui-NavLink", { hasText: "Dashboard" }).first().click();
+  await expect(page).toHaveURL(/#\/$/);
+});

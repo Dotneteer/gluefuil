@@ -88,8 +88,12 @@ test("the guard blocks a button, a link, the back button and a typed hash; nothi
   await expect(heading(page)).toHaveText("Dashboard");
   await page.goForward();
   await expect(heading(page)).toHaveText("Scenario: greeting");
-  // The refused typed hash stays as a forward entry (the browser added it); nothing else was added.
-  expect(await page.evaluate(() => history.length)).toBe(length + 1);
+  // Nothing was added by the app. The typed hash races the refused back move's restore
+  // (history.go(1), asynchronous): typed after the restore, the browser adds it as a forward
+  // entry (length + 1); typed before, it replaces the greeting entry, which the router rewrites
+  // back to the greeting route (length). Either way back and forward work (above).
+  const after = await page.evaluate(() => history.length);
+  expect([length, length + 1]).toContain(after);
 });
 
 // Step 21, part 2: navigate(-1) and navigate(to, { target: "_blank" }).

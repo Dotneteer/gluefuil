@@ -13,6 +13,7 @@ import { freezeDeep } from "../reactivity/variable";
 import { INITIAL_FLAGS, isShown, type InteractionFlags, type ValidationMode } from "./display";
 import { deleteAt, getAt, parseFieldPath, setAt, type FieldKey } from "./paths";
 import { customResults, highestSeverity, validateRules, type FieldRules, type RuleResult, type Severity } from "./rules";
+import { extractServerProblem, type ServerProblem } from "./server-errors";
 
 export interface FieldOptions {
   /** `bindTo`: a path into the form's data. */
@@ -88,9 +89,10 @@ export class FormField {
       const value = this.value.get();
       const sync = validateRules(value, this.options.get().rules);
       const custom = this.custom.get();
-      if (!custom) return sync;
+      const server = form.serverResults.get()[this.options.get().path] ?? [];
+      if (!custom) return server.length > 0 ? [...sync, ...server] : sync;
       const current = Object.is(custom.forValue, value);
-      return [...sync, ...custom.results.map((r) => (current ? r : { ...r, stale: true }))];
+      return [...sync, ...custom.results.map((r) => (current ? r : { ...r, stale: true })), ...server];
     });
     this.severity = computed(() => highestSeverity(this.results.get()));
     this.shown = computed(() => this.severity.get() !== "none" && (isShown(this.options.get().mode, this.flags.get()) || this.slowSettled.get()));
@@ -286,6 +288,12 @@ export class FormStore {
   readonly generalErrors = signal<readonly string[]>([]);
   /** The Form's `enabled` prop. */
   readonly enabledProp = signal(true);
+  /** The last submit was cancelled (`cancel()`, step 22B). */
+  readonly cancelled = signal(false);
+  /** Loading `data` from a URL (step 22B), or the load failed: disabled. */
+  readonly loading = signal(false);
+  /** A failed submit's errors for the bound inputs, by path (step 22B); cleared by an edit. */
+  readonly serverResults = signal<Readonly<Record<string, readonly RuleResult[]>>>({});
   /** Inputs are enabled: the form is enabled and not submitting. */
   readonly enabled: ReadonlySignal<boolean>;
   readonly dirty: ReadonlySignal<boolean>;
@@ -296,7 +304,7 @@ export class FormStore {
   constructor(data: unknown) {
     this.baseline = freezeDeep(isPlainObject(data) ? data : {});
     this.values = signal(this.baseline);
-    this.enabled = computed(() => this.enabledProp.get() && !this.submitting.get());
+    this.enabled = computed(() => this.enabledProp.get() && !this.submitting.get() && !this.loading.get());
     this.dirty = computed(() => this.formDirty.get() || this.fields.get().some((f) => f.flags.get().dirty));
     this.data = computed(() => this.clean(this.values.get(), this.fields.get()));
     this.hasErrors = computed(() => this.fields.get().some((f) => f.severity.get() === "error"));
@@ -324,6 +332,7 @@ export class FormStore {
     batch(() => {
       this.writeValue(keys, value);
       this.formDirty.set(true);
+      this.dropServerResults((path) => sameKeys(parseFieldPath(path), keys));
       for (const field of this.fields.peek()) {
         if (sameKeys(field.keys, keys)) field.updateFlags({ dirty: true, forceShow: false });
       }
@@ -389,11 +398,53 @@ export class FormStore {
     return this.fields.peek().find((field) => field.severity.peek() === "error");
   }
 
+  /** Removes the server results of the paths `matches` selects. */
+  dropServerResults(matches: (path: string) => boolean = () => true): void {
+    const current = this.serverResults.peek();
+    const kept = Object.fromEntries(Object.entries(current).filter(([path]) => !matches(path)));
+    if (Object.keys(kept).length !== Object.keys(current).length) this.serverResults.set(kept);
+  }
+
+  /**
+   * A failed submit's error: its validation problem onto the bound inputs
+   * (nested paths too); names with no input, the problem's detail when nothing
+   * else, or the error's message, to the summary. Returns the problem.
+   */
+  applySubmitError(error: unknown): ServerProblem | undefined {
+    const problem = extractServerProblem(error);
+    const paths = new Set(this.fields.peek().map((f) => f.options.peek().path));
+    const byPath: Record<string, RuleResult[]> = {};
+    const general: string[] = [];
+    if (problem) {
+      for (const entry of problem.fields) {
+        if (paths.has(entry.name)) (byPath[entry.name] ??= []).push({ rule: "server", valid: false, severity: entry.severity, message: entry.message, server: true });
+        else general.push(`${entry.name}: ${entry.message}`);
+      }
+      // XMLUI: the detail is a general message when there is no other.
+      if (problem.detail !== undefined && general.length === 0) general.push(problem.detail);
+    } else {
+      const message = (error as { message?: unknown } | null)?.message;
+      general.push(typeof message === "string" && message !== "" ? message : "Couldn't save the form.");
+    }
+    batch(() => {
+      this.serverResults.set(byPath);
+      this.generalErrors.set(general);
+    });
+    return problem;
+  }
+
+  /** The first field with a server error (registration order). */
+  firstServerInvalid(): FormField | undefined {
+    const results = this.serverResults.peek();
+    return this.fields.peek().find((field) => (results[field.options.peek().path] ?? []).some((r) => r.severity === "error"));
+  }
+
   /** After a successful submit: clean, nothing forced, no general errors. */
   markClean(): void {
     batch(() => {
       this.formDirty.set(false);
       this.generalErrors.set([]);
+      this.serverResults.set({});
       for (const field of this.fields.peek()) field.updateFlags({ dirty: false, afterFirstDirtyBlur: false, forceShow: false });
     });
   }
@@ -418,6 +469,7 @@ export class FormStore {
       this.values.set(values);
       this.formDirty.set(false);
       this.generalErrors.set([]);
+      this.serverResults.set({});
       for (const field of this.fields.peek()) field.resetState();
     });
     for (const field of this.fields.peek()) field.reapplyInitial();

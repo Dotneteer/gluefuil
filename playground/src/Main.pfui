@@ -34,7 +34,8 @@
     { path: '/routing', step: '19, 21', title: 'Routing', description: 'navigate, Link, route and query parameters; a navigation guard and log.' },
     { path: '/app-shell', step: '19A–C', title: 'App shell', description: 'Header, nav, footer: every XMLUI layout, desktop and phone.' },
     { path: '/layout', step: '19D–F', title: 'Layout and spacing', description: 'Stacks, flows and sizes; automatic gaps and paddings.' },
-    { path: '/data', step: '20', title: 'Data', description: 'DataSource and APICall against a mock backend; slow and broken networks.' }
+    { path: '/data', step: '20', title: 'Data', description: 'DataSource and APICall against a mock backend; slow and broken networks.' },
+    { path: '/forms', step: '22, 22B', title: 'Forms', description: 'Inputs bound with bindTo, validation, loading and saving, server errors.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -96,6 +97,7 @@
     <Page url="/routing"><VStack><RoutingScenario/><ScenarioSource file="RoutingScenario"/></VStack></Page>
     <Page url="/routing/:item"><VStack><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></VStack></Page>
     <Page url="/data"><VStack><DataScenario/><ScenarioSource file="DataScenario"/></VStack></Page>
+    <Page url="/forms"><VStack><FormsScenario/><ScenarioSource file="FormsScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

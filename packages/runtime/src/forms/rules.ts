@@ -39,6 +39,8 @@ export interface RuleResult {
   custom?: boolean;
   /** A custom result for an earlier value, kept while the new check runs. */
   stale?: boolean;
+  /** From the server, after a failed submit (step 22B). */
+  server?: boolean;
 }
 
 /** Empty as XMLUI's `required` sees it: undefined, null, a blank string, false, {} and []. */

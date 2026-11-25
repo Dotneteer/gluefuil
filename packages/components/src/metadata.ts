@@ -506,7 +506,12 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",
     props: {
-      data: { description: "The initial data (an object). Later changes are not applied (XMLUI).", valueType: "any" },
+      data: {
+        description: "The initial data: an object, or a URL to load it from (once; the form is disabled meanwhile, and saves back to it). Later changes are not applied (XMLUI).",
+        valueType: "any",
+      },
+      submitUrl: { description: "Without onSubmit: send the data here through the data layer. Default: `data`'s URL.", valueType: "string" },
+      submitMethod: { description: "The request's method. Default: put when `data` is set, else post.", valueType: "string", availableValues: ["post", "put", "patch", "delete"] },
       enabled: { description: "false: every bound input and the buttons are disabled.", valueType: "boolean" },
       saveLabel: { description: 'The Save button\'s label. Default "Save".', valueType: "string" },
       saveInProgressLabel: { description: 'The Save button\'s label while submitting. Default "Saving...".', valueType: "string" },
@@ -518,7 +523,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       willSubmit: { description: "Before submitting, after validation: `(data, allData)`. `false` cancels; an object replaces the submitted data." },
       submit: { description: "Submits: `(data)`. Its result is passed to `success`; a throw is a failed submit." },
       success: { description: "The submit succeeded: `(result)`." },
-      submitError: { description: "The submit failed: `(error)`." },
+      submitError: { description: "The submit failed: `(error, problem)`. `problem` is the server's validation problem (`{ fields, detail }`), if it sent one." },
       cancel: { description: "The Cancel button was clicked. The data stays." },
       reset: { description: "The form was reset (the `reset()` method, or `dataAfterSubmit`)." },
       dirtyChanged: { description: "The form became dirty or clean: `(dirty)`." },
@@ -537,6 +542,8 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       setDirty: { description: "Marks the form dirty or clean." },
       submit: { description: "Submits, as the Save button does." },
       isSubmitting: { description: "A submit is running (reactive)." },
+      cancel: { description: "Stops a running submit to a URL: no success, no error; the data stays." },
+      cancelled: { description: "The last submit was cancelled (reactive)." },
       hasErrors: { description: "Some input has an error (reactive)." },
     },
     themeVars: {

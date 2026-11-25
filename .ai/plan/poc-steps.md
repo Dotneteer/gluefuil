@@ -456,7 +456,7 @@ Plan: [poc-21b-globals.md](poc-21b-globals.md).
   - E2E: a user component writes a global that `App` reads.
 - **Reference:** `pages/scoping.md`, `pages/globals.md`, `pages/app-globals.md`.
 
-### Step 22: Forms ✅ (client side; awaiting review)
+### Step 22: Forms ✅ (client side)
 
 Plan: [poc-22-forms.md](poc-22-forms.md). No `FormItem`: inputs bind through the
 `formBinding` and `validation` behaviors. Step 22 is the client side;
@@ -470,7 +470,7 @@ step 22B (inserted) is submission and server errors.
   - E2E: fill in, validate, submit (`test-apps/forms`).
 - **Reference:** `pages/forms.md`.
 
-### Step 22B: Forms, submission and server errors (inserted)
+### Step 22B: Forms, submission and server errors (inserted) ✅ (awaiting review)
 
 - **Subject:** `submitUrl`/`submitMethod` through the step 20 data layer,
   `data` as a URL, `cancel()`, the server-error mapping onto inputs (RFC 7807
@@ -478,7 +478,7 @@ step 22B (inserted) is submission and server errors.
   Forms scenario with the routing guard using `isDirty()`.
 - **Tests:** tables for the error shapes; E2E against the mock backend (422
   on the right inputs, a general error, a slow server).
-- **Plan:** [poc-22-forms.md](poc-22-forms.md) part B.
+- **Plan:** [poc-22b-forms-submit.md](poc-22b-forms-submit.md), part B of [poc-22-forms.md](poc-22-forms.md).
 
 ---
 

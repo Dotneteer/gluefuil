@@ -250,6 +250,35 @@ describe("browser moves (back, forward, a typed hash)", () => {
     expect(window.location.hash).toBe("#/a");
   });
 
+  test("a hash typed while a refused back move is held: the app's entry is gone, so the current one is rewritten; back and forward still work", async () => {
+    setRoutingMode("hash");
+    await navigate("/a");
+    const length = window.history.length;
+    let release!: (value: unknown) => void;
+    setNavigationHandlers({ willNavigate: (to) => (to === "/" ? new Promise((resolve) => (release = resolve)) : Promise.resolve(false)) });
+    window.history.back();
+    await settle();
+    // Held: the browser is on "/", the app still shows /a.
+    expect(path()).toBe("/a");
+    // Typed now: the browser drops the /a entry (a new entry after "/").
+    window.location.hash = "#/typed";
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+    release(false);
+    await settle();
+    await settle();
+    expect(path()).toBe("/a");
+    expect(window.location.hash).toBe("#/a");
+    expect(window.history.length).toBe(length);
+    setNavigationHandlers({});
+    window.history.back();
+    await settle();
+    expect(path()).toBe("/");
+    window.history.forward();
+    await settle();
+    expect(path()).toBe("/a");
+  });
+
   test("an allowed typed hash gets the next index in history.state", async () => {
     setRoutingMode("hash");
     await navigate("/a");

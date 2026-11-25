@@ -3,7 +3,9 @@
 // FormBindingBehavior and ValidationBehavior. There is no FormItem.
 
 import {
+  ApiCaller,
   FieldBindingProvider,
+  isDataError,
   FormProvider,
   provideContext,
   reportRuntimeError,
@@ -22,12 +24,15 @@ import {
   watch as watchSignal,
 } from "@patchfuil/runtime";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { isDataUrl, useDataUrlState } from "./data";
 import { Button, SubmitButton } from "./mantine";
 
 type Handler = ((...args: unknown[]) => unknown) | undefined;
 
 export interface FormProps {
   data?: unknown;
+  submitUrl?: unknown;
+  submitMethod?: unknown;
   enabled?: unknown;
   saveLabel?: unknown;
   saveInProgressLabel?: unknown;
@@ -56,9 +61,33 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * `bindTo`. `$data` shows the current values to its children.
  */
 export function Form(props: FormProps) {
-  const [store] = useState(() => new Store(props.data));
+  // `data` as a URL (step 22B): loaded once, the form disabled meanwhile; the first value is the baseline.
+  const dataUrl = isDataUrl(props.data) ? props.data.trim() : undefined;
+  const [store] = useState(() => {
+    const created = new Store(dataUrl ? {} : props.data);
+    if (dataUrl) created.loading.set(true);
+    return created;
+  });
   const latest = useRef(props);
   latest.current = props;
+  const load = useDataUrlState(dataUrl);
+  const applied = useRef(false);
+  useEffect(() => {
+    if (!dataUrl || applied.current) return;
+    if (load.loaded) {
+      applied.current = true;
+      store.reset(load.value);
+      store.loading.set(false);
+    } else if (load.error) {
+      store.generalErrors.set([`Couldn't load the form's data: ${load.error.message}`]);
+    }
+  }, [store, dataUrl, load.loaded, load.value, load.error]);
+  // A submit to a URL goes through the data layer; unmounting aborts it.
+  const [caller] = useState(() => new ApiCaller());
+  useEffect(() => {
+    caller.activate();
+    return () => caller.dispose();
+  }, [caller]);
   // `$data` for the children (compiled with the Form's context scope).
   provideContext(props.contextScope, { $data: () => store.data.get() });
   useLayoutEffect(() => {
@@ -79,7 +108,7 @@ export function Form(props: FormProps) {
     return watchSignal(store.dirty, check);
   }, [store]);
 
-  const submit = useSubmit(store, latest);
+  const submit = useSubmit(store, latest, caller, dataUrl);
 
   const api = useMemo(
     () => ({
@@ -93,8 +122,12 @@ export function Form(props: FormProps) {
       isDirty: () => store.dirty.get(),
       setDirty: (dirty: unknown) => store.setDirty(dirty === true),
       submit: () => submit(),
+      cancel: () => caller.cancel("user"),
       get isSubmitting() {
         return store.submitting.get();
+      },
+      get cancelled() {
+        return store.cancelled.get();
       },
       get hasErrors() {
         return store.hasErrors.get();
@@ -136,7 +169,7 @@ function ErrorSummary({ store }: { store: FormStore }) {
 
 function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
   const { submitting, enabled, data } = useComputed(
-    () => ({ submitting: store.submitting.get(), enabled: store.enabledProp.get(), data: props.buttonRowTemplate ? store.data.get() : undefined }),
+    () => ({ submitting: store.submitting.get(), enabled: store.enabledProp.get() && !store.loading.get(), data: props.buttonRowTemplate ? store.data.get() : undefined }),
     [store, props.buttonRowTemplate],
   );
   if (props.buttonRowTemplate) return <div className="pfui-Form-buttons">{props.buttonRowTemplate({ $data: data })}</div>;
@@ -150,14 +183,20 @@ function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
 }
 
 /**
- * The submit flow (part A: no submitUrl yet). A submit while one runs is
- * ignored. Validation waits for pending checks; an error stops it and moves
- * the focus to the first invalid input; warnings show and don't block.
+ * The submit flow. A submit while one runs (or while disabled, or loading) is
+ * ignored. Validation waits for pending checks; an error stops it and moves the
+ * focus to the first invalid input; warnings show and don't block. Then
+ * `willSubmit`, and `onSubmit`, or a request to `submitUrl` (or `data`'s URL)
+ * through the data layer (step 22B). A failed request's validation errors land
+ * on the inputs; a cancelled one ends quietly.
  */
-function useSubmit(store: FormStore, latest: { current: FormProps }) {
+function useSubmit(store: FormStore, latest: { current: FormProps }, caller: ApiCaller, dataUrl: string | undefined) {
   return useMemo(
     () => async (): Promise<void> => {
-      if (store.submitting.peek() || !store.enabledProp.peek()) return;
+      if (store.submitting.peek() || !store.enabled.peek()) return;
+      store.cancelled.set(false);
+      store.dropServerResults();
+      store.generalErrors.set([]);
       store.showAll();
       const result = await store.validate();
       if (!result.isValid) {
@@ -169,12 +208,25 @@ function useSubmit(store: FormStore, latest: { current: FormProps }) {
       store.submitting.set(true);
       try {
         const answer = await props.onWillSubmit?.(payload, store.getAllData());
-        if (answer === false) {
-          store.generalErrors.set([]);
-          return;
-        }
+        if (answer === false) return;
         if (isPlainObject(answer)) payload = answer;
-        const response = props.onSubmit ? await props.onSubmit(payload) : undefined;
+        let response: unknown;
+        const url = typeof props.submitUrl === "string" && props.submitUrl !== "" ? props.submitUrl : dataUrl;
+        if (props.onSubmit) response = await props.onSubmit(payload);
+        else if (url !== undefined) {
+          let cancelled = false;
+          const method = typeof props.submitMethod === "string" && props.submitMethod !== "" ? props.submitMethod : props.data !== undefined ? "put" : "post";
+          response = await caller.execute(
+            [payload],
+            () => ({ url, method, body: payload, timeoutMs: 30_000 }),
+            { retries: 0, retryDelay: 0 },
+            { cancel: () => void (cancelled = true) },
+          );
+          if (cancelled) {
+            store.cancelled.set(true);
+            return;
+          }
+        }
         store.markClean();
         store.submitting.set(false);
         await props.onSuccess?.(response);
@@ -185,15 +237,19 @@ function useSubmit(store: FormStore, latest: { current: FormProps }) {
           await props.onReset?.();
         }
       } catch (error) {
-        const message = error instanceof Error && error.message ? error.message : "Couldn't save the form.";
-        store.generalErrors.set([message]);
-        if (props.onSubmitError) await props.onSubmitError(error);
-        else reportRuntimeError(error);
+        const problem = store.applySubmitError(error);
+        store.submitting.set(false);
+        // After the inputs re-render enabled (a disabled input can't take the focus).
+        const target = store.firstServerInvalid() ?? store.firstInvalid();
+        setTimeout(() => target?.focusTarget?.(), 0);
+        // A server's answer is shown in the form; anything else is a bug worth reporting.
+        if (props.onSubmitError) await props.onSubmitError(error, problem);
+        else if (!isDataError(error)) reportRuntimeError(error);
       } finally {
         store.submitting.set(false);
       }
     },
-    [store, latest],
+    [store, latest, caller, dataUrl],
   );
 }
 

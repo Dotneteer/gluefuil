@@ -1,6 +1,6 @@
 # Steps 22 and 22B: Forms
 
-**Status:** Step 22 (part A) done, awaiting review; step 22B (part B) next
+**Status:** Done (part A in step 22; part B in step 22B: [poc-22b-forms-submit.md](poc-22b-forms-submit.md))
 
 Part of [poc-steps.md](poc-steps.md). Builds on step 20 (the HTTP gate,
 `APICall`, structured errors, the mock backend) and step 21B (globals, which
