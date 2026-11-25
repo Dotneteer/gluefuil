@@ -1,12 +1,12 @@
 {
-  "name": "@patchfuil/smoke-app",
+  "name": "@gluefuil/smoke-app",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "E2E fixture: proves workspace packages resolve and React renders in a real browser.",
   "dependencies": {
-    "@patchfuil/compiler": "0.0.0",
-    "@patchfuil/components": "0.0.0",
-    "@patchfuil/runtime": "0.0.0"
+    "@gluefuil/compiler": "0.0.0",
+    "@gluefuil/components": "0.0.0",
+    "@gluefuil/runtime": "0.0.0"
   }
 }

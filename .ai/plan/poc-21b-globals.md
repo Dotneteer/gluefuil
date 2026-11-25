@@ -10,27 +10,27 @@ through props and events by hand.
 ## Goal
 
 ```xml
-<!-- Main.pfui -->
+<!-- Main.gui -->
 <App global.unsaved="{false}" global.session="{ { user: 'Ada' } }">
   <EditorPanel/>
   <Text>Unsaved: {unsaved}</Text>
 </App>
 
-<!-- components/EditorPanel.pfui -->
+<!-- components/EditorPanel.gui -->
 <Component name="EditorPanel">
   <Text>Editing as {session.user}</Text>
   <Checkbox label="Dirty" initialValue="{unsaved}" onDidChange="(v) => unsaved = v"/>
 </Component>
 ```
 
-- A `global.*` variable (or `<global>`) on the root of `Main.pfui` is
+- A `global.*` variable (or `<global>`) on the root of `Main.gui` is
   visible in every file and every inline component, at any depth, without
   props. Reading it is reactive, and writing it from anywhere updates every
   reader.
 - A user component's own name (a variable, a code-behind declaration, an
   ID) shadows a global of the same name.
 - Part B: top-level `var` and `function` declarations in `Globals.xs`
-  (beside `Main.pfui`) are globals too.
+  (beside `Main.gui`) are globals too.
 
 ## Background
 
@@ -67,14 +67,14 @@ through props and events by hand.
 - **Each component file compiles separately:**
   - the Vite plugin's `transform`, with the other files' interfaces
     (`userComponents`);
-  - the standalone loader, after fetching `Main.pfui` and the component files
+  - the standalone loader, after fetching `Main.gui` and the component files
     it uses.
 - **At runtime** a user component's scope (`useComponent`,
   `runtime/src/render/user-components.ts`) inherits from its module's root
   scope, `createAppScope()` (the app globals). Variables are accessors
   resolved through the prototype chain, so a child scope reads and writes a
   parent's variable as plain JavaScript (`$$s.count++`).
-- **The playground has several app files** (`playground/src/layouts/*.pfui`)
+- **The playground has several app files** (`playground/src/layouts/*.gui`)
   sharing one components folder.
 
 ## Options considered
@@ -104,7 +104,7 @@ through props and events by hand.
   `<App global.a var.b>` compiles as if `a` were declared on a wrapper
   around the App. The wrapper's scope holds only the globals (over the app
   scope); that is what the user components get. The root's `var.*` and the
-  app's code-behind (`Main.pfui.xs`, local to Main, as in XMLUI) stay in
+  app's code-behind (`Main.gui.xs`, local to Main, as in XMLUI) stay in
   the inner scope.
   - **Consequence:** a global's initializer can read other globals but not
     the root's `var.*` (C001). The other way round works. XMLUI evaluates
@@ -130,10 +130,10 @@ through props and events by hand.
   So the component's own names shadow a global, as XMLUI's docs say.
   Generated code is the same as for a variable (`$$s.unsaved = v`); the
   prototype chain finds the global.
-- **Inline components** in `Main.pfui` get the same names; the compiler
+- **Inline components** in `Main.gui` get the same names; the compiler
   takes them from the file's own root.
 - **Slot content** a caller passes in is compiled in the caller's scope, as
-  today; in `Main.pfui` it sees the globals anyway.
+  today; in `Main.gui` it sees the globals anyway.
 
 ### Telling each file the names
 
@@ -141,9 +141,9 @@ through props and events by hand.
   is a list of names. `analyzeModule` returns `globals` for an app file.
 - **The Vite plugin:**
   - **One app's globals per project.** A new plugin option `entry`
-    (default `src/Main.pfui`) names the app file whose globals every other
+    (default `src/Main.gui`) names the app file whose globals every other
     file sees. `prerender.entry` defaults to it.
-  - `transform` of any other `.pfui` file analyzes the entry (cached by its
+  - `transform` of any other `.gui` file analyzes the entry (cached by its
     source text), passes `globals`, and calls `addWatchFile(entry)`, so a
     changed global list recompiles the components in dev.
   - Other app files (the playground's layout pages) may still declare
@@ -167,7 +167,7 @@ through props and events by hand.
 ### Part B: `Globals.xs`
 
 - **The file** sits beside the entry (`src/Globals.xs`, standalone: beside
-  `Main.pfui`). It uses the code-behind language: top-level `var` (a global
+  `Main.gui`). It uses the code-behind language: top-level `var` (a global
   variable) and `function` (a global function, read-only, C012 on
   assignment, as code-behind functions). Nothing else is allowed at the top
   level (the code-behind rules).
@@ -175,7 +175,7 @@ through props and events by hand.
   the entry's global container, next to `global.*`. Its functions see only
   the globals, not Main's `var.*`. Its diagnostics come back as
   `globalsDiagnostics`, with `Globals.xs` positions; the plugin and the
-  loader report them like `.pfui.xs` diagnostics.
+  loader report them like `.gui.xs` diagnostics.
 - **The names** join `analyzeModule(...).globals`, so component files see
   them. A name declared both in markup and in `Globals.xs` is E007.
 - **Cost:** the code-behind parser, its checks and the scope entries exist.
@@ -254,7 +254,7 @@ Both:
 
 1. **`Globals.xs` is included** (part B).
 2. **Component files see the globals declared in `Globals.xs` or on the
-   root of `Main.pfui`** (the plugin's `entry`), not those of other app files.
+   root of `Main.gui`** (the plugin's `entry`), not those of other app files.
 3. **A global's initializer can't read the root's `var.*`:** accepted.
 
 ## Outcome
@@ -295,4 +295,4 @@ Implemented as designed. `npm run check`: 2,392 unit tests in 83 files
 
 - A `Globals.xs` name that is also a `global.*` is reported as E019
   ("declared twice", the code-behind's code) rather than E007; one that is
-  also a root `var.*` or a `Main.pfui.xs` declaration is E007.
+  also a root `var.*` or a `Main.gui.xs` declaration is E007.

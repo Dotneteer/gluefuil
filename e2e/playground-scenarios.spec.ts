@@ -1,4 +1,4 @@
-import { originalPositionFor, type SourceMap } from "@patchfuil/compiler";
+import { originalPositionFor, type SourceMap } from "@gluefuil/compiler";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // The playground's scenarios do what their pages say (project "playground"):
@@ -7,7 +7,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const open = async (page: Page, path: string) => {
   await page.goto(`/#${path}`);
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
 };
 const button = (page: Page, name: string | RegExp) => page.getByRole("button", { name, exact: typeof name === "string" });
 // Exact for strings: the page also shows its source, which contains the same phrases.
@@ -74,9 +74,9 @@ test("Async handlers: implicit await, the queue policy, a timeout", async ({ pag
 
 test("Component IDs: reading before the declaration, setValue, checkbox API", async ({ page }) => {
   await open(page, "/ids");
-  await expect(text(page, 'Declared before the TextBox: "pfui" (4 characters)')).toBeVisible();
+  await expect(text(page, 'Declared before the TextBox: "gfui" (4 characters)')).toBeVisible();
   await button(page, "Upper-case").click();
-  await expect(text(page, 'Declared before the TextBox: "PFUI" (4 characters)')).toBeVisible();
+  await expect(text(page, 'Declared before the TextBox: "GFUI" (4 characters)')).toBeVisible();
   await button(page, "Toggle the checkbox from a handler").click();
   await expect(text(page, "flag.value = true")).toBeVisible();
 });
@@ -176,7 +176,7 @@ test("Routing: the unsaved-changes guard blocks buttons, links, the nav and back
   await page.getByLabel("Unsaved changes: block every navigation").check();
   await button(page, "Item 1").click();
   await page.getByRole("link", { name: "A link with an encoded segment" }).click();
-  await page.locator(".pfui-NavLink", { hasText: "Dashboard" }).first().click();
+  await page.locator(".gfui-NavLink", { hasText: "Dashboard" }).first().click();
   await page.goBack();
   await page.waitForTimeout(200);
   await expect(page.getByRole("heading", { name: "Routing", exact: true })).toBeVisible();
@@ -193,7 +193,7 @@ test("Counter: the texts follow the variable; a conditional text appears at five
   for (let i = 0; i < 5; i++) await button(page, "Increment").click();
   await expect(text(page, "Count: 5")).toBeVisible();
   await expect(text(page, "Doubled: 10")).toBeVisible();
-  await expect(page.locator("strong.pfui-Text", { hasText: "Five or more!" })).toBeVisible();
+  await expect(page.locator("strong.gfui-Text", { hasText: "Five or more!" })).toBeVisible();
   await button(page, "Reset").click();
   await expect(text(page, "Count: 0")).toBeVisible();
   await expect(text(page, "Five or more!")).toHaveCount(0);
@@ -207,12 +207,12 @@ test("Text and headings: each variant renders its element; headings; maxLines cl
     ["sub", "sub"], ["sup", "sup"], ["paragraph", "p"], ["secondary", "span"], ["title", "span"], ["mono", "span"],
   ];
   for (const [variant, tag] of elements) {
-    await expect(page.locator(`${tag}.pfui-Text[data-variant="${variant}"]`, { hasText: "The quick brown fox" }), variant).toBeVisible();
+    await expect(page.locator(`${tag}.gfui-Text[data-variant="${variant}"]`, { hasText: "The quick brown fox" }), variant).toBeVisible();
   }
   // Styled variants differ from plain text.
-  const plain = page.locator('.pfui-Text[data-variant="mono"]').first();
-  expect(await style(page.locator('code.pfui-Text[data-variant="code"]', { hasText: "The quick brown fox" }), "font-family")).toMatch(/mono|Menlo|Consolas/i);
-  expect(await style(page.locator('strong.pfui-Text[data-variant="strong"]', { hasText: "The quick brown fox" }), "font-weight")).toBe("700");
+  const plain = page.locator('.gfui-Text[data-variant="mono"]').first();
+  expect(await style(page.locator('code.gfui-Text[data-variant="code"]', { hasText: "The quick brown fox" }), "font-family")).toMatch(/mono|Menlo|Consolas/i);
+  expect(await style(page.locator('strong.gfui-Text[data-variant="strong"]', { hasText: "The quick brown fox" }), "font-weight")).toBe("700");
   expect(await style(plain, "font-family")).toMatch(/mono|Menlo|Consolas/i);
   for (let level = 1; level <= 6; level++) {
     await expect(page.getByRole("heading", { level, name: `H${level} heading` })).toBeVisible();
@@ -223,7 +223,7 @@ test("Text and headings: each variant renders its element; headings; maxLines cl
   const h6 = parseFloat(await style(page.getByRole("heading", { level: 6, name: "H6 heading" }), "font-size"));
   expect(h1).toBeGreaterThan(h6);
   // maxLines="2": the text is clipped to two lines.
-  const clamped = page.locator(".pfui-Text", { hasText: 'maxLines="2"' });
+  const clamped = page.locator(".gfui-Text", { hasText: 'maxLines="2"' });
   expect(await style(clamped, "-webkit-line-clamp")).toBe("2");
   // The same text without the clamp is taller: some of it is cut off.
   const heights = await clamped.evaluate((el) => {
@@ -239,9 +239,9 @@ test("Text and headings: each variant renders its element; headings; maxLines cl
 
 test("Theming: the tone toggle, theme switching, a scoped Theme, a dark region, a variant", async ({ page }) => {
   await open(page, "/theming");
-  const app = page.locator(".pfui-App");
+  const app = page.locator(".gfui-App");
   const plainButton = button(page, "Toggle tone");
-  await expect(text(page, "Tone: light, theme: pfui")).toBeVisible();
+  await expect(text(page, "Tone: light, theme: gfui")).toBeVisible();
   expect(await style(app, "background-color")).toBe("rgb(255, 255, 255)");
   expect(await style(plainButton, "background-color")).toBe("rgb(37, 99, 235)");
   // A scoped Theme: only its subtree.
@@ -252,12 +252,12 @@ test("Theming: the tone toggle, theme switching, a scoped Theme, a dark region, 
   const darkText = await style(text(page, "This text is in a dark-tone region."), "color");
   expect(await style(app, "color")).not.toBe(darkText);
   await plainButton.click();
-  await expect(text(page, "Tone: dark, theme: pfui")).toBeVisible();
+  await expect(text(page, "Tone: dark, theme: gfui")).toBeVisible();
   expect(await style(app, "background-color")).not.toBe("rgb(255, 255, 255)");
   expect(await style(app, "color")).toBe(darkText);
   // Themes change the primary color everywhere outside scoped overrides.
   await button(page, "Green theme").click();
-  await expect(text(page, "Tone: dark, theme: pfui-green")).toBeVisible();
+  await expect(text(page, "Tone: dark, theme: gfui-green")).toBeVisible();
   expect(await style(plainButton, "background-color")).toBe("rgb(22, 163, 74)");
   await button(page, "Red theme").click();
   expect(await style(plainButton, "background-color")).toBe("rgb(220, 38, 38)");
@@ -266,7 +266,7 @@ test("Theming: the tone toggle, theme switching, a scoped Theme, a dark region, 
   expect(await style(plainButton, "background-color")).toBe("rgb(37, 99, 235)");
 });
 
-test("Source maps: the handler's exception resolves to its line in SourceMapsScenario.pfui", async ({ page }) => {
+test("Source maps: the handler's exception resolves to its line in SourceMapsScenario.gui", async ({ page }) => {
   // Through the Chrome DevTools Protocol (as e2e/source-maps.spec.ts does for the hello app).
   const cdp = await page.context().newCDPSession(page);
   const scripts = new Map<string, { url: string; sourceMapURL: string }>();
@@ -277,7 +277,7 @@ test("Source maps: the handler's exception resolves to its line in SourceMapsSce
   const paused = new Promise<{ scriptId: string; lineNumber: number; columnNumber: number }>((resolve) => {
     cdp.on("Debugger.paused", (event) => {
       const description = String((event.data as { description?: string } | undefined)?.description ?? "");
-      if ((event.reason === "exception" || event.reason === "promiseRejection") && description.includes("thrown in SourceMapsScenario.pfui")) {
+      if ((event.reason === "exception" || event.reason === "promiseRejection") && description.includes("thrown in SourceMapsScenario.gui")) {
         const location = event.callFrames[0]!.location;
         resolve({ scriptId: location.scriptId, lineNumber: location.lineNumber, columnNumber: location.columnNumber ?? 0 });
       } else {
@@ -290,14 +290,14 @@ test("Source maps: the handler's exception resolves to its line in SourceMapsSce
   const location = await paused;
 
   const script = scripts.get(location.scriptId)!;
-  expect(script.url).toMatch(/\/src\/components\/SourceMapsScenario\.pfui(\?|$)/);
+  expect(script.url).toMatch(/\/src\/components\/SourceMapsScenario\.gui(\?|$)/);
   const base64 = script.sourceMapURL.split("base64,")[1];
   expect(base64).toBeTruthy();
   const map = JSON.parse(Buffer.from(base64!, "base64").toString("utf8")) as SourceMap;
   const original = originalPositionFor(map, location.lineNumber, location.columnNumber);
   expect(original).toBeDefined();
   const markupLine = map.sourcesContent![0]!.split("\n")[original!.line]!;
-  expect(markupLine.slice(original!.column)).toBe("throw new Error('thrown in SourceMapsScenario.pfui: ' + reason);");
+  expect(markupLine.slice(original!.column)).toBe("throw new Error('thrown in SourceMapsScenario.gui: ' + reason);");
 
   await cdp.send("Debugger.setPauseOnExceptions", { state: "none" });
   await cdp.send("Debugger.resume");
@@ -311,10 +311,10 @@ test("App shell: the preview frames each layout; the playground's own nav collap
   // Each layout runs as its own page in the frame.
   await expect(page.locator("iframe")).toHaveAttribute("title", "Layout: condensed-sticky");
   await expect(frame.getByRole("heading", { name: "Home" })).toBeVisible();
-  await expect(text(page, "layouts/condensed-sticky.pfui")).toBeVisible();
+  await expect(text(page, "layouts/condensed-sticky.gui")).toBeVisible();
   await button(page, "vertical-sticky").click();
   await expect(page.locator("iframe")).toHaveAttribute("title", "Layout: vertical-sticky");
-  await expect(frame.locator(".pfui-App")).toHaveAttribute("data-nav-full-height", "");
+  await expect(frame.locator(".gfui-App")).toHaveAttribute("data-nav-full-height", "");
   await frame.getByRole("link", { name: "Orders" }).click();
   await expect(frame.getByRole("heading", { name: "Orders" })).toBeVisible();
   // At phone width the frame's nav is a drawer.
@@ -325,7 +325,7 @@ test("App shell: the preview frames each layout; the playground's own nav collap
   // The scenario's button drives this playground's own shell through setNavPanelCollapsed.
   const nav = page.getByRole("navigation", { name: "Main" });
   await button(page, "Collapse this playground's nav: false").click();
-  await expect(page.locator("#root .pfui-App").first()).toHaveAttribute("data-nav-collapsed", "");
+  await expect(page.locator("#root .gfui-App").first()).toHaveAttribute("data-nav-collapsed", "");
   expect((await nav.boundingBox())!.width).toBe(48);
   await page.getByRole("button", { name: "Expand navigation" }).click();
   await expect(button(page, "Collapse this playground's nav: false")).toBeVisible();
@@ -335,10 +335,10 @@ test("Layout and spacing: the demo in a frame, at desktop and phone width, with 
   await open(page, "/layout");
   const frame = page.frameLocator('iframe[title="Layout: spacing"]');
   await expect(frame.getByRole("heading", { name: "Automatic spacing" })).toBeVisible();
-  await expect(text(page, "layouts/spacing.pfui")).toBeVisible();
+  await expect(text(page, "layouts/spacing.gui")).toBeVisible();
   // One demo: no layout choice, only the widths.
   await expect(page.getByRole("group", { name: "Layout" })).toBeHidden();
-  const page0 = frame.locator(".pfui-AppContent > .pfui-Theme > .pfui-Stack");
+  const page0 = frame.locator(".gfui-AppContent > .gfui-Theme > .gfui-Stack");
   await expect(page0).toHaveAttribute("data-level", "0");
   await expect(page0).toHaveCSS("row-gap", "24px");
   await button(page, "Phone").click();
@@ -355,7 +355,7 @@ test("Data: the list from the mock backend; failures from the network panel; ren
   await expect(button(page, "Ada Lovelace")).toBeVisible();
   const log = page.getByText(/^GET \/api\/people/).first();
   // Rendered text only: the page's source listing contains the same words.
-  const loadError = page.locator(".pfui-Text", { hasText: /Couldn't load people/ });
+  const loadError = page.locator(".gfui-Text", { hasText: /Couldn't load people/ });
   // 503 twice, then fine: the page retries; the backend's log shows it.
   // Each panel button reports when the backend has its new setting; only then reload.
   await button(page, "503 twice, then fine").click();
@@ -390,16 +390,16 @@ test("Forms: load, a server 422 on the inputs, save and refresh; unsaved changes
   await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Ada Lovelace");
   await page.getByLabel("City").fill("Atlantis");
   // Unsaved: leaving the page is blocked.
-  await page.locator(".pfui-NavLink", { hasText: "Dashboard" }).first().click();
+  await page.locator(".gfui-NavLink", { hasText: "Dashboard" }).first().click();
   await page.waitForTimeout(200);
   await expect(page.getByRole("heading", { name: "Forms", exact: true })).toBeVisible();
   await button(page, "Save").click();
-  await expect(page.locator(".pfui-Field-messages .pfui-ValidationMessage")).toHaveText(["We don't deliver to Atlantis"]);
+  await expect(page.locator(".gfui-Field-messages .gfui-ValidationMessage")).toHaveText(["We don't deliver to Atlantis"]);
   await page.getByLabel("City").fill("Paris");
   await button(page, "Save").click();
   await expect(text(page, "Saved Ada Lovelace")).toBeVisible();
   await expect(text(page, "Ada Lovelace · ada@example.com · Paris")).toBeVisible();
   // Clean again: navigation works.
-  await page.locator(".pfui-NavLink", { hasText: "Dashboard" }).first().click();
+  await page.locator(".gfui-NavLink", { hasText: "Dashboard" }).first().click();
   await expect(page).toHaveURL(/#\/$/);
 });

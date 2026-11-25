@@ -15,7 +15,7 @@ like a built-in. Covers:
 - methods and `$self`;
 - the default and named slots, with slot props flowing back as `$item`;
 - scope isolation;
-- inline `<Component>` in `Main.pfui`, and component files;
+- inline `<Component>` in `Main.gui`, and component files;
 - code-behind.
 
 ## Background (XMLUI)
@@ -58,11 +58,11 @@ Sources:
 ### Files and discovery
 
 - **The components folder** sits next to the entry file:
-  `src/components/*.pfui` in a Vite app, `components/*.pfui` next to
-  `Main.pfui` in standalone mode.
+  `src/components/*.gui` in a Vite app, `components/*.gui` next to
+  `Main.gui` in standalone mode.
 - **The file name must match** the component name (E-diagnostic).
-- **Code-behind** is the file's name plus `.xs`: `Main.pfui.xs`,
-  `components/X.pfui.xs`. It applies to the file's app root, or to its
+- **Code-behind** is the file's name plus `.xs`: `Main.gui.xs`,
+  `components/X.gui.xs`. It applies to the file's app root, or to its
   component.
 - **The compiler needs every user component's interface before
   compiling** a file that uses it: its existence, its slots and their
@@ -73,7 +73,7 @@ Sources:
     content hash, cached) and passes the result to `compileModule` as
     `userComponents`. It also calls `addWatchFile`, so editing a component
     re-compiles the files that use it.
-  - **Standalone** fetches `components/<Name>.pfui` for each referenced
+  - **Standalone** fetches `components/<Name>.gui` for each referenced
     name that isn't built-in or inline, recursively, then compiles every
     file with the full table. A 404 means the name really is unknown
     (E001).
@@ -187,7 +187,7 @@ function Counter($$in) {
 Implemented as designed. Details: [`../docs/user-components.md`](../docs/user-components.md).
 
 - **The XMLUI examples run** in the hello app (four component files, one
-  with code-behind; an inline component; `Main.pfui.xs`), both on the dev
+  with code-behind; an inline component; `Main.gui.xs`), both on the dev
   server and in the prerendered production build. Takeover still changes
   no DOM node.
 - **Standalone mode** fetches, compiles and caches a component file with

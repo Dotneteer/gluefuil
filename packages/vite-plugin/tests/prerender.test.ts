@@ -1,6 +1,6 @@
 // Static generation in the plugin: options, HTML injection, when it runs.
 import { afterAll, describe, expect, test } from "vitest";
-import { pfui } from "../src/index";
+import { gfui } from "../src/index";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,23 +10,23 @@ describe("options", () => {
   test.each([
     [undefined, undefined],
     [false, undefined],
-    [true, { entry: "src/Main.pfui", rootId: "root", breakpoint: "xs", routes: [] }],
-    [{ breakpoint: "lg" as const }, { entry: "src/Main.pfui", rootId: "root", breakpoint: "lg", routes: [] }],
-    [{ entry: "app/Start.pfui", rootId: "app" }, { entry: "app/Start.pfui", rootId: "app", breakpoint: "xs", routes: [] }],
-    [{ routes: ["/users/1"] }, { entry: "src/Main.pfui", rootId: "root", breakpoint: "xs", routes: ["/users/1"] }],
+    [true, { entry: "src/Main.gui", rootId: "root", breakpoint: "xs", routes: [] }],
+    [{ breakpoint: "lg" as const }, { entry: "src/Main.gui", rootId: "root", breakpoint: "lg", routes: [] }],
+    [{ entry: "app/Start.gui", rootId: "app" }, { entry: "app/Start.gui", rootId: "app", breakpoint: "xs", routes: [] }],
+    [{ routes: ["/users/1"] }, { entry: "src/Main.gui", rootId: "root", breakpoint: "xs", routes: ["/users/1"] }],
   ])("%j", (option, expected) => {
     expect(resolvePrerender(option)).toEqual(expected);
   });
 });
 
 describe("injectPrerendered", () => {
-  const attrs = { "data-pfui-prerendered": "xs" };
+  const attrs = { "data-gfui-prerendered": "xs" };
 
   test.each([
-    ['<body><div id="root"></div></body>', '<body><div id="root" data-pfui-prerendered="xs"><b>app</b></div></body>'],
-    ['<div id="root">\n  </div>', '<div id="root" data-pfui-prerendered="xs"><b>app</b></div>'],
-    ["<main class='x' id='root' hidden></main>", `<main class='x' id='root' hidden data-pfui-prerendered="xs"><b>app</b></main>`],
-    ['<div data-id="root"></div><section id="root"></section>', '<div data-id="root"></div><section id="root" data-pfui-prerendered="xs"><b>app</b></section>'],
+    ['<body><div id="root"></div></body>', '<body><div id="root" data-gfui-prerendered="xs"><b>app</b></div></body>'],
+    ['<div id="root">\n  </div>', '<div id="root" data-gfui-prerendered="xs"><b>app</b></div>'],
+    ["<main class='x' id='root' hidden></main>", `<main class='x' id='root' hidden data-gfui-prerendered="xs"><b>app</b></main>`],
+    ['<div data-id="root"></div><section id="root"></section>', '<div data-id="root"></div><section id="root" data-gfui-prerendered="xs"><b>app</b></section>'],
   ])("%s", (html, expected) => {
     expect(injectPrerendered(html, "root", "<b>app</b>", attrs)).toBe(expected);
   });
@@ -47,8 +47,8 @@ describe("injectPrerendered", () => {
 
 describe("when it runs", () => {
   type Hook = { order: string; handler: (html: string, context?: { path: string }) => Promise<string> };
-  const hookOf = (options: Parameters<typeof pfui>[0], config: object) => {
-    const plugin = pfui(options);
+  const hookOf = (options: Parameters<typeof gfui>[0], config: object) => {
+    const plugin = gfui(options);
     (plugin.configResolved as (c: unknown) => void)({ build: { sourcemap: false }, ...config });
     return plugin.transformIndexHtml as unknown as Hook;
   };
@@ -74,8 +74,8 @@ describe("when it runs", () => {
     ["dev server", { prerender: true }, { command: "serve", base: "/app/", build: {} }, HTML],
     ["a build without prerender", {}, { command: "build", base: "/app/", build: {} }, HTML],
     ["a custom root id", { prerender: { rootId: "app" } }, { command: "serve", base: "/app/", build: {} }, '<div id="app"></div>'],
-  ])("under base /app/, %s writes data-pfui-base on the root", async (_, options, config, html) => {
-    expect(await hookOf(options, config).handler(html)).toBe(html.replace('">', '" data-pfui-base="/app">'));
+  ])("under base /app/, %s writes data-gfui-base on the root", async (_, options, config, html) => {
+    expect(await hookOf(options, config).handler(html)).toBe(html.replace('">', '" data-gfui-base="/app">'));
   });
 
   test("a root base writes nothing", async () => {
@@ -124,7 +124,7 @@ describe("prerendered routes (step 21)", () => {
   });
 
   describe("previewRewrite: /about serves about/index.html, as static hosts do", () => {
-    const outDir = mkdtempSync(join(tmpdir(), "pfui-preview-"));
+    const outDir = mkdtempSync(join(tmpdir(), "gfui-preview-"));
     mkdirSync(join(outDir, "about"));
     writeFileSync(join(outDir, "about", "index.html"), "");
     afterAll(() => rmSync(outDir, { recursive: true, force: true }));
@@ -154,7 +154,7 @@ describe("prerendered routes (step 21)", () => {
 });
 
 test("the route files are emitted after Vite's HTML plugin (generateBundle, order post)", () => {
-  expect((pfui({ prerender: true }).generateBundle as { order?: string }).order).toBe("post");
+  expect((gfui({ prerender: true }).generateBundle as { order?: string }).order).toBe("post");
 });
 
 describe("the basename (step 21, part 2)", () => {
@@ -170,11 +170,11 @@ describe("the basename (step 21, part 2)", () => {
   });
 
   test.each([
-    ['<div id="root"></div>', '<div id="root" data-pfui-base="/app"></div>'],
-    ['<div class="x" id="root">kept</div>', '<div class="x" id="root" data-pfui-base="/app">kept</div>'],
-    ["<div id='root'/>", "<div id='root' data-pfui-base=\"/app\"/>"],
+    ['<div id="root"></div>', '<div id="root" data-gfui-base="/app"></div>'],
+    ['<div class="x" id="root">kept</div>', '<div class="x" id="root" data-gfui-base="/app">kept</div>'],
+    ["<div id='root'/>", "<div id='root' data-gfui-base=\"/app\"/>"],
     ['<div id="other"></div>', '<div id="other"></div>'],
   ])("addRootAttributes(%s)", (html, expected) => {
-    expect(addRootAttributes(html, "root", { "data-pfui-base": "/app" })).toBe(expected);
+    expect(addRootAttributes(html, "root", { "data-gfui-base": "/app" })).toBe(expected);
   });
 });

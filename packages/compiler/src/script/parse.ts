@@ -1,4 +1,4 @@
-// Public entry points for parsing pfui script.
+// Public entry points for parsing gfui script.
 
 import type { Diagnostic } from "../source/diagnostic";
 import type { Expression, Program } from "./ast";

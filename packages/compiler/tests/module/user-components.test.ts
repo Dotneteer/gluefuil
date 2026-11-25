@@ -15,7 +15,7 @@ function code(markup: string, options?: CompileModuleOptions): string {
 const diagnostics = (markup: string, options?: CompileModuleOptions) =>
   compile(markup, options).diagnostics.map((d) => [d.code, markup.slice(d.start, d.end)]);
 
-const LIST = { name: "List", slots: { $$slot: ["$item"], rowTemplate: ["$index", "$item"] }, methods: ["reset"], module: "./components/List.pfui" };
+const LIST = { name: "List", slots: { $$slot: ["$item"], rowTemplate: ["$index", "$item"] }, methods: ["reset"], module: "./components/List.gui" };
 
 describe("analyzeModule", () => {
   test("an app file: inline definitions with their slots and methods; every referenced component", () => {
@@ -61,14 +61,14 @@ describe("file forms", () => {
   });
 
   test("a component file exports its component", () => {
-    expect(code('<Component name="Leaf"><Text/></Component>', { fileName: "Leaf.pfui" })).toMatch(/export default \$\$U_Leaf;\n$/);
+    expect(code('<Component name="Leaf"><Text/></Component>', { fileName: "Leaf.gui" })).toMatch(/export default \$\$U_Leaf;\n$/);
     expect(code('<Component name="Leaf"><Text/></Component>', { format: "function" })).toMatch(/return \$\$U_Leaf;\n$/);
   });
 
   test.each<[label: string, markup: string, options: CompileModuleOptions, expected: [string, string][]]>([
     ["two components, no app", '<Component name="A"><Text/></Component><Component name="B"><Text/></Component>', {}, [["E003", "Component"]]],
     ["two app elements", '<App/><Stack/>', {}, [["E003", "<Stack/>"]]],
-    ["file name mismatch", '<Component name="Leaf"><Text/></Component>', { fileName: "components/Branch.pfui" }, [["E016", '"Leaf"']]],
+    ["file name mismatch", '<Component name="Leaf"><Text/></Component>', { fileName: "components/Branch.gui" }, [["E016", '"Leaf"']]],
     ["invalid name", '<Component name="leaf"><Text/></Component><App/>', {}, [["E016", '"leaf"']]],
     ["no name", "<Component><Text/></Component><App/>", {}, [["E016", "Component"]]],
     ["a built-in's name", '<Component name="Button"><Text/></Component><App/>', {}, [["E016", '"Button"']]],
@@ -85,7 +85,7 @@ describe("file forms", () => {
 describe("other files' components", () => {
   test("esm: imported from their module", () => {
     const out = code("<App><List/></App>", { userComponents: { List: LIST } });
-    expect(out).toContain('import $$U_List from "./components/List.pfui";');
+    expect(out).toContain('import $$U_List from "./components/List.gui";');
     expect(out).toContain("$$h($$BoundUser, { type: $$U_List,");
   });
 
@@ -116,7 +116,7 @@ describe("using a component", () => {
     expect(diagnostics(markup, { userComponents: { List: LIST } })).toEqual([]);
   });
 
-  const LEAF = { name: "Leaf", slots: {}, methods: [], module: "./Leaf.pfui" };
+  const LEAF = { name: "Leaf", slots: {}, methods: [], module: "./Leaf.gui" };
   test.each<[label: string, markup: string, expected: [string, string][]]>([
     ["children without a default slot", "<App><Leaf><Text/></Leaf></App>", [["E018", "<Text/>"]]],
     ["an unknown slot", '<App><List><property name="nope"><Text/></property></List></App>', [["E013", '"nope"']]],

@@ -52,7 +52,7 @@ export function Text(props: TextProps) {
   const name = typeof variant === "string" && Object.hasOwn(TEXT_VARIANT_ELEMENTS, variant) ? variant : undefined;
   return createElement(
     name ? TEXT_VARIANT_ELEMENTS[name]! : "span",
-    { className: "pfui-Text", "data-variant": name, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
+    { className: "gfui-Text", "data-variant": name, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
     content(value, children),
   );
 }
@@ -71,7 +71,7 @@ export function Heading(props: HeadingProps) {
   const n = headingLevel(level);
   return createElement(
     `h${n}`,
-    { className: "pfui-Heading", "data-level": n, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
+    { className: "gfui-Heading", "data-level": n, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
     content(value, children),
   );
 }

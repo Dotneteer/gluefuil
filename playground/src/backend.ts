@@ -3,7 +3,7 @@
 // The app doesn't import this file; the mock backend plugin starts it in a
 // service worker before the app (vite.config.ts). The network conditions
 // panel steers it through /__mock, like a test would.
-import { defineBackend, status } from "@patchfuil/mock-backend";
+import { defineBackend, status } from "@gluefuil/mock-backend";
 
 export default defineBackend({
   seed: {

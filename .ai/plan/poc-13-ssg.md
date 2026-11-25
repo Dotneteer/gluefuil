@@ -55,29 +55,29 @@ resume at the values the HTML shows.
   - `currentBreakpoint()` returns the server breakpoint in the server view,
     else the live signal. `When` uses it.
 - `render/mount.ts`, `mountApp(container, app)` (added during the work:
-  `data-pfui-ready` on the container once the app is live):
-  - if the container has `data-pfui-prerendered="<breakpoint>"`: set the
+  `data-gfui-ready` on the container once the app is live):
+  - if the container has `data-gfui-prerendered="<breakpoint>"`: set the
     server breakpoint, then `hydrateRoot`. Recoverable errors (mismatches)
     go to `reportRuntimeError`;
   - otherwise `createRoot(...).render(app)`.
-- **New entry point `@patchfuil/runtime/server`** (`src/server.ts`), Node
+- **New entry point `@gluefuil/runtime/server`** (`src/server.ts`), Node
   and SSG only: `renderStatic(app, { breakpoint })` returns
   `{ html, attributes }` through `renderToString` in the server view. A
   separate entry keeps `react-dom/server` out of client bundles.
 
-### The Vite plugin: `pfui({ prerender })`
+### The Vite plugin: `gfui({ prerender })`
 
 | Option | Default | Meaning |
 |--------|---------|---------|
 | `prerender` | off | `true` or `{ entry, rootId, breakpoint }` |
-| `entry` | `"src/Main.pfui"` | The root component's file, relative to the Vite root |
+| `entry` | `"src/Main.gui"` | The root component's file, relative to the Vite root |
 | `rootId` | `"root"` | The empty element in `index.html` to fill |
 | `breakpoint` | `"xs"` | The viewport the static HTML is rendered for (mobile-first) |
 
 - **`transformIndexHtml`** (build only):
   1. starts a Vite server in middleware mode, with only the transform part
      of the plugin (`configFile: false`, same root, no source maps);
-  2. `ssrLoadModule`s the entry and `@patchfuil/runtime/server` in that
+  2. `ssrLoadModule`s the entry and `@gluefuil/runtime/server` in that
      server, so they share one copy of the runtime and React;
   3. renders and fills `<div id="root"></div>`, adding the attributes.
 
@@ -88,7 +88,7 @@ resume at the values the HTML shows.
 
 ### The hello app
 
-- `vite.config.ts`: `pfui({ prerender: true })`.
+- `vite.config.ts`: `gfui({ prerender: true })`.
 - `main.tsx`: `mountApp(root, <StrictMode><Main/></StrictMode>)`.
 
 ### Not in this step

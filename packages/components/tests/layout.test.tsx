@@ -3,8 +3,8 @@
 // bars), what the layout props become, and the rule that every spacing value
 // is a multiple of space-base. The CSS that turns levels into gaps runs only
 // in a browser: e2e/layout.spec.ts measures it. See .ai/plan/poc-19d-layout.md.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule } from "@gluefuil/runtime";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -24,7 +24,7 @@ function mount(markup: string): HTMLElement {
 
 /** Each stack, in document order: its level and orientation ("1h", "0v"). */
 function levels(markup: string): string[] {
-  return [...mount(markup).querySelectorAll(".pfui-Stack")].map((s) => `${s.getAttribute("data-level")}${s.getAttribute("data-orientation")![0]}`);
+  return [...mount(markup).querySelectorAll(".gfui-Stack")].map((s) => `${s.getAttribute("data-level")}${s.getAttribute("data-orientation")![0]}`);
 }
 
 describe("levels", () => {
@@ -73,32 +73,32 @@ describe("levels", () => {
 describe("stack attributes", () => {
   test("a background or a border makes a surface", () => {
     const root = mount('<App><VStack backgroundColor="red"/><VStack border="1px solid $borderColor"/><VStack/></App>');
-    expect([...root.querySelectorAll(".pfui-Stack")].map((s) => s.hasAttribute("data-surface"))).toEqual([true, true, false]);
+    expect([...root.querySelectorAll(".gfui-Stack")].map((s) => s.hasAttribute("data-surface"))).toEqual([true, true, false]);
   });
 
   test("an explicit gap is inline, so it wins over the ladder", () => {
-    const stack = mount('<App><VStack gap="$gap-tight"/></App>').querySelector<HTMLElement>(".pfui-Stack")!;
-    expect(stack.style.getPropertyValue("--pfui-gap")).toBe("var(--pfui-gap-tight)");
+    const stack = mount('<App><VStack gap="$gap-tight"/></App>').querySelector<HTMLElement>(".gfui-Stack")!;
+    expect(stack.style.getPropertyValue("--gfui-gap")).toBe("var(--gfui-gap-tight)");
   });
 
   test("alignment, reverse and wrapping", () => {
-    const stack = mount('<App><HStack horizontalAlignment="end" verticalAlignment="center" reverse="true" wrapContent="true" itemWidth="25%"/></App>').querySelector<HTMLElement>(".pfui-Stack")!;
+    const stack = mount('<App><HStack horizontalAlignment="end" verticalAlignment="center" reverse="true" wrapContent="true" itemWidth="25%"/></App>').querySelector<HTMLElement>(".gfui-Stack")!;
     expect(stack.style.flexDirection).toBe("row-reverse");
     expect(stack.style.justifyContent).toBe("flex-end");
     expect(stack.style.alignItems).toBe("center");
     expect(stack.hasAttribute("data-wrap")).toBe(true);
     expect(stack.getAttribute("data-item-width")).toBe("%");
-    expect(stack.style.getPropertyValue("--pfui-item-fraction")).toBe("0.25");
+    expect(stack.style.getPropertyValue("--gfui-item-fraction")).toBe("0.25");
   });
 
   test("CHStack centers on both axes", () => {
-    const stack = mount("<App><CHStack/></App>").querySelector<HTMLElement>(".pfui-Stack")!;
+    const stack = mount("<App><CHStack/></App>").querySelector<HTMLElement>(".gfui-Stack")!;
     expect([stack.style.justifyContent, stack.style.alignItems]).toEqual(["center", "center"]);
   });
 
   test("a user component's root gets the layout props of its tag; they win over its own", () => {
     const root = mount('<App><Card width="40%"/></App>\n<Component name="Card"><VStack width="10%" backgroundColor="red"><Text>x</Text></VStack></Component>');
-    const stack = root.querySelector<HTMLElement>(".pfui-Stack")!;
+    const stack = root.querySelector<HTMLElement>(".gfui-Stack")!;
     expect(stack.style.width).toBe("40%");
     expect(stack.style.backgroundColor).toBe("red");
   });
@@ -106,7 +106,7 @@ describe("stack attributes", () => {
   test("layout props reach Text, headings, links and Mantine components", () => {
     const root = mount('<App><Text width="10px">t</Text><H2 width="20px">h</H2><Link to="/" width="30px">l</Link><Button label="b" width="40px"/><TextBox width="50px"/></App>');
     const width = (selector: string) => root.querySelector<HTMLElement>(selector)!.style.width;
-    expect([width(".pfui-Text"), width(".pfui-Heading"), width(".pfui-Link"), width(".pfui-Button"), width(".pfui-TextBox")]).toEqual(["10px", "20px", "30px", "40px", "50px"]);
+    expect([width(".gfui-Text"), width(".gfui-Heading"), width(".gfui-Link"), width(".gfui-Button"), width(".gfui-TextBox")]).toEqual(["10px", "20px", "30px", "40px", "50px"]);
   });
 });
 
@@ -131,18 +131,18 @@ describe("layoutStyle", () => {
     [
       { width: "25%" },
       FLOW,
-      { width: "calc((25% - var(--pfui-flow-gap) * 0.75) * var(--pfui-flow-wide) + 100% * (1 - var(--pfui-flow-wide)))", flexShrink: 0 },
+      { width: "calc((25% - var(--gfui-flow-gap) * 0.75) * var(--gfui-flow-wide) + 100% * (1 - var(--gfui-flow-wide)))", flexShrink: 0 },
     ],
     [{ width: "120px" }, FLOW, { width: "120px", flexShrink: 0 }],
     // Spacing and theme variables.
-    [{ padding: "$space-4" }, VERTICAL, { padding: "var(--pfui-space-4)" }],
+    [{ padding: "$space-4" }, VERTICAL, { padding: "var(--gfui-space-4)" }],
     [{ padding: "8 16" }, VERTICAL, { padding: "8px 16px" }],
     [{ paddingHorizontal: "8" }, VERTICAL, { paddingLeft: "8px", paddingRight: "8px" }],
-    [{ paddingVertical: "$space-2" }, VERTICAL, { paddingTop: "var(--pfui-space-2)", paddingBottom: "var(--pfui-space-2)" }],
+    [{ paddingVertical: "$space-2" }, VERTICAL, { paddingTop: "var(--gfui-space-2)", paddingBottom: "var(--gfui-space-2)" }],
     [{ maxWidth: "40rem", minHeight: "0" }, VERTICAL, { maxWidth: "40rem", minHeight: "0" }],
     // Surfaces.
-    [{ backgroundColor: "$color-surface-50" }, VERTICAL, { backgroundColor: "var(--pfui-color-surface-50)" }, { "data-surface": "" }],
-    [{ border: "1px solid $borderColor" }, VERTICAL, { border: "1px solid var(--pfui-borderColor)" }, { "data-surface": "" }],
+    [{ backgroundColor: "$color-surface-50" }, VERTICAL, { backgroundColor: "var(--gfui-color-surface-50)" }, { "data-surface": "" }],
+    [{ border: "1px solid $borderColor" }, VERTICAL, { border: "1px solid var(--gfui-borderColor)" }, { "data-surface": "" }],
     // Nothing set: nothing.
     [{}, VERTICAL, undefined],
     [{ width: "", height: null }, VERTICAL, undefined],

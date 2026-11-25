@@ -4,13 +4,13 @@
 // A behavior attaches when the element sets one of its trigger props, the
 // component's contract does not declare that prop itself, the component is
 // visual, and the behavior's own condition holds. The compiler then wraps the
-// element in the behavior's component (exported by @patchfuil/components).
+// element in the behavior's component (exported by @gluefuil/components).
 
 import type { PropMetadata } from "./metadata";
 
 export interface BehaviorMetadata {
   name: string;
-  /** The wrapper component's export name in @patchfuil/components. */
+  /** The wrapper component's export name in @gluefuil/components. */
   component: string;
   triggerProps: readonly string[];
   /** Its props: valid (and checked) props of an element it attaches to. */

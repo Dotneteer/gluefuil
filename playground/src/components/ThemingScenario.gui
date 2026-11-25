@@ -4,9 +4,9 @@
     <VStack>
       <HStack>
         <Button label="Toggle tone" onClick="toggleThemeTone()"/>
-        <Button label="Default theme" onClick="setTheme('pfui')"/>
-        <Button label="Green theme" onClick="setTheme('pfui-green')"/>
-        <Button label="Red theme" onClick="setTheme('pfui-red')"/>
+        <Button label="Default theme" onClick="setTheme('gfui')"/>
+        <Button label="Green theme" onClick="setTheme('gfui-green')"/>
+        <Button label="Red theme" onClick="setTheme('gfui-red')"/>
       </HStack>
       <Text>Tone: {activeThemeTone}, theme: {activeThemeId}</Text>
       <Theme backgroundColor-Button="$color-warn-500">

@@ -14,7 +14,7 @@
   (the layout system), merged.** Each step's branch was deleted after its
   merge, by the user's request; `master` is the only branch. Step 21 has
   not started.
-- **The remote `origin`** (github.com/Dotneteer/patchfuil) has `master` up
+- **The remote `origin`** (github.com/Dotneteer/gluefuil) has `master` up
   to `1d8ac4d` (steps 0–19F), pushed by the user. Step 20's two commits are
   not pushed. Pushing is the user's decision.
 - **`npm run check` passes and prints no warnings:** 2,228 unit tests in
@@ -43,7 +43,7 @@
     and E014 is retired.
   - **An app's own React components:** the Vite plugin's `extensions`
     option, with `componentModules` in `compileModule`.
-  - **`?raw` imports** of `.pfui` files are not compiled.
+  - **`?raw` imports** of `.gui` files are not compiled.
   - **The playground** (below).
 
 ### The playground (`playground/`)
@@ -130,7 +130,7 @@
   Otherwise a cold cache reloads the page mid-test.
   - Only list packages the app itself can resolve. One unresolvable entry
     made Vite drop the whole list silently. The mock plugin pre-bundles MSW
-    for the app (`@patchfuil/mock-backend > msw`).
+    for the app (`@gluefuil/mock-backend > msw`).
   - Two Vite servers must not share a cache folder. The prerender's server
     now has its own (step 20 found the 504 "Outdated Optimize Dep" it
     caused).
@@ -146,7 +146,7 @@
   write those through a script.
 - **The compiler must stay free of React, the DOM and Node**
   (`tools/boundaries.ts`). The metadata module
-  `@patchfuil/components/metadata` must stay React-free; the theme engine
+  `@gluefuil/components/metadata` must stay React-free; the theme engine
   and the behavior metadata live there for that reason.
 - **`navigate()` returns a promise (step 21).** In jsdom tests, write
   `act(() => { void navigate("/x"); })` or `await act(async () => …)`.

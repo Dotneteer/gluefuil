@@ -69,8 +69,8 @@ test("the server snapshot is cached: equal values keep their identity", () => {
 });
 
 test("renderStatic marks the HTML with its breakpoint", () => {
-  expect(renderStatic(<b>x</b>, { breakpoint: "md" })).toEqual({ html: "<b>x</b>", attributes: { [PRERENDERED_ATTRIBUTE]: "md", "data-pfui-path": "/" } });
-  expect(renderStatic(<b>x</b>, { path: "/about/" }).attributes["data-pfui-path"]).toBe("/about");
+  expect(renderStatic(<b>x</b>, { breakpoint: "md" })).toEqual({ html: "<b>x</b>", attributes: { [PRERENDERED_ATTRIBUTE]: "md", "data-gfui-path": "/" } });
+  expect(renderStatic(<b>x</b>, { path: "/about/" }).attributes["data-gfui-path"]).toBe("/about");
   expect(renderStatic(<b>x</b>).attributes[PRERENDERED_ATTRIBUTE]).toBe("xs");
 });
 

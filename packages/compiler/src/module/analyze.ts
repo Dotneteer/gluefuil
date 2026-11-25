@@ -1,4 +1,4 @@
-// What a .pfui file defines and uses, without compiling it (step 14). Tools
+// What a .gui file defines and uses, without compiling it (step 14). Tools
 // (the Vite plugin, the standalone loader) analyze component files first, so
 // every file can be compiled knowing the interfaces of the components it uses.
 

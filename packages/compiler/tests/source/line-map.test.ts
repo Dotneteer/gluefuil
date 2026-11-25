@@ -55,9 +55,9 @@ test("formatDiagnostic uses 1-based line and column", () => {
   const formatted = formatDiagnostic(
     { code: "M013", severity: "error", message: "Duplicate attribute 'x'", start, end: start + 1 },
     new LineMap(text),
-    "Main.pfui",
+    "Main.gui",
   );
-  expect(formatted).toBe("Main.pfui:2:12: error M013: Duplicate attribute 'x'");
+  expect(formatted).toBe("Main.gui:2:12: error M013: Duplicate attribute 'x'");
 });
 
 test.each([

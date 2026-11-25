@@ -19,7 +19,7 @@ on this repository. Plans (what we intend to build) live in
 | [theming.md](theming.md) | Theming: the engine (chains, tones, derived tokens, references), the stylesheet, `App` and `Theme`, the tone and theme globals. |
 | [contracts.md](contracts.md) | Component metadata (one format for every component) and the compile-time contract checks: props, types, enums, events, API members, deprecations. |
 | [user-components.md](user-components.md) | User-defined components: definitions and files, `$props`, events, methods, slots, isolation, code-behind; compiling, runtime, delivery. |
-| [standalone.md](standalone.md) | Standalone mode: `pfui.js`, loading, the compile cache, watching, the error overlay, the bundle. |
+| [standalone.md](standalone.md) | Standalone mode: `gfui.js`, loading, the compile cache, watching, the error overlay, the bundle. |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle handlers, templates, `Items`. |
 | [source-maps.md](source-maps.md) | Source maps: markers, encoding, delivery (Vite, `loadModule`), evidence. |
 | [scoping.md](scoping.md) | Scoping: name resolution order, the scope chain, component IDs and APIs, `TextBox`. |

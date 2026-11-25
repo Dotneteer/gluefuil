@@ -22,7 +22,7 @@ import {
   FormStore as Store,
   DEFAULT_FIELD_OPTIONS,
   watch as watchSignal,
-} from "@patchfuil/runtime";
+} from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isDataUrl, useDataUrlState } from "./data";
 import { Button, SubmitButton } from "./mantine";
@@ -139,7 +139,7 @@ export function Form(props: FormProps) {
 
   return (
     <form
-      className="pfui-Form"
+      className="gfui-Form"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -157,9 +157,9 @@ function ErrorSummary({ store }: { store: FormStore }) {
   const errors = useComputed(() => store.generalErrors.get(), [store]);
   if (errors.length === 0) return null;
   return (
-    <div className="pfui-Form-summary" role="alert">
+    <div className="gfui-Form-summary" role="alert">
       {errors.map((message, index) => (
-        <div key={index} className="pfui-ValidationMessage" data-severity="error">
+        <div key={index} className="gfui-ValidationMessage" data-severity="error">
           {message}
         </div>
       ))}
@@ -172,10 +172,10 @@ function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
     () => ({ submitting: store.submitting.get(), enabled: store.enabledProp.get() && !store.loading.get(), data: props.buttonRowTemplate ? store.data.get() : undefined }),
     [store, props.buttonRowTemplate],
   );
-  if (props.buttonRowTemplate) return <div className="pfui-Form-buttons">{props.buttonRowTemplate({ $data: data })}</div>;
+  if (props.buttonRowTemplate) return <div className="gfui-Form-buttons">{props.buttonRowTemplate({ $data: data })}</div>;
   const saveLabel = submitting ? (props.saveInProgressLabel ?? "Saving...") : (props.saveLabel ?? "Save");
   return (
-    <div className="pfui-Form-buttons">
+    <div className="gfui-Form-buttons">
       <Button label={props.cancelLabel ?? "Cancel"} enabled={enabled && !submitting} onClick={() => void props.onCancel?.()} />
       <SubmitButton label={saveLabel} enabled={enabled && !submitting} />
     </div>
@@ -392,7 +392,7 @@ function BoundField({ store, path, noSubmit, settings, children }: { store: Form
   const binding = useMemo(() => ({ field, messagesId }), [field, messagesId]);
   const required = settings?.rules.required === true;
   return (
-    <span className="pfui-Field" data-required={required ? "" : undefined}>
+    <span className="gfui-Field" data-required={required ? "" : undefined}>
       <FieldBindingProvider binding={binding}>{children}</FieldBindingProvider>
       <Messages field={field} id={messagesId} />
     </span>
@@ -402,11 +402,11 @@ function BoundField({ store, path, noSubmit, settings, children }: { store: Form
 function Messages({ field, id }: { field: FormField; id: string }) {
   const visible = useComputed(() => (field.shown.get() ? field.results.get().filter((r) => !r.valid) : []), [field]);
   return (
-    <span id={id} className="pfui-Field-messages" aria-live="polite">
+    <span id={id} className="gfui-Field-messages" aria-live="polite">
       {[...visible]
         .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1))
         .map((result, index) => (
-          <span key={index} className="pfui-ValidationMessage" data-severity={result.severity} data-stale={result.stale ? "" : undefined}>
+          <span key={index} className="gfui-ValidationMessage" data-severity={result.severity} data-stale={result.stale ? "" : undefined}>
             {result.message}
           </span>
         ))}

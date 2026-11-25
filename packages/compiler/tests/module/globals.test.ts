@@ -101,7 +101,7 @@ describe("Globals.xs (globalsCode)", () => {
     expect(problems(markup, { globalsCode })).toEqual(expected);
   });
 
-  test("a name declared in Main.pfui.xs too", () => {
+  test("a name declared in Main.gui.xs too", () => {
     expect(problems("<App/>", { globalsCode: "var a = 1;", codeBehind: "var a = 2;" })).toEqual([["Globals.xs", "E007", "a"]]);
   });
 

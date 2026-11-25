@@ -1,6 +1,6 @@
 // Step 6 end to end in jsdom: variables and handlers, from markup to clicks.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule, setErrorReporter } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -18,7 +18,7 @@ const click = (label: string) =>
   act(() => {
     fireEvent.click(screen.getByRole("button", { name: label }));
   });
-const texts = () => screen.queryAllByText((_, element) => element?.classList.contains("pfui-Text") ?? false).map((e) => e.textContent);
+const texts = () => screen.queryAllByText((_, element) => element?.classList.contains("gfui-Text") ?? false).map((e) => e.textContent);
 
 test("counter", () => {
   renderMarkup(`

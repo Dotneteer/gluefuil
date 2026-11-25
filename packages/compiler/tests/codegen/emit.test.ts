@@ -67,7 +67,7 @@ describe("precedence and parentheses", () => {
     ["-(-a)", "- -$$s.a"],
     ["+ +a", "+ +$$s.a"],
     ["!(a && b)", "!($$s.a && $$s.b)"],
-    // pfui accepts `a ?? b || c`; JavaScript needs the parentheses.
+    // gfui accepts `a ?? b || c`; JavaScript needs the parentheses.
     ["a ?? b || c", "$$s.a ?? ($$s.b || $$s.c)"],
     ["(a ?? b) || c", "($$s.a ?? $$s.b) || $$s.c"],
     ["a ? b : c ? 1 : 2", "$$s.a ? $$s.b : $$s.c ? 1 : 2"],

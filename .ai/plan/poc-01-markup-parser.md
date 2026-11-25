@@ -6,7 +6,7 @@ Part of [poc-steps.md](poc-steps.md).
 
 ## Goal
 
-Turn `.pfui` markup text (XMLUI's markup syntax) into a syntax tree with exact source positions on every
+Turn `.gui` markup text (XMLUI's markup syntax) into a syntax tree with exact source positions on every
 node, with error recovery and located diagnostics. This is the first stage
 of the compiler. It must accept everything XMLUI's markup parser accepts.
 
@@ -43,7 +43,7 @@ markup-to-component-tree stage. That is a change from poc-steps.md, which
 had put helper-tag recognition here; the semantic stage is a better home
 for it.
 
-**API** (`@patchfuil/compiler`):
+**API** (`@gluefuil/compiler`):
 
 ```ts
 parseMarkup(text: string): { document: DocumentNode; diagnostics: Diagnostic[] }

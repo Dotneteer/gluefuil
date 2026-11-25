@@ -1,6 +1,6 @@
 // Steps 19A–19C: the App shell. Markup → the shell settings App receives
 // (`$$shell`), or the diagnostic at its span. See .ai/plan/poc-19a-app-shell.md.
-import { LAYOUT_EQUIVALENTS } from "@patchfuil/components/metadata";
+import { LAYOUT_EQUIVALENTS } from "@gluefuil/components/metadata";
 import { describe, expect, test } from "vitest";
 import { compileModule } from "../../src/module/compile-module";
 

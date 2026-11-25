@@ -14,7 +14,7 @@ subscribes, through `useSyncExternalStore`, to the values its bindings read.
 A change re-renders only the components whose own values changed. The
 declaring component, its containers and its siblings are not involved.
 
-## API (`@patchfuil/runtime`)
+## API (`@gluefuil/runtime`)
 
 | Export | What it does |
 |--------|--------------|

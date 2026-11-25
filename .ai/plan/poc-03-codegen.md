@@ -147,7 +147,7 @@ through members, so they are cut as well:
   error (C010).
 - **`this`:** calls through a scope name or a global compile to
   `(0, $$s.f)?.(…)`, so `this` is `undefined` and never the scope object
-  or the globals. (`this` itself is S030 in pfui script.)
+  or the globals. (`this` itself is S030 in gfui script.)
 - **Invariant for later steps:** values the runtime puts into a scope
   (event objects, component APIs) must not expose raw platform objects
   such as DOM nodes or `window`. The sandbox cuts paths through code; the
@@ -192,7 +192,7 @@ depends on `items` and `min`). Root names are enough for step 4's
 per-variable reactivity. Member paths (`user.address.city`) can be added if
 step 4 shows a need.
 
-### API (`@patchfuil/compiler`)
+### API (`@gluefuil/compiler`)
 
 ```ts
 compileExpression(expression, { scope }): CompileResult
@@ -206,7 +206,7 @@ interface CompileResult {
 }
 ```
 
-### Runtime (`@patchfuil/runtime`)
+### Runtime (`@gluefuil/runtime`)
 
 - `scriptGlobals` (`$$g`): the frozen allowlist objects.
 - `scriptRuntime` (`$$r`): `key()`, `obj()` and `str()`.
@@ -221,8 +221,8 @@ test in `tools/` compares them.
 | Code | Meaning |
 |------|---------|
 | C001 | Cannot find name 'x' |
-| C002 | 'x' is not available in pfui script (with a hint) |
-| C003 | Member 'x' is not accessible in pfui script |
+| C002 | 'x' is not available in gfui script (with a hint) |
+| C003 | Member 'x' is not accessible in gfui script |
 | C004 | 'new' is not allowed with 'X' |
 | C005 | Names starting with '$$' are reserved |
 | C006 | A binding cannot change 'x' |
@@ -230,7 +230,7 @@ test in `tools/` compares them.
 | C008 | Not allowed inside an expression (`import`, `export`) |
 | C009 | `async`/`await` cannot be compiled |
 | C010 | A built-in cannot be modified |
-| C011 | 'X.y' is not available in pfui script |
+| C011 | 'X.y' is not available in gfui script |
 
 ## Steps
 
@@ -273,8 +273,8 @@ test in `tools/` compares them.
 ## Open questions
 
 1. **Host functions.** XMLUI apps call functions defined in `index.html`
-   through `globalThis`. pfui needs an explicit registration, for example
-   app configuration that lists the names, or a `pfui.register({...})` call
+   through `globalThis`. gfui needs an explicit registration, for example
+   app configuration that lists the names, or a `gfui.register({...})` call
    before startup. Decide in step 5 or step 8.
 2. **Runaway loops in bindings.** XMLUI stops a sync evaluation after
    1000 ms. Compiled code would need a loop counter in every loop body

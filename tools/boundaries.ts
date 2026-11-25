@@ -1,6 +1,6 @@
 // Package boundary rules (see .ai/plan/poc-steps.md, step 0):
 //
-//   compiler   -> may import only relative files and @patchfuil/components/metadata
+//   compiler   -> may import only relative files and @gluefuil/components/metadata
 //                 (no React, no runtime, no Node built-ins: it also runs in the browser)
 //   runtime    -> must not import the compiler or components
 //   components -> must not import the compiler
@@ -96,14 +96,14 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
   for (const file of filesUnder(files, "packages/compiler/src")) {
     for (const specifier of collectImports(files.get(file)!)) {
       if (isRelative(specifier)) continue;
-      if (specifier === "@patchfuil/components/metadata") continue;
-      report(file, specifier, "compiler may only import relative files and @patchfuil/components/metadata");
+      if (specifier === "@gluefuil/components/metadata") continue;
+      report(file, specifier, "compiler may only import relative files and @gluefuil/components/metadata");
     }
   }
 
   for (const file of filesUnder(files, "packages/runtime/src")) {
     for (const specifier of collectImports(files.get(file)!)) {
-      if (startsWithAny(specifier, ["@patchfuil/compiler", "@patchfuil/components"])) {
+      if (startsWithAny(specifier, ["@gluefuil/compiler", "@gluefuil/components"])) {
         report(file, specifier, "runtime must not import the compiler or components");
       }
     }
@@ -111,7 +111,7 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
 
   for (const file of filesUnder(files, "packages/components/src")) {
     for (const specifier of collectImports(files.get(file)!)) {
-      if (startsWithAny(specifier, ["@patchfuil/compiler"])) {
+      if (startsWithAny(specifier, ["@gluefuil/compiler"])) {
         report(file, specifier, "components must not import the compiler");
       }
     }
@@ -127,14 +127,14 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
   for (const app of ["packages/compiler/src", "packages/runtime/src", "packages/components/src"]) {
     for (const file of filesUnder(files, app)) {
       for (const specifier of collectImports(files.get(file)!)) {
-        if (startsWithAny(specifier, ["@patchfuil/mock-backend", "msw"])) {
+        if (startsWithAny(specifier, ["@gluefuil/mock-backend", "msw"])) {
           report(file, specifier, "the app's packages must not import the mock backend: the app can't know it is mocked");
         }
       }
     }
   }
 
-  const VITE_PLUGIN_ALLOWED = ["@patchfuil/compiler", "@patchfuil/components/metadata", "@patchfuil/mock-backend/middleware", "vite"];
+  const VITE_PLUGIN_ALLOWED = ["@gluefuil/compiler", "@gluefuil/components/metadata", "@gluefuil/mock-backend/middleware", "vite"];
   for (const file of filesUnder(files, "packages/vite-plugin/src")) {
     for (const specifier of collectImports(files.get(file)!)) {
       if (isRelative(specifier) || specifier.startsWith("node:")) continue;
@@ -143,7 +143,7 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
     }
   }
 
-  const DELIVERY = ["@patchfuil/standalone", "@patchfuil/vite-plugin"];
+  const DELIVERY = ["@gluefuil/standalone", "@gluefuil/vite-plugin"];
   for (const file of filesUnder(files, "packages")) {
     if (!/^packages\/[^/]+\/src\//.test(file)) continue;
     for (const specifier of collectImports(files.get(file)!)) {

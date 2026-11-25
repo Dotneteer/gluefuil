@@ -36,15 +36,15 @@ for (const [name, viewport] of [["desktop", DESKTOP], ["phone", PHONE]] as const
     const context = await browser.newContext({ javaScriptEnabled: false, baseURL: baseURL!, viewport });
     const page = await context.newPage();
     await page.goto("/");
-    await expect(page.locator("#root")).toHaveAttribute("data-pfui-prerendered", "xs");
+    await expect(page.locator("#root")).toHaveAttribute("data-gfui-prerendered", "xs");
     await expect(page.getByRole("banner")).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("gfui playground");
     // The layout levels (steps 19D–19F) are in the HTML, so the spacing is right before any script:
     // the dashboard's root stack is the page (level 0, 24px; 16px on a phone), its rows level 2.
-    const dashboard = page.locator(".pfui-AppContent > .pfui-Stack");
+    const dashboard = page.locator(".gfui-AppContent > .gfui-Stack");
     await expect(dashboard).toHaveAttribute("data-level", "0");
     await expect(dashboard).toHaveCSS("row-gap", name === "desktop" ? "24px" : "16px");
-    await expect(dashboard.locator("> .pfui-Stack > .pfui-Stack").first()).toHaveAttribute("data-level", "2");
+    await expect(dashboard.locator("> .gfui-Stack > .gfui-Stack").first()).toHaveAttribute("data-level", "2");
     const nav = page.getByRole("navigation", { name: "Main" });
     if (name === "desktop") {
       await expect(nav).toBeVisible();
@@ -61,7 +61,7 @@ for (const [name, viewport] of [["desktop", DESKTOP], ["phone", PHONE]] as const
     await page.setViewportSize(viewport);
     const watch = await watchTakeover(page);
     await page.goto("/");
-    await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+    await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
     expect(await watch.replaced()).toEqual({ gone: 0, of: expect.any(Number) });
     const nav = page.getByRole("navigation", { name: "Main" });
     if (name === "phone") {
@@ -78,7 +78,7 @@ for (const [name, viewport] of [["desktop", DESKTOP], ["phone", PHONE]] as const
 
 test("the layout demos page is a page of its own, not prerendered", async ({ page }) => {
   await page.goto("/layouts.html?layout=vertical-sticky");
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
-  await expect(page.locator("#root")).not.toHaveAttribute("data-pfui-prerendered", /.*/);
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
+  await expect(page.locator("#root")).not.toHaveAttribute("data-gfui-prerendered", /.*/);
   await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
 });

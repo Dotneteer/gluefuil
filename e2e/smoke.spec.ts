@@ -11,9 +11,9 @@ test("the smoke app loads all workspace packages and runs the markup parser in a
 
   await expect(page.getByRole("heading", { name: "Smoke test app" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Loaded packages" }).getByRole("listitem")).toHaveText([
-    "@patchfuil/compiler",
-    "@patchfuil/runtime",
-    "@patchfuil/components",
+    "@gluefuil/compiler",
+    "@gluefuil/runtime",
+    "@gluefuil/components",
   ]);
   await expect(page.getByLabel("Parser output")).toHaveText(
     "root <App> with 2 child elements, 0 diagnostics",

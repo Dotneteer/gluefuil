@@ -1,4 +1,4 @@
-import { pfui, pfuiMockBackend } from "@patchfuil/vite-plugin";
+import { gfui, gfuiMockBackend } from "@gluefuil/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -9,7 +9,7 @@ export default defineConfig({
   optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core"] },
   // prerender: `npm run playground:build` renders the dashboard into index.html.
   plugins: [
-    pfui({
+    gfui({
       prerender: true,
       // The playground's own React component, usable from markup.
       extensions: {
@@ -26,7 +26,7 @@ export default defineConfig({
         LayoutPreview: {
           module: "src/react/LayoutPreview.tsx",
           metadata: {
-            description: "Shows the demos of a group (src/layouts/*.pfui) in a frame, at desktop or phone width, with their source.",
+            description: "Shows the demos of a group (src/layouts/*.gui) in a frame, at desktop or phone width, with their source.",
             props: {
               group: { description: "shell (default): the App shell layouts; spacing: the automatic spacing demo.", valueType: "string", availableValues: ["shell", "spacing"] },
             },
@@ -42,21 +42,21 @@ export default defineConfig({
         ScenarioSource: {
           module: "src/react/ScenarioSource.tsx",
           metadata: {
-            description: "Shows a scenario's source (components/<file>.pfui and its code-behind) as code.",
-            props: { file: { description: "The component file's name, without .pfui: CounterScenario.", valueType: "string", isRequired: true } },
+            description: "Shows a scenario's source (components/<file>.gui and its code-behind) as code.",
+            props: { file: { description: "The component file's name, without .gui: CounterScenario.", valueType: "string", isRequired: true } },
           },
         },
       },
     }),
     // The Data scenario's backend (step 20): a service worker in the page, also in the preview build.
     // The app doesn't know: it makes ordinary requests to /api/people.
-    pfuiMockBackend({ module: "src/backend.ts", build: true }),
+    gfuiMockBackend({ module: "src/backend.ts", build: true }),
     react(),
   ],
   // Its own ports: 5173 belongs to the E2E smoke app (Playwright reuses a running server).
-  // Under the E2E suite (PFUI_E2E), no forwarding of browser errors to the terminal:
+  // Under the E2E suite (GFUI_E2E), no forwarding of browser errors to the terminal:
   // the tests check them, and the source-map test throws on purpose.
-  server: { port: 5190, ...(process.env.PFUI_E2E ? { forwardConsole: false } : {}) },
+  server: { port: 5190, ...(process.env.GFUI_E2E ? { forwardConsole: false } : {}) },
   preview: { port: 5191 },
   // React, ReactDOM, Mantine and (for the live compiler) the compiler: one ~670 kB chunk; fine here.
   // Two pages: the playground, and the layout demos (layouts.html?layout=…, not prerendered).

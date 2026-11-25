@@ -1,6 +1,6 @@
 // Compile-and-run helpers: the runtime's tests use the real compiler output.
 // (Tests may import the compiler; only the runtime's src/ must not.)
-import { compileExpression, compileInterpolation, parseExpression, parseInterpolation, type Diagnostic } from "@patchfuil/compiler";
+import { compileExpression, compileInterpolation, parseExpression, parseInterpolation, type Diagnostic } from "@gluefuil/compiler";
 import { loadBinding } from "../../src/script/load";
 
 export interface Compiled {

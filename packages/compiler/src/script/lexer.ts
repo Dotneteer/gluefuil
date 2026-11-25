@@ -1,4 +1,4 @@
-// Lexer for pfui script. Driven by the parser: `next()` scans one token;
+// Lexer for gfui script. Driven by the parser: `next()` scans one token;
 // `rescanRegex()` and `rescanTemplate()` re-read a token in a context the
 // lexer cannot know on its own ('/' as regex vs division; template
 // continuation after '}').

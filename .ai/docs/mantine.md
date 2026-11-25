@@ -20,7 +20,7 @@ export const TextBox = wrapComponent(TextInput, {
   value: { prop: "value", change: "onChange", read: (e) => e.currentTarget.value, parse: asText },
   withRef: true,
   api: ({ ref }) => ({ focus: () => ref.current?.focus() }),
-  fixed: { className: "pfui-TextBox" },
+  fixed: { className: "gfui-TextBox" },
 });
 ```
 
@@ -28,14 +28,14 @@ export const TextBox = wrapComponent(TextInput, {
 |--------|--------|
 | (default) | Every prop not handled below is forwarded unchanged |
 | `props` | A literal is coerced by its `valueType`: `"true"`/`"false"` become booleans, numeric strings become numbers or integers (`coerceLiteral`) |
-| `rename` | A pfui prop becomes another native prop, or native props computed from the value |
-| `events` | A pfui event becomes a native callback, with argument mapping |
+| `rename` | A gfui prop becomes another native prop, or native props computed from the value |
+| `events` | A gfui event becomes a native callback, with argument mapping |
 | an `on*` handler not listed in `events` | Forwarded under its own name, but **called without arguments**: native arguments (DOM events) never reach script (the step 3 sandbox invariant) |
 | `value` | A controlled value in a signal: read once from `initialValue` (`parse`d), passed as the native value prop; the change callback sets it (`read`) and fires `didChange`. The API gets a reactive `value` and `setValue` (which doesn't fire `didChange`). |
 | `api` | More methods; `ref` is the native component's ref (`withRef`) |
-| `templates` | A pfui template becomes a native render prop: `(...args) => renderer(context(...args))`, which returns a `TemplateInstance` element |
+| `templates` | A gfui template becomes a native render prop: `(...args) => renderer(context(...args))`, which returns a `TemplateInstance` element |
 | `fixed` | Native props always passed, last (styling hooks) |
-| `exclude` | pfui props never forwarded |
+| `exclude` | gfui props never forwarded |
 
 - The API is published with `useComponentApi`.
 - `children` are passed only when given, so a rename can produce them
@@ -63,13 +63,13 @@ Standalone mode can't load them yet.
   - `forceColorScheme` = the active tone;
   - `withCssVariables={false}` and `withGlobalClasses={false}`, so the
     provider renders no `<style>` elements of its own.
-- **`.pfui-App` (and a `Theme` with a tone) carry `data-mantine-color-scheme`,**
+- **`.gfui-App` (and a `Theme` with a tone) carry `data-mantine-color-scheme`,**
   so Mantine's tone selectors match below them, also in a server render.
 - **Mantine's CSS** (`MANTINE_STYLESHEET`) is the `*.layer.css` files of the
   components used, plus `default-css-variables` and `global`, imported with
   `?inline`.
-  - `App` renders it as a React 19 hoisted `<style href="pfui-mantine">`.
-    React merges it with `pfui-base` (same precedence) into one element.
+  - `App` renders it as a React 19 hoisted `<style href="gfui-mantine">`.
+    React merges it with `gfui-base` (same precedence) into one element.
   - **Every Mantine rule is in `@layer mantine`,** so our unlayered rules
     win.
 - **`Select`'s dropdown** stays inside the app (`withinPortal: false`), so it
@@ -85,8 +85,8 @@ Standalone mode can't load them yet.
 | Where Mantine sets a variable | How it's redirected | Variables |
 |-------------------------------|---------------------|-----------|
 | Inline, from its `vars` resolvers | The wrapper's fixed `vars` resolver (it replaces Mantine's own values) | Button `--button-bg/hover/color/bd/radius` ← `*-Button`; Checkbox `--checkbox-color/radius` ← `backgroundColor-Checkbox--checked`, `borderRadius-Checkbox`; TextBox and Select `--input-radius` |
-| From CSS | `styles.ts` (unlayered) | `.pfui-TextBox` / `.pfui-Select .mantine-Input-input`: `--input-bg/color/bd/bd-focus`; the Select dropdown |
-| Globally | `styles.ts` on `.pfui-App` and `.pfui-Theme` | `--mantine-font-family`, `-color-text`, `-color-body`, `-color-dimmed`, `-color-placeholder`, `-color-default-border`, `-primary-color-filled(-hover)`, `-radius-default` ← pfui tokens |
+| From CSS | `styles.ts` (unlayered) | `.gfui-TextBox` / `.gfui-Select .mantine-Input-input`: `--input-bg/color/bd/bd-focus`; the Select dropdown |
+| Globally | `styles.ts` on `.gfui-App` and `.gfui-Theme` | `--mantine-font-family`, `-color-text`, `-color-body`, `-color-dimmed`, `-color-placeholder`, `-color-default-border`, `-primary-color-filled(-hover)`, `-radius-default` ← gfui tokens |
 
 The E2E tests check it with computed styles: the Mantine `Button` takes
 `backgroundColor-Button`, a scoped `<Theme>` override, and a variant.
@@ -106,7 +106,7 @@ The E2E tests check it with computed styles: the Mantine `Button` takes
   `Text` declares `variant`, so the variant behavior skips it.
 - **`Heading`:** `value` or nested text, `level` (`h1`…`h6`, `H1`…`H6`, `1`…`6`;
   `headingLevel`), `maxLines`.
-  - It renders `<hN class="pfui-Heading" data-level>`.
+  - It renders `<hN class="gfui-Heading" data-level>`.
   - **Its theme variables:** `textColor-Heading`, `fontWeight-Heading`,
     `lineHeight-Heading`, `fontSize-H1` … `fontSize-H6`.
 - **`H1`…`H6`:** shortcuts for `Heading`.
@@ -115,7 +115,7 @@ The E2E tests check it with computed styles: the Mantine `Button` takes
 
 - **Hello app:** 502 KB (144 KB gzipped), up from 251 KB (78 KB) before
   Mantine.
-- **`pfui.js`:** 599 KB (174 KB gzipped), up from 326 KB (101 KB).
+- **`gfui.js`:** 599 KB (174 KB gzipped), up from 326 KB (101 KB).
 - **The prerendered `index.html`** now inlines Mantine's CSS: 112 KB
   (14 KB gzipped).
 

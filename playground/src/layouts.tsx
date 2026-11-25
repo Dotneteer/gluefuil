@@ -1,13 +1,13 @@
 // One App shell demo per page (layouts.html?layout=vertical): each layout is a
 // whole App, and the shell's state is per page. The App shell scenario shows
 // them in a frame; e2e/app-shell.spec.ts measures them.
-import { mountApp } from "@patchfuil/runtime";
+import { mountApp } from "@gluefuil/runtime";
 import { StrictMode, type ComponentType } from "react";
 
-const layouts = import.meta.glob("./layouts/*.pfui", { import: "default", eager: true }) as Record<string, ComponentType>;
+const layouts = import.meta.glob("./layouts/*.gui", { import: "default", eager: true }) as Record<string, ComponentType>;
 
 const name = new URLSearchParams(window.location.search).get("layout") ?? "condensed-sticky";
-const Layout = layouts[`./layouts/${name}.pfui`];
+const Layout = layouts[`./layouts/${name}.gui`];
 
 mountApp(
   document.getElementById("root")!,

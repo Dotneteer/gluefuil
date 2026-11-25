@@ -1,6 +1,6 @@
 // Step 15: component contracts. Markup gives the expected diagnostic, at the
 // expected span, with the expected severity. See .ai/plan/poc-15-contracts.md.
-import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
+import { componentMetadata, type ComponentMetadata } from "@gluefuil/components/metadata";
 import { describe, expect, test } from "vitest";
 import { analyzeModule } from "../../src/module/analyze";
 import { compileModule, type CompileModuleOptions } from "../../src/module/compile-module";
@@ -229,10 +229,10 @@ describe("<Theme> and App theme props (step 17)", () => {
     ['<App><Theme backgroundColor-Button="red" color-primary="{x}" space-base="2px"/></App>', [["C001", "x"]]],
     ['<App><Theme backgroundColour-Button="red"/></App>', [["E025", "backgroundColour-Button"]]],
     ['<App><Theme tone="dim"/></App>', [["E023", '"dim"']]],
-    ['<App><Theme themeId="pfui-blue"/></App>', [["E023", '"pfui-blue"']]],
-    ['<App defaultTone="dark" defaultTheme="pfui-green"/>', []],
+    ['<App><Theme themeId="gfui-blue"/></App>', [["E023", '"gfui-blue"']]],
+    ['<App defaultTone="dark" defaultTheme="gfui-green"/>', []],
     ['<App defaultTone="night"/>', [["E023", '"night"']]],
-    ['<App><Button onClick="toggleThemeTone(); setThemeTone(\'dark\'); setTheme(\'pfui-red\')"/><Text>{activeThemeTone} {activeThemeId}</Text></App>', []],
+    ['<App><Button onClick="toggleThemeTone(); setThemeTone(\'dark\'); setTheme(\'gfui-red\')"/><Text>{activeThemeTone} {activeThemeId}</Text></App>', []],
   ])("%s", (markup, expected) => {
     expect(check(markup)).toEqual(expected);
   });

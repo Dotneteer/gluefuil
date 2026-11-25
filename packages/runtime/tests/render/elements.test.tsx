@@ -73,8 +73,8 @@ test("loadModule passes the runtime and the components to the module", () => {
   const code = `
     const { createElement: $$h } = $$imports.runtime;
     const { Hello } = $$imports.components;
-    function Main() { return $$h(Hello, { name: "pfui" }); }
+    function Main() { return $$h(Hello, { name: "gfui" }); }
     return Main;`;
   const Main = loadModule(code, { components: { Hello: ({ name }: { name: string }) => <b>hi {name}</b> } });
-  expect(render(<Main />).container.innerHTML).toBe("<b>hi pfui</b>");
+  expect(render(<Main />).container.innerHTML).toBe("<b>hi gfui</b>");
 });

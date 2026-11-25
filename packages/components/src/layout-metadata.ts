@@ -108,5 +108,5 @@ export function layoutCss(value: unknown): string | undefined {
     .split(/(\s+)/)
     .map((token) => (NUMBER.test(token) && token !== "0" ? `${token}px` : token))
     .join("")
-    .replace(THEME_REF, (_, name: string) => `var(--pfui-${name})`);
+    .replace(THEME_REF, (_, name: string) => `var(--gfui-${name})`);
 }

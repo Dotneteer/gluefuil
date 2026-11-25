@@ -164,7 +164,7 @@ faster. When everything changes, the options are on par.
   reads external state directly shows mixed values (the control test).
   With `useSyncExternalStore` every component shows the same value.
 - **Transitions:** a signal write is always a synchronous update; React
-  documents that a store change cannot be a transition. If pfui needs
+  documents that a store change cannot be a transition. If gfui needs
   transitions (for example, keeping old content while a route loads), that
   must come from React state at that boundary. Revisit with routing
   (step 21).

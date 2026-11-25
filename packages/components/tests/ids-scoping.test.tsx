@@ -1,6 +1,6 @@
 // Step 8 end to end in jsdom: component IDs and scoping, from markup.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -14,7 +14,7 @@ function renderMarkup(markup: string) {
   return render(<Main />);
 }
 
-const texts = () => [...document.querySelectorAll(".pfui-Text")].map((e) => e.textContent);
+const texts = () => [...document.querySelectorAll(".gfui-Text")].map((e) => e.textContent);
 const type = (input: HTMLElement, value: string) => act(() => fireEvent.change(input, { target: { value } }));
 const click = (label: string) => act(() => fireEvent.click(screen.getByRole("button", { name: label })));
 

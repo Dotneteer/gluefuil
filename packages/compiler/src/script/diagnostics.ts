@@ -22,7 +22,7 @@ export const ScriptDiagnostics = {
   S020: () => "Line break not allowed after 'throw'",
   S021: (kind: "get" | "set") =>
     kind === "get" ? "A getter must not have parameters" : "A setter must have exactly one parameter",
-  S030: (feature: string) => `${feature} is not supported in pfui script`,
+  S030: (feature: string) => `${feature} is not supported in gfui script`,
   S040: () => "Unclosed '{' in an interpolated value",
 } as const;
 

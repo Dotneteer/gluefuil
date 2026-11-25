@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 // prerendered files and their links included. Project routing-base-build.
 
 const heading = (page: Page) => page.getByRole("heading", { level: 1 });
-const ready = (page: Page) => expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+const ready = (page: Page) => expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
 
 test("with JavaScript disabled, each prerendered route under /app/ shows its content, with links under the base", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, baseURL: baseURL! });
@@ -19,7 +19,7 @@ test("with JavaScript disabled, each prerendered route under /app/ shows its con
     await page.goto(path!);
     await expect(heading(page)).toHaveText(title!);
     await expect(page.getByText(`Route: ${route}`)).toBeVisible();
-    await expect(page.locator("#root")).toHaveAttribute("data-pfui-base", "/app");
+    await expect(page.locator("#root")).toHaveAttribute("data-gfui-base", "/app");
   }
   await page.goto("/app/");
   expect(await page.locator("a").evaluateAll((links) => links.map((a) => a.getAttribute("href")))).toEqual(["/app/about", "/app/docs/intro", "/app/users/7"]);

@@ -1,6 +1,6 @@
 <Component name="UserComponentsScenario">
   <VStack>
-    <ScenarioHeader title="User-defined components" description="Step 14: $props, events, methods, slots and code-behind (components/Demo*.pfui)."/>
+    <ScenarioHeader title="User-defined components" description="Step 14: $props, events, methods, slots and code-behind (components/Demo*.gui)."/>
     <H3>Props and events</H3>
     <VStack var.stars="{3}">
       <DemoRating label="Your rating" value="{stars}" onRate="(n) => stars = n"/>

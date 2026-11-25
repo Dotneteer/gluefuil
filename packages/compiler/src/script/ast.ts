@@ -1,5 +1,5 @@
-// pfui script syntax tree: a subset of ESTree (https://github.com/estree/estree).
-// Every node carries `start`/`end` UTF-16 offsets into the .pfui file (end exclusive).
+// gfui script syntax tree: a subset of ESTree (https://github.com/estree/estree).
+// Every node carries `start`/`end` UTF-16 offsets into the .gui file (end exclusive).
 
 export interface BaseNode {
   type: string;

@@ -1,6 +1,6 @@
 # Theming
 
-> Subsystem reference: theme definitions compiled to `--pfui-*` CSS custom
+> Subsystem reference: theme definitions compiled to `--gfui-*` CSS custom
 > properties, how components consume them, `<Theme>` scopes, and tone and
 > theme switching. Describes the code as it is. Design and XMLUI comparison:
 > [`../plan/poc-17-theming.md`](../plan/poc-17-theming.md).
@@ -10,7 +10,7 @@
 ## Using it
 
 ```xml
-<App defaultTone="dark" defaultTheme="pfui-green">
+<App defaultTone="dark" defaultTheme="gfui-green">
   <Button label="Toggle" onClick="toggleThemeTone()"/>
   <Text>{activeThemeTone}</Text>
   <Theme backgroundColor-Button="$color-danger-500">   <!-- this subtree only -->
@@ -25,7 +25,7 @@
 | Global | What it is |
 |--------|------------|
 | `activeThemeTone` | `"light"` or `"dark"` (reactive) |
-| `activeThemeId` | `"pfui"`, `"pfui-green"`, `"pfui-red"` (reactive) |
+| `activeThemeId` | `"gfui"`, `"gfui-green"`, `"gfui-red"` (reactive) |
 | `toggleThemeTone()` | Switches the tone |
 | `setThemeTone(t)` | Sets the tone; anything else throws |
 | `setTheme(id)` | Sets the theme |
@@ -47,16 +47,16 @@ The pipeline is `themeVariables()`, then `compileTheme()`:
 2. **Derived tokens** (`derivedTokens`). An explicit variable always wins
    over a derived one.
    - **Spacing:** `space-0`, `space-0_5` … `space-12`, `space-14` =
-     `calc(var(--pfui-space-base) * n)`. Every spacing value the framework
+     `calc(var(--gfui-space-base) * n)`. Every spacing value the framework
      produces is one of them (the layout ladder `space-level0`–`3`, XMLUI's
      `gap-*`/`padding-*` names; [layout.md](layout.md)).
    - **Color tones:** for every `color-<family>`, `color-<family>-50` …
-     `-950`, using `color-mix(in srgb, var(--pfui-color-<family>) p%,
+     `-950`, using `color-mix(in srgb, var(--gfui-color-<family>) p%,
      white|black)`; tone 500 is the color itself. **This differs from
      XMLUI,** which computes concrete colors in JavaScript. CSS mixing
      follows a runtime change of the base color.
-3. **`$name` → `var(--pfui-name)`** anywhere in a value (`resolveRefs`).
-4. **The prefix:** `--pfui-name`.
+3. **`$name` → `var(--gfui-name)`** anywhere in a value (`resolveRefs`).
+4. **The prefix:** `--gfui-name`.
 
 - **Errors:** an unknown theme or an `extends` cycle throws `ThemeError`.
 - **Names** follow XMLUI's convention, `property[-part][-Component][-variant][--state]`.
@@ -68,26 +68,26 @@ The pipeline is `themeVariables()`, then `compileTheme()`:
 | Theme | What it sets |
 |-------|--------------|
 | `root` | The tokens: colors (primary, secondary, success, warn, danger, surface), `space-base`, `fontFamily`, `fontSize`, `lineHeight`, `borderRadius`. Light and dark tones of `backgroundColor`, `textColor`, `textColor-secondary`, `borderColor`. |
-| `pfui` (the default), `pfui-green`, `pfui-red` | Change `color-primary` |
+| `gfui` (the default), `gfui-green`, `gfui-red` | Change `color-primary` |
 
 ## Components
 
 - **The stylesheet:** `styles.ts` reads every visual value from a theme
-  variable (`.pfui-Button { background-color:
-  var(--pfui-backgroundColor-Button) }`, `:hover`, `:focus`).
+  variable (`.gfui-Button { background-color:
+  var(--gfui-backgroundColor-Button) }`, `:hover`, `:focus`).
   - The defaults are in each metadata's `themeVars` (`"backgroundColor-Button": "$color-primary-500"`).
   - `componentThemeDefaults()` merges them, and `themeVariableNames()`
     lists every known name.
 - **`App`** (`theme.tsx`):
   - it sets the theme defaults during render, so a server render uses them
     too;
-  - it puts the compiled active theme on `.pfui-App` as inline custom
+  - it puts the compiled active theme on `.gfui-App` as inline custom
     properties, with `data-tone`;
-  - it renders the stylesheet as `<style href="pfui-base" precedence="pfui">`.
+  - it renders the stylesheet as `<style href="gfui-base" precedence="gfui">`.
     React 19 hoists and dedupes it: on the client into `<head>`, on the
     server ahead of the app's HTML. A prerendered page is styled without
     JavaScript, and takeover stays DOM-stable (E2E).
-- **`Theme`** (`<div class="pfui-Theme" style="display: contents; …">`):
+- **`Theme`** (`<div class="gfui-Theme" style="display: contents; …">`):
   - props `themeId`, `tone` (enums), plus any theme variable as an
     attribute, literal or bound;
   - **`scopedThemeVars` decides what it injects**, by XMLUI's rule:
@@ -97,7 +97,7 @@ The pipeline is `themeVariables()`, then `compileTheme()`:
   - Without its own tone, it follows the app's.
 
 **Mantine** (step 16, done after 17): the Mantine-based built-ins read
-the same variables. Mantine's own variables are redirected to pfui's, and
+the same variables. Mantine's own variables are redirected to gfui's, and
 its CSS is in `@layer mantine` so our rules win
 ([mantine.md](mantine.md#theme-mapping-mantine-never-sees-its-own-theme)).
 

@@ -1,6 +1,6 @@
 <!--
   The playground: a dashboard of scenarios, each on its own page with its source.
-  To add a scenario: create src/components/<Name>Scenario.pfui (starting with
+  To add a scenario: create src/components/<Name>Scenario.gui (starting with
   <ScenarioHeader>), add an entry to `scenarios` below, and a <Page> for it.
   See README.md.
 
@@ -22,7 +22,7 @@
     { path: '/variables', step: '6', title: 'Variables', description: 'Follow until assigned, deep writes, array mutations.' },
     { path: '/async', step: '7', title: 'Async handlers', description: 'Implicit await, policies, cancellation, timeouts.' },
     { path: '/ids', step: '8', title: 'Component IDs', description: 'APIs through ids, in any order: value, setValue, focus.' },
-    { path: '/source-maps', step: '9', title: 'Source maps', description: 'A handler error points to its .pfui line.' },
+    { path: '/source-maps', step: '9', title: 'Source maps', description: 'A handler error points to its .gui line.' },
     { path: '/conditionals', step: '10', title: 'Conditionals', description: 'when, responsive when-*, onMount / onUnmount.' },
     { path: '/templates', step: '10', title: 'Items and templates', description: 'Item templates, context variables, ids per row.' },
     { path: '/user-components', step: '14', title: 'User-defined components', description: 'Props, events, methods, slots, code-behind.' },
@@ -41,7 +41,7 @@
   global.navigationLog="{[]}"
   onWillNavigate="(to) => { if (unsavedChanges) return false; }"
   onDidNavigate="(to) => { navigationLog = [to, ...navigationLog].slice(0, 5); }">
-  <AppHeader title="pfui playground">
+  <AppHeader title="gfui playground">
     <NavPanelCollapseButton/>
     <property name="profileMenuTemplate">
       <Button label="Tone: {activeThemeTone}" onClick="toggleThemeTone()"/>
@@ -56,7 +56,7 @@
   <Pages fallbackPath="/">
     <Page url="/">
       <VStack>
-        <H1>pfui playground</H1>
+        <H1>gfui playground</H1>
         <Text variant="secondary">Pick a scenario. Each page shows its source and has a way back to this dashboard.</Text>
         <VStack>
           <Items data="{scenarios}">
@@ -102,6 +102,6 @@
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>
   <Footer sticky="false">
-    <Text variant="secondary">pfui playground: manual testing for the proof-of-concept steps.</Text>
+    <Text variant="secondary">gfui playground: manual testing for the proof-of-concept steps.</Text>
   </Footer>
 </App>

@@ -1,4 +1,4 @@
-import { pfui, pfuiMockBackend } from "@patchfuil/vite-plugin";
+import { gfui, gfuiMockBackend } from "@gluefuil/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -13,5 +13,5 @@ export default defineConfig({
   // and Vite reloads the page mid-test (a cold cache).
   optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core"] },
   // The mock backend (step 22B) in a service worker, in the prerendered build too.
-  plugins: [pfui({ prerender: true }), pfuiMockBackend({ module: "src/backend.ts", build: true }), react()],
+  plugins: [gfui({ prerender: true }), gfuiMockBackend({ module: "src/backend.ts", build: true }), react()],
 });

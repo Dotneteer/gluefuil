@@ -13,7 +13,7 @@
 //
 // Bindings are compiled by the real step 3 compiler; handlers are hand-written
 // (handler compilation is step 6).
-import { compileInterpolation, parseInterpolation } from "@patchfuil/compiler";
+import { compileInterpolation, parseInterpolation } from "@gluefuil/compiler";
 import { memo, useState, type ReactNode } from "react";
 import { useComputed } from "../../src/reactivity/react";
 import { createScope } from "../../src/reactivity/scope";

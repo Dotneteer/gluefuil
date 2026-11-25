@@ -1,4 +1,4 @@
-// Parser throughput on synthetic but realistic pfui markup.
+// Parser throughput on synthetic but realistic gfui markup.
 // Run with `npm run bench`. Vitest 5: benchmarks are tests that use the `bench` fixture.
 import { test } from "vitest";
 import { parseMarkup } from "../src/markup/parser";

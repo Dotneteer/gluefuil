@@ -1,7 +1,7 @@
 // Step 21B end to end in jsdom: globals (global.*, <global>, Globals.xs)
 // reach user components in other files; their own names shadow them.
-import { analyzeModule, compileModule, type UserComponentInfo } from "@patchfuil/compiler";
-import { loadModule, setErrorReporter } from "@patchfuil/runtime";
+import { analyzeModule, compileModule, type UserComponentInfo } from "@gluefuil/compiler";
+import { loadModule, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import { afterEach, expect, test } from "vitest";
@@ -24,7 +24,7 @@ function load(main: string, files: Record<string, string> = {}, globalsCode?: st
   const components: Record<string, unknown> = { ...builtIns };
   for (const [name, markup] of Object.entries(files)) {
     const userComponents = Object.fromEntries(Object.entries(infos).filter(([other]) => other !== name));
-    const result = compileModule(markup, { format: "function", fileName: `${name}.pfui`, userComponents, globals });
+    const result = compileModule(markup, { format: "function", fileName: `${name}.gui`, userComponents, globals });
     expect(result.diagnostics).toEqual([]);
     components[name] = loadModule(result.code, { components });
   }
@@ -43,7 +43,7 @@ function show(main: string, files?: Record<string, string>, globalsCode?: string
   );
 }
 
-const texts = () => [...document.querySelectorAll(".pfui-Text")].map((e) => e.textContent);
+const texts = () => [...document.querySelectorAll(".gfui-Text")].map((e) => e.textContent);
 const click = (label: string, index = 0) => act(async () => fireEvent.click(screen.getAllByRole("button", { name: label })[index]!));
 
 const FILES = {

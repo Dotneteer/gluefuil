@@ -1,7 +1,7 @@
 // Step 13 end to end in jsdom: compile, render to static HTML, take over.
-import { compileModule } from "@patchfuil/compiler";
-import { BASE_ATTRIBUTE, getBasename, loadModule, mountApp, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE, resetRouter } from "@patchfuil/runtime";
-import { renderStatic, resetServerState } from "@patchfuil/runtime/server";
+import { compileModule } from "@gluefuil/compiler";
+import { BASE_ATTRIBUTE, getBasename, loadModule, mountApp, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE, resetRouter } from "@gluefuil/runtime";
+import { renderStatic, resetServerState } from "@gluefuil/runtime/server";
 import { act, fireEvent, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import type { Root } from "react-dom/client";
@@ -54,7 +54,7 @@ async function takeOver(Main: ComponentType, onRecoverableError?: (error: unknow
   });
 }
 
-const texts = () => [...container.querySelectorAll(".pfui-Text")].map((e) => e.textContent);
+const texts = () => [...container.querySelectorAll(".gfui-Text")].map((e) => e.textContent);
 
 const COUNTER = `
   <App var.count="{2}" var.items="{['a', 'b']}">
@@ -105,7 +105,7 @@ test("a responsive when renders for the prerender breakpoint, then switches afte
   const Main = load(RESPONSIVE);
   prerender(Main, "xs");
   expect(texts()).toEqual(["static", "compact"]);
-  const staticText = container.querySelector(".pfui-Text");
+  const staticText = container.querySelector(".gfui-Text");
   const { changes } = observe();
   const errors: unknown[] = [];
   await takeOver(Main, (error) => errors.push(error));
@@ -114,7 +114,7 @@ test("a responsive when renders for the prerender breakpoint, then switches afte
   expect(errors).toEqual([]);
   expect(texts()).toEqual(["static", "wide"]);
   expect(changes.sort()).toEqual(["+ wide", "- compact"]);
-  expect(container.querySelector(".pfui-Text")).toBe(staticText);
+  expect(container.querySelector(".gfui-Text")).toBe(staticText);
 });
 
 test("prerendered for the client's own breakpoint: no change at all", async () => {
@@ -167,7 +167,7 @@ const ROUTED = `
     </Pages>
   </App>`;
 
-test("a route prerendered at its path (data-pfui-path) takes over without a change", async () => {
+test("a route prerendered at its path (data-gfui-path) takes over without a change", async () => {
   const Main = load(ROUTED);
   resetServerState();
   const { html, attributes } = renderStatic(<Main />, { path: "/about" });
@@ -189,7 +189,7 @@ test("a route prerendered at its path (data-pfui-path) takes over without a chan
   window.history.replaceState(null, "", "/");
 });
 
-test("control: without data-pfui-path, the same HTML hydrates as '/' and the route switches after takeover", async () => {
+test("control: without data-gfui-path, the same HTML hydrates as '/' and the route switches after takeover", async () => {
   const Main = load(ROUTED);
   resetServerState();
   const { html, attributes } = renderStatic(<Main />, { path: "/about" });
@@ -245,7 +245,7 @@ test("under a basename: links carry it, the container records it, and takeover a
   window.history.replaceState(null, "", "/");
 });
 
-test("without a prerender, mountApp reads the basename from data-pfui-base; the option overrides it", async () => {
+test("without a prerender, mountApp reads the basename from data-gfui-base; the option overrides it", async () => {
   const Main = load(UNDER_BASE);
   resetRouter();
   window.history.replaceState(null, "", "/sub/about");

@@ -1,6 +1,6 @@
 // React-free entry point: component metadata (and the theme engine). The compiler imports
 // this module, so nothing reachable from here may import React, Mantine,
-// or @patchfuil/runtime. The boundary test in tools/ enforces this.
+// or @gluefuil/runtime. The boundary test in tools/ enforces this.
 
 import { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
 import { LAYOUT_PROPS, type LayoutValueKind } from "./layout-metadata";
@@ -124,7 +124,7 @@ export interface EventMetadata {
   deprecationMessage?: string;
 }
 
-/** XMLUI's Text variants that pfui implements (text.tsx). */
+/** XMLUI's Text variants that gfui implements (text.tsx). */
 const TEXT_VARIANTS = [
   "abbr", "caption", "cite", "code", "deleted", "em", "inserted", "keyboard", "marked", "mono", "paragraph",
   "placeholder", "sample", "secondary", "small", "strong", "sub", "subheading", "subtitle", "sup", "title", "var",

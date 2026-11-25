@@ -21,7 +21,7 @@ described in [async-handlers.md](async-handlers.md).
 
 ## API
 
-**Compiler** (`@patchfuil/compiler`):
+**Compiler** (`@gluefuil/compiler`):
 
 ```ts
 compileExpression(expression, { scope }): CompileResult   // a value that is exactly {expr}
@@ -38,7 +38,7 @@ interface CompileResult {
 }
 ```
 
-**Runtime** (`@patchfuil/runtime`):
+**Runtime** (`@gluefuil/runtime`):
 
 | Export | What it is |
 |--------|------------|
@@ -89,7 +89,7 @@ maps. See [source-maps.md](source-maps.md).
 expression and adds parentheses only where JavaScript needs them. Special
 cases:
 
-- `??` mixed with `||`/`&&` (pfui accepts `a ?? b || c`; JavaScript does
+- `??` mixed with `||`/`&&` (gfui accepts `a ?? b || c`; JavaScript does
   not);
 - a unary left operand of `**`;
 - an object literal as an arrow body or at the start of a statement;
@@ -241,7 +241,7 @@ All are errors.
 | `tools/xmlui-corpus.test.ts` § bindings | Every XMLUI binding compiles to valid JavaScript; the only findings are listed host-function uses |
 | `compiler/bench/codegen.bench.ts` | Compile time; compiled against hand-written evaluation |
 
-The runtime's tests import `@patchfuil/compiler`, declared as a
+The runtime's tests import `@gluefuil/compiler`, declared as a
 devDependency. Only the runtime's `src/` must not import it.
 
 ## Measured

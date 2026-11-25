@@ -1,6 +1,6 @@
 // Step 7 end to end in jsdom: async handlers written in markup, with real clicks.
-import { compileModule } from "@patchfuil/compiler";
-import { isBatching, loadModule, setErrorReporter } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { isBatching, loadModule, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -30,7 +30,7 @@ const click = (label: string) =>
   });
 /** Lets timers and promises run, inside act (React updates are flushed). */
 const settle = (ms: number) => act(() => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-const text = (id: string) => screen.getByText((_, el) => el?.getAttribute("class") === "pfui-Text" && (el.textContent ?? "").startsWith(`${id}:`)).textContent;
+const text = (id: string) => screen.getByText((_, el) => el?.getAttribute("class") === "gfui-Text" && (el.textContent ?? "").startsWith(`${id}:`)).textContent;
 
 test("a slow handler: the loading state shows while waiting, the result after", async () => {
   renderMarkup(`

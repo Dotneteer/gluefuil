@@ -7,8 +7,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 
 const BUTTON: CSSProperties = {
   padding: "4px 10px",
-  borderRadius: "var(--pfui-borderRadius)",
-  border: "1px solid var(--pfui-borderColor)",
+  borderRadius: "var(--gfui-borderRadius)",
+  border: "1px solid var(--gfui-borderColor)",
   background: "transparent",
   color: "inherit",
   cursor: "pointer",
@@ -18,9 +18,9 @@ const BUTTON: CSSProperties = {
 const CLASS = "playground-inspect";
 
 const CSS = `
-.${CLASS} .pfui-Stack { outline: 1px dashed rgb(37 99 235 / 0.55); outline-offset: -1px; position: relative; }
-.${CLASS} .pfui-Stack[data-surface] { outline-color: rgb(217 119 6 / 0.8); }
-.${CLASS} .pfui-Stack::before {
+.${CLASS} .gfui-Stack { outline: 1px dashed rgb(37 99 235 / 0.55); outline-offset: -1px; position: relative; }
+.${CLASS} .gfui-Stack[data-surface] { outline-color: rgb(217 119 6 / 0.8); }
+.${CLASS} .gfui-Stack::before {
   content: attr(data-inspect);
   position: absolute;
   top: 0;
@@ -33,7 +33,7 @@ const CSS = `
   pointer-events: none;
   white-space: nowrap;
 }
-.${CLASS} .pfui-Stack[data-surface]::before { background: rgb(217 119 6 / 0.9); }
+.${CLASS} .gfui-Stack[data-surface]::before { background: rgb(217 119 6 / 0.9); }
 `;
 
 /** "L1 v · gap 16px", plus the padding of a surface. */
@@ -46,7 +46,7 @@ function label(stack: HTMLElement): string {
 }
 
 function relabel(): void {
-  for (const stack of document.querySelectorAll<HTMLElement>(".pfui-Stack")) {
+  for (const stack of document.querySelectorAll<HTMLElement>(".gfui-Stack")) {
     const text = label(stack);
     if (stack.getAttribute("data-inspect") !== text) stack.setAttribute("data-inspect", text);
   }
@@ -72,7 +72,7 @@ export function SpacingInspector() {
       observer.disconnect();
       window.removeEventListener("resize", schedule);
       document.documentElement.classList.remove(CLASS);
-      for (const stack of document.querySelectorAll(".pfui-Stack")) stack.removeAttribute("data-inspect");
+      for (const stack of document.querySelectorAll(".gfui-Stack")) stack.removeAttribute("data-inspect");
     };
   }, [on]);
   return (

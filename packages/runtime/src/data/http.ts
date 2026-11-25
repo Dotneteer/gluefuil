@@ -55,7 +55,7 @@ function headersObject(headers: Headers): Record<string, string> {
 }
 
 /** The reason an abort carries: "timeout" for ours; anything else is a cancel. */
-const TIMEOUT = Symbol("pfui.timeout");
+const TIMEOUT = Symbol("gfui.timeout");
 
 /** Thrown (rejected) when the caller's signal aborts: not an error, an outcome. */
 export class RequestCancelledError extends Error {

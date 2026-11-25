@@ -1,7 +1,7 @@
 // The data fixture's backend (step 20): users with search, one user, updates,
 // a slowly changing status. The app doesn't import this file: the mock
 // backend plugin hosts it (vite.config.ts).
-import { defineBackend, status } from "@patchfuil/mock-backend";
+import { defineBackend, status } from "@gluefuil/mock-backend";
 
 let ticks = 0;
 

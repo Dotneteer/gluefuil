@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // The App shell (steps 19A–19C) in a real browser: each XMLUI layout,
-// expressed with the new settings (playground/src/layouts/*.pfui, served as
+// expressed with the new settings (playground/src/layouts/*.gui, served as
 // layouts.html?layout=…). Measured, not looked at: where each region is,
 // and what moved after scrolling. Project: playground (dev server).
 
@@ -25,7 +25,7 @@ async function open(page: Page, layout: string) {
     if (message.type() === "error") errors.push(message.text());
   });
   await page.goto(`/layouts.html?layout=${layout}`);
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
   await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
   return errors;
 }
@@ -39,12 +39,12 @@ function measure(page: Page): Promise<Measured> {
       return { x, y, width, height, bottom, right };
     };
     return {
-      header: rect(".pfui-AppHeader")!,
-      nav: rect(".pfui-NavPanel"),
-      main: rect(".pfui-AppMain")!,
-      footer: rect(".pfui-Footer")!,
+      header: rect(".gfui-AppHeader")!,
+      nav: rect(".gfui-NavPanel"),
+      main: rect(".gfui-AppMain")!,
+      footer: rect(".gfui-Footer")!,
       scrollY: window.scrollY,
-      mainScrollTop: document.querySelector(".pfui-AppMain")!.scrollTop,
+      mainScrollTop: document.querySelector(".gfui-AppMain")!.scrollTop,
     };
   });
 }
@@ -202,7 +202,7 @@ test("a collapsible side nav collapses to icons and back", async ({ page }) => {
   await page.getByRole("button", { name: "Collapse navigation" }).click();
   expect((await nav.boundingBox())!.width).toBe(48);
   // The labels are gone, the links stay usable by name.
-  await expect(page.locator(".pfui-NavLink-label").first()).toBeHidden();
+  await expect(page.locator(".gfui-NavLink-label").first()).toBeHidden();
   await page.getByRole("link", { name: "Orders" }).click();
   await expect(page.getByRole("heading", { name: "Orders" })).toBeVisible();
   await page.getByRole("button", { name: "Expand navigation" }).click();
@@ -217,7 +217,7 @@ test("in a bar, a NavGroup drops down, and closes on navigation and on a click e
   await page.getByText("Reports", { exact: true }).click();
   await expect(sales).toBeVisible();
   // Over the content, below the header.
-  const header = (await page.locator(".pfui-AppHeader").boundingBox())!;
+  const header = (await page.locator(".gfui-AppHeader").boundingBox())!;
   expect((await sales.boundingBox())!.y).toBeGreaterThanOrEqual(header.y + header.height - 1);
   await sales.click();
   await expect(page.getByRole("heading", { name: "Report: sales" })).toBeVisible();

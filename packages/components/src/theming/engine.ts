@@ -4,14 +4,14 @@
 //
 // Pipeline (as XMLUI's, .ai/xmlui/theming-styling.md):
 //   component defaults → theme chain (root first, `extends`) base variables
-//   → the chain's tone variables → derived tokens → `$ref` → var(--pfui-ref)
+//   → the chain's tone variables → derived tokens → `$ref` → var(--gfui-ref)
 
 export type Tone = "light" | "dark";
 
 export const TONES: readonly Tone[] = ["light", "dark"];
 
-/** The CSS custom property prefix: `--pfui-backgroundColor-Button`. */
-export const THEME_VAR_PREFIX = "--pfui-";
+/** The CSS custom property prefix: `--gfui-backgroundColor-Button`. */
+export const THEME_VAR_PREFIX = "--gfui-";
 
 export interface ThemeDefinition {
   id: string;
@@ -84,7 +84,7 @@ export function derivedTokens(vars: Readonly<Record<string, string>>): Record<st
   return derived;
 }
 
-/** `$color-primary-500` → `var(--pfui-color-primary-500)`, anywhere in a value. */
+/** `$color-primary-500` → `var(--gfui-color-primary-500)`, anywhere in a value. */
 export function resolveRefs(value: string): string {
   return value.replace(/\$([a-zA-Z][a-zA-Z0-9_]*(?:-{1,2}[a-zA-Z0-9_]+)*)/g, (_, name: string) => `var(${THEME_VAR_PREFIX}${name})`);
 }
@@ -110,7 +110,7 @@ export function themeVariables(options: CompileThemeOptions): Record<string, str
   return { ...derivedTokens(vars), ...vars };
 }
 
-/** The CSS custom properties of a theme in a tone: `{ "--pfui-color-primary": "#2563eb", … }`. */
+/** The CSS custom properties of a theme in a tone: `{ "--gfui-color-primary": "#2563eb", … }`. */
 export function compileTheme(options: CompileThemeOptions): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [name, value] of Object.entries(themeVariables(options))) result[`${THEME_VAR_PREFIX}${name}`] = resolveRefs(value);

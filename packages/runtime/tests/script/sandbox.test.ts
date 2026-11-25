@@ -74,7 +74,7 @@ describe("rejected at compile time", () => {
     ["new (() => 1)()", ["C004"]],
     // Modifying built-ins
     ["Math.random = f", ["C010"]],
-    // Syntax pfui doesn't have
+    // Syntax gfui doesn't have
     ["this", ["S030"]],
     ["(() => this)()", ["S030"]],
     ["import('x')", ["S030"]],

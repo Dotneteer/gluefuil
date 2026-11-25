@@ -1,9 +1,9 @@
 {
-  "name": "@patchfuil/standalone",
+  "name": "@gluefuil/standalone",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Standalone mode: one JS file (dist/pfui.js) that fetches, compiles, caches and runs .pfui markup in the browser.",
+  "description": "Standalone mode: one JS file (dist/gfui.js) that fetches, compiles, caches and runs .gui markup in the browser.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -11,9 +11,9 @@
     "build": "vite build --configLoader runner"
   },
   "dependencies": {
-    "@patchfuil/compiler": "0.0.0",
-    "@patchfuil/components": "0.0.0",
-    "@patchfuil/runtime": "0.0.0"
+    "@gluefuil/compiler": "0.0.0",
+    "@gluefuil/components": "0.0.0",
+    "@gluefuil/runtime": "0.0.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",

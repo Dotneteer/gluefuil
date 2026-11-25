@@ -109,7 +109,7 @@ Source: `node_modules/@mantine/core/lib/components/AppShell/AppShell.d.ts`,
 **A. Wrap Mantine's `AppShell`.** It is the fewest lines.
 
 - Against: its sizes are props (numbers), not our theme variables. Our
-  decision is that Mantine is styled only through pfui theme variables
+  decision is that Mantine is styled only through gfui theme variables
   (AGENTS.md, *Decisions*).
 - Against: it has no "nav inside the header" (XMLUI's `condensed`, the
   default).
@@ -268,19 +268,19 @@ One tree for every app. The landmarks are semantic elements. Only the nav
 moves, into one of four slots:
 
 ```
-div.pfui-App                    data-scroll, data-nav, data-nav-full-height,
+div.gfui-App                    data-scroll, data-nav, data-nav-full-height,
                                 data-drawer-below, data-header-sticky,
                                 data-footer-sticky, data-nav-collapsed,
                                 data-drawer-open
   [nav: side + fullHeight]
-  div.pfui-AppColumn
-    header.pfui-AppHeader       burger, logo, title, [nav: header], content, profile menu
+  div.gfui-AppColumn
+    header.gfui-AppHeader       burger, logo, title, [nav: header], content, profile menu
     [nav: below-header]
-    div.pfui-AppBody
+    div.gfui-AppBody
       [nav: side]
-      main.pfui-AppMain > div.pfui-AppContent    (the content)
-    footer.pfui-Footer
-  div.pfui-App-overlay          (while the drawer is open)
+      main.gfui-AppMain > div.gfui-AppContent    (the content)
+    footer.gfui-Footer
+  div.gfui-App-overlay          (while the drawer is open)
 ```
 
 The regions are flex items, not grid cells. A nav in the header has to be
@@ -344,7 +344,7 @@ their own region; `AppHeader showLogo="false"` hides it there.
   whether the side nav is collapsed and whether the drawer is open.
 - **The script API (app globals):** `navPanelCollapsed` and
   `setNavPanelCollapsed(value)`, `navDrawerOpen` and `setNavDrawerOpen(value)`.
-  Flat names, like `activeThemeTone`/`setThemeTone`: pfui has no `App.*`
+  Flat names, like `activeThemeTone`/`setThemeTone`: gfui has no `App.*`
   namespace. A toggle is `setNavPanelCollapsed(!navPanelCollapsed)`.
 - **The drawer closes** on navigation, on Escape (the focus returns to the
   burger), on the overlay, and when the window grows past `drawerBelow`. A
@@ -509,7 +509,7 @@ Steps 19A–19C were built together, on one branch (`poc/19a-app-shell`).
   Opening switches `visibility` at once; closing hides after the slide.
 - **Mantine's `Burger` needs `Burger.layer.css`,** which our hand-picked
   Mantine stylesheet didn't include (a 0×0 button). Its line color comes
-  from `--mantine-color-black`, which pfui doesn't define; the shell sets
+  from `--mantine-color-black`, which gfui doesn't define; the shell sets
   `--burger-color` from `textColor-AppHeader`.
 - **The prerender hook ran for every HTML page** of a multi-page build. It
   now prerenders only `index.html` (the playground has two pages).
@@ -520,7 +520,7 @@ Steps 19A–19C were built together, on one branch (`poc/19a-app-shell`).
 ## Open for later steps
 
 - **App-level theme variable overrides.** XMLUI's `desktop` also sets the
-  content padding to 0. pfui can't override a theme variable for the whole
+  content padding to 0. gfui can't override a theme variable for the whole
   App from markup yet (`<Theme>` scopes only its children), so the
   `desktop` demo keeps the default padding.
 - **RTL:** the drawer slides in from the left in every direction.

@@ -39,7 +39,7 @@ Sources:
 
 ## Design
 
-### The metadata (`@patchfuil/components/metadata`, React-free)
+### The metadata (`@gluefuil/components/metadata`, React-free)
 
 ```ts
 interface ComponentMetadata {
@@ -175,7 +175,7 @@ Implemented as designed. Details: [`../docs/contracts.md`](../docs/contracts.md)
 ## Open for later steps
 
 - **Runtime checks of bound values** (XMLUI's warn mode).
-- **Suppression comments** (`<!-- pfui-disable-next-line E020 -->`).
+- **Suppression comments** (`<!-- gfui-disable-next-line E020 -->`).
 - **Explicit contracts for user components**, such as required props or
   value types.
 - **Richer value types** (color, length, icon, …) with the components

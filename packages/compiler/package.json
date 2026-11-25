@@ -1,5 +1,5 @@
 {
-  "name": "@patchfuil/compiler",
+  "name": "@gluefuil/compiler",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,6 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@patchfuil/components": "0.0.0"
+    "@gluefuil/components": "0.0.0"
   }
 }

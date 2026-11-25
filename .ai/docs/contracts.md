@@ -7,7 +7,7 @@
 >
 > **Last updated:** step 15.
 
-## The format (`@patchfuil/components/metadata`, React-free)
+## The format (`@gluefuil/components/metadata`, React-free)
 
 ```ts
 interface ComponentMetadata {
@@ -113,8 +113,8 @@ props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 | Path | Option | Warnings |
 |------|--------|----------|
 | `compileModule` | `strictContracts` | in `diagnostics` (`severity: "warning"`) |
-| Vite plugin | `pfui({ strictContracts })` | `this.warn` (markup and code-behind) |
-| Standalone | `strictContracts`, `data-strict-contracts="false"` | `console.warn("pfui: file:line:col: warning …")` |
+| Vite plugin | `gfui({ strictContracts })` | `this.warn` (markup and code-behind) |
+| Standalone | `strictContracts`, `data-strict-contracts="false"` | `console.warn("gfui: file:line:col: warning …")` |
 
 ## Files
 

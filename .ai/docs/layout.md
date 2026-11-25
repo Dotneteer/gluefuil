@@ -57,7 +57,7 @@ button):
 
 **Values:**
 - A number is pixels.
-- `$name` is a theme variable (`var(--pfui-name)`), also embedded
+- `$name` is a theme variable (`var(--gfui-name)`), also embedded
   (`1px solid $borderColor`).
 - `*` and `N*` are star sizes (`width`/`height` only).
 - Literals are checked at compile time (E031): the form, and that each
@@ -92,7 +92,7 @@ button):
 | Container at level L | gap | padding |
 |----------------------|-----|---------|
 | vertical | level L | 0; level L if a surface |
-| horizontal with a container child (columns, `:has(> .pfui-Stack)`) | level L | the same |
+| horizontal with a container child (columns, `:has(> .gfui-Stack)`) | level L | the same |
 | horizontal of items | level L+1 (max 3) | the same |
 | App content | level 0 | level 0, unless `paddingHorizontal/Vertical-content-App` is set |
 
@@ -102,7 +102,7 @@ button):
   content) gets the gap again above it (`margin-block-start`). This is the
   framework's only margin.
 - Overrides:
-  - an explicit `gap` sets `--pfui-gap` inline on that stack;
+  - an explicit `gap` sets `--gfui-gap` inline on that stack;
   - `gap-Stack` (a theme variable with no default, `optionalThemeVars`)
     makes every gap flat, which is XMLUI's behavior;
   - XMLUI's named sizes `gap-*`/`padding-*` (none, tight, normal, loose)
@@ -124,7 +124,7 @@ button):
 | **`layoutStyle` / `useLayout`** (`layout.tsx`) | The layout props as a style and `data-surface`. Star sizes become `flex: N 1 0px` on the main axis and `align-self: stretch` on the other. A fixed main-axis size doesn't shrink; percentages may (so 25/50/25 fits with the gaps). A percentage width in a flow is `flowWidth()`: gap-aware, 100% on phones. `$$layoutFrom` wins over the root's own. No layout props: a shared frozen result. |
 | **`Stack`** (`layout.tsx`) | Its level, from the context; the new context for its children; `data-orientation`, `data-level`, `data-wrap`, `data-item-width` (`%` or `fixed`); the flex direction and alignment inline. |
 | **Components** | `Text`, `Heading`/`H1`–`H6`, `Link`, `SpaceFiller` apply `useLayout`. The Mantine components go through `withLayout` (`mantine.tsx`), which passes only the `style`: Mantine puts it on the root, but other attributes on the `<input>`. |
-| **CSS** (`styles.ts`, `LAYOUT`) | The ladder by `data-level` and orientation (`--pfui-step`, `--pfui-pad`), `--pfui-gap`, the phone step for level 0 (`--pfui-l0`, resolved on every container so a nested `<Theme>` can change it), flows (`--pfui-flow-gap`, `--pfui-flow-wide`), `SpaceFiller`, the heading margin, buttons keeping their width. |
+| **CSS** (`styles.ts`, `LAYOUT`) | The ladder by `data-level` and orientation (`--gfui-step`, `--gfui-pad`), `--gfui-gap`, the phone step for level 0 (`--gfui-l0`, resolved on every container so a nested `<Theme>` can change it), flows (`--gfui-flow-gap`, `--gfui-flow-wide`), `SpaceFiller`, the heading margin, buttons keeping their width. |
 | **Shell** (`shell.tsx`) | The App content's context (level 0) and the bars' context. |
 
 ## Details worth knowing
@@ -140,10 +140,10 @@ button):
   a row. Mantine's button root clips its label, so in a narrow row it would
   otherwise shrink to nothing. `width="100%"` fills a column.
 - **Mantine's inputs need `box-sizing: border-box`,** which its
-  `baseline.css` would set globally. pfui sets it only on Mantine's input
+  `baseline.css` would set globally. gfui sets it only on Mantine's input
   parts. Before 19D a TextBox's input was 26px wider than its wrapper.
 - **`display: contents` wrappers** (`Theme`, the variant behavior) are
-  transparent to flex layout. The columns rule (`:has(> .pfui-Stack)`) can't
+  transparent to flex layout. The columns rule (`:has(> .gfui-Stack)`) can't
   see through them.
 
 ## Files
@@ -155,7 +155,7 @@ button):
 | `components/src/metadata.ts` | `STACK_PROPS`, `stackAlias`, the Stack family, `SpaceFiller`, `FlowLayout` (`removed`); the fields `alias`, `removed`, `layoutProps`, `optionalThemeVars`, `cssKind`, `star`; `acceptsLayoutProps`, `layoutProp` |
 | `components/src/styles.ts` | `LAYOUT`, `PHONE_MAX` |
 | `components/src/theming/themes.ts` | The ladder and XMLUI's named sizes |
-| `playground/src/layouts/spacing.pfui`, `src/react/SpacingInspector.tsx`, `components/LayoutScenario.pfui` | The demo, the inspector, the scenario |
+| `playground/src/layouts/spacing.gui`, `src/react/SpacingInspector.tsx`, `components/LayoutScenario.gui` | The demo, the inspector, the scenario |
 
 ## Tests
 

@@ -6,7 +6,7 @@ Part of [poc-steps.md](poc-steps.md).
 
 ## Goal
 
-A Vite plugin compiles `.pfui` files during the build. The shipped bundle
+A Vite plugin compiles `.gui` files during the build. The shipped bundle
 contains **no parser and no compiler** and needs **no `eval`**, so the app
 runs under a strict Content Security Policy (`script-src 'self'`).
 
@@ -33,9 +33,9 @@ runs under a strict Content Security Policy (`script-src 'self'`).
 
 ## Design
 
-### Package `@patchfuil/vite-plugin`
+### Package `@gluefuil/vite-plugin`
 
-- `packages/vite-plugin/src/index.ts` exports `pfui(options?)`, a Vite
+- `packages/vite-plugin/src/index.ts` exports `gfui(options?)`, a Vite
   plugin. Node-only. It may import the compiler and Node built-ins.
 - **Boundaries:** the compiler, runtime and components must not import
   it. A new rule in `tools/boundaries.ts` enforces this.
@@ -43,7 +43,7 @@ runs under a strict Content Security Policy (`script-src 'self'`).
 
 ### The transform
 
-- Applies to ids ending in `.pfui`, after dropping a `?query`.
+- Applies to ids ending in `.gui`, after dropping a `?query`.
 - `compileModule(source, { format: "esm", fileName, components, sourceMap })`.
   - `fileName` is the basename: the map's `sources` resolve relative to
     the module.
@@ -71,7 +71,7 @@ share it.
 
 ### HMR
 
-There is no change here. A `.pfui` module doesn't accept updates, so Vite
+There is no change here. A `.gui` module doesn't accept updates, so Vite
 propagates to the entry, which reloads the page. Keeping state across
 edits needs component-level swapping, which is a later step.
 
@@ -79,8 +79,8 @@ edits needs component-level swapping, which is a later step.
 
 - **Unit (`packages/vite-plugin/tests`):** the plugin's hooks, called
   directly:
-  - non-`.pfui` ids are ignored; queries are stripped;
-  - the output is ESM importing `@patchfuil/runtime`;
+  - non-`.gui` ids are ignored; queries are stripped;
+  - the output is ESM importing `@gluefuil/runtime`;
   - errors: `this.error` with `loc` and frame, all errors listed;
   - the `sourceMap` modes: serve, build, build with `build.sourcemap`, and
     forced;
@@ -91,7 +91,7 @@ edits needs component-level swapping, which is a later step.
   - no module from `packages/compiler` is in the bundle;
   - the output contains no `new Function` and no `eval(`;
   - the output contains no source-map marker characters;
-  - with `build.sourcemap: true`, the map's sources include `Main.pfui`.
+  - with `build.sourcemap: true`, the map's sources include `Main.gui`.
 - **E2E:** the hello app is built and served by `vite preview` with
   `Content-Security-Policy: script-src 'self'`.
   - The hello specs (first app, variables, async handlers, IDs,
@@ -105,7 +105,7 @@ edits needs component-level swapping, which is a later step.
 
 Implemented as designed. Details: [`../docs/build-time.md`](../docs/build-time.md).
 
-- `@patchfuil/vite-plugin` replaces the hello app's inline plugin. The
+- `@gluefuil/vite-plugin` replaces the hello app's inline plugin. The
   build output is byte-identical to before (same content hash).
 - The production build of the hello app is 243 KB, 76 KB gzipped. It
   contains no compiler module and no `new Function`/`eval(`.
@@ -140,7 +140,7 @@ Implemented as designed. Details: [`../docs/build-time.md`](../docs/build-time.m
 
 - **HMR that keeps state:** today an edit reloads the page. That needs
   component-level swapping, the same open item as in standalone mode.
-- **Component files** (`components/Name.pfui`, step 14): compiled modules
+- **Component files** (`components/Name.gui`, step 14): compiled modules
   will import each other, which the plugin handles as ordinary imports.
 - **Publishing:** the packages export TypeScript source, so Vite configs
   need `--configLoader runner`. A package build (JS plus `.d.ts`) belongs

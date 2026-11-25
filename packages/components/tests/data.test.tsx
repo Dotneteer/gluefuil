@@ -2,10 +2,10 @@
 // markup in jsdom, its `fetch` calls answered by the mock backend through MSW's
 // interception (the app's code is the same as against a server). The cores'
 // own tests: runtime/tests/data/*.test.ts.
-import { compileModule } from "@patchfuil/compiler";
-import { defineBackend, status } from "@patchfuil/mock-backend";
-import { startTestServer } from "@patchfuil/mock-backend/node";
-import { loadModule, resetDataState, setDataDefaults, setErrorReporter } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { defineBackend, status } from "@gluefuil/mock-backend";
+import { startTestServer } from "@gluefuil/mock-backend/node";
+import { loadModule, resetDataState, setDataDefaults, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import * as components from "../src/index";

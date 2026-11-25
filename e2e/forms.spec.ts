@@ -4,9 +4,9 @@ import { expect, test, type Page } from "@playwright/test";
 // FormItem). Projects forms-dev (5186) and forms-build (5187, prerendered:
 // every test runs after a takeover).
 
-const signup = (page: Page) => page.locator(".pfui-Form").first();
-const message = (page: Page) => signup(page).locator(".pfui-ValidationMessage");
-const text = (page: Page, prefix: string) => page.locator(".pfui-Text").filter({ hasText: new RegExp(`^${prefix}`) });
+const signup = (page: Page) => page.locator(".gfui-Form").first();
+const message = (page: Page) => signup(page).locator(".gfui-ValidationMessage");
+const text = (page: Page, prefix: string) => page.locator(".gfui-Text").filter({ hasText: new RegExp(`^${prefix}`) });
 
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === "error") errors.push(m.text());
   });
   await page.goto("/");
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
   expect(errors).toEqual([]);
 });
 
@@ -77,7 +77,7 @@ test("the select binds; the labels name their inputs and mark the required ones"
   await page.getByLabel("Role").click();
   await page.getByRole("option", { name: "admin" }).click();
   await expect(text(page, "Preview:")).toHaveText("Preview:  from  (admin)");
-  const marked = await signup(page).locator(".pfui-Label-text").evaluateAll((labels) =>
+  const marked = await signup(page).locator(".gfui-Label-text").evaluateAll((labels) =>
     labels.map((label) => `${label.textContent}${getComputedStyle(label, "::after").content.replace(/^none$/, "")}`),
   );
   expect(marked).toEqual(['Name" *"', 'Email" *"', "City", "Role"]);
@@ -101,13 +101,13 @@ async function control(page: Page, path: string, body?: unknown, method = "POST"
   );
 }
 const holds = async (page: Page) => (await control(page, "/holds", undefined, "GET")) as { id: number; url: string }[];
-const profile = (page: Page) => page.locator(".pfui-Form").nth(1);
+const profile = (page: Page) => page.locator(".gfui-Form").nth(1);
 
 test.describe("the profile form (step 22B)", () => {
   test.beforeEach(async ({ page }) => {
     await control(page, "/reset");
     await page.reload();
-    await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+    await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
     await expect(page.getByLabel("Full name")).toHaveValue("Ada");
   });
 
@@ -115,12 +115,12 @@ test.describe("the profile form (step 22B)", () => {
     await page.getByLabel("E-mail").fill("taken@example.com");
     await page.getByLabel("Town").fill("Atlantis");
     await profile(page).getByRole("button", { name: "Save" }).click();
-    await expect(profile(page).locator(".pfui-Field-messages .pfui-ValidationMessage")).toHaveText(["Already registered", "Unknown city"]);
+    await expect(profile(page).locator(".gfui-Field-messages .gfui-ValidationMessage")).toHaveText(["Already registered", "Unknown city"]);
     await expect(profile(page).getByRole("alert")).toHaveText("Please check the form");
     await expect(page.getByLabel("E-mail")).toBeFocused();
     await page.getByLabel("E-mail").fill("ada@lovelace.org");
     await page.getByLabel("Town").fill("Marylebone");
-    await expect(profile(page).locator(".pfui-Field-messages .pfui-ValidationMessage")).toHaveCount(0);
+    await expect(profile(page).locator(".gfui-Field-messages .gfui-ValidationMessage")).toHaveCount(0);
     await page.getByLabel("Full name").fill("Ada Lovelace");
     await profile(page).getByRole("button", { name: "Save" }).click();
     await expect(text(page, "Saved:")).toHaveText("Saved: Saved Ada Lovelace");

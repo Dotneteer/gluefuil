@@ -4,11 +4,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 // style. Runs against the dev server and the prerendered build.
 
 const style = (locator: Locator, property: string) => locator.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), property);
-const app = (page: Page) => page.locator(".pfui-App");
+const app = (page: Page) => page.locator(".gfui-App");
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#root .pfui-App")).toBeVisible();
+  await expect(page.locator("#root .gfui-App")).toBeVisible();
 });
 
 test("a Button's background follows its theme variable (default: the primary color)", async ({ page }) => {

@@ -59,7 +59,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      // Standalone mode: build dist/pfui.js, then serve a temp copy of the fixture site.
+      // Standalone mode: build dist/gfui.js, then serve a temp copy of the fixture site.
       command:
         "npm run build:standalone && node tools/static-server.mjs --port 5175 --site e2e/fixtures/standalone-site --work .tmp/standalone-site --bundle packages/standalone/dist",
       url: "http://localhost:5175",
@@ -109,19 +109,19 @@ export default defineConfig({
     },
     {
       command: "npx vite --config test-apps/data/vite.config.ts --configLoader runner --port 5182 --strictPort",
-      env: { PFUI_MOCK_HOST: "worker" },
+      env: { GFUI_MOCK_HOST: "worker" },
       url: "http://localhost:5182",
       reuseExistingServer: !process.env.CI,
     },
     {
       command: "npx vite --config test-apps/data/vite.config.ts --configLoader runner --port 5183 --strictPort",
-      env: { PFUI_MOCK_HOST: "middleware" },
+      env: { GFUI_MOCK_HOST: "middleware" },
       url: "http://localhost:5183",
       reuseExistingServer: !process.env.CI,
     },
     {
       command: "npx vite --config playground/vite.config.ts --configLoader runner --port 5180 --strictPort",
-      env: { PFUI_E2E: "1" },
+      env: { GFUI_E2E: "1" },
       url: "http://localhost:5180",
       reuseExistingServer: !process.env.CI,
     },

@@ -9,8 +9,8 @@
 //
 //   forwarded by default   every prop not handled below, unchanged
 //   typed                  literals coerced by the metadata valueType ("true" → true)
-//   rename                 a pfui prop to a native prop, or to computed native props
-//   events                 a pfui event to a native callback, with argument mapping;
+//   rename                 a gfui prop to a native prop, or to computed native props
+//   events                 a gfui event to a native callback, with argument mapping;
 //                          an `on*` handler without configuration is forwarded but
 //                          called WITHOUT arguments: native arguments (DOM events)
 //                          never reach script (the step 3 sandbox invariant)
@@ -18,7 +18,7 @@
 //                          in a form (step 22, `bindTo`): the field's value instead, with focus,
 //                          blur, the form's enabled state and the validation status
 //   api                    more methods, with a ref to the native component
-//   templates              pfui templates as native render props
+//   templates              gfui templates as native render props
 //   fixed                  native props always passed (styling hooks)
 
 import { createElement, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode, type Ref } from "react";
@@ -41,7 +41,7 @@ export interface WrapEvent {
 }
 
 export interface WrapValue<V = unknown> {
-  /** The pfui prop with the initial value (read once, at mount). Default "initialValue". */
+  /** The gfui prop with the initial value (read once, at mount). Default "initialValue". */
   initial?: string;
   /** Normalizes initial values and `setValue` arguments. */
   parse?: (raw: unknown) => V;
@@ -51,7 +51,7 @@ export interface WrapValue<V = unknown> {
   change: string;
   /** Reads the new value from the change callback's arguments. Default: the first argument. */
   read?: (...nativeArgs: never[]) => V;
-  /** The pfui event fired with the new value. Default "didChange". */
+  /** The gfui event fired with the new value. Default "didChange". */
   event?: string;
 }
 
@@ -65,10 +65,10 @@ export interface WrapTemplate {
 export interface WrapConfig {
   /** Prop metadata: literal values are coerced by `valueType`. */
   props?: WrapMetadata["props"];
-  /** pfui prop → native prop name, or → native props computed from the value. */
+  /** gfui prop → native prop name, or → native props computed from the value. */
   rename?: Record<string, string | ((value: unknown) => Record<string, unknown>)>;
   /**
-   * pfui event name (`click`) → native callback, with argument mapping. An
+   * gfui event name (`click`) → native callback, with argument mapping. An
    * unlisted `on<Event>` handler is forwarded under its own name and called
    * without arguments.
    */
@@ -79,7 +79,7 @@ export interface WrapConfig {
   templates?: Record<string, WrapTemplate>;
   /** Native props always passed (after the forwarded ones). */
   fixed?: Record<string, unknown>;
-  /** pfui props never forwarded. */
+  /** gfui props never forwarded. */
   exclude?: readonly string[];
   /** The native component takes a ref (`api` uses it). */
   withRef?: boolean;

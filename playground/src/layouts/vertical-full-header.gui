@@ -1,4 +1,4 @@
-<!-- XMLUI layout="vertical-full-header": a side nav under a full-width header; everything sticks. Collapsible to icons (new: XMLUI allows that only here, pfui for every side nav). -->
+<!-- XMLUI layout="vertical-full-header": a side nav under a full-width header; everything sticks. Collapsible to icons (new: XMLUI allows that only here, gfui for every side nav). -->
 <App>
   <property name="logoTemplate"><Text variant="strong">◆ Acme</Text></property>
   <AppHeader title="vertical-full-header"><NavPanelCollapseButton/></AppHeader>

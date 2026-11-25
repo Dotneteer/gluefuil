@@ -1,6 +1,6 @@
 // Step 14 end to end in jsdom: user-defined components, one test per feature.
-import { analyzeModule, compileModule, type UserComponentInfo } from "@patchfuil/compiler";
-import { loadModule } from "@patchfuil/runtime";
+import { analyzeModule, compileModule, type UserComponentInfo } from "@gluefuil/compiler";
+import { loadModule } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import { afterEach, expect, test, vi } from "vitest";
@@ -29,9 +29,9 @@ function load(main: string, files: Record<string, string | { markup: string; cod
     return result.code;
   };
   for (const [name, source] of Object.entries(sources)) {
-    components[name] = loadModule(compile(source.markup, `${name}.pfui`, (source as { codeBehind?: string }).codeBehind, name), { components });
+    components[name] = loadModule(compile(source.markup, `${name}.gui`, (source as { codeBehind?: string }).codeBehind, name), { components });
   }
-  return loadModule(compile(main, "Main.pfui", mainCodeBehind), { components }) as ComponentType;
+  return loadModule(compile(main, "Main.gui", mainCodeBehind), { components }) as ComponentType;
 }
 
 function show(main: string, files?: Parameters<typeof load>[1], codeBehind?: string) {
@@ -43,7 +43,7 @@ function show(main: string, files?: Parameters<typeof load>[1], codeBehind?: str
   );
 }
 
-const texts = () => [...document.querySelectorAll(".pfui-Text")].map((e) => e.textContent);
+const texts = () => [...document.querySelectorAll(".gfui-Text")].map((e) => e.textContent);
 const click = (label: string) => act(async () => fireEvent.click(screen.getByRole("button", { name: label })));
 
 test("$props: values from the caller, with defaults through ??", () => {
@@ -65,7 +65,7 @@ test("$props follow the caller's state; only the readers re-render", async () =>
   const renders = vi.fn();
   const Probe = (props: { value?: unknown }) => {
     renders(props.value);
-    return <span className="pfui-Text">{String(props.value)}</span>;
+    return <span className="gfui-Text">{String(props.value)}</span>;
   };
   const Main = (() => {
     const infos = analyzeModule(`<Component name="Show"><App><Probe value="static"/><Text>{$props.n}</Text></App></Component>`).components;

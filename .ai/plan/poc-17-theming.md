@@ -7,7 +7,7 @@ Part of [poc-steps.md](poc-steps.md).
 ## Goal
 
 Theme definitions (`extends`, light and dark tones, derived tokens,
-`$references`) compile to CSS custom properties `--pfui-*`. Components
+`$references`) compile to CSS custom properties `--gfui-*`. Components
 consume XMLUI-style theme variables (`backgroundColor-Button`). A `<Theme>`
 element scopes overrides, a tone, or another theme. The app switches tones
 at runtime.
@@ -49,17 +49,17 @@ Sources:
 
 - **`ThemeDefinition`:** `{ id, extends?, themeVars?, tones?: { light?, dark? } }`.
 - **`compileTheme({ themeId, tone, themes, componentDefaults })`:**
-  - `Record<"--pfui-name", value>`;
+  - `Record<"--gfui-name", value>`;
   - merge order: component defaults → root → … → the theme (base
     variables), then the same chain's tone variables;
   - derived tokens; `$ref` resolution.
 - **Derived tokens:**
-  - **Spacing:** `space-0` … `space-12` as `calc(var(--pfui-space-base) * n)`.
+  - **Spacing:** `space-0` … `space-12` as `calc(var(--gfui-space-base) * n)`.
   - **Color tones:** for every `color-<family>`, tones `50` … `950`. Each
-    is a CSS `color-mix(in srgb, var(--pfui-color-<family>) p%, white|black)`.
+    is a CSS `color-mix(in srgb, var(--gfui-color-<family>) p%, white|black)`.
     Unlike XMLUI's JavaScript color math, they follow a runtime change of
     the base color.
-- **Built-in themes:** `pfui` (the default), plus `pfui-green` and `pfui-red`,
+- **Built-in themes:** `gfui` (the default), plus `gfui-green` and `gfui-red`,
   which change `color-primary`. All extend the root theme, which holds the
   tokens (colors, surface, spacing, radius, typography) and their light and
   dark tones.
@@ -73,9 +73,9 @@ Sources:
 - `ComponentMetadata.themeVars?: Record<string, string>` holds the
   defaults (`"backgroundColor-Button": "$color-primary-500"`).
 - **One stylesheet** (`components/src/styles.ts`) reads the variables:
-  `.pfui-Button { background-color: var(--pfui-backgroundColor-Button) }`,
+  `.gfui-Button { background-color: var(--gfui-backgroundColor-Button) }`,
   with `:hover` and `:focus` states.
-- **`App` renders it** as `<style href="pfui-base" precedence="pfui">`.
+- **`App` renders it** as `<style href="gfui-base" precedence="gfui">`.
   React 19 hoists and dedupes it: on the server it is emitted before the
   app's HTML, so the prerendered page is styled without JavaScript.
 
@@ -95,11 +95,11 @@ Sources:
   - props `defaultTheme` (an enum of the built-in themes) and `defaultTone`
     (`light | dark`);
   - it renders the compiled variables of the active theme and tone as
-    inline custom properties on `.pfui-App`, plus the stylesheet.
+    inline custom properties on `.gfui-App`, plus the stylesheet.
 - **`Theme`:**
   - props `themeId`, `tone`, and any theme variable as an attribute (a
     literal or a binding, with `$refs`);
-  - it renders `<div class="pfui-Theme" style="display: contents; …">`;
+  - it renders `<div class="gfui-Theme" style="display: contents; …">`;
   - it injects the full set or only the overrides, by XMLUI's rule.
 
 ### Contracts
@@ -152,7 +152,7 @@ Implemented as designed. Details: [`../docs/theming.md`](../docs/theming.md).
     `renderToString`), the client dedupes it into `<head>`, and hydration
     adopts it without DOM changes.
   - There is no separate CSS file and no injection code.
-- **Theme variables are inline custom properties on `.pfui-App`** (about
+- **Theme variables are inline custom properties on `.gfui-App`** (about
   150 for the built-in theme). They serialize with server rendering and
   hydrate like any attribute.
 - **`color-mix()` instead of JavaScript color math:** the derived tones

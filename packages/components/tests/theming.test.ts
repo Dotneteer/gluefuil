@@ -55,16 +55,16 @@ describe("derived tokens", () => {
   test("spacing from space-base", () => {
     const derived = derivedTokens({ "space-base": "4px" });
     expect(derived["space-0"]).toBe("0");
-    expect(derived["space-1_5"]).toBe("calc(var(--pfui-space-base) * 1.5)");
-    expect(derived["space-12"]).toBe("calc(var(--pfui-space-base) * 12)");
+    expect(derived["space-1_5"]).toBe("calc(var(--gfui-space-base) * 1.5)");
+    expect(derived["space-12"]).toBe("calc(var(--gfui-space-base) * 12)");
     expect(Object.keys(derivedTokens({}))).toEqual([]);
   });
 
   test("color tones from each color-<family>, mixed in CSS", () => {
     const derived = derivedTokens({ "color-brand": "#123456", "color-brand-500": "ignored: not a family" });
-    expect(derived["color-brand-500"]).toBe("var(--pfui-color-brand)");
-    expect(derived["color-brand-100"]).toBe("color-mix(in srgb, var(--pfui-color-brand) 20%, white)");
-    expect(derived["color-brand-900"]).toBe("color-mix(in srgb, var(--pfui-color-brand) 20%, black)");
+    expect(derived["color-brand-500"]).toBe("var(--gfui-color-brand)");
+    expect(derived["color-brand-100"]).toBe("color-mix(in srgb, var(--gfui-color-brand) 20%, white)");
+    expect(derived["color-brand-900"]).toBe("color-mix(in srgb, var(--gfui-color-brand) 20%, black)");
     expect(Object.keys(derived).filter((k) => k.startsWith("color-brand-500-"))).toEqual([]);
   });
 
@@ -77,10 +77,10 @@ describe("derived tokens", () => {
 
 describe("references", () => {
   test.each([
-    ["$color-primary-500", "var(--pfui-color-primary-500)"],
-    ["1px solid $borderColor", "1px solid var(--pfui-borderColor)"],
-    ["$space-1_5 $space-3", "var(--pfui-space-1_5) var(--pfui-space-3)"],
-    ["$backgroundColor-Button--hover", "var(--pfui-backgroundColor-Button--hover)"],
+    ["$color-primary-500", "var(--gfui-color-primary-500)"],
+    ["1px solid $borderColor", "1px solid var(--gfui-borderColor)"],
+    ["$space-1_5 $space-3", "var(--gfui-space-1_5) var(--gfui-space-3)"],
+    ["$backgroundColor-Button--hover", "var(--gfui-backgroundColor-Button--hover)"],
     ["#ffffff", "#ffffff"],
     ["$", "$"],
     ["price: 5$", "price: 5$"],
@@ -90,12 +90,12 @@ describe("references", () => {
 
   test("compileTheme prefixes names and resolves references", () => {
     const css = compileTheme({ themeId: "a", tone: "light", themes: themes({ id: "a", themeVars: { x: "$y", y: "1px" } }) });
-    expect(css).toEqual({ "--pfui-x": "var(--pfui-y)", "--pfui-y": "1px" });
+    expect(css).toEqual({ "--gfui-x": "var(--gfui-y)", "--gfui-y": "1px" });
   });
 });
 
 describe("scoped <Theme> variables (XMLUI's injection rule)", () => {
-  const options = { themeId: "pfui", tone: "light" as const, themes: BUILT_IN_THEME_MAP, componentDefaults: componentThemeDefaults() };
+  const options = { themeId: "gfui", tone: "light" as const, themes: BUILT_IN_THEME_MAP, componentDefaults: componentThemeDefaults() };
 
   test.each([
     ["backgroundColor-Button", true],
@@ -110,16 +110,16 @@ describe("scoped <Theme> variables (XMLUI's injection rule)", () => {
 
   test("component variables only: just the overrides", () => {
     expect(scopedThemeVars({ ...options, overrides: { "backgroundColor-Button": "$color-danger-500" }, changesThemeOrTone: false })).toEqual({
-      "--pfui-backgroundColor-Button": "var(--pfui-color-danger-500)",
+      "--gfui-backgroundColor-Button": "var(--gfui-color-danger-500)",
     });
   });
 
   test("a base variable, a tone or a theme: the full set, recomputed in the scope", () => {
     const base = scopedThemeVars({ ...options, overrides: { "color-primary": "green" }, changesThemeOrTone: false });
-    expect(base["--pfui-color-primary"]).toBe("green");
-    expect(base["--pfui-backgroundColor-Button"]).toBe("var(--pfui-color-primary-500)");
+    expect(base["--gfui-color-primary"]).toBe("green");
+    expect(base["--gfui-backgroundColor-Button"]).toBe("var(--gfui-color-primary-500)");
     const dark = scopedThemeVars({ ...options, tone: "dark", changesThemeOrTone: true });
-    expect(dark["--pfui-backgroundColor"]).toBe("var(--pfui-color-surface-950)");
+    expect(dark["--gfui-backgroundColor"]).toBe("var(--gfui-color-surface-950)");
   });
 });
 
@@ -127,11 +127,11 @@ describe("the built-in themes", () => {
   test("every built-in theme compiles in both tones; the color themes change only the primary color", () => {
     const compile = (themeId: string, tone: "light" | "dark") =>
       compileTheme({ themeId, tone, themes: BUILT_IN_THEME_MAP, componentDefaults: componentThemeDefaults() });
-    const pfui = compile("pfui", "light");
-    const green = compile("pfui-green", "light");
-    expect(Object.keys(green)).toEqual(Object.keys(pfui));
-    expect(Object.entries(green).filter(([k, v]) => pfui[k] !== v)).toEqual([["--pfui-color-primary", "#16a34a"]]);
-    expect(compile("pfui", "dark")["--pfui-textColor"]).toBe("var(--pfui-color-surface-50)");
+    const gfui = compile("gfui", "light");
+    const green = compile("gfui-green", "light");
+    expect(Object.keys(green)).toEqual(Object.keys(gfui));
+    expect(Object.entries(green).filter(([k, v]) => gfui[k] !== v)).toEqual([["--gfui-color-primary", "#16a34a"]]);
+    expect(compile("gfui", "dark")["--gfui-textColor"]).toBe("var(--gfui-color-surface-50)");
   });
 
   test("themeVariableNames: tokens, derived tokens, component variables", () => {

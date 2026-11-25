@@ -53,10 +53,10 @@ describe("mappings", () => {
   });
 
   test("originalPositionFor: the closest mapping at or before the column, on the same line", () => {
-    const map = { version: 3 as const, sources: ["a.pfui"], names: [], mappings: encodeMappings(mappings) };
-    expect(originalPositionFor(map, 0, 4)).toEqual({ source: "a.pfui", line: 2, column: 3 });
-    expect(originalPositionFor(map, 0, 9)).toEqual({ source: "a.pfui", line: 2, column: 3 });
-    expect(originalPositionFor(map, 0, 99)).toEqual({ source: "a.pfui", line: 2, column: 9 });
+    const map = { version: 3 as const, sources: ["a.gui"], names: [], mappings: encodeMappings(mappings) };
+    expect(originalPositionFor(map, 0, 4)).toEqual({ source: "a.gui", line: 2, column: 3 });
+    expect(originalPositionFor(map, 0, 9)).toEqual({ source: "a.gui", line: 2, column: 3 });
+    expect(originalPositionFor(map, 0, 99)).toEqual({ source: "a.gui", line: 2, column: 9 });
     expect(originalPositionFor(map, 0, 2)).toBeUndefined();
     expect(originalPositionFor(map, 1, 0)).toBeUndefined();
   });
@@ -71,8 +71,8 @@ describe("mappings", () => {
 test("buildSourceMap converts offsets to lines and columns, and embeds the source", () => {
   const original = "ab\ncd\nef";
   const generated = "xx\nyyyy";
-  const map = buildSourceMap(generated, original, [[3, 4], [5, 7]], { source: "f.pfui", file: "f.pfui.js" });
-  expect(map).toMatchObject({ version: 3, file: "f.pfui.js", sources: ["f.pfui"], sourcesContent: [original], names: [] });
+  const map = buildSourceMap(generated, original, [[3, 4], [5, 7]], { source: "f.gui", file: "f.gui.js" });
+  expect(map).toMatchObject({ version: 3, file: "f.gui.js", sources: ["f.gui"], sourcesContent: [original], names: [] });
   expect(decodeMappings(map.mappings)).toEqual([
     { generatedLine: 1, generatedColumn: 0, originalLine: 1, originalColumn: 1 },
     { generatedLine: 1, generatedColumn: 2, originalLine: 2, originalColumn: 1 },

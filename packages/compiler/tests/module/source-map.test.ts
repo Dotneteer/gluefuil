@@ -1,5 +1,5 @@
 // compileModule source maps: every construct maps back to its place in the
-// .pfui file. Each case names a token in the generated code and the text it
+// .gui file. Each case names a token in the generated code and the text it
 // must map to in the markup.
 import { describe, expect, test } from "vitest";
 import { compileModule } from "../../src/module/compile-module";
@@ -8,7 +8,7 @@ import { originalPositionFor } from "../../src/source/source-map";
 
 /** Where `generatedNeedle` (n-th occurrence) maps to, as the markup text starting there. */
 function mapsTo(markup: string, generatedNeedle: string, occurrence = 0): string {
-  const { code, map, diagnostics } = compileModule(markup, { fileName: "App.pfui" });
+  const { code, map, diagnostics } = compileModule(markup, { fileName: "App.gui" });
   expect(diagnostics).toEqual([]);
   let offset = -1;
   for (let i = 0; i <= occurrence; i++) offset = code.indexOf(generatedNeedle, offset + 1);
@@ -99,12 +99,12 @@ describe("elements", () => {
 describe("the map itself", () => {
   test("names the source, embeds its content, and names the generated file", () => {
     const markup = "<App/>";
-    const { map } = compileModule(markup, { fileName: "src/Main.pfui" });
-    expect(map).toMatchObject({ version: 3, file: "src/Main.pfui.js", sources: ["src/Main.pfui"], sourcesContent: [markup] });
+    const { map } = compileModule(markup, { fileName: "src/Main.gui" });
+    expect(map).toMatchObject({ version: 3, file: "src/Main.gui.js", sources: ["src/Main.gui"], sourcesContent: [markup] });
   });
 
-  test("defaults: Main.pfui; sourceMap: false omits it", () => {
-    expect(compileModule("<App/>").map?.sources).toEqual(["Main.pfui"]);
+  test("defaults: Main.gui; sourceMap: false omits it", () => {
+    expect(compileModule("<App/>").map?.sources).toEqual(["Main.gui"]);
     expect(compileModule("<App/>", { sourceMap: false }).map).toBeUndefined();
   });
 

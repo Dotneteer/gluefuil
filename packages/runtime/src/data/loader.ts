@@ -51,7 +51,7 @@ interface Envelope {
   headers: Readonly<Record<string, string>>;
 }
 
-const DISABLED_KEY = ["pfui", "disabled"] as const;
+const DISABLED_KEY = ["gfui", "disabled"] as const;
 
 export class Loader {
   private readonly stateSignal = signal<LoaderState>(Object.freeze({ ...EMPTY }));

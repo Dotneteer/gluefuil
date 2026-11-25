@@ -1,7 +1,7 @@
 // The forms fixture's backend (step 22B): people to edit, with server-side
 // validation answered as RFC 7807 problem details. The app doesn't import this
 // file: the mock backend plugin hosts it (vite.config.ts).
-import { defineBackend, status } from "@patchfuil/mock-backend";
+import { defineBackend, status } from "@gluefuil/mock-backend";
 
 export default defineBackend({
   seed: {

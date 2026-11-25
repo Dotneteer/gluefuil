@@ -1,4 +1,4 @@
-// The runtime side of the pfui script sandbox: the objects compiled code reads
+// The runtime side of the gfui script sandbox: the objects compiled code reads
 // as `$$g` (globals) and `$$r` (helpers). The compiler resolves every name at
 // compile time against the same tables (packages/compiler/src/codegen/names.ts);
 // tools/sandbox-drift.test.ts keeps the two in sync.
@@ -134,7 +134,7 @@ export const scriptRuntime = Object.freeze({
   key(key: unknown): string | number | symbol {
     if (typeof key === "number" || typeof key === "symbol") return key;
     const name = String(key);
-    if (BANNED_MEMBERS.has(name)) throw new SandboxError(`Member '${name}' is not accessible in pfui script`);
+    if (BANNED_MEMBERS.has(name)) throw new SandboxError(`Member '${name}' is not accessible in gfui script`);
     return name;
   },
 
@@ -145,7 +145,7 @@ export const scriptRuntime = Object.freeze({
    * host code passes, raw platform objects included.
    */
   obj<T>(object: T): T {
-    if (typeof object === "function") throw new SandboxError("Functions cannot be modified in pfui script");
+    if (typeof object === "function") throw new SandboxError("Functions cannot be modified in gfui script");
     return object;
   },
 

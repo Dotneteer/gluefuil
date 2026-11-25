@@ -1,4 +1,4 @@
-// Compiles a .pfui document to one JavaScript module whose default export is
+// Compiles a .gui document to one JavaScript module whose default export is
 // the root React component. See .ai/plan/poc-05-first-app.md and
 // .ai/plan/poc-06-variables-handlers.md.
 //
@@ -30,7 +30,7 @@ import {
   type BehaviorMetadata,
   type ComponentMetadata,
   type PropMetadata,
-} from "@patchfuil/components/metadata";
+} from "@gluefuil/components/metadata";
 import { compileExpression, compileFunction, compileHandler, compileInterpolation } from "../codegen/compile";
 import { extractMarkers, jsString, mark } from "../codegen/markers";
 import { APP_GLOBALS } from "../codegen/names";
@@ -66,7 +66,7 @@ export interface CompileModuleOptions {
    * `extensions`). Their metadata goes in `components`.
    */
   componentModules?: Readonly<Record<string, string>>;
-  /** The source file's name, as the source map's `sources` entry. Default "Main.pfui". */
+  /** The source file's name, as the source map's `sources` entry. Default "Main.gui". */
   fileName?: string;
   /** Produce a source map (default true). */
   sourceMap?: boolean;
@@ -76,7 +76,7 @@ export interface CompileModuleOptions {
    */
   userComponents?: Readonly<Record<string, UserComponentInfo>>;
   /**
-   * The file's code-behind (`Main.pfui.xs`, `components/X.pfui.xs`): top-level
+   * The file's code-behind (`Main.gui.xs`, `components/X.gui.xs`): top-level
    * `var` and `function` declarations for the app root, or for the file's component.
    */
   codeBehind?: string;
@@ -103,7 +103,7 @@ export interface CompileModuleOptions {
 export interface CompileModuleResult {
   code: string;
   /**
-   * Source Map v3 from `code` back to the .pfui file: every expression,
+   * Source Map v3 from `code` back to the .gui file: every expression,
    * statement, handler and element. Includes the source text.
    */
   map?: SourceMap;
@@ -379,7 +379,7 @@ class ModuleCompiler {
       "",
     ].join("\n");
     const { code, pairs } = extractMarkers(marked);
-    const fileName = this.options.fileName ?? "Main.pfui";
+    const fileName = this.options.fileName ?? "Main.gui";
     const map = this.options.sourceMap === false ? undefined : buildSourceMap(code, markup, pairs, { source: fileName, file: `${fileName}.js` });
     this.diagnostics.sort((a, b) => a.start - b.start);
     // `await`/`async` in a binding: the parser's S030 already says it; drop the code generator's C009.
@@ -445,7 +445,7 @@ class ModuleCompiler {
         continue;
       }
       if (this.userComponents.has(name)) {
-        this.report(span, "E016", `The component '${name}' is also defined in components/${name}.pfui`);
+        this.report(span, "E016", `The component '${name}' is also defined in components/${name}.gui`);
         continue;
       }
       const info = analyzed.find((c) => c.name === name)!;
@@ -460,11 +460,11 @@ class ModuleCompiler {
     return known?.inline ? name : undefined;
   }
 
-  /** A component file's name must match its component (`components/X.pfui` holds `X`). */
+  /** A component file's name must match its component (`components/X.gui` holds `X`). */
   private checkFileName(definition: ElementNode): void {
     const fileName = this.options.fileName;
     if (fileName === undefined) return;
-    const base = fileName.split(/[\\/]/).pop()!.replace(/\.pfui$/, "");
+    const base = fileName.split(/[\\/]/).pop()!.replace(/\.gui$/, "");
     const name = definition.attributes.find((a) => a.name.full === "name")!.value!;
     if (base !== name.value) {
       this.report(name, "E016", `The file '${fileName}' must define '${base}', not '${name.value}'`);
@@ -665,11 +665,11 @@ class ModuleCompiler {
       return lines.join("\n");
     }
     const runtime = RUNTIME_IMPORTS.map(([name, local]) => `${name} as ${local}`).join(", ");
-    const lines = [`import { ${runtime} } from ${JSON.stringify(this.options.runtimeModule ?? "@patchfuil/runtime")};`];
+    const lines = [`import { ${runtime} } from ${JSON.stringify(this.options.runtimeModule ?? "@gluefuil/runtime")};`];
     // Grouped by module: the built-ins, and each app module of `componentModules`.
     const byModule = new Map<string, string[]>();
     for (const c of components) {
-      const module = this.options.componentModules?.[c] ?? this.options.componentsModule ?? "@patchfuil/components";
+      const module = this.options.componentModules?.[c] ?? this.options.componentsModule ?? "@gluefuil/components";
       byModule.set(module, [...(byModule.get(module) ?? []), c]);
     }
     for (const [module, names] of byModule) {
@@ -954,7 +954,7 @@ class ModuleCompiler {
    * components below, whose scopes inherit from it.
    */
   private globalContainer(globals: Declaration[], locals: Declaration[], scopeVar: string, inner: (scope: string) => string): string {
-    // A Globals.xs name the root also declares as its own (var.*, Main.pfui.xs) would be hidden in Main.
+    // A Globals.xs name the root also declares as its own (var.*, Main.gui.xs) would be hidden in Main.
     if (this.globalsCode) {
       const rootNames = new Set([...locals.map((d) => d.name), ...(this.codeBehind?.variables.map((v) => v.name) ?? []), ...(this.codeBehind?.functions.map((f) => f.id.name) ?? [])]);
       this.codeBehindSink = this.globalsDiagnostics;

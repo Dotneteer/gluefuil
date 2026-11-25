@@ -175,7 +175,7 @@ E2E tests. Details: [`../docs/codegen.md`](../docs/codegen.md) § Handlers,
   exact semantics, short-circuits included. Only paths *inside* a value
   need helpers.
 - **Copy-on-write plus freezing matches XMLUI's behavior.** XMLUI applies
-  changes with Immer, which freezes its output. pfui copies along the path
+  changes with Immer, which freezes its output. gfui copies along the path
   at compile-time-known write sites, without a runtime proxy. The cost is
   that a mutation through an alias (`const l = items; l.push(x)`) throws a
   `TypeError`. XMLUI would track it through its proxy. It is loud rather

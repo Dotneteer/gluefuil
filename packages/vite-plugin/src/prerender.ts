@@ -8,7 +8,7 @@ import { createServer, type Plugin } from "vite";
 export type BreakpointName = "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 
 export interface PrerenderOptions {
-  /** The root component's file, relative to the Vite root. Default: the plugin's `entry` ("src/Main.pfui"). */
+  /** The root component's file, relative to the Vite root. Default: the plugin's `entry` ("src/Main.gui"). */
   entry?: string;
   /** The id of the empty element in index.html to fill. Default "root". */
   rootId?: string;
@@ -27,7 +27,7 @@ export type ResolvedPrerender = Required<PrerenderOptions>;
 export function resolvePrerender(option: boolean | PrerenderOptions | undefined, appEntry?: string): ResolvedPrerender | undefined {
   if (!option) return undefined;
   const given = option === true ? {} : option;
-  return { entry: given.entry ?? appEntry ?? "src/Main.pfui", rootId: given.rootId ?? "root", breakpoint: given.breakpoint ?? "xs", routes: given.routes ?? [] };
+  return { entry: given.entry ?? appEntry ?? "src/Main.gui", rootId: given.rootId ?? "root", breakpoint: given.breakpoint ?? "xs", routes: given.routes ?? [] };
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -41,12 +41,12 @@ const escapeAttribute = (text: string) => text.replace(/&/g, "&amp;").replace(/"
 export function injectPrerendered(html: string, rootId: string, inner: string, attributes: Record<string, string>): string {
   const open = new RegExp(`<([a-zA-Z][\\w-]*)(\\s[^>]*?)?\\sid=(["'])${escapeRegExp(rootId)}\\3([^>]*)>`);
   const match = open.exec(html);
-  if (!match) throw new Error(`pfui prerender: index.html has no element with id="${rootId}"`);
-  if (match[0].endsWith("/>")) throw new Error(`pfui prerender: the element with id="${rootId}" must not be self-closing`);
+  if (!match) throw new Error(`gfui prerender: index.html has no element with id="${rootId}"`);
+  if (match[0].endsWith("/>")) throw new Error(`gfui prerender: the element with id="${rootId}" must not be self-closing`);
   const tag = match[1]!;
   const rest = html.slice(match.index + match[0].length);
   const close = new RegExp(`^(\\s*)</${tag}\\s*>`).exec(rest);
-  if (!close) throw new Error(`pfui prerender: the element with id="${rootId}" in index.html must be empty`);
+  if (!close) throw new Error(`gfui prerender: the element with id="${rootId}" in index.html must be empty`);
   const added = Object.entries(attributes)
     .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
     .join("");
@@ -110,12 +110,12 @@ export function routeFileName(path: string): string {
 export function routesToRender(mode: "hash" | "browser", registered: readonly string[], extra: readonly string[], matches: (path: string) => boolean): string[] {
   if (mode === "hash") {
     if (extra.length > 0) {
-      throw new Error('pfui prerender: the "routes" option needs browser routing (App useHashBasedRouting="false"); with hash routing every route is served from index.html');
+      throw new Error('gfui prerender: the "routes" option needs browser routing (App useHashBasedRouting="false"); with hash routing every route is served from index.html');
     }
     return [];
   }
   for (const path of extra) {
-    if (!matches(path)) throw new Error(`pfui prerender: the route "${path}" (option "routes") matches no Page url`);
+    if (!matches(path)) throw new Error(`gfui prerender: the route "${path}" (option "routes") matches no Page url`);
   }
   const paths = [...registered.filter(isStaticRoute), ...extra].map((path) => path.replace(/\/+$/, "") || "/");
   return [...new Set(paths)].filter((path) => path !== "/");
@@ -124,7 +124,7 @@ export function routesToRender(mode: "hash" | "browser", registered: readonly st
 /**
  * Renders the entry component to HTML in a temporary Vite server (SSR), with
  * `transform` (the plugin's compile step) as its only plugin. The entry and
- * `@patchfuil/runtime/server` load into the same module graph, so they share
+ * `@gluefuil/runtime/server` load into the same module graph, so they share
  * one runtime and one React. "/" is rendered first; with browser routing,
  * every static route (and `routes`) after it, each from a reset runtime state.
  * Returns the routes in render order, "/" first.
@@ -139,16 +139,16 @@ export async function renderEntry(root: string, options: ResolvedPrerender, tran
     // Its own cache, and no client pre-bundling: it only renders on the server. (Sharing the app's
     // node_modules/.vite rewrote a running dev server's pre-bundled dependencies under it: pages then
     // failed with 504 "Outdated Optimize Dep". Found in step 20.)
-    cacheDir: resolve(root, "node_modules/.vite-pfui-prerender"),
+    cacheDir: resolve(root, "node_modules/.vite-gfui-prerender"),
     optimizeDeps: { noDiscovery: true, include: [] },
     plugins: [transform],
   });
   try {
     const entry = (await server.ssrLoadModule(resolve(root, options.entry))) as { default?: unknown };
     if (typeof entry.default !== "function") {
-      throw new Error(`pfui prerender: ${options.entry} has no default export (a .pfui file's root component)`);
+      throw new Error(`gfui prerender: ${options.entry} has no default export (a .gui file's root component)`);
     }
-    const runtime = (await server.ssrLoadModule("@patchfuil/runtime/server")) as RenderModule;
+    const runtime = (await server.ssrLoadModule("@gluefuil/runtime/server")) as RenderModule;
     const render = (path: string) => {
       runtime.resetServerState();
       return runtime.renderStatic(entry.default, { breakpoint: options.breakpoint, path, basename });

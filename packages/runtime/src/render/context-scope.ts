@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 
-const SLOTS = Symbol("pfui.contextSlots");
+const SLOTS = Symbol("gfui.contextSlots");
 
 type Slots = Record<string, (() => unknown) | undefined>;
 

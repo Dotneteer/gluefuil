@@ -68,7 +68,7 @@ wrapComponent(Native, {
   - the native change callback sets it and calls `didChange`;
   - the API gets `value` (reactive) and `setValue`.
 - **`registerApi`** (from `Bound` with an `id`) publishes the API.
-- **Templates** become the native render props: a pfui template renderer
+- **Templates** become the native render props: a gfui template renderer
   called with context variables.
 - **A template renderer creates a `TemplateInstance`**, a React element.
   That's what Mantine render props return.
@@ -78,11 +78,11 @@ wrapComponent(Native, {
 - **`App` wraps its content in `MantineProvider`:**
   - `forceColorScheme` = the active tone (deterministic on server and
     client);
-  - `cssVariablesSelector` = `.pfui-App` (no global side effects);
+  - `cssVariablesSelector` = `.gfui-App` (no global side effects);
   - the Mantine global variables
     (`--mantine-font-family`, `--mantine-color-text`, `--mantine-color-body`,
     `--mantine-primary-color-filled`, `--mantine-radius-default`) are
-    redirected to our theme variables on `.pfui-App`.
+    redirected to our theme variables on `.gfui-App`.
 - **Mantine's CSS:** the `*.layer.css` files of the components used,
   imported with `?inline` and rendered as a React 19 hoisted `<style>` next
   to ours. Every Mantine rule is in `@layer mantine`, so our unlayered rules
@@ -95,7 +95,7 @@ wrapComponent(Native, {
 - **`Select`'s dropdown stays inside the app**
   (`comboboxProps.withinPortal: false`), so it inherits the theme scope.
 
-| Component | Mantine | pfui props | Events | API |
+| Component | Mantine | gfui props | Events | API |
 |-----------|---------|-----------|--------|-----|
 | `Button` | `Button` | `label`, `enabled` | `click` | |
 | `TextBox` | `TextInput` | `initialValue`, `placeholder`, `enabled` | `didChange` | `value`, `setValue`, `focus` |
@@ -164,17 +164,17 @@ Implemented as designed. Details: [`../docs/mantine.md`](../docs/mantine.md).
 
 ## Findings
 
-- **`@layer mantine` plus unlayered pfui rules** resolves every specificity
+- **`@layer mantine` plus unlayered gfui rules** resolves every specificity
   question at once: Mantine's `*.layer.css` files put all its rules in a
   layer, and ours win.
 - **Mantine sets some variables inline** (its `vars` resolvers). A fixed
   `vars` prop replaces them, and the inline style shows only our
-  redirections (`--button-bg: var(--pfui-backgroundColor-Button)`).
+  redirections (`--button-bg: var(--gfui-backgroundColor-Button)`).
 - **`MantineProvider` without its own `<style>` elements**
   (`withCssVariables={false}`, `withGlobalClasses={false}`, plus Mantine's
   static `default-css-variables`) keeps the app's DOM clean. Tests reading
   `textContent` would otherwise see CSS.
-- **`data-mantine-color-scheme` on `.pfui-App`** makes Mantine's tone
+- **`data-mantine-color-scheme` on `.gfui-App`** makes Mantine's tone
   selectors work in a server render and inside a `<Theme tone>` scope,
   without waiting for the provider's effect on `<html>`.
 - **The sandbox invariant needs care in a wrapper API.** A generic "forward
@@ -182,7 +182,7 @@ Implemented as designed. Details: [`../docs/mantine.md`](../docs/mantine.md).
   therefore called without arguments; configured ones map them
   explicitly.
 - **Size:** Mantine roughly doubles the bundle (hello app 251 → 502 KB,
-  78 → 144 KB gzipped; `pfui.js` 101 → 174 KB gzipped), mostly because of
+  78 → 144 KB gzipped; `gfui.js` 101 → 174 KB gzipped), mostly because of
   `Select`'s Combobox, Popover and floating-ui.
 - **jsdom needs `matchMedia` and `ResizeObserver` stubs** for Mantine
   (`tests/jsdom-setup.ts`).
@@ -192,7 +192,7 @@ Implemented as designed. Details: [`../docs/mantine.md`](../docs/mantine.md).
 - **`Select`:** `Option` children and `data`, groups, multiple selection.
 - **`Button`:** `variant` (solid, outlined, ghost), `themeColor`, `icon`.
 - **Mantine's own tone selectors** follow `<html>` (set by the provider), so
-  a nested `<Theme tone>` gets pfui's colors but some Mantine-internal tone
+  a nested `<Theme tone>` gets gfui's colors but some Mantine-internal tone
   details (such as checkbox borders) stay with the app's tone.
 - **Bundle size:** lazy-loading heavier components (the Select dropdown).
 - **More Mantine components**, as the app needs them.

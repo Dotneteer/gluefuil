@@ -1,4 +1,4 @@
-// Parser for pfui script (a JavaScript subset). Produces an ESTree-subset tree.
+// Parser for gfui script (a JavaScript subset). Produces an ESTree-subset tree.
 // Design notes: .ai/plan/poc-02-expression-parser.md
 //
 // - Expressions: precedence climbing. Arrow parameters and destructuring
@@ -13,7 +13,7 @@ import type * as AST from "./ast";
 import { ScriptDiagnostics, type ScriptDiagnosticCode } from "./diagnostics";
 import { Lexer, type Token } from "./lexer";
 
-/** Where the parsed text sits in the .pfui file. */
+/** Where the parsed text sits in the .gui file. */
 export interface ScriptSourceOptions {
   /** File offset of the first character of the text (default 0). */
   offset?: number;
@@ -37,11 +37,11 @@ const RESERVED = new Set([
   "break", "case", "catch", "const", "continue", "default", "delete", "do", "else", "finally", "for",
   "function", "if", "import", "in", "instanceof", "let", "new", "return", "switch", "throw", "try",
   "typeof", "var", "while", "true", "false", "null",
-  // Reserved by JavaScript and not supported in pfui script:
+  // Reserved by JavaScript and not supported in gfui script:
   "class", "enum", "export", "extends", "super", "this", "void", "with", "debugger", "yield", "await",
 ]);
 
-/** Reserved words that name a JavaScript feature pfui script doesn't support. */
+/** Reserved words that name a JavaScript feature gfui script doesn't support. */
 const UNSUPPORTED_WORDS: Record<string, string> = {
   class: "'class'",
   enum: "'enum'",
@@ -790,7 +790,7 @@ export class ScriptParser {
 
   private parseArrowRest(start: number, params: AST.Pattern[], isAsync: boolean): AST.ArrowFunctionExpression {
     // JavaScript forbids a line break before `=>`; XMLUI allows it (it ignores
-    // line breaks), and real XMLUI code relies on it, so pfui allows it too.
+    // line breaks), and real XMLUI code relies on it, so gfui allows it too.
     this.expect("=>");
     const savedCover = this.pendingCover;
     this.pendingCover = -1;
