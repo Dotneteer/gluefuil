@@ -21,7 +21,7 @@ export interface CacheEntry {
   map?: { version: 3; sources: string[]; names: string[]; mappings: string; file?: string };
 }
 
-const PREFIX = "pfui:";
+const PREFIX = "gfui:";
 
 export class CompileCache {
   constructor(
@@ -93,7 +93,7 @@ export function defaultStorage(): StorageLike | undefined {
   try {
     const storage = (globalThis as { localStorage?: StorageLike }).localStorage;
     if (!storage) return undefined;
-    storage.getItem("pfui:probe"); // throws in some privacy modes
+    storage.getItem("gfui:probe"); // throws in some privacy modes
     return storage;
   } catch {
     return undefined;

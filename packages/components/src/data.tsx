@@ -14,7 +14,7 @@ import {
   type LoaderState,
   type RegisterApi,
   type RequestSpec,
-} from "@patchfuil/runtime";
+} from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 type Handler = (...args: unknown[]) => unknown;

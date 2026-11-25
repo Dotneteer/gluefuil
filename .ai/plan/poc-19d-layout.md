@@ -22,7 +22,7 @@ The new feature is **automatic spacing**:
 An author writes structure, and the spacing follows from it:
 
 ```xml
-<!-- Today (playground/src/components/CounterScenario.pfui) -->
+<!-- Today (playground/src/components/CounterScenario.gui) -->
 <Stack gap="16px">
   <ScenarioHeader title="Counter" description="…"/>
   <Stack gap="8px" var.count="{0}">
@@ -68,10 +68,10 @@ those components do.
   - The pattern is consistent. Outer stacks get 16–24px, inner ones 8px, and
     rows of buttons 8px. Authors already space by depth; the framework
     doesn't.
-- The App content (`.pfui-AppContent`, `styles.ts`) has padding
+- The App content (`.gfui-AppContent`, `styles.ts`) has padding
   (`paddingHorizontal/Vertical-content-App`, `$space-4`) but no gap.
 - `Page` and `Pages` render fragments, so a page's root children are direct
-  DOM children of `.pfui-AppContent`.
+  DOM children of `.gfui-AppContent`.
 - The theme engine derives `space-0` … `space-*` from `space-base`, 4px here
   (`components/src/theming/themes.ts`, `engine.ts`).
 - Breakpoints are xs 0, sm 576, md 768, lg 992, xl 1200 and xxl 1400
@@ -222,7 +222,7 @@ These props are accepted by every visual component, not only by containers:
   - a number, meaning px;
   - a percentage;
   - a star size (`*`, `2*`, in `width`/`height` only);
-  - `$name`, which is a theme variable and becomes `var(--pfui-name)`. It can
+  - `$name`, which is a theme variable and becomes `var(--gfui-name)`. It can
     be embedded: `"1px solid $color-surface-300"`.
 - **Checked at compile time:** a literal that is malformed, or a `$name` that
   is not a known theme variable, is **E031**. An expression's value is
@@ -325,7 +325,7 @@ headings' extra space and the named sizes.
 ```
 
 - **It already exists here.** Step 17's theme engine derives
-  `space-0` … `space-12` as `calc(var(--pfui-space-base) * N)`
+  `space-0` … `space-12` as `calc(var(--gfui-space-base) * N)`
   (`components/src/theming/engine.ts`, `derivedTokens`), and `space-base` is
   4px (`themes.ts`). XMLUI has the same variable, `"space-base": "0.25em"`
   (`xmlui/src/components-core/theming/themes/root.ts` L47).
@@ -339,7 +339,7 @@ headings' extra space and the named sizes.
   - Allowed: `0`, `auto`, `var(...)`, `calc()` over theme variables, and
     `em` values tied to the font, such as inline code's padding.
 - **What the test would catch today** (fixed in 19E):
-  - `gap: 2px` in `.pfui-NavPanel-items` and `.pfui-NavGroup-items`
+  - `gap: 2px` in `.gfui-NavPanel-items` and `.gfui-NavGroup-items`
     (`styles.ts` L79 and L151). These become `$space-0_5`.
   - Inline code's `padding: 0 0.25em` (L258) is allowed, because it is tied
     to the font.
@@ -511,16 +511,16 @@ Overrides are rare, but always possible:
 - **CSS does the rest.** Rules map the attributes to the theme variables:
 
   ```css
-  .pfui-Stack { gap: var(--pfui-gap-Stack, var(--_gap)); }
-  .pfui-Stack[data-orientation="vertical"][data-level="1"] { --_gap: var(--pfui-space-level1); }
-  .pfui-Stack[data-orientation="horizontal"][data-level="1"] { --_gap: var(--pfui-space-level2); }
-  .pfui-Stack[data-orientation="horizontal"][data-level="1"]:has(> .pfui-Stack) { --_gap: var(--pfui-space-level1); }
-  @media (max-width: 767.98px) { .pfui-App { --pfui-space-level0: var(--pfui-space-level0-phone); } }
+  .gfui-Stack { gap: var(--gfui-gap-Stack, var(--_gap)); }
+  .gfui-Stack[data-orientation="vertical"][data-level="1"] { --_gap: var(--gfui-space-level1); }
+  .gfui-Stack[data-orientation="horizontal"][data-level="1"] { --_gap: var(--gfui-space-level2); }
+  .gfui-Stack[data-orientation="horizontal"][data-level="1"]:has(> .gfui-Stack) { --_gap: var(--gfui-space-level1); }
+  @media (max-width: 767.98px) { .gfui-App { --gfui-space-level0: var(--gfui-space-level0-phone); } }
   ```
 
-- **Columns** are detected in CSS with `:has(> .pfui-Stack)`, not in
+- **Columns** are detected in CSS with `:has(> .gfui-Stack)`, not in
   JavaScript. It sees through user components, because their root is a
-  `.pfui-Stack` in the DOM. No JavaScript has to inspect the children.
+  `.gfui-Stack` in the DOM. No JavaScript has to inspect the children.
 - **Explicit props** are inline styles, so they always win.
 - **Why a context and not pure CSS:**
   - Descendant selectors (`:where(.S .S .S)`) can count depth without
@@ -704,8 +704,8 @@ without warnings: 2,121 unit tests in 71 files and 129 E2E tests.
   root. Layout must travel as `style` only (`withLayout`).
 - **Mantine's inputs were 26px wider than their wrapper** before this step
   (already on `master`). Mantine expects its `baseline.css`
-  (`* { box-sizing: border-box }`), which pfui doesn't load because it also
-  styles `<body>`. pfui now sets `border-box` on Mantine's input parts only.
+  (`* { box-sizing: border-box }`), which gfui doesn't load because it also
+  styles `<body>`. gfui now sets `border-box` on Mantine's input parts only.
 - **A Mantine `Button` can shrink to nothing in a row,** because its root
   clips its label. Buttons in stacks now keep their width: not stretched in
   a column (XMLUI: `layout.md` § VStack), not squeezed in a row.

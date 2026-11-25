@@ -119,7 +119,7 @@ export interface Backend {
 
 // --- Helpers for route handlers ---------------------------------------------------
 
-const RESPONSE = Symbol("pfui.mock.response");
+const RESPONSE = Symbol("gfui.mock.response");
 
 interface MockResponse {
   [RESPONSE]: true;

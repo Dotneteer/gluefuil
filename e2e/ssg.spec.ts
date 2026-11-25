@@ -42,20 +42,20 @@ async function watchTakeover(page: Page) {
   };
 }
 
-const ready = (page: Page) => expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+const ready = (page: Page) => expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
 
 test("with JavaScript disabled, the prerendered content is there", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, baseURL: baseURL! });
   const page = await context.newPage();
   await page.goto("/");
-  await expect(page.getByText("Hello, PFUI!")).toBeVisible();
+  await expect(page.getByText("Hello, GFUI!")).toBeVisible();
   await expect(page.getByText("Count: 0")).toBeVisible();
   await expect(page.getByText("Todo #1: Write tests")).toBeVisible();
   await expect(page.getByText("Layout: compact")).toBeVisible();
   await expect(page.getByRole("button", { name: "Increment", exact: true })).toBeVisible();
   // Not live: nothing took it over.
-  await expect(page.locator("#root")).toHaveAttribute("data-pfui-prerendered", "xs");
-  await expect(page.locator("#root")).not.toHaveAttribute("data-pfui-ready", /.*/);
+  await expect(page.locator("#root")).toHaveAttribute("data-gfui-prerendered", "xs");
+  await expect(page.locator("#root")).not.toHaveAttribute("data-gfui-ready", /.*/);
   await context.close();
 });
 

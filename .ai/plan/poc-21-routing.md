@@ -106,7 +106,7 @@ Step 22 (forms) follows. Its plan is written when this step is merged.
   mechanism a guard needs.
 - **The prerender** (`vite-plugin/src/prerender.ts`) renders one entry at
   `/` into `index.html`. `mountApp` hydrates when it finds
-  `data-pfui-prerendered`.
+  `data-gfui-prerendered`.
 
 ## Design
 
@@ -159,7 +159,7 @@ back if the guard says no. We do it in this order instead:
    **without adding a history entry**.
 
 To restore the URL correctly, every entry we push carries an index in
-`history.state` (`{ pfui: n }`). On a refusal the router calls
+`history.state` (`{ gfui: n }`). On a refusal the router calls
 `history.go(previous - current)`; the `popstate` that the call itself
 causes finds the app's route and only settles the indexes. *(As built:
 an entry without an index, a hash typed by hand, gets the next index when
@@ -194,7 +194,7 @@ divergence in mechanism; XMLUI parses the markup):
 3. The **static routes** are the patterns without `:` or `*`. They are
    rendered one after another in the same temporary server.
 
-This finds `Pages` wherever it is (in `Main.pfui` or in a user component),
+This finds `Pages` wherever it is (in `Main.gui` or in a user component),
 because it uses what actually rendered. It misses a `Pages` that is not
 rendered at `/` (for example under a `when` that is false at build time).
 That limit is documented, and the option below covers it.
@@ -214,7 +214,7 @@ plugin is part of the work.
 - **The runtime:** `SERVER_PATH` becomes `setServerPath(path)`, and
   `renderStatic(app, { breakpoint, path })` takes the path.
 - **The output:** the container gets a second attribute,
-  `data-pfui-path="/about"`.
+  `data-gfui-path="/about"`.
 - **Takeover:** `mountApp` reads the attribute, so hydration renders the
   same route as the static HTML. A browser at `/about` then changes nothing
   after takeover. Without the attribute (older output), the path is `/`.
@@ -223,7 +223,7 @@ plugin is part of the work.
 graph would be slow, so all routes render in the same temporary server.
 Module-level state is reset between renders (the router, the theme state,
 the shell state) through one `resetServerState()` in
-`@patchfuil/runtime/server`. A test proves that no route's HTML depends on
+`@gluefuil/runtime/server`. A test proves that no route's HTML depends on
 which route rendered before it.
 
 **Constraints, checked with messages:**
@@ -253,7 +253,7 @@ which route rendered before it.
 - [x] `App`: the metadata (events, `eventResults`) and the registration
       effect. `Pages` fallback redirects are unguarded.
 - [x] Runtime server: `setServerPath`, `renderStatic({ path })`,
-      `data-pfui-path`, `mountApp` reading it, `registeredRoutes()`,
+      `data-gfui-path`, `mountApp` reading it, `registeredRoutes()`,
       `resetServerState()`.
 - [x] Vite plugin: route discovery after `/`, the `routes` option and its
       validation, emitting `<route>/index.html`, the relative-`base` check.
@@ -292,7 +292,7 @@ which route rendered before it.
   - the output paths are right;
   - a relative `base` is refused;
   - each route's HTML is independent of render order;
-  - `data-pfui-path` round-trips through `mountApp`.
+  - `data-gfui-path` round-trips through `mountApp`.
 - **`tools/build-output.test.ts`:** the browser-mode fixture's `dist` has
   one `index.html` per static route, each with its own content.
 - **E2E (a real browser):**
@@ -374,7 +374,7 @@ step 21B.
     tab get the full URL. Routes in markup stay root-relative (`/about`).
 - **Its source is Vite's `base`**, like XMLUI's `__PUBLIC_PATH`, so one
   setting moves the assets and the routes together:
-  - the Vite plugin writes it on the root container as `data-pfui-base`
+  - the Vite plugin writes it on the root container as `data-gfui-base`
     (every build and the dev server, not only with prerender);
   - `mountApp` reads it (option `basename` overrides; standalone mode
     writes the attribute by hand or passes the option);
@@ -387,9 +387,9 @@ step 21B.
 
 - [x] Router: `navigate(n)`, `target: "_blank"`, the basename
       (`setBasename`, stripping and prepending); reset in `resetRouter`.
-- [x] `mountApp`: `basename` option and `data-pfui-base`; `renderStatic`
+- [x] `mountApp`: `basename` option and `data-gfui-base`; `renderStatic`
       option `basename`.
-- [x] Vite plugin: write `data-pfui-base` from `base`; prerender and the
+- [x] Vite plugin: write `data-gfui-base` from `base`; prerender and the
       preview rewrite under a base.
 - [x] Unit tests: deltas (allowed, refused, no entry, `0`, non-integer),
       the new tab (guard, URL in both modes, no move, no `didNavigate`),
@@ -405,8 +405,8 @@ step 21B.
 ### Decisions (part 2, accepted by the user)
 
 1. `willNavigate` receives the resolved path for `navigate(n)`, not `n`.
-2. The basename comes from Vite's `base`, carried by `data-pfui-base`.
-3. Step 21B covers `global.*` on `Main.pfui`'s root; a `Globals.xs` file is
+2. The basename comes from Vite's `base`, carried by `data-gfui-base`.
+3. Step 21B covers `global.*` on `Main.gui`'s root; a `Globals.xs` file is
    included only if it is cheap (it needs the code-behind loader).
 
 ### Outcome (part 2)
@@ -420,10 +420,10 @@ Implemented as designed. `npm run check`: 2,330 unit tests in 80 files
   `openInNewTab` (guard, then `window.open` with `browserUrl`), and the
   basename (`setBasename`, `normalizeBasename`, stripped in
   `readBrowserLocation`, prepended in `browserUrl` and `hrefFor`).
-- **`mountApp`** takes `basename` or reads `data-pfui-base`
+- **`mountApp`** takes `basename` or reads `data-gfui-base`
   (`BASE_ATTRIBUTE`); **`renderStatic`** takes `basename` and records it.
 - **Vite plugin:** `basenameOf(base)` (absolute bases only);
-  `addRootAttributes` writes `data-pfui-base` when there is no prerender
+  `addRootAttributes` writes `data-gfui-base` when there is no prerender
   (dev included); the prerender passes it to `renderStatic`;
   `previewRewrite` strips it.
 - **E2E:** `navigate(-1)` and a new tab in both routing fixtures; a third
@@ -457,7 +457,7 @@ Implemented as designed, with the changes listed under Findings. Details:
 ```
 
 ```ts
-pfui({ prerender: { routes: ["/users/1"] } })
+gfui({ prerender: { routes: ["/users/1"] } })
 // dist/index.html, dist/about/index.html, dist/docs/intro/index.html, dist/users/1/index.html
 ```
 
@@ -467,7 +467,7 @@ pfui({ prerender: { routes: ["/users/1"] } })
   follows every move except the first load.
 - **Prerendered routes:** with browser routing, every static route and
   each `routes` path gets its own file, which shows without JavaScript and
-  is taken over without a DOM change (`data-pfui-path`). Hash routing still
+  is taken over without a DOM change (`data-gfui-path`). Hash routing still
   writes only `index.html`.
 - **Fixtures:** `test-apps/routing` (hash) gained a guard and a log;
   `test-apps/routing-browser` is new (browser routing, prerendered, port

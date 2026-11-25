@@ -1,16 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // test-apps/hello (step 14): the examples of XMLUI's user-defined-components.md,
-// as component files (src/components/*.pfui, Counter with code-behind) and one
-// inline component in Main.pfui. Runs against the dev server and the build.
+// as component files (src/components/*.gui, Counter with code-behind) and one
+// inline component in Main.gfui. Runs against the dev server and the build.
 
-const text = (page: Page, value: string | RegExp) => page.locator(".pfui-Text").filter({ hasText: value });
+const text = (page: Page, value: string | RegExp) => page.locator(".gfui-Text").filter({ hasText: value });
 
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await expect(page.locator("#root .pfui-App")).toBeVisible();
+  await expect(page.locator("#root .gfui-App")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -50,6 +50,6 @@ test("slots: a named slot with $item, its fallback; the default slot in the call
   await expect(text(page, "(empty panel)")).toBeVisible();
 });
 
-test("code-behind of Main.pfui", async ({ page }) => {
+test("code-behind of Main.gui", async ({ page }) => {
   await expect(text(page, "CODE-BEHIND!")).toBeVisible();
 });

@@ -11,7 +11,7 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     if (message.type() === "error") errors.push(message.text());
   });
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("gfui playground");
   // Every button on the dashboard opens a scenario (the header's buttons are not the dashboard's).
   const main = page.getByRole("main");
   const titles = await main.getByRole("button").allTextContents();
@@ -50,7 +50,7 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     expect(text).toMatch(/\n {2,}</);
     expect(await source.evaluate((el) => getComputedStyle(el.parentElement!).whiteSpace)).toBe("pre");
     await page.getByRole("button", { name: "← Dashboard" }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("pfui playground");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("gfui playground");
   }
   expect(errors).toEqual([]);
 });
@@ -58,11 +58,11 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
 test("the side nav lists the dashboard and every scenario, and follows the route", async ({ page }) => {
   await page.goto("/");
   // The app mounts once the mock backend's service worker is ready (step 20).
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
   const nav = page.getByRole("navigation", { name: "Main" });
   const dashboard = await page.getByRole("main").getByRole("button").allTextContents();
   // The visible label of each link (each also has a hidden initial for the collapsed nav).
-  expect(await nav.locator(".pfui-NavLink-label").allTextContents()).toEqual(["Dashboard", ...dashboard]);
+  expect(await nav.locator(".gfui-NavLink-label").allTextContents()).toEqual(["Dashboard", ...dashboard]);
   await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
   await nav.getByRole("link", { name: "Theming" }).click();
   await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText("Theming");

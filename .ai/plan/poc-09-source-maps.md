@@ -6,7 +6,7 @@ Part of [poc-steps.md](poc-steps.md).
 
 ## Goal
 
-Compiled modules carry source maps back to the `.pfui` file, so stack
+Compiled modules carry source maps back to the `.gui` file, so stack
 traces, breakpoints and errors point at the markup. Code-behind doesn't
 exist yet; it will use the same mechanism.
 
@@ -51,7 +51,7 @@ Implemented. Details: [`../docs/source-maps.md`](../docs/source-maps.md).
 
 - **We validate more than XMLUI's E2E does.** A CDP test pauses on a real
   exception in Chromium, decodes the map the browser received, and checks
-  that the paused position is the `throw` line in `Main.pfui`. A unit test
+  that the paused position is the `throw` line in `Main.gui`. A unit test
   does the same with V8's own stack frames on the `loadModule` path, which
   verifies the 3-line wrapper shift.
 - **Two surprises, recorded in tests:**
@@ -71,7 +71,7 @@ Implemented. Details: [`../docs/source-maps.md`](../docs/source-maps.md).
 
 ## Open for later steps
 
-- Breakpoints set on the original `.pfui` line in DevTools: the maps
+- Breakpoints set on the original `.gui` line in DevTools: the maps
   support them, but no automated UI-level test exists (as in XMLUI).
 - Code-behind and `<script>` (when they exist): the same marker mechanism.
 - Production builds: whether to emit maps, and external map files

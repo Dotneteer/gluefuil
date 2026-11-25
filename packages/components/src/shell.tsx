@@ -4,16 +4,16 @@
 //
 // One DOM structure for every app. Only the nav moves, into one of four slots:
 //
-//   div.pfui-App                 data-scroll, data-nav, data-drawer-below, …
+//   div.gfui-App                 data-scroll, data-nav, data-drawer-below, …
 //     [nav: side + fullHeight]
-//     div.pfui-AppColumn
-//       header.pfui-AppHeader    [nav: header]
+//     div.gfui-AppColumn
+//       header.gfui-AppHeader    [nav: header]
 //       [nav: below-header]
-//       div.pfui-AppBody
+//       div.gfui-AppBody
 //         [nav: side]
-//         main.pfui-AppMain > div.pfui-AppContent   (the content)
-//       footer.pfui-Footer
-//     div.pfui-App-overlay       (while the drawer is open)
+//         main.gfui-AppMain > div.gfui-AppContent   (the content)
+//       footer.gfui-Footer
+//     div.gfui-App-overlay       (while the drawer is open)
 //
 // CSS (styles.ts) does the rest: what sticks, what scrolls, and the drawer
 // below the breakpoint. Nothing is measured. The compiler passes the regions
@@ -32,7 +32,7 @@ import {
   useComputed,
   useSignal,
   type TemplateRenderer,
-} from "@patchfuil/runtime";
+} from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { Icon } from "./icons";
 import { BAR_SCOPE, childCount, LayoutScope, pageScope } from "./layout";
@@ -118,20 +118,20 @@ export function Shell({ config = NO_SHELL, header, nav, footer, logo, root, chil
   return (
     <ShellContext.Provider value={{ config, nav, logo, navId }}>
       {bar(slot("side", true))}
-      <div className="pfui-AppColumn">
+      <div className="gfui-AppColumn">
         {bar(theHeader)}
         {bar(slot("below-header"))}
-        <div className="pfui-AppBody">
+        <div className="gfui-AppBody">
           {bar(slot("side"))}
-          <main className="pfui-AppMain">
-            <div className="pfui-AppContent">
+          <main className="gfui-AppMain">
+            <div className="gfui-AppContent">
               <LayoutScope value={page}>{children}</LayoutScope>
             </div>
           </main>
         </div>
         {bar(footer)}
       </div>
-      {drawerOpen && config.nav ? <div className="pfui-App-overlay" onClick={() => setNavDrawerOpen(false)} /> : null}
+      {drawerOpen && config.nav ? <div className="gfui-App-overlay" onClick={() => setNavDrawerOpen(false)} /> : null}
     </ShellContext.Provider>
   );
 }
@@ -150,11 +150,11 @@ function useDrawer(config: ShellConfig, open: boolean, root: RefObject<HTMLDivEl
   useEffect(() => {
     if (!open) return undefined;
     const element = root.current;
-    element?.querySelector<HTMLElement>(".pfui-NavPanel a, .pfui-NavPanel summary, .pfui-NavPanel button")?.focus();
+    element?.querySelector<HTMLElement>(".gfui-NavPanel a, .gfui-NavPanel summary, .gfui-NavPanel button")?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setNavDrawerOpen(false);
-      element?.querySelector<HTMLElement>(".pfui-AppHeader-burger")?.focus();
+      element?.querySelector<HTMLElement>(".gfui-AppHeader-burger")?.focus();
     };
     document.addEventListener("keydown", onKey);
     const min = BREAKPOINTS.find(([name]) => name === drawerBelow)?.[1];
@@ -175,7 +175,7 @@ export function appLogo(tone: string, logo: unknown, logoLight: unknown, logoDar
   if (logoTemplate) return logoTemplate({});
   const toned = tone === "dark" ? logoDark : logoLight;
   const url = typeof toned === "string" && toned !== "" ? toned : typeof logo === "string" && logo !== "" ? logo : undefined;
-  return url ? <img className="pfui-AppLogo" src={url} alt="Logo" /> : null;
+  return url ? <img className="gfui-AppLogo" src={url} alt="Logo" /> : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,10 +206,10 @@ export function AppHeader({
   const logo = isFalse(showLogo) ? null : logoTemplate ? logoTemplate({}) : shell?.logo;
   const titleContent = titleTemplate ? titleTemplate({}) : title !== undefined && title !== null && title !== "" ? String(title) : null;
   return (
-    <header className="pfui-AppHeader" data-sticky={isFalse(sticky) ? undefined : ""} data-generated={$$generated ? "" : undefined}>
+    <header className="gfui-AppHeader" data-sticky={isFalse(sticky) ? undefined : ""} data-generated={$$generated ? "" : undefined}>
       {nav && nav.drawerBelow !== "never" ? (
         <Burger
-          className="pfui-AppHeader-burger"
+          className="gfui-AppHeader-burger"
           opened={drawerOpen}
           onClick={() => setNavDrawerOpen(!drawerOpen)}
           aria-label={drawerOpen ? "Close navigation" : "Open navigation"}
@@ -218,11 +218,11 @@ export function AppHeader({
           size="sm"
         />
       ) : null}
-      {logo ? <div className="pfui-AppHeader-logo">{logo}</div> : null}
-      {titleContent !== null ? <div className="pfui-AppHeader-title">{titleContent}</div> : null}
+      {logo ? <div className="gfui-AppHeader-logo">{logo}</div> : null}
+      {titleContent !== null ? <div className="gfui-AppHeader-title">{titleContent}</div> : null}
       {nav?.placement === "header" ? shell!.nav : null}
-      <div className="pfui-AppHeader-content">{children}</div>
-      {profileMenuTemplate ? <div className="pfui-AppHeader-profile">{profileMenuTemplate({})}</div> : null}
+      <div className="gfui-AppHeader-content">{children}</div>
+      {profileMenuTemplate ? <div className="gfui-AppHeader-profile">{profileMenuTemplate({})}</div> : null}
     </header>
   );
 }
@@ -245,17 +245,17 @@ export function NavPanel({
   // The logo shows in the nav when the nav holds the top-left corner.
   const logo = shell?.config.nav?.placement === "side" && shell.config.nav.fullHeight ? (logoTemplate ? logoTemplate({}) : shell.logo) : null;
   return (
-    <nav className="pfui-NavPanel" id={shell?.navId} data-placement={where} data-sticky={isFalse(sticky) ? undefined : ""} aria-label="Main">
-      {logo ? <div className="pfui-NavPanel-logo">{logo}</div> : null}
-      <div className="pfui-NavPanel-items">{children}</div>
-      {footerTemplate ? <div className="pfui-NavPanel-footer">{footerTemplate({})}</div> : null}
+    <nav className="gfui-NavPanel" id={shell?.navId} data-placement={where} data-sticky={isFalse(sticky) ? undefined : ""} aria-label="Main">
+      {logo ? <div className="gfui-NavPanel-logo">{logo}</div> : null}
+      <div className="gfui-NavPanel-items">{children}</div>
+      {footerTemplate ? <div className="gfui-NavPanel-footer">{footerTemplate({})}</div> : null}
     </nav>
   );
 }
 
 export function Footer({ sticky, children }: { sticky?: unknown; children?: ReactNode }) {
   return (
-    <footer className="pfui-Footer" data-sticky={isFalse(sticky) ? undefined : ""}>
+    <footer className="gfui-Footer" data-sticky={isFalse(sticky) ? undefined : ""}>
       {children}
     </footer>
   );
@@ -303,15 +303,15 @@ export function NavLink({
   };
   return (
     <a
-      className="pfui-NavLink"
+      className="gfui-NavLink"
       href={target !== undefined ? hrefFor(target) : undefined}
       onClick={onClick}
       data-active={isActive ? "" : undefined}
       aria-current={isActive ? "page" : undefined}
       title={text}
     >
-      {icon ? <Icon name={icon} className="pfui-NavLink-icon" /> : <span className="pfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
-      <span className="pfui-NavLink-label">{text ?? children}</span>
+      {icon ? <Icon name={icon} className="gfui-NavLink-icon" /> : <span className="gfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
+      <span className="gfui-NavLink-label">{text ?? children}</span>
     </a>
   );
 }
@@ -321,7 +321,7 @@ export function NavGroup({ label, icon, initiallyExpanded, children }: { label?:
   const pathname = usePathname();
   const text = label !== undefined && label !== null ? String(label) : "";
   // In a bar (header or below-header) the group is a dropdown: navigating or clicking elsewhere closes it.
-  const inBar = () => ref.current?.closest(".pfui-NavPanel")?.getAttribute("data-placement") !== "side" && !ref.current?.closest(".pfui-App[data-drawer-open]");
+  const inBar = () => ref.current?.closest(".gfui-NavPanel")?.getAttribute("data-placement") !== "side" && !ref.current?.closest(".gfui-App[data-drawer-open]");
   useEffect(() => {
     if (ref.current && inBar()) ref.current.open = false;
   }, [pathname]);
@@ -334,13 +334,13 @@ export function NavGroup({ label, icon, initiallyExpanded, children }: { label?:
     return () => document.removeEventListener("click", onClick);
   }, []);
   return (
-    <details className="pfui-NavGroup" ref={ref} open={isTrue(initiallyExpanded) || undefined}>
-      <summary className="pfui-NavGroup-label" title={text}>
-        {icon ? <Icon name={icon} className="pfui-NavLink-icon" /> : <span className="pfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
-        <span className="pfui-NavLink-label">{text}</span>
-        <Icon name="chevronDown" className="pfui-NavGroup-chevron" />
+    <details className="gfui-NavGroup" ref={ref} open={isTrue(initiallyExpanded) || undefined}>
+      <summary className="gfui-NavGroup-label" title={text}>
+        {icon ? <Icon name={icon} className="gfui-NavLink-icon" /> : <span className="gfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
+        <span className="gfui-NavLink-label">{text}</span>
+        <Icon name="chevronDown" className="gfui-NavGroup-chevron" />
       </summary>
-      <div className="pfui-NavGroup-items">{children}</div>
+      <div className="gfui-NavGroup-items">{children}</div>
     </details>
   );
 }
@@ -349,7 +349,7 @@ export function NavPanelCollapseButton({ "aria-label": label, "aria-labelCollaps
   const collapsed = useSignal(navPanelCollapsed);
   const name = collapsed ? (typeof labelCollapsed === "string" ? labelCollapsed : "Expand navigation") : typeof label === "string" ? label : "Collapse navigation";
   return (
-    <button type="button" className="pfui-NavPanelCollapseButton" aria-label={name} aria-expanded={!collapsed} onClick={() => setNavPanelCollapsed(!collapsed)}>
+    <button type="button" className="gfui-NavPanelCollapseButton" aria-label={name} aria-expanded={!collapsed} onClick={() => setNavPanelCollapsed(!collapsed)}>
       <Icon name={collapsed ? "chevronRight" : "chevronLeft"} />
     </button>
   );

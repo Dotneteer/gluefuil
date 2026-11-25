@@ -1,4 +1,4 @@
-// Compiles pfui script syntax trees to JavaScript source, resolving every name
+// Compiles gfui script syntax trees to JavaScript source, resolving every name
 // at compile time (the compiler is the sandbox). One pass: resolution, sandbox
 // checks, dependency collection and printing.
 //

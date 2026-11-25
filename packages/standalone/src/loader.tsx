@@ -1,12 +1,12 @@
-// The standalone loader: fetch Main.pfui and the component files it uses,
+// The standalone loader: fetch Main.gui and the component files it uses,
 // compile them in the browser (or take them from the cache), mount the app,
 // and watch the files for changes.
 // Design: .ai/plan/poc-11-standalone.md, .ai/plan/poc-14-user-components.md
 
-import { analyzeModule, compileModule, formatDiagnostic, LineMap, type Diagnostic, type UserComponentInfo } from "@patchfuil/compiler";
-import * as builtIns from "@patchfuil/components";
-import { componentMetadata } from "@patchfuil/components/metadata";
-import { loadModule, setDefaultHandlerTimeout } from "@patchfuil/runtime";
+import { analyzeModule, compileModule, formatDiagnostic, LineMap, type Diagnostic, type UserComponentInfo } from "@gluefuil/compiler";
+import * as builtIns from "@gluefuil/components";
+import { componentMetadata } from "@gluefuil/components/metadata";
+import { loadModule, setDefaultHandlerTimeout } from "@gluefuil/runtime";
 import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { CompileCache, defaultStorage, type CacheEntry, type StorageLike } from "./cache";
@@ -14,9 +14,9 @@ import { hashText } from "./hash";
 import { ErrorOverlay, type LoadError } from "./overlay";
 
 export interface StartOptions {
-  /** The entry file, relative to the page. Default "Main.pfui". */
+  /** The entry file, relative to the page. Default "Main.gui". */
   main?: string;
-  /** The mount element, or a CSS selector. Default: a new `<div id="pfui-root">` in the body. */
+  /** The mount element, or a CSS selector. Default: a new `<div id="gfui-root">` in the body. */
   root?: Element | string;
   /** Use the localStorage compile cache. Default true. */
   cache?: boolean;
@@ -47,7 +47,7 @@ export interface LoadStatus {
   components?: string[];
 }
 
-/** One fetched source: a .pfui file and its code-behind (undefined: none, a 404). */
+/** One fetched source: a .gui file and its code-behind (undefined: none, a 404). */
 interface Source {
   path: string;
   markup: string;
@@ -64,8 +64,8 @@ interface Fetched {
 }
 
 /** Replaced by the bundle build with a value unique to each build. */
-declare const __PFUI_BUILD_ID__: string | undefined;
-const BUILD_ID = typeof __PFUI_BUILD_ID__ === "string" ? __PFUI_BUILD_ID__ : "dev";
+declare const __GFUI_BUILD_ID__: string | undefined;
+const BUILD_ID = typeof __GFUI_BUILD_ID__ === "string" ? __GFUI_BUILD_ID__ : "dev";
 
 function isLocalhost(): boolean {
   const host = (globalThis as { location?: { hostname?: string } }).location?.hostname ?? "";
@@ -87,7 +87,7 @@ export class StandaloneApp {
   private loads = 0;
 
   constructor(private readonly options: StartOptions = {}) {
-    this.file = options.main ?? "Main.pfui";
+    this.file = options.main ?? "Main.gui";
     this.base = this.file.includes("/") ? this.file.slice(0, this.file.lastIndexOf("/") + 1) : "";
     this.cache = new CompileCache(options.cache === false ? undefined : (options.storage ?? defaultStorage()), options.buildId ?? BUILD_ID);
     this.fetchFn = options.fetch ?? ((url: string, init?: RequestInit) => fetch(url, init));
@@ -132,11 +132,11 @@ export class StandaloneApp {
     if (root instanceof Element) return root;
     if (typeof root === "string") {
       const found = document.querySelector(root);
-      if (!found) throw new Error(`pfui: no element matches the root selector '${root}'`);
+      if (!found) throw new Error(`gfui: no element matches the root selector '${root}'`);
       return found;
     }
     const div = document.createElement("div");
-    div.id = "pfui-root";
+    div.id = "gfui-root";
     document.body.appendChild(div);
     return div;
   }
@@ -151,7 +151,7 @@ export class StandaloneApp {
 
   /**
    * Fetches the entry file, then each component it (transitively) uses that is
-   * neither built in nor defined inline: `components/<Name>.pfui`, with
+   * neither built in nor defined inline: `components/<Name>.gui`, with
    * code-behind (`<file>.xs`). A missing component file is left to the compiler
    * (E001, unknown component).
    */
@@ -173,7 +173,7 @@ export class StandaloneApp {
       for (const defined of analysis.components) seen.add(defined.name);
       const wanted = analysis.references.filter((name) => !Object.hasOwn(componentMetadata, name) && !seen.has(name));
       for (const name of wanted) seen.add(name);
-      const found = await Promise.all(wanted.map((name) => fetchSource(`${this.base}components/${name}.pfui`, true)));
+      const found = await Promise.all(wanted.map((name) => fetchSource(`${this.base}components/${name}.gui`, true)));
       for (const [index, name] of wanted.entries()) {
         const file = found[index];
         if (!file) {
@@ -269,7 +269,7 @@ export class StandaloneApp {
     const warnings = diagnostics.filter((d) => d.severity === "warning");
     if (warnings.length === 0) return;
     const lineMap = new LineMap(source);
-    for (const warning of warnings) console.warn(`pfui: ${formatDiagnostic(warning, lineMap, file)}`);
+    for (const warning of warnings) console.warn(`gfui: ${formatDiagnostic(warning, lineMap, file)}`);
   }
 
   /** Shows the overlay when there are errors; returns whether it did. */

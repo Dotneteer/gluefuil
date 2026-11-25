@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 // /about and index.html for any other unknown path.
 
 const heading = (page: Page) => page.getByRole("heading", { level: 1 });
-const ready = (page: Page) => expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+const ready = (page: Page) => expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
 const log = (page: Page) => page.getByText(/^Log:/);
 
 /** Records every h1 text that appears after the call (to prove a page never rendered). */
@@ -39,7 +39,7 @@ test("with JavaScript disabled, each prerendered route shows its own content", a
     await page.goto(path!);
     await expect(heading(page)).toHaveText(title!);
     await expect(page.getByText(`Route: ${path}`)).toBeVisible();
-    await expect(page.locator("#root")).toHaveAttribute("data-pfui-path", path!);
+    await expect(page.locator("#root")).toHaveAttribute("data-gfui-path", path!);
   }
   await context.close();
 });

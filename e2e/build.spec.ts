@@ -41,7 +41,7 @@ test("the built app runs under a strict CSP, fetching no markup", async ({ page 
   await expect.poll(violations).toEqual([expect.stringMatching(/^script-src/)]);
   expect(await page.evaluate(() => (window as unknown as { evalRan?: boolean }).evalRan)).toBeUndefined();
 
-  // Only built assets: no .pfui source, no compiler.
-  expect(requests.filter((path) => path.endsWith(".pfui") || path.includes("/packages/"))).toEqual([]);
+  // Only built assets: no .gui source, no compiler.
+  expect(requests.filter((path) => path.endsWith(".gui") || path.includes("/packages/"))).toEqual([]);
   expect(requests.some((path) => /^\/assets\/index-[\w-]+\.js$/.test(path))).toBe(true);
 });

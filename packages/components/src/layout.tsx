@@ -158,11 +158,11 @@ export function layoutStyle(props: LayoutProps, parent: LayoutContextValue): Lay
 /**
  * The width of a percentage-sized item in a flow: `W - gap × (1 − W/100%)`, so
  * items adding up to 100% fill a row exactly with the gaps between them; 100%
- * on phones. `--pfui-flow-gap` and `--pfui-flow-wide` (1, or 0 on phones) come
+ * on phones. `--gfui-flow-gap` and `--gfui-flow-wide` (1, or 0 on phones) come
  * from the wrapping stack (styles.ts LAYOUT).
  */
 export function flowWidth(width: string, fraction: string): string {
-  return `calc((${width} - var(--pfui-flow-gap) * ${1 - Number(fraction)}) * var(--pfui-flow-wide) + 100% * (1 - var(--pfui-flow-wide)))`;
+  return `calc((${width} - var(--gfui-flow-gap) * ${1 - Number(fraction)}) * var(--gfui-flow-wide) + 100% * (1 - var(--gfui-flow-wide)))`;
 }
 
 /** `layoutStyle` in the current layout context. */
@@ -223,15 +223,15 @@ export function Stack(props: StackProps) {
   if (typeof cross === "string" && Object.hasOwn(ALIGN, cross)) own.alignItems = ALIGN[cross]!;
   const gapCss = layoutCss(gap);
   // Inline, so it wins over the ladder (and over gap-Stack) on this stack only.
-  if (gapCss !== undefined) own["--pfui-gap"] = gapCss;
+  if (gapCss !== undefined) own["--gfui-gap"] = gapCss;
   const itemWidthCss = wrap ? layoutCss(itemWidth) : undefined;
   if (itemWidthCss !== undefined) {
-    own["--pfui-item-width"] = itemWidthCss;
-    own["--pfui-item-fraction"] = /%$/.test(itemWidthCss) ? String(Number.parseFloat(itemWidthCss) / 100) : "1";
+    own["--gfui-item-width"] = itemWidthCss;
+    own["--gfui-item-fraction"] = /%$/.test(itemWidthCss) ? String(Number.parseFloat(itemWidthCss) / 100) : "1";
   }
   return (
     <div
-      className="pfui-Stack"
+      className="gfui-Stack"
       data-orientation={horizontal ? "horizontal" : "vertical"}
       data-level={clampLevel(level + shift)}
       data-wrap={wrap ? "" : undefined}
@@ -247,5 +247,5 @@ export function Stack(props: StackProps) {
 /** The free space of a stack (pushes what follows to the end); a line break in a wrapping stack. */
 export function SpaceFiller(props: LayoutProps) {
   const { style, attributes } = useLayout(props);
-  return <div className="pfui-SpaceFiller" {...attributes} style={style} />;
+  return <div className="gfui-SpaceFiller" {...attributes} style={style} />;
 }

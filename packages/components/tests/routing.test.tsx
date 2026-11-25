@@ -1,6 +1,6 @@
 // Step 19 in jsdom: Pages, Page, Link and the routing globals through compiled markup.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule, navigate, resetRouter } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule, navigate, resetRouter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import * as components from "../src/index";

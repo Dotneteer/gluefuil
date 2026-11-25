@@ -59,7 +59,7 @@ describe("the generated code", () => {
   });
 });
 
-describe("user-defined components (pfui applies behaviors to them; XMLUI does not)", () => {
+describe("user-defined components (gfui applies behaviors to them; XMLUI does not)", () => {
   test.each<[label: string, markup: string, attached: string[], expected: [string, string][]]>([
     ["a UDC that does not read the prop: the behavior wraps it", '<Component name="Card"><Text>{$props.title}</Text></Component><App><Card title="x" tooltip="t"/></App>', ["TooltipBehavior"], []],
     ["a UDC that reads $props.tooltip handles it itself", '<Component name="Card"><Text>{$props.tooltip}</Text></Component><App><Card tooltip="t"/></App>', [], []],

@@ -1,14 +1,14 @@
 {
-  "name": "@patchfuil/playground",
+  "name": "@gluefuil/playground",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Manual testing: a dashboard of scenarios, each on its own page. See README.md.",
   "dependencies": {
-    "@patchfuil/compiler": "0.0.0",
-    "@patchfuil/components": "0.0.0",
-    "@patchfuil/runtime": "0.0.0",
-    "@patchfuil/vite-plugin": "0.0.0",
-    "@patchfuil/mock-backend": "0.0.0"
+    "@gluefuil/compiler": "0.0.0",
+    "@gluefuil/components": "0.0.0",
+    "@gluefuil/runtime": "0.0.0",
+    "@gluefuil/vite-plugin": "0.0.0",
+    "@gluefuil/mock-backend": "0.0.0"
   }
 }

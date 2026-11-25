@@ -1,5 +1,5 @@
 {
-  "name": "@patchfuil/components",
+  "name": "@gluefuil/components",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,14 +11,14 @@
   "dependencies": {
     "@mantine/core": "9.8.2",
     "@mantine/hooks": "9.8.2",
-    "@patchfuil/runtime": "0.0.0"
+    "@gluefuil/runtime": "0.0.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@patchfuil/compiler": "*",
-    "@patchfuil/mock-backend": "*"
+    "@gluefuil/compiler": "*",
+    "@gluefuil/mock-backend": "*"
   }
 }

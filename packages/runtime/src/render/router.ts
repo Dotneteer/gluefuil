@@ -111,7 +111,7 @@ export function routePath({ pathname, query }: RouteLocation): string {
   return search ? `${pathname}?${search}` : pathname;
 }
 
-// --- History indexes: each entry we push carries `{ pfui: n }` in history.state,
+// --- History indexes: each entry we push carries `{ gfui: n }` in history.state,
 // so a refused back/forward can be undone with history.go(delta).
 
 /** The index of the entry whose route the app shows. */
@@ -131,7 +131,7 @@ function settleOnBrowserEntry(): void {
 }
 
 function stateIndex(state: unknown): number | undefined {
-  const value = (state as { pfui?: unknown } | null)?.pfui;
+  const value = (state as { gfui?: unknown } | null)?.gfui;
   return typeof value === "number" ? value : undefined;
 }
 
@@ -154,7 +154,7 @@ function ensureListening(): void {
   // has already called history.go (asynchronous), and refuse again (found in step 21).
   view.addEventListener("popstate", onBrowserChange);
   const index = stateIndex(view.history.state);
-  if (index === undefined) view.history.replaceState({ pfui: browserIndex }, "");
+  if (index === undefined) view.history.replaceState({ gfui: browserIndex }, "");
   else browserIndex = index;
   settleOnBrowserEntry();
   location.set(readBrowserLocation(view));
@@ -267,7 +267,7 @@ function onBrowserChange(): void {
     // entry the browser was on, and any entries after that are gone, perhaps the app's own.
     browserIndex += 1;
     if (entryIndex >= browserIndex) entryGone = true;
-    view.history.replaceState({ pfui: browserIndex }, "");
+    view.history.replaceState({ gfui: browserIndex }, "");
   }
   // Back where the app is (our own restore).
   if (nextPath === routePath(location.peek())) {
@@ -303,7 +303,7 @@ function onBrowserChange(): void {
     // app's route. If the browser dropped that entry, the current one takes the app's URL.
     if (!entryGone && entryIndex !== browserIndex) view.history.go(entryIndex - browserIndex);
     else {
-      view.history.replaceState({ pfui: browserIndex }, "", browserUrl(view, routePath(location.peek())));
+      view.history.replaceState({ gfui: browserIndex }, "", browserUrl(view, routePath(location.peek())));
       settleOnBrowserEntry();
     }
   });
@@ -313,7 +313,7 @@ export function routingMode(): RoutingMode {
   return mode;
 }
 
-/** The route static HTML is rendered for, and hydration renders (`data-pfui-path`). */
+/** The route static HTML is rendered for, and hydration renders (`data-gfui-path`). */
 export function setServerPath(path: string): void {
   serverPath = routePath(parseLocation(path));
 }
@@ -367,8 +367,8 @@ function commit(target: RouteLocation, replace: boolean): void {
     ensureListening();
     const url = browserUrl(view, routePath(target));
     // A new entry follows the browser's current one (which may not be the app's while a guard holds).
-    if (replace) view.history.replaceState({ pfui: browserIndex }, "", url);
-    else view.history.pushState({ pfui: ++browserIndex }, "", url);
+    if (replace) view.history.replaceState({ gfui: browserIndex }, "", url);
+    else view.history.pushState({ gfui: ++browserIndex }, "", url);
     settleOnBrowserEntry();
   }
   held = undefined;

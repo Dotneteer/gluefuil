@@ -48,7 +48,7 @@ relative to `/Users/dotneteer/source/xmlui`.
 ### Step 0: Workspace and test harness ✅
 
 - **Outcome:**
-  - Packages are named `@patchfuil/*` and export their TypeScript source
+  - Packages are named `@gluefuil/*` and export their TypeScript source
     directly (no build step yet).
   - The boundary rules are enforced by `tools/boundaries.test.ts`, which
     also tests the checker itself on fixtures.
@@ -84,7 +84,7 @@ relative to `/Users/dotneteer/source/xmlui`.
   - Throughput is about 120 MB/s.
   - Helper-tag recognition moved to the later semantic stage. The parser is
     purely syntactic, as XMLUI's is.
-- **Subject:** `.pfui` markup text becomes an AST of elements, attributes and
+- **Subject:** `.gui` markup text becomes an AST of elements, attributes and
   text, with exact source positions (line, column, offset) on every node.
   Includes error recovery and diagnostics with locations, and helper tags
   (`<property>`, `<event>`, `<variable>`, `<method>`, `<script>`) recognized
@@ -214,7 +214,7 @@ Plan and findings: [poc-08-scoping-ids.md](poc-08-scoping-ids.md).
 
 Plan and findings: [poc-09-source-maps.md](poc-09-source-maps.md).
 
-- **Subject:** compiled modules carry source maps back to the `.pfui` file
+- **Subject:** compiled modules carry source maps back to the `.gui` file
   (attributes, handlers and code-behind).
 - **Tests:**
   - Unit: map generated positions back and assert the original line and
@@ -243,7 +243,7 @@ Plan and findings: [poc-10-conditionals-templates.md](poc-10-conditionals-templa
 
 Plan and findings: [poc-11-standalone.md](poc-11-standalone.md).
 
-- **Subject:** one HTML file plus one JS file. Fetches `Main.pfui` and the
+- **Subject:** one HTML file plus one JS file. Fetches `Main.gui` and the
   components, compiles them in the browser, caches the result in
   `localStorage` (keyed by content hash), and watches markup files for
   changes.
@@ -256,7 +256,7 @@ Plan and findings: [poc-11-standalone.md](poc-11-standalone.md).
 
 Plan and findings: [poc-12-build-time.md](poc-12-build-time.md).
 
-- **Subject:** a Vite plugin compiles `.pfui` files at build time; the
+- **Subject:** a Vite plugin compiles `.gui` files at build time; the
   shipped bundle contains no parser or compiler.
 - **Tests:**
   - Unit: the plugin's transform output.
@@ -287,7 +287,7 @@ Plan and findings: [poc-14-user-components.md](poc-14-user-components.md).
   private variables, `emitEvent`, methods and `$self`, the default and
   named slots, slot props flowing back as `$item`, scope isolation (a
   parent variable referenced inside is a compile error), inline
-  `<Component>` in `Main.pfui`, and code-behind.
+  `<Component>` in `Main.gui`, and code-behind.
 - **Tests:**
   - Unit: one test per feature.
   - E2E: the examples from `pages/user-defined-components.md`.
@@ -444,7 +444,7 @@ route constraints and nested pages moved to Phase G (step 38).
 
 Plan: [poc-21b-globals.md](poc-21b-globals.md).
 
-- **Subject:** `global.*` variables declared on the root of `Main.pfui`
+- **Subject:** `global.*` variables declared on the root of `Main.gui`
   are readable and writable in every file, user components included, and
   can be shadowed by a local variable of the same name (XMLUI:
   `website/content/docs/pages/scoping.md`, line 148). A `Globals.xs` file

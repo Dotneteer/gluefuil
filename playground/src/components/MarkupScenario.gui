@@ -1,6 +1,6 @@
 <Component name="MarkupScenario">
   <VStack>
-    <ScenarioHeader title="Markup" description="Step 2: entities, CDATA, comments, whitespace and escaped braces in .pfui markup."/>
+    <ScenarioHeader title="Markup" description="Step 2: entities, CDATA, comments, whitespace and escaped braces in .gui markup."/>
     <VStack>
       <Text>Entities: a &lt; b &amp;&amp; c &gt; d, &quot;double&quot; and &apos;single&apos; quotes</Text>
       <Text>Numeric references stay literal (as in XMLUI, only named entities decode): &#169;</Text>

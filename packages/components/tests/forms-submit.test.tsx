@@ -1,10 +1,10 @@
 // Step 22B in jsdom, against the mock backend (MSW in Node): a Form loading
 // its data from a URL, submitting to a URL, server validation errors on the
 // inputs, cancel() and unmount, and invalidation.
-import { compileModule } from "@patchfuil/compiler";
-import { defineBackend, status } from "@patchfuil/mock-backend";
-import { startTestServer } from "@patchfuil/mock-backend/node";
-import { loadModule, resetDataState, setDataDefaults, setErrorReporter } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { defineBackend, status } from "@gluefuil/mock-backend";
+import { startTestServer } from "@gluefuil/mock-backend/node";
+import { loadModule, resetDataState, setDataDefaults, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentType } from "react";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from "vitest";
@@ -67,9 +67,9 @@ function mount(markup: string) {
 const input = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
 const type = (label: string, value: string) => act(async () => fireEvent.change(input(label), { target: { value } }));
 const save = () => act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
-const messages = () => [...document.querySelectorAll(".pfui-Field-messages .pfui-ValidationMessage")].map((e) => e.textContent);
-const summary = () => [...document.querySelectorAll(".pfui-Form-summary .pfui-ValidationMessage")].map((e) => e.textContent);
-const text = (prefix: string) => [...document.querySelectorAll(".pfui-Text")].find((e) => e.textContent?.startsWith(prefix))?.textContent;
+const messages = () => [...document.querySelectorAll(".gfui-Field-messages .gfui-ValidationMessage")].map((e) => e.textContent);
+const summary = () => [...document.querySelectorAll(".gfui-Form-summary .gfui-ValidationMessage")].map((e) => e.textContent);
+const text = (prefix: string) => [...document.querySelectorAll(".gfui-Text")].find((e) => e.textContent?.startsWith(prefix))?.textContent;
 const requests = () => backend.log().map((e) => `${e.method} ${e.url.replace(/^https?:\/\/[^/]+/, "")}`);
 
 const PROFILE = `

@@ -1,5 +1,5 @@
 // Script nodes carry file offsets. With `offset`/`offsets`, positions point
-// into the .pfui file, not into the attribute value or text.
+// into the .gui file, not into the attribute value or text.
 import { describe, expect, test } from "vitest";
 import type * as AST from "../../src/script/ast";
 import { parseExpression, parseStatements } from "../../src/script/parse";

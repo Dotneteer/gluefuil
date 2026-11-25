@@ -2,8 +2,8 @@
 
 **Status:** Draft
 
-The framework is **patchfuil** (short name **pfui**). XMLUI is its origin
-and reference. Markup files use the `.pfui` extension.
+The framework is **gluefuil** (short name **gfui**). XMLUI is its origin
+and reference. Markup files use the `.gui` extension.
 
 This is the master plan. It records the goals and constraints, and lists the
 design areas we work through **one at a time**. Each area is settled in this
@@ -96,7 +96,7 @@ its own section below.
 
 | Aspect | XMLUI today | With our compiler |
 |--------|-------------|-------------------|
-| Runtime form | A `CompoundComponent` container with its own state reducer; slot content wrapped in `Container`s; `React.memo` and shallow-compare layers on top. | One `.pfui` file compiles to **one JS module exporting one React component**. Variables become signals, slots become `children` and render-prop functions, and methods are exposed through a ref handle. No wrapper layers. |
+| Runtime form | A `CompoundComponent` container with its own state reducer; slot content wrapped in `Container`s; `React.memo` and shallow-compare layers on top. | One `.gui` file compiles to **one JS module exporting one React component**. Variables become signals, slots become `children` and render-prop functions, and methods are exposed through a ref handle. No wrapper layers. |
 | Unit of work | The whole tree is parsed at startup. | The file is the unit of **compilation, caching** (keyed by content hash), **code splitting**, **file watching** (recompile one file) and **source maps**. |
 | Contract | Inferred from `$props.*` usage; checked at runtime. | Inferred **plus optionally declared** (types, defaults, required, events, methods, slots). Checked **at every call site at compile time**, and the same metadata drives editor completion. |
 | Scope isolation | Enforced while evaluating. | Enforced while **resolving names at compile time**: a reference to a parent variable inside a UDC is a compile error, not a silent `undefined`. |

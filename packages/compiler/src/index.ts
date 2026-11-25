@@ -51,7 +51,7 @@ export {
   RESTRICTED_GLOBAL_MEMBERS,
 } from "./codegen/names";
 
-// --- Modules (.pfui documents) ------------------------------------------------------
+// --- Modules (.gui documents) ------------------------------------------------------
 export { compileModule, type CompileModuleOptions, type CompileModuleResult } from "./module/compile-module";
 export { analyzeModule, COMPONENT_NAME, DEFAULT_SLOT, type ModuleAnalysis, type UserComponentInfo } from "./module/analyze";
 export { ModuleDiagnostics, type ModuleDiagnosticCode } from "./module/diagnostics";

@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
-import { backendMiddleware } from "@patchfuil/mock-backend/middleware";
+import { backendMiddleware } from "@gluefuil/mock-backend/middleware";
 
 export interface MockBackendOptions {
   /** The module (relative to the Vite root) whose default export is the backend (`defineBackend`). */
@@ -25,8 +25,8 @@ export interface MockBackendOptions {
 }
 
 /** The bootstrap's URL in the page (a virtual module). */
-export const BOOTSTRAP_PATH = "/@pfui/mock-boot.js";
-const BOOTSTRAP_ID = "\0pfui-mock-boot";
+export const BOOTSTRAP_PATH = "/@gfui/mock-boot.js";
+const BOOTSTRAP_ID = "\0gfui-mock-boot";
 export const WORKER_SCRIPT = "mockServiceWorker.js";
 
 /** The first module entry script of a page, `<script type="module" src="…">`. */
@@ -40,7 +40,7 @@ export function replaceEntry(html: string): { html: string; entry: string | unde
 }
 
 /** The module the bootstrap (in the page, not this plugin) imports the worker host from. */
-const WORKER_HOST = "@patchfuil/mock-backend/worker";
+const WORKER_HOST = "@gluefuil/mock-backend/worker";
 
 /** The bootstrap's code: start the worker, then run the app's entry (imported only after). */
 export function bootstrapCode(backendModule: string, workerUrl: string, entry: string): string {
@@ -55,21 +55,21 @@ export function bootstrapCode(backendModule: string, workerUrl: string, entry: s
 /** MSW's worker script, from the mock backend's own dependency. */
 function workerScript(): string {
   const require = createRequire(import.meta.url);
-  const packageJson = require.resolve("@patchfuil/mock-backend/package.json");
+  const packageJson = require.resolve("@gluefuil/mock-backend/package.json");
   return readFileSync(createRequire(packageJson).resolve(`msw/${WORKER_SCRIPT}`), "utf8");
 }
 
-export function pfuiMockBackend(options: MockBackendOptions): Plugin {
+export function gfuiMockBackend(options: MockBackendOptions): Plugin {
   const host = options.host ?? "worker";
   let config: ResolvedConfig | undefined;
   const active = () => host === "worker" && config !== undefined && (config.command === "serve" || options.build === true);
   const backendModule = () => resolve(config?.root ?? process.cwd(), options.module);
   return {
-    name: "pfui-mock-backend",
+    name: "gfui-mock-backend",
     // MSW is the mock backend's dependency, not the app's: pre-bundled through it (`a > b`), so
     // the first page load doesn't discover it and reload every open page. (Listed plainly in the
     // app's own optimizeDeps.include, it can't be resolved from the app, and Vite drops the list.)
-    config: () => (host === "worker" ? { optimizeDeps: { include: ["@patchfuil/mock-backend > msw", "@patchfuil/mock-backend > msw/browser"] } } : {}),
+    config: () => (host === "worker" ? { optimizeDeps: { include: ["@gluefuil/mock-backend > msw", "@gluefuil/mock-backend > msw/browser"] } } : {}),
     configResolved(resolved) {
       config = resolved;
     },
@@ -81,7 +81,7 @@ export function pfuiMockBackend(options: MockBackendOptions): Plugin {
         return replaceEntry(html).html;
       },
     },
-    // One bootstrap module per entry: `/@pfui/mock-boot.js?entry=/src/main.tsx`.
+    // One bootstrap module per entry: `/@gfui/mock-boot.js?entry=/src/main.tsx`.
     resolveId(id) {
       if (!id.startsWith(`${BOOTSTRAP_PATH}?`)) return undefined;
       const entry = new URLSearchParams(id.slice(BOOTSTRAP_PATH.length + 1)).get("entry");

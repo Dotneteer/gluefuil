@@ -1,7 +1,7 @@
 <Component name="LiveCompilerScenario">
   <VStack>
     <ScenarioHeader title="Live compiler" description="Steps 3, 5 and 15: edit markup and see diagnostics (sandbox, scoping, contracts), the generated code and the result."/>
-    <Text variant="secondary">Each box compiles in the browser as you type. The examples come from components/LiveCompilerScenario.pfui.xs.</Text>
+    <Text variant="secondary">Each box compiles in the browser as you type. The examples come from components/LiveCompilerScenario.gui.xs.</Text>
     <Items data="{examples}">
       <LiveMarkup title="{$item.title}" initialMarkup="{$item.markup}"/>
     </Items>

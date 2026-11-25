@@ -1,7 +1,7 @@
 // Step 22 in jsdom: Form, and inputs bound with the formBinding and validation
 // behaviors (no FormItem). See .ai/plan/poc-22-forms.md.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule, setErrorReporter } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -35,8 +35,8 @@ const type = (label: string, value: string) => act(async () => fireEvent.change(
 const focus = (label: string) => act(async () => fireEvent.focus(input(label)));
 const blur = (label: string) => act(async () => fireEvent.blur(input(label)));
 const click = (name: string) => act(async () => fireEvent.click(screen.getByRole("button", { name })));
-const messages = () => [...document.querySelectorAll(".pfui-ValidationMessage")].map((e) => `${e.getAttribute("data-severity")}: ${e.textContent}`);
-const text = (prefix: string) => [...document.querySelectorAll(".pfui-Text")].find((e) => e.textContent?.startsWith(prefix))?.textContent;
+const messages = () => [...document.querySelectorAll(".gfui-ValidationMessage")].map((e) => `${e.getAttribute("data-severity")}: ${e.textContent}`);
+const text = (prefix: string) => [...document.querySelectorAll(".gfui-Text")].find((e) => e.textContent?.startsWith(prefix))?.textContent;
 
 test("inputs show the data at their path; typing updates $data (nested paths too)", async () => {
   show(`
@@ -75,7 +75,7 @@ test("errorLate: no message while typing the first time; shown on blur; hidden a
   await blur("Name");
   expect(messages()).toEqual(["error: Input should be at least 3 characters"]);
   expect(input("Name").getAttribute("aria-invalid")).toBe("true");
-  expect(input("Name").getAttribute("aria-describedby")).toBe(document.querySelector(".pfui-Field-messages")!.id);
+  expect(input("Name").getAttribute("aria-describedby")).toBe(document.querySelector(".gfui-Field-messages")!.id);
   // Focused again: still shown while invalid, hidden as soon as it turns valid.
   await focus("Name");
   await type("Name", "Ab");
@@ -264,7 +264,7 @@ test("the label marks a required input; Form enabled=false disables the inputs a
         <TextBox bindTo="name" label="Name" required/>
       </Form>
     </App>`);
-  const field = document.querySelector(".pfui-Field:has(> .pfui-Label)")!;
+  const field = document.querySelector(".gfui-Field:has(> .gfui-Label)")!;
   expect(field.hasAttribute("data-required")).toBe(true);
   expect(input("Name").disabled).toBe(true);
   expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);

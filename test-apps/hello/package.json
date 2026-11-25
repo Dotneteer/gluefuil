@@ -1,12 +1,12 @@
 {
-  "name": "@patchfuil/hello-app",
+  "name": "@gluefuil/hello-app",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "E2E fixture: the step demos in one pfui app, compiled by @patchfuil/vite-plugin; tested both on the dev server and as a production build.",
+  "description": "E2E fixture: the step demos in one gfui app, compiled by @gluefuil/vite-plugin; tested both on the dev server and as a production build.",
   "dependencies": {
-    "@patchfuil/components": "0.0.0",
-    "@patchfuil/runtime": "0.0.0",
-    "@patchfuil/vite-plugin": "0.0.0"
+    "@gluefuil/components": "0.0.0",
+    "@gluefuil/runtime": "0.0.0",
+    "@gluefuil/vite-plugin": "0.0.0"
   }
 }

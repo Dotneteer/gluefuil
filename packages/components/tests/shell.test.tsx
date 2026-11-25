@@ -2,8 +2,8 @@
 // (where each region renders), the root's data-* attributes CSS reads, the
 // navigation items, and the state behind the drawer and the collapsed nav.
 // What sticks and scrolls needs a real browser: e2e/app-shell.spec.ts.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule, navDrawerOpen, navigate, navPanelCollapsed, resetRouter, resetShellState } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule, navDrawerOpen, navigate, navPanelCollapsed, resetRouter, resetShellState } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import * as components from "../src/index";
@@ -25,7 +25,7 @@ function show(markup: string) {
   expect(diagnostics).toEqual([]);
   const Main = loadModule(code, { components });
   const result = render(<Main />);
-  const app = result.container.querySelector<HTMLElement>(".pfui-App")!;
+  const app = result.container.querySelector<HTMLElement>(".gfui-App")!;
   return { ...result, app };
 }
 
@@ -35,8 +35,8 @@ function outline(app: HTMLElement): string[] {
   const walk = (element: Element, depth: number) => {
     for (const child of Array.from(element.children)) {
       if (child.tagName === "STYLE") continue;
-      const shell = [...child.classList].find((c) => /^pfui-(App|NavPanel$|Footer$)/.test(c));
-      if (!shell || shell === "pfui-AppContent" || /-(logo|title|content|burger|profile)$/.test(shell)) continue;
+      const shell = [...child.classList].find((c) => /^gfui-(App|NavPanel$|Footer$)/.test(c));
+      if (!shell || shell === "gfui-AppContent" || /-(logo|title|content|burger|profile)$/.test(shell)) continue;
       lines.push(`${"  ".repeat(depth)}${child.tagName.toLowerCase()}.${shell}`);
       walk(child, depth + 1);
     }
@@ -52,27 +52,27 @@ describe("structure: the nav moves into one of four slots; nothing else moves", 
     [
       "no regions",
       "<App><Text>x</Text></App>",
-      ["div.pfui-AppColumn", "  div.pfui-AppBody", "    main.pfui-AppMain"],
+      ["div.gfui-AppColumn", "  div.gfui-AppBody", "    main.gfui-AppMain"],
     ],
     [
       "nav in the header (the default)",
       `<App><AppHeader/><NavPanel>${NAV}</NavPanel><Footer/></App>`,
-      ["div.pfui-AppColumn", "  header.pfui-AppHeader", "    nav.pfui-NavPanel", "  div.pfui-AppBody", "    main.pfui-AppMain", "  footer.pfui-Footer"],
+      ["div.gfui-AppColumn", "  header.gfui-AppHeader", "    nav.gfui-NavPanel", "  div.gfui-AppBody", "    main.gfui-AppMain", "  footer.gfui-Footer"],
     ],
     [
       "below the header",
       `<App><AppHeader/><NavPanel placement="below-header">${NAV}</NavPanel><Footer/></App>`,
-      ["div.pfui-AppColumn", "  header.pfui-AppHeader", "  nav.pfui-NavPanel", "  div.pfui-AppBody", "    main.pfui-AppMain", "  footer.pfui-Footer"],
+      ["div.gfui-AppColumn", "  header.gfui-AppHeader", "  nav.gfui-NavPanel", "  div.gfui-AppBody", "    main.gfui-AppMain", "  footer.gfui-Footer"],
     ],
     [
       "side, under a full-width header",
       `<App><AppHeader/><NavPanel placement="side">${NAV}</NavPanel><Footer/></App>`,
-      ["div.pfui-AppColumn", "  header.pfui-AppHeader", "  div.pfui-AppBody", "    nav.pfui-NavPanel", "    main.pfui-AppMain", "  footer.pfui-Footer"],
+      ["div.gfui-AppColumn", "  header.gfui-AppHeader", "  div.gfui-AppBody", "    nav.gfui-NavPanel", "    main.gfui-AppMain", "  footer.gfui-Footer"],
     ],
     [
       "side, full height",
       `<App><AppHeader/><NavPanel placement="side" fullHeight="true">${NAV}</NavPanel><Footer/></App>`,
-      ["nav.pfui-NavPanel", "div.pfui-AppColumn", "  header.pfui-AppHeader", "  div.pfui-AppBody", "    main.pfui-AppMain", "  footer.pfui-Footer"],
+      ["nav.gfui-NavPanel", "div.gfui-AppColumn", "  header.gfui-AppHeader", "  div.gfui-AppBody", "    main.gfui-AppMain", "  footer.gfui-Footer"],
     ],
   ])("%s", (_, markup, expected) => {
     expect(outline(show(markup).app)).toEqual(expected);
@@ -80,7 +80,7 @@ describe("structure: the nav moves into one of four slots; nothing else moves", 
 
   test("the content is the children that are not regions, in order", () => {
     const { app } = show("<App><Text>one</Text><AppHeader/><Text>two</Text><Footer>f</Footer></App>");
-    expect(app.querySelector(".pfui-AppContent")!.textContent).toBe("onetwo");
+    expect(app.querySelector(".gfui-AppContent")!.textContent).toBe("onetwo");
     expect(app.querySelector("footer")!.textContent).toBe("f");
   });
 
@@ -125,23 +125,23 @@ describe("the header", () => {
         </AppHeader>
       </App>`);
     const header = app.querySelector("header")!;
-    expect([...header.children].map((c) => c.className)).toEqual(["pfui-AppHeader-logo", "pfui-AppHeader-title", "pfui-AppHeader-content", "pfui-AppHeader-profile"]);
+    expect([...header.children].map((c) => c.className)).toEqual(["gfui-AppHeader-logo", "gfui-AppHeader-title", "gfui-AppHeader-content", "gfui-AppHeader-profile"]);
     expect(header.querySelector("img")!.getAttribute("src")).toBe("/logo.svg");
     expect(header.textContent).toBe("Acmesearchme");
   });
 
   test("logoTemplate (App or AppHeader), showLogo=false", () => {
-    expect(show('<App><property name="logoTemplate"><H3>App logo</H3></property><AppHeader/></App>').app.querySelector(".pfui-AppHeader-logo")!.textContent).toBe("App logo");
+    expect(show('<App><property name="logoTemplate"><H3>App logo</H3></property><AppHeader/></App>').app.querySelector(".gfui-AppHeader-logo")!.textContent).toBe("App logo");
     cleanup();
-    expect(show('<App logo="/a.svg"><AppHeader><property name="logoTemplate"><H3>Own</H3></property></AppHeader></App>').app.querySelector(".pfui-AppHeader-logo")!.textContent).toBe("Own");
+    expect(show('<App logo="/a.svg"><AppHeader><property name="logoTemplate"><H3>Own</H3></property></AppHeader></App>').app.querySelector(".gfui-AppHeader-logo")!.textContent).toBe("Own");
     cleanup();
-    expect(show('<App logo="/a.svg"><AppHeader showLogo="false"/></App>').app.querySelector(".pfui-AppHeader-logo")).toBeNull();
+    expect(show('<App logo="/a.svg"><AppHeader showLogo="false"/></App>').app.querySelector(".gfui-AppHeader-logo")).toBeNull();
   });
 
   test("with a full-height side nav the logo is also in the nav (CSS shows one of them)", () => {
     const { app } = show('<App logo="/a.svg"><AppHeader/><NavPanel placement="side" fullHeight="true"/></App>');
-    expect(app.querySelector(".pfui-NavPanel-logo img")).toBeTruthy();
-    expect(app.querySelector(".pfui-AppHeader-logo img")).toBeTruthy();
+    expect(app.querySelector(".gfui-NavPanel-logo img")).toBeTruthy();
+    expect(app.querySelector(".gfui-AppHeader-logo img")).toBeTruthy();
   });
 
   test("generated when the nav needs a header and there is none; not when it doesn't", () => {
@@ -155,11 +155,11 @@ describe("the header", () => {
   });
 
   test("the drawer toggle exists only when the nav can move into a drawer", () => {
-    expect(show("<App><AppHeader/><NavPanel/></App>").app.querySelector(".pfui-AppHeader-burger")).toBeTruthy();
+    expect(show("<App><AppHeader/><NavPanel/></App>").app.querySelector(".gfui-AppHeader-burger")).toBeTruthy();
     cleanup();
-    expect(show('<App><AppHeader/><NavPanel drawerBelow="never"/></App>').app.querySelector(".pfui-AppHeader-burger")).toBeNull();
+    expect(show('<App><AppHeader/><NavPanel drawerBelow="never"/></App>').app.querySelector(".gfui-AppHeader-burger")).toBeNull();
     cleanup();
-    expect(show("<App><AppHeader/></App>").app.querySelector(".pfui-AppHeader-burger")).toBeNull();
+    expect(show("<App><AppHeader/></App>").app.querySelector(".gfui-AppHeader-burger")).toBeNull();
   });
 });
 
@@ -183,18 +183,18 @@ describe("the drawer", () => {
     expect(app.hasAttribute("data-drawer-open")).toBe(true);
     expect(screen.getByText("drawer: true")).toBeTruthy();
     expect(toggle("Close navigation").getAttribute("aria-expanded")).toBe("true");
-    fireEvent.click(app.querySelector(".pfui-App-overlay")!);
+    fireEvent.click(app.querySelector(".gfui-App-overlay")!);
     expect(app.hasAttribute("data-drawer-open")).toBe(false);
-    expect(app.querySelector(".pfui-App-overlay")).toBeNull();
+    expect(app.querySelector(".gfui-App-overlay")).toBeNull();
   });
 
   test("opening moves the focus into the nav; Escape closes it and returns the focus", () => {
     const { app } = show(MARKUP);
     fireEvent.click(toggle("Open navigation"));
-    expect(document.activeElement).toBe(app.querySelector(".pfui-NavLink"));
+    expect(document.activeElement).toBe(app.querySelector(".gfui-NavLink"));
     // The toggle is display: none here (no media query matches in jsdom), so jsdom can't focus it:
     // check the call. e2e/app-shell.spec.ts checks the real focus at phone width.
-    const focus = vi.spyOn(app.querySelector<HTMLElement>(".pfui-AppHeader-burger")!, "focus");
+    const focus = vi.spyOn(app.querySelector<HTMLElement>(".gfui-AppHeader-burger")!, "focus");
     fireEvent.keyDown(document, { key: "Escape" });
     expect(navDrawerOpen.peek()).toBe(false);
     expect(focus).toHaveBeenCalled();
@@ -242,9 +242,9 @@ describe("collapsing the side nav", () => {
 
   test("an item without an icon shows its initial when collapsed; with one, the icon", () => {
     const { app } = show('<App><NavPanel placement="side"><NavLink label="orders" to="/o"/><NavLink label="Home" to="/" icon="home"/></NavPanel></App>');
-    const [orders, home] = app.querySelectorAll(".pfui-NavLink");
-    expect(orders!.querySelector(".pfui-NavLink-initial")!.textContent).toBe("O");
-    expect(home!.querySelector("svg.pfui-NavLink-icon")).toBeTruthy();
+    const [orders, home] = app.querySelectorAll(".gfui-NavLink");
+    expect(orders!.querySelector(".gfui-NavLink-initial")!.textContent).toBe("O");
+    expect(home!.querySelector("svg.gfui-NavLink-icon")).toBeTruthy();
   });
 });
 
@@ -300,6 +300,6 @@ describe("NavLink and NavGroup", () => {
       <App var.pages="{[{ to: '/a', label: 'A' }, { to: '/b', label: 'B' }]}">
         <NavPanel><Items data="{pages}"><NavLink label="{$item.label}" to="{$item.to}"/></Items></NavPanel>
       </App>`);
-    expect(screen.getAllByRole("link").map((l) => l.querySelector(".pfui-NavLink-label")!.textContent)).toEqual(["A", "B"]);
+    expect(screen.getAllByRole("link").map((l) => l.querySelector(".gfui-NavLink-label")!.textContent)).toEqual(["A", "B"]);
   });
 });

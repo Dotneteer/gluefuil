@@ -1,4 +1,4 @@
-// Build-time compilation: compiles .pfui files to ES modules during a Vite
+// Build-time compilation: compiles .gui files to ES modules during a Vite
 // build or dev session. The shipped app imports only the runtime and the
 // components; the compiler stays in the build.
 import {
@@ -8,8 +8,8 @@ import {
   LineMap,
   type Diagnostic,
   type UserComponentInfo,
-} from "@patchfuil/compiler";
-import { componentMetadata, type ComponentMetadata } from "@patchfuil/components/metadata";
+} from "@gluefuil/compiler";
+import { componentMetadata, type ComponentMetadata } from "@gluefuil/components/metadata";
 import { existsSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
@@ -17,11 +17,11 @@ import { AppGlobals, ComponentFolder, GLOBALS_FILE, importSpecifier, readCodeBeh
 import { addRootAttributes, basenameOf, injectPrerendered, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
 
 export { basenameOf, injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
-export { pfuiMockBackend, type MockBackendOptions } from "./mock";
+export { gfuiMockBackend, type MockBackendOptions } from "./mock";
 
-export interface PfuiPluginOptions {
+export interface GfuiPluginOptions {
   /**
-   * The app's root file, relative to the Vite root. Default "src/Main.pfui".
+   * The app's root file, relative to the Vite root. Default "src/Main.gui".
    * Its root's `global.*` and the `Globals.xs` beside it are the globals every
    * other file sees (step 21B); the prerender renders it.
    */
@@ -29,7 +29,7 @@ export interface PfuiPluginOptions {
   /** The components markup may use. Default: the built-in components. */
   components?: Readonly<Record<string, ComponentMetadata>>;
   /**
-   * Source maps back to the .pfui files. `"auto"` (default): always while
+   * Source maps back to the .gui files. `"auto"` (default): always while
    * serving; in a build, only when `build.sourcemap` is set. Without a map the
    * compiler skips its position markers, which is faster.
    */
@@ -37,11 +37,11 @@ export interface PfuiPluginOptions {
   /**
    * Static generation: in a build, render the app to HTML and put it into
    * index.html, where `mountApp` takes it over. `true` uses the defaults
-   * (entry `src/Main.pfui`, root id `root`, breakpoint `xs`). Off by default.
+   * (entry `src/Main.gui`, root id `root`, breakpoint `xs`). Off by default.
    */
   prerender?: boolean | PrerenderOptions;
   /**
-   * The folder of user-defined component files (`<Name>.pfui`, each defining
+   * The folder of user-defined component files (`<Name>.gui`, each defining
    * `<Component name="Name">`), relative to the Vite root. Default "src/components".
    */
   componentsDir?: string;
@@ -54,7 +54,7 @@ export interface PfuiPluginOptions {
    * The app's own React components, usable from markup: name → the module
    * (relative to the Vite root) that exports a component of that name, and its
    * metadata (checked like a built-in's). Wrap a third-party component with
-   * `wrapComponent` from @patchfuil/runtime in that module.
+   * `wrapComponent` from @gluefuil/runtime in that module.
    */
   extensions?: Readonly<Record<string, { module: string; metadata: ComponentMetadata }>>;
 }
@@ -62,14 +62,14 @@ export interface PfuiPluginOptions {
 /** Query parameters that make Vite load a file as something other than a module (`?raw`). */
 const NON_MODULE_QUERY = /[?&](raw|url|inline|worker|sharedworker)\b/;
 
-const EXTENSION = ".pfui";
+const EXTENSION = ".gui";
 
 /** The container attribute mountApp reads the basename from (runtime `BASE_ATTRIBUTE`). */
-const BASE_ATTRIBUTE = "data-pfui-base";
+const BASE_ATTRIBUTE = "data-gfui-base";
 
 /** The file path of a module id: without a `?query` or `#hash`. */
-export function pfuiFilePath(id: string): string | undefined {
-  // `Main.pfui?raw` is the file's text (import.meta.glob of sources), not a module to compile.
+export function gfuiFilePath(id: string): string | undefined {
+  // `Main.gui?raw` is the file's text (import.meta.glob of sources), not a module to compile.
   if (NON_MODULE_QUERY.test(id)) return undefined;
   const path = id.replace(/[?#].*$/, "");
   return path.endsWith(EXTENSION) ? path : undefined;
@@ -81,7 +81,7 @@ export function formatErrors(errors: readonly Diagnostic[], source: string, file
   return errors.map((d) => `${formatDiagnostic(d, lineMap, file)}\n${codeFrame(source, lineMap, d.start)}`).join("\n");
 }
 
-export function pfui(options: PfuiPluginOptions = {}): Plugin {
+export function gfui(options: GfuiPluginOptions = {}): Plugin {
   const sourceMapOption = options.sourceMap ?? "auto";
   const prerender = resolvePrerender(options.prerender, options.entry);
   let sourceMap = true;
@@ -102,9 +102,9 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
   };
   const componentsFolder = () => (folder ??= new ComponentFolder(resolve(config?.root ?? process.cwd(), options.componentsDir ?? "src/components")));
   let appGlobals: AppGlobals | undefined;
-  const globalsOf = () => (appGlobals ??= new AppGlobals(resolve(config?.root ?? process.cwd(), options.entry ?? "src/Main.pfui")));
+  const globalsOf = () => (appGlobals ??= new AppGlobals(resolve(config?.root ?? process.cwd(), options.entry ?? "src/Main.gui")));
   return {
-    name: "pfui",
+    name: "gfui",
     // Before other transforms (React's), which expect JavaScript.
     enforce: "pre",
     configResolved(resolved: ResolvedConfig) {
@@ -124,7 +124,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
           return basename === "" ? html : addRootAttributes(html, prerender?.rootId ?? "root", { [BASE_ATTRIBUTE]: basename });
         }
         // The render's own server uses only the compile step (no prerender, no maps).
-        const transform = pfui({
+        const transform = gfui({
           sourceMap: false,
           ...(options.entry ? { entry: options.entry } : {}),
           ...(options.components ? { components: options.components } : {}),
@@ -136,7 +136,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
         const rendered = await renderEntry(config.root, prerender, transform, basename);
         if (rendered.size > 1 && !config.base.startsWith("/") && !/^[a-z]+:\/\//i.test(config.base)) {
           throw new Error(
-            `pfui prerender: base "${config.base}" is relative, so the asset URLs in ${routeFileName([...rendered.keys()][1]!)} would not resolve; use an absolute base (for example "/") to prerender routes other than "/"`,
+            `gfui prerender: base "${config.base}" is relative, so the asset URLs in ${routeFileName([...rendered.keys()][1]!)} would not resolve; use an absolute base (for example "/") to prerender routes other than "/"`,
           );
         }
         routePages = [];
@@ -170,11 +170,11 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
     },
     configureServer(server) {
       // A component file (or code-behind) appearing or disappearing changes what
-      // other files compile to: recompile every .pfui module and reload.
+      // other files compile to: recompile every .gui module and reload.
       const changed = (path: string) => {
-        if (!path.endsWith(".pfui") && !path.endsWith(".pfui.xs") && basename(path) !== GLOBALS_FILE) return;
+        if (!path.endsWith(".gui") && !path.endsWith(".gui.xs") && basename(path) !== GLOBALS_FILE) return;
         for (const [id, module] of server.moduleGraph.idToModuleMap) {
-          if (pfuiFilePath(id)) server.moduleGraph.invalidateModule(module);
+          if (gfuiFilePath(id)) server.moduleGraph.invalidateModule(module);
         }
         server.hot.send({ type: "full-reload" });
       };
@@ -182,7 +182,7 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
       server.watcher.on("unlink", changed);
     },
     transform(source, id) {
-      const file = pfuiFilePath(id);
+      const file = gfuiFilePath(id);
       if (!file) return undefined;
       // The other component files' interfaces; a change to one recompiles this file.
       const userComponents: Record<string, UserComponentInfo> = {};
@@ -254,4 +254,4 @@ export function pfui(options: PfuiPluginOptions = {}): Plugin {
   };
 }
 
-export default pfui;
+export default gfui;

@@ -1,7 +1,7 @@
 // Source maps on the standalone path (loadModule): V8's own stack positions
 // for code thrown from a loaded module map back to the right markup line and
 // column. This verifies the line shift for the `new Function` wrapper.
-import { compileModule, originalPositionFor, type SourceMap } from "@patchfuil/compiler";
+import { compileModule, originalPositionFor, type SourceMap } from "@gluefuil/compiler";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { afterEach, expect, test } from "vitest";
@@ -10,7 +10,7 @@ import { loadModule } from "../../src/render/module";
 
 afterEach(cleanup);
 
-// Minimal components, so the runtime package needs nothing from @patchfuil/components.
+// Minimal components, so the runtime package needs nothing from @gluefuil/components.
 const components = {
   App: ({ children }: { children?: ReactNode }) => createElement("div", null, children),
   Text: ({ value }: { value?: unknown }) => createElement("span", null, String(value)),
@@ -48,9 +48,9 @@ test("an error thrown by a handler maps back to its expression in the markup", a
     '    "/>',
     "</App>",
   ].join("\n");
-  const { code, map, diagnostics } = compileModule(markup, { format: "function", components: metadata, fileName: "Main.pfui" });
+  const { code, map, diagnostics } = compileModule(markup, { format: "function", components: metadata, fileName: "Main.gui" });
   expect(diagnostics).toEqual([]);
-  const Main = loadModule(code, { components, map: map!, sourceURL: "Main.pfui.js" });
+  const Main = loadModule(code, { components, map: map!, sourceURL: "Main.gui.js" });
   const errors: unknown[] = [];
   const restore = setErrorReporter((error) => errors.push(error));
   try {
@@ -64,7 +64,7 @@ test("an error thrown by a handler maps back to its expression in the markup", a
   }
   expect(errors).toHaveLength(1);
   // V8 records an Error's stack where it is constructed: the `new Error(...)` expression.
-  expect(originalOfFirstFrame(errors[0], map!, "Main.pfui.js", markup)).toBe("new Error('from the handler');");
+  expect(originalOfFirstFrame(errors[0], map!, "Main.gui.js", markup)).toBe("new Error('from the handler');");
 });
 
 test("an error thrown by a binding maps back to the expression in the markup", () => {
@@ -74,7 +74,7 @@ test("an error thrown by a binding maps back to the expression in the markup", (
     components: metadata,
   });
   const source = markup.replace("boom()", "(() => { throw new Error('from a binding') })()");
-  const Main = loadModule(code, { components, map: map!, sourceURL: "Binding.pfui.js" });
+  const Main = loadModule(code, { components, map: map!, sourceURL: "Binding.gui.js" });
   let caught: unknown;
   const originalError = console.error;
   console.error = () => {};
@@ -86,7 +86,7 @@ test("an error thrown by a binding maps back to the expression in the markup", (
     console.error = originalError;
   }
   expect(caught).toBeInstanceOf(Error);
-  expect(originalOfFirstFrame(caught, map!, "Binding.pfui.js", source)).toMatch(/^new Error\('from a binding'\)/);
+  expect(originalOfFirstFrame(caught, map!, "Binding.gui.js", source)).toMatch(/^new Error\('from a binding'\)/);
 });
 
 test("without a map, loadModule adds no source-map comments", () => {

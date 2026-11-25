@@ -1,8 +1,8 @@
-// Discovering user-defined components (step 14): every `<Name>.pfui` in the
+// Discovering user-defined components (step 14): every `<Name>.gui` in the
 // components folder that defines `<Component name="Name">`. Files are analyzed
 // once per modification.
 
-import { analyzeModule, type UserComponentInfo } from "@patchfuil/compiler";
+import { analyzeModule, type UserComponentInfo } from "@gluefuil/compiler";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
@@ -21,9 +21,9 @@ export class ComponentFolder {
     const found = new Map<string, FoundComponent>();
     if (!existsSync(this.dir)) return found;
     for (const entry of readdirSync(this.dir).sort()) {
-      if (!entry.endsWith(".pfui")) continue;
+      if (!entry.endsWith(".gui")) continue;
       const file = join(this.dir, entry);
-      const name = entry.slice(0, -".pfui".length);
+      const name = entry.slice(0, -".gui".length);
       // The code-behind takes part: it can read $props and emit events.
       const xs = `${file}.xs`;
       const mtimeMs = statSync(file).mtimeMs + (existsSync(xs) ? statSync(xs).mtimeMs : 0);
@@ -40,13 +40,13 @@ export class ComponentFolder {
   }
 }
 
-/** An import specifier for `target` from a module in `fromDir`: `./components/X.pfui`. */
+/** An import specifier for `target` from a module in `fromDir`: `./components/X.gui`. */
 export function importSpecifier(fromDir: string, target: string): string {
   const path = relative(fromDir, target).split("\\").join("/");
   return path.startsWith(".") ? path : `./${path}`;
 }
 
-/** The code-behind of a .pfui file (`<file>.xs`), if it exists. */
+/** The code-behind of a .gui file (`<file>.xs`), if it exists. */
 export function readCodeBehind(file: string): string | undefined {
   const path = `${file}.xs`;
   return existsSync(path) ? readFileSync(path, "utf8") : undefined;

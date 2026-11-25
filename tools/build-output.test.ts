@@ -1,5 +1,5 @@
 // Build-time compilation (step 12): a production build of test-apps/hello
-// ships no compiler, needs no eval, and maps back to Main.pfui when asked to.
+// ships no compiler, needs no eval, and maps back to Main.gui when asked to.
 // Static generation (step 13): its index.html contains the prerendered app.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -42,14 +42,14 @@ describe("a production build (no source maps)", () => {
   test("is one JS chunk containing the app's compiled markup, the runtime and the components", () => {
     expect(chunks(output)).toHaveLength(1);
     const ids = relativeIds(chunks(output)[0]!);
-    expect(ids).toContain("test-apps/hello/src/Main.pfui");
+    expect(ids).toContain("test-apps/hello/src/Main.gui");
     expect(ids.some((id) => id.startsWith("packages/runtime/src/"))).toBe(true);
     expect(ids.some((id) => id.startsWith("packages/components/src/"))).toBe(true);
   });
 
   test("contains no compiler module", () => {
     const ids = chunks(output).flatMap(relativeIds);
-    expect(ids.filter((id) => id.includes("packages/compiler/") || id.includes("@patchfuil/compiler"))).toEqual([]);
+    expect(ids.filter((id) => id.includes("packages/compiler/") || id.includes("@gluefuil/compiler"))).toEqual([]);
     // The React-free metadata module is included since step 17: App needs the
     // components' theme variable defaults at runtime. It is data, not compiler.
   });
@@ -78,10 +78,10 @@ describe("a production build (no source maps)", () => {
     const html = output.find((o) => o.fileName === "index.html") as Rolldown.OutputAsset;
     const source = String(html.source);
     // The stylesheet (React 19 hoisted <style>) comes first, then the themed App.
-    expect(source).toContain('<div id="root" data-pfui-prerendered="xs" data-pfui-path="/"><style data-precedence="pfui" data-href="pfui-mantine pfui-base">');
-    expect(source).toMatch(/<div class="pfui-App" data-tone="light" data-mantine-color-scheme="light" style="--pfui-/);
-    expect(source).toContain('<span class="pfui-Text">Count: 0</span>');
-    expect(source).toContain('<span class="pfui-Text">Todo #1: Write tests</span>');
+    expect(source).toContain('<div id="root" data-gfui-prerendered="xs" data-gfui-path="/"><style data-precedence="gfui" data-href="gfui-mantine gfui-base">');
+    expect(source).toMatch(/<div class="gfui-App" data-tone="light" data-mantine-color-scheme="light" style="--gfui-/);
+    expect(source).toContain('<span class="gfui-Text">Count: 0</span>');
+    expect(source).toContain('<span class="gfui-Text">Todo #1: Write tests</span>');
     // Rendered for xs: the compact text, not the wide one.
     expect(source).toContain("Layout: compact");
     expect(source).not.toContain("Layout: wide");
@@ -96,13 +96,13 @@ describe("a production build (no source maps)", () => {
 });
 
 describe("a production build with build.sourcemap", () => {
-  test("maps back to Main.pfui", async () => {
+  test("maps back to Main.gui", async () => {
     const output = await buildHello(true);
     const chunk = chunks(output)[0]!;
     expect(chunk.code).not.toMatch(/[\uE000\uE001]/);
     const sources = chunk.map!.sources.map((s) => s.split("\\").join("/"));
-    expect(sources.some((s) => s.endsWith("src/Main.pfui"))).toBe(true);
-    const index = sources.findIndex((s) => s.endsWith("src/Main.pfui"));
+    expect(sources.some((s) => s.endsWith("src/Main.gui"))).toBe(true);
+    const index = sources.findIndex((s) => s.endsWith("src/Main.gui"));
     expect(chunk.map!.sourcesContent?.[index]).toContain("<App");
   }, 60_000);
 });
@@ -113,19 +113,19 @@ describe("prerender failures fail the build", () => {
   beforeAll(() => {
     mkdirSync(join(app, "src"), { recursive: true });
     writeFileSync(join(app, "index.html"), '<div id="root"></div><script type="module" src="/src/main.ts"></script>');
-    writeFileSync(join(app, "src", "main.ts"), 'import Main from "./Main.pfui";\nconsole.log(Main);\n');
+    writeFileSync(join(app, "src", "main.ts"), 'import Main from "./Main.gui";\nconsole.log(Main);\n');
   });
   afterAll(() => rmSync(app, { recursive: true, force: true }));
 
   async function buildApp(markup: string, html?: string) {
-    writeFileSync(join(app, "src", "Main.pfui"), markup);
+    writeFileSync(join(app, "src", "Main.gui"), markup);
     if (html) writeFileSync(join(app, "index.html"), html);
-    const { pfui } = await import("../packages/vite-plugin/src/index");
+    const { gfui } = await import("../packages/vite-plugin/src/index");
     return build({
       configFile: false,
       root: app,
       logLevel: "silent",
-      plugins: [pfui({ prerender: true })],
+      plugins: [gfui({ prerender: true })],
       build: { write: false },
     });
   }
@@ -146,7 +146,7 @@ describe("prerendered routes (step 21)", () => {
   beforeAll(() => {
     mkdirSync(join(app, "src"), { recursive: true });
     writeFileSync(join(app, "index.html"), '<div id="root"></div><script type="module" src="/src/main.ts"></script>');
-    writeFileSync(join(app, "src", "main.ts"), 'import Main from "./Main.pfui";\nconsole.log(Main);\n');
+    writeFileSync(join(app, "src", "main.ts"), 'import Main from "./Main.gui";\nconsole.log(Main);\n');
   });
   afterAll(() => rmSync(app, { recursive: true, force: true }));
 
@@ -163,14 +163,14 @@ describe("prerendered routes (step 21)", () => {
     </App>`;
 
   async function buildRoutes(source: string, prerender: object = {}, base?: string) {
-    writeFileSync(join(app, "src", "Main.pfui"), source);
-    const { pfui } = await import("../packages/vite-plugin/src/index");
+    writeFileSync(join(app, "src", "Main.gui"), source);
+    const { gfui } = await import("../packages/vite-plugin/src/index");
     const result = await build({
       configFile: false,
       root: app,
       logLevel: "silent",
       ...(base !== undefined ? { base } : {}),
-      plugins: [pfui({ prerender: { ...prerender } })],
+      plugins: [gfui({ prerender: { ...prerender } })],
       build: { write: false },
     });
     const outputs = (Array.isArray(result) ? result : [result]).flatMap((o) => ("output" in o ? o.output : []));
@@ -180,7 +180,7 @@ describe("prerendered routes (step 21)", () => {
   }
 
   const h1 = (html: string) => /<h1[^>]*>(.*?)<\/h1>/.exec(html)?.[1]?.replace(/<!-- -->/g, "");
-  const path = (html: string) => /data-pfui-path="([^"]*)"/.exec(html)?.[1];
+  const path = (html: string) => /data-gfui-path="([^"]*)"/.exec(html)?.[1];
 
   test("browser routing: one file per static route (and per `routes` path), each with its own content", async () => {
     const pages = await buildRoutes(markup(false), { routes: ["/users/1"] });

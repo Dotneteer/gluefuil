@@ -5,7 +5,7 @@
 // for build tools and needs no eval.
 //
 // Source maps: with `map`, the code gets a `//# sourceURL` and an inline
-// `//# sourceMappingURL`, so DevTools shows the .pfui file and stack frames,
+// `//# sourceMappingURL`, so DevTools shows the .gui file and stack frames,
 // breakpoints and errors map back to it. The map's generated lines are shifted
 // by the lines that precede the module code in the evaluated script.
 
@@ -20,7 +20,7 @@ export interface ModuleSourceMap {
 }
 
 export interface ModuleImports {
-  /** The components the module uses, by name (normally `@patchfuil/components`). */
+  /** The components the module uses, by name (normally `@gluefuil/components`). */
   components: Record<string, unknown>;
   /** The module's source map (compileModule `map`). */
   map?: ModuleSourceMap;
@@ -47,7 +47,7 @@ export function loadModule(code: string, imports: ModuleImports): ComponentType 
   let body = `${PROLOGUE}${code}`;
   if (imports.map) {
     const shifted = { ...imports.map, mappings: ";".repeat(FUNCTION_HEADER_LINES + 1) + imports.map.mappings };
-    const url = imports.sourceURL ?? `${imports.map.sources[0] ?? "module.pfui"}.js`;
+    const url = imports.sourceURL ?? `${imports.map.sources[0] ?? "module.gui"}.js`;
     body += `\n//# sourceURL=${url}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64(JSON.stringify(shifted))}`;
   }
   const factory = new Function("$$imports", body) as (imports: unknown) => ComponentType;

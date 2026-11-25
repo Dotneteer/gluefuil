@@ -1,5 +1,5 @@
 // Conformance table: expressions -> structure (S-expressions, see print.ts).
-// This table is part of the written specification of pfui script.
+// This table is part of the written specification of gfui script.
 import { describe, expect, test } from "vitest";
 import { parseExpression } from "../../src/script/parse";
 import { print } from "./print";

@@ -1,7 +1,7 @@
 # Standalone mode
 
 > Subsystem reference for `packages/standalone`: one JS file that fetches,
-> compiles, caches and runs `.pfui` markup in the browser. Describes the code
+> compiles, caches and runs `.gui` markup in the browser. Describes the code
 > as it is. Design and XMLUI comparison:
 > [`../plan/poc-11-standalone.md`](../plan/poc-11-standalone.md).
 >
@@ -13,25 +13,25 @@
 <!doctype html>
 <html>
   <head>
-    <script src="pfui.js"></script>
+    <script src="gfui.js"></script>
   </head>
   <body></body>
 </html>
 ```
 
-Put `Main.pfui` next to it and serve the folder with any static server.
+Put `Main.gui` next to it and serve the folder with any static server.
 
 | `<script>` attribute | Default | Meaning |
 |----------------------|---------|---------|
-| `data-main` | `Main.pfui` | The entry file, relative to the page |
-| `data-root` | a new `<div id="pfui-root">` | A CSS selector for the mount element |
+| `data-main` | `Main.gui` | The entry file, relative to the page |
+| `data-root` | a new `<div id="gfui-root">` | A CSS selector for the mount element |
 | `data-cache` | `true` | The `localStorage` compile cache |
 | `data-watch` | `true` on localhost, else `false` | Poll the markup for changes |
 | `data-watch-interval` | `1000` | The polling interval in ms |
-| `data-autostart` | `true` | `false`: start yourself with `pfui.startApp(options)` |
+| `data-autostart` | `true` | `false`: start yourself with `gfui.startApp(options)` |
 | `data-strict-contracts` | `true` | `false`: contract violations are console warnings, not errors ([contracts.md](contracts.md)) |
 
-**The global `pfui`:**
+**The global `gfui`:**
 
 | Member | What it is |
 |--------|------------|
@@ -52,13 +52,13 @@ build-time compilation ([build-time.md](build-time.md)).
    its code-behind `<file>.xs` and the `Globals.xs` beside it (a 404 means
    none). Then
    `analyzeModule` gives the component names it uses. Each one that is
-   neither built-in nor inline is fetched as `components/<Name>.pfui`
+   neither built-in nor inline is fetched as `components/<Name>.gui`
    (next to the entry file), with code-behind, transitively. A missing file
    is left to the compiler (E001).
 2. **Hash** it with `hashText` (cyrb53, 53 bits). This is not a security
    measure: it only decides whether to recompile, and `crypto.subtle`
    needs a secure context that plain `http://` hosts don't have.
-3. **Cache lookup**, per file, with the key `pfui:<buildId>:<file>`. The
+3. **Cache lookup**, per file, with the key `gfui:<buildId>:<file>`. The
    hash covers the markup, the code-behind, the interfaces of the
    components the file uses, and the globals (the entry: `Globals.xs`;
    any other file: the entry's global names), since they change what it
@@ -79,8 +79,8 @@ build-time compilation ([build-time.md](build-time.md)).
    compileMs?, loads, components? }`. `"compiled"` means at least one file
    compiled.
 
-**The build ID** (`__PFUI_BUILD_ID__`, set by the bundle build) is new for
-every build of `pfui.js`. A new engine never runs code compiled by another
+**The build ID** (`__GFUI_BUILD_ID__`, set by the bundle build) is new for
+every build of `gfui.js`. A new engine never runs code compiled by another
 build, and the cache removes other builds' entries when it writes.
 
 ## The cache never breaks loading (`CompileCache`)
@@ -89,7 +89,7 @@ build, and the cache removes other builds' entries when it writes.
 |-----------|----------|
 | No `localStorage`, or it throws (privacy modes) | No cache: compile every time |
 | Corrupted entry (bad JSON, wrong shape) | A miss; overwritten by the next write |
-| Quota exceeded | Evict the other `pfui:` entries and retry once; otherwise don't cache |
+| Quota exceeded | Evict the other `gfui:` entries and retry once; otherwise don't cache |
 | Entries of other engine builds | Removed when writing |
 | Other apps' keys | Never touched |
 
@@ -109,8 +109,8 @@ build, and the cache removes other builds' entries when it writes.
 
 ## The bundle (`npm run build:standalone`)
 
-- Vite library mode, **IIFE**, global `pfui`.
-- Output: `packages/standalone/dist/pfui.js`, **326 KB (101 KB gzipped)**,
+- Vite library mode, **IIFE**, global `gfui`.
+- Output: `packages/standalone/dist/gfui.js`, **326 KB (101 KB gzipped)**,
   with a source map.
 - Contents: React and ReactDOM (production), the compiler, the runtime
   and the components.
@@ -134,7 +134,7 @@ build, and the cache removes other builds' entries when it writes.
 | `standalone/src/overlay.tsx` | `ErrorOverlay` |
 | `standalone/vite.config.ts` | The bundle build |
 | `tools/static-server.mjs` | The E2E static server: serves a temp copy of a fixture site plus the bundle |
-| `e2e/fixtures/standalone-site/` | `index.html` (one script tag), `Main.pfui`, `components/Greeting.pfui` with code-behind |
+| `e2e/fixtures/standalone-site/` | `index.html` (one script tag), `Main.gui`, `components/Greeting.gui` with code-behind |
 
 ## Tests
 
@@ -142,4 +142,4 @@ build, and the cache removes other builds' entries when it writes.
 |------|--------|
 | `standalone/tests/cache.test.ts` | Hash; hit and miss; invalidation by content and by build; other apps' keys; corrupted entries; quota eviction; entries too big to fit; throwing or absent storage |
 | `standalone/tests/loader.test.tsx` | With a mocked server: compiled, then cached; recompiled on change; `cache: false`; entry file and fetch modes; the compile-error overlay (nothing cached); a missing file; `refresh()` (change, error, recovery); polling; component files and code-behind (fetched transitively, cached per file, errors naming their file, watched, a new component noticed); globals (a component file reading and writing the entry's globals and `Globals.xs`, a cache entry compiled against other globals not reused, `Globals.xs` errors and watching) |
-| `e2e/standalone.spec.ts` | Chromium against the real bundle: compile on the first load, cache on reload (and the app works); editing `Main.pfui` on the server updates the open app; an error shows the overlay and fixing it recovers |
+| `e2e/standalone.spec.ts` | Chromium against the real bundle: compile on the first load, cache on reload (and the app works); editing `Main.gui` on the server updates the open app; an error shows the overlay and fixing it recovers |

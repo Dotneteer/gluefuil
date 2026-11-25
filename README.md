@@ -1,10 +1,10 @@
-# patchfuil (pfui)
+# gluefuil (gfui)
 
 A declarative, reactive UI framework: applications are written as XML markup
-(`.pfui` files) with a sandboxed JavaScript subset, and **compiled** to
+(`.gui` files) with a sandboxed JavaScript subset, and **compiled** to
 JavaScript that renders with React and Mantine.
 
-patchfuil is a re-invention of [XMLUI](https://xmlui.org): it keeps XMLUI's
+gluefuil is a re-invention of [XMLUI](https://xmlui.org): it keeps XMLUI's
 concepts and markup syntax, and replaces the implementation. Expressions and
 handlers are compiled instead of interpreted, there is no runtime change
 detection, and startup is fast.

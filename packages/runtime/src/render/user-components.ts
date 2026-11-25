@@ -20,7 +20,7 @@ import { HandlerSlot } from "./handlers";
 import type { TemplateRenderer } from "./templates";
 
 /** Where a component instance keeps its caller's slot renderers (inherited by nested scopes). */
-export const SLOTS: unique symbol = Symbol("pfui.slots");
+export const SLOTS: unique symbol = Symbol("gfui.slots");
 
 /** The name of the default slot's template (the caller's children). */
 export const DEFAULT_SLOT = "$$slot";

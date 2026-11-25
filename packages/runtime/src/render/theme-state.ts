@@ -7,7 +7,7 @@ import { computed, signal, type ReadonlySignal } from "../reactivity/signals";
 
 const explicitTheme = signal<string | undefined>(undefined);
 const explicitTone = signal<string | undefined>(undefined);
-const defaultTheme = signal("pfui");
+const defaultTheme = signal("gfui");
 const defaultTone = signal("light");
 
 /** The active theme ID: set by `setTheme`, else the app's default. */
@@ -42,6 +42,6 @@ export function setThemeDefaults(theme: string | undefined, tone: string | undef
 export function resetThemeState(): void {
   explicitTheme.set(undefined);
   explicitTone.set(undefined);
-  defaultTheme.set("pfui");
+  defaultTheme.set("gfui");
   defaultTone.set("light");
 }

@@ -6,10 +6,10 @@ Part of [poc-steps.md](poc-steps.md).
 
 ## Goal
 
-Parse pfui's JavaScript subset into a syntax tree with exact source
+Parse gfui's JavaScript subset into a syntax tree with exact source
 positions. This covers binding expressions in attributes and text, event
 handlers, `<script>` blocks and code-behind. Positions are **absolute
-offsets in the `.pfui` file**, so diagnostics and later source maps point
+offsets in the `.gui` file**, so diagnostics and later source maps point
 at the right place inside an attribute.
 
 ## Background (XMLUI)
@@ -73,7 +73,7 @@ syntax trees, well documented, and familiar to anyone who knows Babel,
 acorn or ESLint. It also makes step 3's code generation and source maps
 straightforward. XMLUI's own tree (`T_*` constants) is not reused.
 
-**Entry points** (`@patchfuil/compiler`):
+**Entry points** (`@gluefuil/compiler`):
 
 ```ts
 parseExpression(source, options?)   // one expression, then end of input
@@ -104,7 +104,7 @@ token that can't continue it. Plus JavaScript's restricted productions:
   without a separator (`a = 1 b = 2`). We report that as a missing `;`. The
   corpus test checks whether any real code relies on it.
 
-**Unsupported syntax** gets a clear "not supported in pfui script"
+**Unsupported syntax** gets a clear "not supported in gfui script"
 diagnostic (S030) instead of a generic syntax error. `async`/`await` are
 reported at compile time, where XMLUI rejects them at runtime.
 
@@ -143,7 +143,7 @@ parser skips to the next statement boundary and continues.
 | S019 | `catch` or `finally` expected |
 | S020 | Line break not allowed after `throw` |
 | S021 | Getter takes no parameters; setter takes exactly one |
-| S030 | 'x' is not supported in pfui script |
+| S030 | 'x' is not supported in gfui script |
 | S040 | Unclosed `{` in an interpolated value |
 
 ## Steps
@@ -164,16 +164,16 @@ parser skips to the next statement boundary and continues.
   in the markup AST (`AttributeValue.value`/`raw`) and in its docs.
 - **Line break before `=>`:** real XMLUI code puts `=>` on the next line
   (`howto/align-columns-across-loop-rows.md`). JavaScript forbids that;
-  pfui now allows it.
+  gfui now allows it.
 - **`export function`** appears in XMLUI's `.xs` test fixtures. XMLUI has no
   `export` token, so it tolerates the keyword by accident (it parses as an
-  identifier). pfui supports `export function` properly
+  identifier). gfui supports `export function` properly
   (`ExportNamedDeclaration`); other export forms are S030. Two unused
   `export const` fixtures are excluded from the corpus test; XMLUI rejects
   `const` in modules (W044).
 - **`await`:** the newer Managed React docs use `await` in handlers, but
   XMLUI's runtime throws "does not support the await operator" in both
-  evaluators. pfui reports S030 (see open question 2).
+  evaluators. gfui reports S030 (see open question 2).
 - **ASI strictness confirmed:** no XMLUI code or docs sample relies on two
   statements on one line without `;`.
 - **`.ai/xmlui/expression-eval.md` is outdated** on getters and setters: it

@@ -8,7 +8,7 @@
 
 ## Role
 
-Parses pfui script, a JavaScript subset, into an **ESTree-subset** syntax
+Parses gfui script, a JavaScript subset, into an **ESTree-subset** syntax
 tree with **file offsets** on every node. Three entry points match the three
 ways script appears in markup:
 
@@ -26,7 +26,7 @@ stages.
 
 ## Positions
 
-`options` places the parsed text in the `.pfui` file:
+`options` places the parsed text in the `.gui` file:
 
 - `offset`: the file offset of the text's first character, for example
   `attribute.value.inner.start`;
@@ -99,7 +99,7 @@ option `ScriptSourceOptions.allowAwait` controls it.
   break end the statement; a line break after `throw` is an error (S020);
   postfix `++`/`--` must be on the same line.
 - **Divergence from XMLUI:** XMLUI also accepts two statements on one line
-  without `;` (`a = 1 b = 2`); pfui reports S012.
+  without `;` (`a = 1 b = 2`); gfui reports S012.
 
 ## Implementation
 
@@ -166,7 +166,7 @@ All are errors.
 | S019 | `catch` or `finally` expected |
 | S020 | Line break after `throw` |
 | S021 | Getter/setter parameter count |
-| S030 | Not supported in pfui script |
+| S030 | Not supported in gfui script |
 | S040 | Unclosed `{` in an interpolated value |
 
 ## Tests
@@ -198,7 +198,7 @@ All are errors.
   need component metadata to classify). Two real findings:
   - a line break before `=>`, now allowed;
   - `await` in handlers. The newer Managed React docs use it, but XMLUI's
-    runtime rejects it, so pfui reports S030 (an open question in the step
+    runtime rejects it, so gfui reports S030 (an open question in the step
     plan).
 - **Performance** (`npm run bench`): a typical binding parses in about
   2 µs; a 15-line handler in about 15 µs.

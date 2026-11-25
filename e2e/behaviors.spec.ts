@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
 });
 
 test("tooltip: appears while the pointer is over the button", async ({ page }) => {

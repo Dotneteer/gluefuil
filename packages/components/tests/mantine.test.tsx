@@ -1,6 +1,6 @@
 // Step 16 in jsdom: the Mantine-based components through compiled markup.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -90,9 +90,9 @@ test("Checkbox: its own label; clicking fires didChange with the new state; the 
   expect(text(/^state:/)).toBe("state: true / true");
 });
 
-test("theme mapping: Mantine's Button variables are redirected to pfui theme variables", () => {
+test("theme mapping: Mantine's Button variables are redirected to gfui theme variables", () => {
   show('<App><Button label="B"/></App>');
   const style = screen.getByRole("button", { name: "B" }).style;
-  expect(style.getPropertyValue("--button-bg")).toBe("var(--pfui-backgroundColor-Button)");
-  expect(style.getPropertyValue("--button-hover")).toBe("var(--pfui-backgroundColor-Button--hover)");
+  expect(style.getPropertyValue("--button-bg")).toBe("var(--gfui-backgroundColor-Button)");
+  expect(style.getPropertyValue("--button-hover")).toBe("var(--gfui-backgroundColor-Button--hover)");
 });

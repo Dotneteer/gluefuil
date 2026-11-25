@@ -1,4 +1,4 @@
-# pfui playground
+# gfui playground
 
 Manual testing: a dashboard of scenarios, each on its own page.
 
@@ -28,10 +28,10 @@ One or more per concept of proof-of-concept steps 2–22B
 | 6 | Variables | Follow until assigned, deep writes, array mutations, `<variable>` |
 | 7 | Async handlers | Implicit await, the four policies, cancellation, timeouts |
 | 8 | Component IDs | APIs through ids, in any order |
-| 9 | Source maps | A handler error that points to its `.pfui` line (use the devtools) |
+| 9 | Source maps | A handler error that points to its `.gui` line (use the devtools) |
 | 10 | Conditionals | `when`, responsive `when-*`, `onMount`/`onUnmount` |
 | 10 | Items and templates | Context variables, `reverse`, an `id` per row, `<property>` templates |
-| 14 | User-defined components | Props, events, methods and `$self`, slots and slot props, code-behind (`Demo*.pfui`) |
+| 14 | User-defined components | Props, events, methods and `$self`, slots and slot props, code-behind (`Demo*.gui`) |
 | 3, 15 | Live compiler | Type markup: diagnostics (sandbox, scoping, contracts), generated code, result |
 | 16 | Inputs | Mantine TextBox, Select (with an option template), Checkbox, `enabled` |
 | 16 | Text and headings | Every Text variant, Heading, H1–H6, `maxLines` |
@@ -49,7 +49,7 @@ prerendered build.
 
 ## Adding a scenario
 
-1. **Create `src/components/<Name>Scenario.pfui`.** Start with `ScenarioHeader`,
+1. **Create `src/components/<Name>Scenario.gui`.** Start with `ScenarioHeader`,
    then the scenario's own content:
 
    ```xml
@@ -69,10 +69,10 @@ prerendered build.
 
    - **The `title` should match the dashboard entry.** The smoke test
      checks it.
-   - **Code-behind** goes in `src/components/<Name>Scenario.pfui.xs`: top-level
+   - **Code-behind** goes in `src/components/<Name>Scenario.gui.xs`: top-level
      `var` and `function` only.
 
-2. **Add an entry to `scenarios` in `src/Main.pfui`:**
+2. **Add an entry to `scenarios` in `src/Main.gui`:**
 
    ```js
    { path: '/clock', title: 'Clock', description: 'What it checks.' },
@@ -99,15 +99,15 @@ prerendered build.
 - **`LiveMarkup`** (`src/react/LiveMarkup.tsx`) compiles markup in the browser
   (the live compiler scenario), so the playground bundle includes the compiler.
 - **The mock backend** (`src/backend.ts`) runs in a service worker, in dev
-  and in the preview build (`pfuiMockBackend` in `vite.config.ts`). The app
+  and in the preview build (`gfuiMockBackend` in `vite.config.ts`). The app
   makes ordinary requests to `/api/people`; the Data scenario's network
   panel steers the backend through `/__mock` ([mock-backend.md](../.ai/docs/mock-backend.md)).
 - **`SpacingInspector`** (`src/react/SpacingInspector.tsx`) outlines every
   stack and labels it with its level, orientation and computed gap (and a
-  surface's padding). The spacing demo (`src/layouts/spacing.pfui`) has it;
+  surface's padding). The spacing demo (`src/layouts/spacing.gui`) has it;
   `LayoutPreview group="spacing"` shows that demo in a frame.
 - **`ScenarioSource`** (`src/react/ScenarioSource.tsx`) is the playground's own
-  React component, used from markup. It is registered with the pfui Vite
+  React component, used from markup. It is registered with the gfui Vite
   plugin's `extensions` option (`vite.config.ts`), with its metadata (its
   props are checked like a built-in's). It reads the sources with
   `import.meta.glob(…, { query: "?raw" })`.

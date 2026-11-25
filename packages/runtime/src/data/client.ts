@@ -51,13 +51,13 @@ export function setDataDefaults(defaults: DataDefaults): void {
  */
 export function queryKey(spec: RequestSpec): readonly unknown[] {
   const url = new URL(buildUrl(spec.url, spec.queryParams));
-  return ["pfui", (spec.method ?? "get").toLowerCase(), url.pathname, url.search, spec.body ?? null, spec.headers ?? null];
+  return ["gfui", (spec.method ?? "get").toLowerCase(), url.pathname, url.search, spec.body ?? null, spec.headers ?? null];
 }
 
 /** The URL path of a query (its key's third part). */
 function pathOf(query: Query): string | undefined {
   const key = query.queryKey;
-  return key[0] === "pfui" && typeof key[2] === "string" ? key[2] : undefined;
+  return key[0] === "gfui" && typeof key[2] === "string" ? key[2] : undefined;
 }
 
 /** Whether `path` is `target` or lies below it (`/api/users/1` under `/api/users`). */

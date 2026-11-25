@@ -13,7 +13,7 @@ browser**, for a small app such as:
 <App>
   <Stack>
     <Text value="{1 + 2}"/>
-    <Text>Hello, {'pfui'.toUpperCase()}!</Text>
+    <Text>Hello, {'gfui'.toUpperCase()}!</Text>
     <Button label="Click me"/>
   </Stack>
 </App>
@@ -44,14 +44,14 @@ Sources: `xmlui/src/parsers/xmlui-parser/transform.ts` (`prepNode`,
 
 ### Compiled module
 
-`compileModule(markup, options)` (`@patchfuil/compiler`) returns
+`compileModule(markup, options)` (`@gluefuil/compiler`) returns
 `{ code, diagnostics }`. The code is one JavaScript module whose default
 export is the app's root component.
 
 ```js
 import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode,
-         createScope as $$createScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@patchfuil/runtime";
-import { App as $$C_App, Text as $$C_Text } from "@patchfuil/components";
+         createScope as $$createScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@gluefuil/runtime";
+import { App as $$C_App, Text as $$C_Text } from "@gluefuil/components";
 
 const $$scope = $$createScope({});
 const $$b0 = { value: ($$s) => 1 + 2 };          // bindings of one element, hoisted
@@ -64,7 +64,7 @@ export default Main;
 ```
 
 - **Two formats:**
-  - `"esm"` imports from `@patchfuil/runtime` and `@patchfuil/components`,
+  - `"esm"` imports from `@gluefuil/runtime` and `@gluefuil/components`,
     for build tools (here a Vite plugin; step 12 makes it real);
   - `"function"` is a function body that reads the same names from a
     `$$imports` parameter, for loading with `new Function` (standalone mode,
@@ -95,7 +95,7 @@ export default Main;
 - **Binding values that are promises** throw a `BindingError`. The same
   check as `loadBinding`, now shared through `assertBindingValue`.
 
-### Components (`@patchfuil/components`)
+### Components (`@gluefuil/components`)
 
 - **Components:** `App`, `Text`, `Button` and `Stack` (`orientation`,
   `gap`), as plain React components.
@@ -144,7 +144,7 @@ attribute and text node are collected as well, with file positions.
   It covers constant and bound props, text bindings and nesting.
 - **Runtime:** `Bound` re-renders when a bound signal changes; `TextNode`;
   `loadModule`.
-- **E2E:** a fixture app whose `Main.pfui` is compiled by a minimal Vite
+- **E2E:** a fixture app whose `Main.gui` is compiled by a minimal Vite
   plugin renders in Chromium with no errors.
 
 ## Outcome
@@ -169,7 +169,7 @@ Details: [`../docs/modules.md`](../docs/modules.md).
   imports). The fixture uses `--configLoader runner`. Step 12 decides how
   the real plugin is packaged (likely a built JS package).
 - **XMLUI collapses whitespace before parsing**, so it also collapses
-  string literals inside `{…}` in text content. pfui collapses literal
+  string literals inside `{…}` in text content. gfui collapses literal
   segments only (a deliberate divergence, which keeps expression positions
   exact).
 - **The `runtimeInfo` and `componentsInfo` placeholders were removed**:

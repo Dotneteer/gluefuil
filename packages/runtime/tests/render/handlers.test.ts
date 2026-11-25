@@ -1,6 +1,6 @@
 // Handler runtime (step 7): segments across await, fault tolerance,
 // cancellation, policies, timeouts. Handlers are compiled by the real compiler.
-import { compileHandler, parseStatements } from "@patchfuil/compiler";
+import { compileHandler, parseStatements } from "@gluefuil/compiler";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { setErrorReporter } from "../../src/errors";
 import { createScope } from "../../src/reactivity/scope";

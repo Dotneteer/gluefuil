@@ -137,7 +137,7 @@ Implemented as designed. Details: [`../docs/scoping.md`](../docs/scoping.md).
 ## Findings
 
 - **IDs are file-scoped in XMLUI, by construction.** Implicit containers
-  forward API registration to their parent (`Container.tsx:133`). pfui
+  forward API registration to their parent (`Container.tsx:133`). gfui
   makes this explicit: the compiler collects IDs before compiling, and the
   file scope holds them.
 - **The step 4 scope design held again.** An ID is a getter over a signal

@@ -8,7 +8,7 @@
 
 ## Role
 
-The first compiler stage: `.pfui` markup text becomes a **syntax tree** with
+The first compiler stage: `.gui` markup text becomes a **syntax tree** with
 source positions on every node, plus a list of **diagnostics**. It is purely
 syntactic. It does **not**:
 
@@ -21,7 +21,7 @@ syntactic. It does **not**:
 
 ## API
 
-Exported from `@patchfuil/compiler`:
+Exported from `@gluefuil/compiler`:
 
 | Export | Kind | Purpose |
 |--------|------|---------|

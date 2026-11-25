@@ -1,6 +1,6 @@
 // App-level theming and the <Theme> element (step 17). The engine compiles the
 // active theme and tone (runtime theme state) to CSS custom properties.
-import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setNavigationHandlers, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@patchfuil/runtime";
+import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setNavigationHandlers, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@gluefuil/runtime";
 import { MantineProvider } from "@mantine/core";
 import { useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
@@ -84,11 +84,11 @@ export function App({
   return (
     // data-mantine-color-scheme: Mantine's tone selectors match below the app,
     // also in a server render (no script has to set it on <html> first).
-    <div ref={root} className="pfui-App" data-tone={tone} data-mantine-color-scheme={tone} style={style} {...attributes}>
-      <style href={MANTINE_STYLESHEET_HREF} precedence="pfui">
+    <div ref={root} className="gfui-App" data-tone={tone} data-mantine-color-scheme={tone} style={style} {...attributes}>
+      <style href={MANTINE_STYLESHEET_HREF} precedence="gfui">
         {MANTINE_STYLESHEET}
       </style>
-      <style href={BASE_STYLESHEET_HREF} precedence="pfui">
+      <style href={BASE_STYLESHEET_HREF} precedence="gfui">
         {BASE_STYLESHEET}
       </style>
       {/* Mantine's variables and global classes come from MANTINE_STYLESHEET: no <style> elements of its own. */}
@@ -127,7 +127,7 @@ export function Theme({ themeId, tone, children, ...overrides }: { themeId?: unk
     [ownTheme, ownTone, active.themeId, active.tone, key],
   );
   return (
-    <div className="pfui-Theme" data-tone={ownTone} data-mantine-color-scheme={ownTone} style={{ display: "contents", ...(style as CSSProperties) }}>
+    <div className="gfui-Theme" data-tone={ownTone} data-mantine-color-scheme={ownTone} style={{ display: "contents", ...(style as CSSProperties) }}>
       {children}
     </div>
   );

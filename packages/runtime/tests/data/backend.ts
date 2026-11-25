@@ -1,8 +1,8 @@
 // The mock backend the data tests talk to through real `fetch` (MSW's
-// interception in Node: @patchfuil/mock-backend/node). The tests steer it
+// interception in Node: @gluefuil/mock-backend/node). The tests steer it
 // directly: faults, holds, the request log.
-import { defineBackend, status } from "@patchfuil/mock-backend";
-import { startTestServer } from "@patchfuil/mock-backend/node";
+import { defineBackend, status } from "@gluefuil/mock-backend";
+import { startTestServer } from "@gluefuil/mock-backend/node";
 import { afterAll, afterEach, beforeAll } from "vitest";
 
 let ticks = 0;

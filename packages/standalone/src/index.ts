@@ -1,6 +1,6 @@
-// The standalone entry: built into dist/pfui.js, exposed as the global `pfui`.
+// The standalone entry: built into dist/gfui.js, exposed as the global `gfui`.
 // The script reads its options from its own <script> tag and starts on
-// DOMContentLoaded (data-autostart="false" to start manually with pfui.start()).
+// DOMContentLoaded (data-autostart="false" to start manually with gfui.start()).
 
 import * as React from "react";
 import { start, StandaloneApp, type StartOptions } from "./loader";
@@ -21,14 +21,14 @@ export function current(): StandaloneApp | undefined {
   return app;
 }
 
-/** Starts the app (once); `pfui.start()` for manual start. */
+/** Starts the app (once); `gfui.start()` for manual start. */
 export async function startApp(options: StartOptions = {}): Promise<StandaloneApp> {
   app?.stop();
   app = await start(options);
   return app;
 }
 
-/** Options from `data-*` attributes of the <script> tag that loaded pfui.js. */
+/** Options from `data-*` attributes of the <script> tag that loaded gfui.js. */
 export function optionsFromScript(script: HTMLOrSVGScriptElement | null): StartOptions & { autostart: boolean } {
   const data = script instanceof HTMLScriptElement ? script.dataset : {};
   const flag = (value: string | undefined) => (value === undefined ? undefined : value !== "false");

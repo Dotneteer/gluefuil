@@ -8,10 +8,10 @@
 
 <App var.count="{0}" var.source="{0}" var.mirror="{source}" var.status="Idle" global.likes="{0}">
   <Stack gap="8px">
-    <H1>pfui demo app</H1>
+    <H1>gfui demo app</H1>
     <H2>Step 5 · Bindings</H2>
     <Text value="{1 + 2}"/>
-    <Text>Hello, {'pfui'.toUpperCase()}!</Text>
+    <Text>Hello, {'gfui'.toUpperCase()}!</Text>
     <Text>{[1, 2, 3].map(n => n * n).join(' + ')} = {[1, 2, 3].reduce((sum, n) => sum + n * n, 0)}</Text>
     <Stack orientation="horizontal" gap="4px">
       <Button label="First"/>
@@ -48,7 +48,7 @@
       label="Throw"
       onClick="
         const reason = 'source maps';
-        throw new Error('thrown in Main.pfui: ' + reason);
+        throw new Error('thrown in Main.gui: ' + reason);
       "/>
 
     <H2>Step 10 · Conditionals and templates</H2>
@@ -93,7 +93,7 @@
     </Stack>
 
     <H2>Step 14 · User-defined components</H2>
-    <!-- Step 14: user-defined components (components/*.pfui) -->
+    <!-- Step 14: user-defined components (components/*.gui) -->
     <NameValue name="Mary" value="123"/>
     <NameValue name="Joe"/>
     <Stack var.increments="" gap="4px">

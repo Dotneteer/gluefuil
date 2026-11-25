@@ -162,7 +162,7 @@ research; line numbers in the files above):
   innermost first (`label`, `tooltip`, `variant`). The wrapper receives the
   compiled element as its children. Behaviors have props only, no events,
   and no condition on the component's API yet.
-- **The `label` behavior** renders `<label class="pfui-Label">` around an
+- **The `label` behavior** renders `<label class="gfui-Label">` around an
   input.
 - **Data** (step 20) gives `submitUrl` its HTTP gate. Errors are a frozen
   `{ category, status, body, … }` (category `validation` for 400/422).
@@ -292,9 +292,9 @@ research; line numbers in the files above):
     handler compiled on the behavior's `Bound`, checked like a component's
     (E004 for a misspelled one).
   - **The wrapper:**
-    - renders `<span class="pfui-Field" data-required data-invalid>`
+    - renders `<span class="gfui-Field" data-required data-invalid>`
       around the input, with the visible messages after it
-      (`<div class="pfui-ValidationMessage" data-severity>`);
+      (`<div class="gfui-ValidationMessage" data-severity>`);
     - the input gets `aria-invalid` and `aria-describedby`, through the
       field context.
   - **Without `bindTo`,** a rule prop is an unknown prop (the existing
@@ -306,7 +306,7 @@ research; line numbers in the files above):
     behaviors stay separate.
   - XMLUI's binding wrapper renders the label itself instead; same result.
   - The required mark is CSS:
-    `.pfui-Label:has(.pfui-Field[data-required]) > .pfui-Label-text::after`.
+    `.gfui-Label:has(.gfui-Field[data-required]) > .gfui-Label-text::after`.
     No prop is shared between two behaviors.
 - **Outside a Form,** a bound input reports a runtime error and works
   unbound. It can't be a compile error: a user component may be used
@@ -461,7 +461,7 @@ Details: [../docs/forms.md](../docs/forms.md).
 - **The label must wrap only the input.** With the label outermost, the
   validation messages became part of the input's accessible name ("Name This
   field is required"). Order: `label`, `formBinding`, `validation`, `tooltip`,
-  `variant`; the messages follow the `<label>` inside `.pfui-Field`.
+  `variant`; the messages follow the `<label>` inside `.gfui-Field`.
 - **Mantine overrides `aria-describedby`.** Its inputs spread their own value
   after the props (undefined unless they render a description). The bound
   input sets the attribute on the element through its ref.

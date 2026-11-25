@@ -287,16 +287,16 @@ describe("browser moves (back, forward, a typed hash)", () => {
     window.dispatchEvent(new PopStateEvent("popstate"));
     await settle();
     expect(path()).toBe("/typed");
-    expect(window.history.state).toEqual({ pfui: 2 });
+    expect(window.history.state).toEqual({ gfui: 2 });
   });
 
   test("every entry we push or replace carries its index", async () => {
     setRoutingMode("browser");
-    expect(window.history.state).toEqual({ pfui: 0 });
+    expect(window.history.state).toEqual({ gfui: 0 });
     await navigate("/a");
-    expect(window.history.state).toEqual({ pfui: 1 });
+    expect(window.history.state).toEqual({ gfui: 1 });
     await navigate("/b", { replace: true });
-    expect(window.history.state).toEqual({ pfui: 1 });
+    expect(window.history.state).toEqual({ gfui: 1 });
   });
 });
 

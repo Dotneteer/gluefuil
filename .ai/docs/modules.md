@@ -9,26 +9,26 @@
 
 ## Role
 
-`compileModule` turns a whole `.pfui` document into **one JavaScript module**
+`compileModule` turns a whole `.gui` document into **one JavaScript module**
 whose default export is the root React component. The pipeline is:
 
 ```
-.pfui text ──parseMarkup──► elements ──per attribute/text: parseInterpolation + compileInterpolation──►
+.gui text ──parseMarkup──► elements ──per attribute/text: parseInterpolation + compileInterpolation──►
   module code ──(esm: bundler | function: loadModule)──► React component ──► DOM
 ```
 
 ## API
 
-**Compiler** (`@patchfuil/compiler`):
+**Compiler** (`@gluefuil/compiler`):
 
 ```ts
 compileModule(markup, {
   format?: "esm" | "function",          // default "esm"
   components?: Record<string, ComponentMetadata>,  // default: built-in metadata
-  runtimeModule?: string,               // default "@patchfuil/runtime"
-  componentsModule?: string,            // default "@patchfuil/components"
+  runtimeModule?: string,               // default "@gluefuil/runtime"
+  componentsModule?: string,            // default "@gluefuil/components"
   componentModules?: Record<string, string>, // "esm": per-component modules (an app's own React components)
-  fileName?: string,                    // the source map's source; default "Main.pfui"
+  fileName?: string,                    // the source map's source; default "Main.gui"
   sourceMap?: boolean,                  // default true
 }): { code: string; map?: SourceMap; diagnostics: Diagnostic[] }
 ```
@@ -37,7 +37,7 @@ Diagnostics include everything found while compiling, sorted by position:
 markup (M), script syntax (S), bindings (C) and the module itself (E). All
 use file offsets.
 
-**Runtime** (`@patchfuil/runtime`):
+**Runtime** (`@gluefuil/runtime`):
 
 | Export | What it does |
 |--------|--------------|
@@ -49,17 +49,17 @@ use file offsets.
 | `assertBindingValue` | The shared check: a promise as a binding value throws a `BindingError` |
 | `createElement`, `Fragment` | Re-exported from React; compiled code never imports React itself |
 
-**Components** (`@patchfuil/components`):
+**Components** (`@gluefuil/components`):
 
 | Component | Props | Renders |
 |-----------|-------|---------|
 | `Pages`, `Page`, `Link` | `fallbackPath`; `url`; `to`, `label` | Routing ([routing.md](routing.md)) |
-| `App` | `defaultTheme`, `defaultTone`, `useHashBasedRouting` | `<div class="pfui-App">` with the active theme's variables, and the stylesheet ([theming.md](theming.md)) |
-| `Theme` | `themeId`, `tone`, theme variables | `<div class="pfui-Theme" style="display: contents">` with scoped variables |
-| `Text` | `value`, `variant`, `maxLines` | The variant's semantic element (default `<span class="pfui-Text">`) with `value` or the children ([mantine.md](mantine.md)) |
-| `Heading`, `H1`–`H6` | `value`, `level`, `maxLines` | `<hN class="pfui-Heading">` |
+| `App` | `defaultTheme`, `defaultTone`, `useHashBasedRouting` | `<div class="gfui-App">` with the active theme's variables, and the stylesheet ([theming.md](theming.md)) |
+| `Theme` | `themeId`, `tone`, theme variables | `<div class="gfui-Theme" style="display: contents">` with scoped variables |
+| `Text` | `value`, `variant`, `maxLines` | The variant's semantic element (default `<span class="gfui-Text">`) with `value` or the children ([mantine.md](mantine.md)) |
+| `Heading`, `H1`–`H6` | `value`, `level`, `maxLines` | `<hN class="gfui-Heading">` |
 | `Button` | `label`, `enabled`; event `click` | Mantine's `Button` with `label` or the children. `onClick` is called **without arguments** (no DOM event reaches script). |
-| `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="pfui-Stack">` |
+| `Stack` | `orientation` (`"horizontal"` or vertical), `gap` | a flex `<div class="gfui-Stack">` |
 | `TextBox` | `initialValue`, `placeholder`, `enabled`; event `didChange`; API `value`, `setValue`, `focus` | Mantine's `TextInput` ([mantine.md](mantine.md)) |
 | `Select` | `options`, `initialValue`, `placeholder`, `enabled`, `searchable`, `clearable`; template `optionTemplate`; event `didChange`; API `value`, `setValue`, `focus` | Mantine's `Select` |
 | `Checkbox` | `label`, `initialValue`, `enabled`; event `didChange`; API `value`, `setValue` | Mantine's `Checkbox` |
@@ -72,8 +72,8 @@ names against it.
 ## Generated code
 
 ```js
-import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createScope as $$createScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@patchfuil/runtime";
-import { App as $$C_App, Text as $$C_Text } from "@patchfuil/components";
+import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createScope as $$createScope, scriptGlobals as $$g, scriptRuntime as $$r } from "@gluefuil/runtime";
+import { App as $$C_App, Text as $$C_Text } from "@gluefuil/components";
 const $$scope = $$createScope({});
 const $$b0 = { "value": ($$s) => 1 + 2 };
 function Main() {
@@ -169,7 +169,7 @@ export default Main;
 
 ## Build-time integration
 
-`@patchfuil/vite-plugin` compiles `.pfui` files with `compileModule`
+`@gluefuil/vite-plugin` compiles `.gui` files with `compileModule`
 (format `"esm"`): see [build-time.md](build-time.md). `test-apps/hello`
 uses it.
 
@@ -196,4 +196,4 @@ uses it.
 | `components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM, for the first app and a table of constructs |
 | `e2e/async-handlers.spec.ts` | `test-apps/hello`: a slow handler, responsiveness, double-click under each policy |
 | `e2e/variables.spec.ts` | `test-apps/hello`: counter and source/mirror with real clicks in Chromium |
-| `e2e/first-app.spec.ts` | `test-apps/hello`: `Main.pfui` compiled by `@patchfuil/vite-plugin` renders in Chromium without errors, with a horizontal `Stack` laid out in a row |
+| `e2e/first-app.spec.ts` | `test-apps/hello`: `Main.gui` compiled by `@gluefuil/vite-plugin` renders in Chromium without errors, with a horizontal `Stack` laid out in a row |

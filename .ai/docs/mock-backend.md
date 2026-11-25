@@ -1,6 +1,6 @@
 # The mock backend
 
-> Subsystem reference: `@patchfuil/mock-backend`, its hosts, and the Vite
+> Subsystem reference: `@gluefuil/mock-backend`, its hosts, and the Vite
 > plugin that starts it. A backend the app can't tell from a server: the app
 > makes ordinary `fetch` requests, and a host answers them. Design and
 > findings: [`../plan/poc-20-data.md`](../plan/poc-20-data.md) § 1.
@@ -11,7 +11,7 @@
 
 ```ts
 // src/backend.ts: the app never imports it
-import { defineBackend, created, noContent, status } from "@patchfuil/mock-backend";
+import { defineBackend, created, noContent, status } from "@gluefuil/mock-backend";
 
 export default defineBackend({
   seed: { users: [{ id: 1, name: "Ada" }] },
@@ -76,30 +76,30 @@ They are not logged and not faulted.
 
 | Host | Module | Where | Notes |
 |------|--------|-------|-------|
-| Service worker | `@patchfuil/mock-backend/worker`: `startWorker(backend, { url })` | Browser: development, the playground, static builds | MSW 3 `setupWorker`, one `http.all("<prefix>/*")` per prefix, `quiet`, `onUnhandledFrame: "bypass"`. Started once per page, never stopped. Requests are real page requests; Playwright reports `fromServiceWorker()`. **The handler doesn't see the page aborting a request**, so a hold or hang stays until released. |
-| Dev-server middleware | `@patchfuil/mock-backend/middleware`: `backendMiddleware(backend)` | Node: the Vite dev server | Real HTTP; no MSW. Request bodies are buffered. The client going away aborts the request (holds and hangs end). A network error destroys the socket. |
-| Test server | `@patchfuil/mock-backend/node`: `startTestServer(backend)` | Vitest | MSW 3 `setupServer` intercepting `fetch` at any origin (`*/api/*`). |
+| Service worker | `@gluefuil/mock-backend/worker`: `startWorker(backend, { url })` | Browser: development, the playground, static builds | MSW 3 `setupWorker`, one `http.all("<prefix>/*")` per prefix, `quiet`, `onUnhandledFrame: "bypass"`. Started once per page, never stopped. Requests are real page requests; Playwright reports `fromServiceWorker()`. **The handler doesn't see the page aborting a request**, so a hold or hang stays until released. |
+| Dev-server middleware | `@gluefuil/mock-backend/middleware`: `backendMiddleware(backend)` | Node: the Vite dev server | Real HTTP; no MSW. Request bodies are buffered. The client going away aborts the request (holds and hangs end). A network error destroys the socket. |
+| Test server | `@gluefuil/mock-backend/node`: `startTestServer(backend)` | Vitest | MSW 3 `setupServer` intercepting `fetch` at any origin (`*/api/*`). |
 
 - In the worker and test hosts, an aborted request's rejection is answered
   with a 499 instead of being thrown, so MSW prints nothing.
 
-## In a Vite app: `pfuiMockBackend`
+## In a Vite app: `gfuiMockBackend`
 
 ```ts
-import { pfui, pfuiMockBackend } from "@patchfuil/vite-plugin";
-plugins: [pfui(), pfuiMockBackend({ module: "src/backend.ts", host: "worker", build: false }), react()]
+import { gfui, gfuiMockBackend } from "@gluefuil/vite-plugin";
+plugins: [gfui(), gfuiMockBackend({ module: "src/backend.ts", host: "worker", build: false }), react()]
 ```
 
 - **A plugin of its own:** Vite allows one HTML transform per plugin. This
   one must run before Vite's, and the prerender after.
 - **`host: "worker"`** (default):
   - The page's entry `<script type="module" src="X">` becomes
-    `/@pfui/mock-boot.js?entry=X`. That is a virtual module per entry: it
+    `/@gfui/mock-boot.js?entry=X`. That is a virtual module per entry: it
     starts the worker, then imports `X`. `main.tsx`, `mountApp` and the
     compiled markup are untouched.
   - The dev server serves MSW's `mockServiceWorker.js`, from the mock
     package's own `msw`.
-  - The plugin pre-bundles `@patchfuil/mock-backend > msw` and
+  - The plugin pre-bundles `@gluefuil/mock-backend > msw` and
     `> msw/browser`, so the first page load doesn't discover them and reload
     every open page.
 - **`host: "middleware"`:** the dev server answers the backend's prefixes.

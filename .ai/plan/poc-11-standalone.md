@@ -6,10 +6,10 @@ Part of [poc-steps.md](poc-steps.md).
 
 ## Goal
 
-An app is **one HTML file, one JS file (`pfui.js`), and its markup files**
+An app is **one HTML file, one JS file (`gfui.js`), and its markup files**
 on any static server.
 
-1. On first load, the engine fetches `Main.pfui` and compiles it in the
+1. On first load, the engine fetches `Main.gui` and compiles it in the
    browser.
 2. It caches the compiled module in `localStorage`, keyed by a hash of the
    content.
@@ -28,12 +28,12 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
 
 ## Design
 
-### Package `@patchfuil/standalone`
+### Package `@gluefuil/standalone`
 
 - **The bundle.** `src/index.ts` is built by Vite in library mode (IIFE,
-  minified, with a source map) into `dist/pfui.js`. It contains React,
+  minified, with a source map) into `dist/gfui.js`. It contains React,
   ReactDOM, the compiler, the runtime and the components.
-- **The global `pfui`:** `start(options)`, `stop()`, `status` (the last
+- **The global `gfui`:** `start(options)`, `stop()`, `status` (the last
   load: `"compiled"` or `"cache"`, and timings), `version`, and `React`
   (for future extensions).
 - **Autostart.** The script reads its options from `data-*` attributes of
@@ -42,8 +42,8 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
 
 | Attribute | Default | Meaning |
 |-----------|---------|---------|
-| `data-main` | `Main.pfui` | The entry file, relative to the page |
-| `data-root` | a new `<div id="pfui-root">` | A CSS selector for the mount element |
+| `data-main` | `Main.gui` | The entry file, relative to the page |
+| `data-root` | a new `<div id="gfui-root">` | A CSS selector for the mount element |
 | `data-cache` | `true` | Use the `localStorage` cache |
 | `data-watch` | `true` on `localhost` / `127.0.0.1`, else `false` | Poll the markup for changes |
 | `data-watch-interval` | `1000` | The polling interval (ms) |
@@ -57,7 +57,7 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
 2. Hash the text (cyrb53, 53 bits). It isn't cryptographic, and doesn't
    need to be: the key is not a security boundary, and
    `crypto.subtle` only exists in secure contexts.
-3. Look the result up in the cache. The **key** is `pfui:<buildId>:<path>`;
+3. Look the result up in the cache. The **key** is `gfui:<buildId>:<path>`;
    the entry holds `{ hash, code, map without sourcesContent }`.
    - **Hit:** `loadModule(code)`; no compile.
    - **Miss or changed:** `compileModule(…, { format: "function" })`, then
@@ -66,7 +66,7 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
      never runs code compiled by an old one.
 4. Mount with `createRoot(...).render(<Main/>)`.
 5. **Compile errors** show an error overlay in the mount element, listing
-   `Main.pfui:line:col: error CODE: message` with the source line. The
+   `Main.gui:line:col: error CODE: message` with the source line. The
    cache is not written for code with errors.
 
 ### The cache (`cache.ts`): it must never break loading
@@ -75,7 +75,7 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
   without a cache.
 - **A corrupted entry** (bad JSON, wrong shape): treat it as a miss and
   overwrite it.
-- **Quota exceeded:** evict the other `pfui:` entries and retry once;
+- **Quota exceeded:** evict the other `gfui:` entries and retry once;
   otherwise skip caching.
 - **Entries of other build IDs** are removed when a new entry is written,
   so old engines don't accumulate garbage.
@@ -92,7 +92,7 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
 
 ### Not in this step
 
-- **Component files** (`components/Name.pfui`) arrive with user-defined
+- **Component files** (`components/Name.gui`) arrive with user-defined
   components (step 14). The loader then fetches unknown component names
   on demand.
 - **CSP:** standalone mode needs `'unsafe-eval'` (`new Function`).
@@ -109,25 +109,25 @@ Sources: `website/content/docs/pages/app-structure.md`; architecture.md
     second, the error overlay, watching picks up a change and recovers
     from an error.
 - **E2E (`test-apps/standalone-site`, a static Node server serving a temp
-  copy plus `dist/pfui.js`):**
+  copy plus `dist/gfui.js`):**
   - the first load compiles and the second load hits the cache;
-  - editing `Main.pfui` on the server updates the open app;
+  - editing `Main.gui` on the server updates the open app;
   - an error in the file shows the overlay, and fixing it recovers.
 
 ## Outcome
 
 Implemented as designed. Details: [`../docs/standalone.md`](../docs/standalone.md).
 
-- `pfui.js`: 326 KB, 101 KB gzipped (React and ReactDOM included).
+- `gfui.js`: 326 KB, 101 KB gzipped (React and ReactDOM included).
 - E2E, against the built bundle in Chromium:
   - the first load compiles and a reload takes the cache;
-  - editing `Main.pfui` on the server updates the open app;
+  - editing `Main.gui` on the server updates the open app;
   - a compile error shows the overlay, and fixing it recovers.
 
 ## Findings
 
 - **The cache key needs an engine identity.** Content hash alone would let
-  a new `pfui.js` run code compiled by an old one. The build ID makes every
+  a new `gfui.js` run code compiled by an old one. The build ID makes every
   build start clean and remove the old entries.
 - **Storing the source map without `sourcesContent`** roughly halves the
   cache entry. The source is fetched anyway (to compute the hash), so the

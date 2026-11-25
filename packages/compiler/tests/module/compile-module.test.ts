@@ -1,4 +1,4 @@
-// compileModule: .pfui document -> JavaScript module. Rendering is tested in
+// compileModule: .gui document -> JavaScript module. Rendering is tested in
 // the components package (tests/first-app.test.tsx), where the code runs.
 import { describe, expect, test } from "vitest";
 import { compileModule } from "../../src/module/compile-module";
@@ -22,8 +22,8 @@ describe("module shape", () => {
   test("esm: imports from the runtime and the components package, exports Main", () => {
     const { code } = compileModule(markup);
     expect(code.split("\n")).toEqual([
-      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, When as $$When, BoundUser as $$BoundUser, Slot as $$Slot, useComponent as $$useComponent, Fragment as $$Fragment, GlobalScope as $$GlobalScope, useContextScope as $$useContextScope, scriptGlobals as $$g, scriptRuntime as $$r, deferredValue as $$deferred } from "@patchfuil/runtime";',
-      'import { App as $$C_App, Text as $$C_Text } from "@patchfuil/components";',
+      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, When as $$When, BoundUser as $$BoundUser, Slot as $$Slot, useComponent as $$useComponent, Fragment as $$Fragment, GlobalScope as $$GlobalScope, useContextScope as $$useContextScope, scriptGlobals as $$g, scriptRuntime as $$r, deferredValue as $$deferred } from "@gluefuil/runtime";',
+      'import { App as $$C_App, Text as $$C_Text } from "@gluefuil/components";',
       "const $$scope = $$createAppScope();",
       'const $$b0 = { "value": ($$s) => 1 + 2 };',
       "function Main() {",

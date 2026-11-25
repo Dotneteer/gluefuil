@@ -2,9 +2,9 @@
 // generated JavaScript and the rendered result. The compiler runs in the
 // browser here (as in standalone mode); the rest of the playground is compiled
 // at build time. An app's own React component (vite.config.ts `extensions`).
-import { codeFrame, compileModule, formatDiagnostic, LineMap } from "@patchfuil/compiler";
-import * as builtIns from "@patchfuil/components";
-import { loadModule } from "@patchfuil/runtime";
+import { codeFrame, compileModule, formatDiagnostic, LineMap } from "@gluefuil/compiler";
+import * as builtIns from "@gluefuil/components";
+import { loadModule } from "@gluefuil/runtime";
 import { Component, useMemo, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 
 const mono: CSSProperties = {
@@ -19,10 +19,10 @@ const box: CSSProperties = {
   padding: "8px 12px",
   whiteSpace: "pre",
   overflowX: "auto",
-  border: "1px solid var(--pfui-borderColor)",
-  borderRadius: "var(--pfui-borderRadius)",
-  backgroundColor: "var(--pfui-backgroundColor-Text-code)",
-  color: "var(--pfui-textColor)",
+  border: "1px solid var(--gfui-borderColor)",
+  borderRadius: "var(--gfui-borderRadius)",
+  backgroundColor: "var(--gfui-backgroundColor-Text-code)",
+  color: "var(--gfui-textColor)",
 };
 
 /** Keeps a render error inside the preview. */
@@ -33,7 +33,7 @@ class Preview extends Component<{ children: ReactNode }, { error?: Error }> {
   }
   override componentDidCatch(_error: Error, _info: ErrorInfo) {}
   override render() {
-    return this.state.error ? <pre style={{ ...box, color: "var(--pfui-color-danger-600)" }}>Render error: {this.state.error.message}</pre> : this.props.children;
+    return this.state.error ? <pre style={{ ...box, color: "var(--gfui-color-danger-600)" }}>Render error: {this.state.error.message}</pre> : this.props.children;
   }
 }
 
@@ -41,9 +41,9 @@ export function LiveMarkup({ initialMarkup, title }: { initialMarkup?: unknown; 
   const [markup, setMarkup] = useState(String(initialMarkup ?? "<Text>Hello</Text>"));
   const [showCode, setShowCode] = useState(false);
   const result = useMemo(() => {
-    const compiled = compileModule(markup, { format: "function", fileName: "Live.pfui", sourceMap: false });
+    const compiled = compileModule(markup, { format: "function", fileName: "Live.gui", sourceMap: false });
     const lineMap = new LineMap(markup);
-    const messages = compiled.diagnostics.map((d) => `${formatDiagnostic(d, lineMap, "Live.pfui")}\n${codeFrame(markup, lineMap, d.start)}`);
+    const messages = compiled.diagnostics.map((d) => `${formatDiagnostic(d, lineMap, "Live.gui")}\n${codeFrame(markup, lineMap, d.start)}`);
     const hasErrors = compiled.diagnostics.some((d) => d.severity === "error");
     let Rendered: (() => ReactNode) | undefined;
     if (!hasErrors) {
@@ -68,14 +68,14 @@ export function LiveMarkup({ initialMarkup, title }: { initialMarkup?: unknown; 
         style={{ ...box, resize: "vertical", whiteSpace: "pre" }}
       />
       {result.messages.length > 0 ? (
-        <pre role="status" style={{ ...box, borderColor: "var(--pfui-color-danger-500)" }}>
+        <pre role="status" style={{ ...box, borderColor: "var(--gfui-color-danger-500)" }}>
           {result.messages.join("\n")}
         </pre>
       ) : (
-        <div style={{ ...mono, color: "var(--pfui-color-success-700)" }}>No diagnostics.</div>
+        <div style={{ ...mono, color: "var(--gfui-color-success-700)" }}>No diagnostics.</div>
       )}
       {result.Rendered ? (
-        <div style={{ padding: 12, border: "1px dashed var(--pfui-borderColor)", borderRadius: "var(--pfui-borderRadius)" }}>
+        <div style={{ padding: 12, border: "1px dashed var(--gfui-borderColor)", borderRadius: "var(--gfui-borderRadius)" }}>
           <Preview key={markup}>
             <result.Rendered />
           </Preview>

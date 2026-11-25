@@ -11,27 +11,27 @@ import { breakpointFromName, setServerBreakpoint } from "./visibility";
  * Marks a container filled by the prerender. Its value is the breakpoint
  * name the HTML was rendered for (`server.ts` `renderStatic`).
  */
-export const PRERENDERED_ATTRIBUTE = "data-pfui-prerendered";
+export const PRERENDERED_ATTRIBUTE = "data-gfui-prerendered";
 
 /**
  * The route a prerendered container was rendered for (step 21: one file per
  * static route). Hydration renders the same route; without it, "/".
  */
-export const PATH_ATTRIBUTE = "data-pfui-path";
+export const PATH_ATTRIBUTE = "data-gfui-path";
 
 /**
  * The sub-path a browser-routed app is served under (`/app`), from Vite's
  * `base`: the Vite plugin writes it on the container (step 21, part 2). The
  * router reads routes below it and puts it in front of every URL it makes.
  */
-export const BASE_ATTRIBUTE = "data-pfui-base";
+export const BASE_ATTRIBUTE = "data-gfui-base";
 
 /**
  * Set on the container once the first render (or the takeover) is committed
  * and its effects have run: the app is interactive. Tests wait for it, and
- * styles can tell prerendered HTML that is not yet live (`:not([data-pfui-ready])`).
+ * styles can tell prerendered HTML that is not yet live (`:not([data-gfui-ready])`).
  */
-export const READY_ATTRIBUTE = "data-pfui-ready";
+export const READY_ATTRIBUTE = "data-gfui-ready";
 
 /** Renders `children` unchanged (no DOM of its own) and marks the container when committed. */
 function Ready({ container, children }: { container: Element; children: ReactNode }) {
@@ -51,7 +51,7 @@ export interface MountOptions {
   onRecoverableError?: (error: unknown) => void;
   /**
    * The sub-path the app is served under, for browser routing (`/app`).
-   * Default: the container's `data-pfui-base` (written by the Vite plugin from
+   * Default: the container's `data-gfui-base` (written by the Vite plugin from
    * `base`), else none.
    */
   basename?: string;
@@ -61,7 +61,7 @@ export interface MountOptions {
  * Renders `app` into `container`. A prerendered container is hydrated: React
  * reuses its DOM, rendering with the breakpoint and the route the HTML was made for, then
  * updates whatever differs on this client (a responsive `When`). Any other
- * container gets a fresh root. Either way the container gets `data-pfui-ready`
+ * container gets a fresh root. Either way the container gets `data-gfui-ready`
  * once the app is live.
  */
 export function mountApp(container: Element, app: ReactNode, options: MountOptions = {}): Root {

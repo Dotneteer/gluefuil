@@ -1,6 +1,6 @@
 // Items: renders `data` through its item template (XMLUI Items), with no
 // wrapper element. The template receives $item, $itemIndex, $isFirst, $isLast.
-import type { TemplateRenderer } from "@patchfuil/runtime";
+import type { TemplateRenderer } from "@gluefuil/runtime";
 import { DataUrl, isDataUrl } from "./data";
 import { LayoutScope, useMultipleScope } from "./layout";
 

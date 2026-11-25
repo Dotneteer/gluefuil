@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { signal, type Signal } from "../reactivity/signals";
 
 /** The ID signals of a file scope; inherited by every nested scope through the prototype chain. */
-export const API_REFS: unique symbol = Symbol("pfui.apiRefs");
+export const API_REFS: unique symbol = Symbol("gfui.apiRefs");
 
 /** What `Bound` passes to a component with an `id`: call with the API, or undefined to unregister. */
 export type RegisterApi = (api: object | undefined) => void;

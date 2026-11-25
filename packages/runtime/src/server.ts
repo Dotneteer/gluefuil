@@ -1,4 +1,4 @@
-// @patchfuil/runtime/server: rendering to static HTML (static generation).
+// @gluefuil/runtime/server: rendering to static HTML (static generation).
 // A separate entry point, so `react-dom/server` stays out of client bundles.
 
 import { createElement, isValidElement, type ComponentType, type ReactNode } from "react";
@@ -17,11 +17,11 @@ export { findRoute, registeredRoutes, routingMode } from "./render/router";
 export interface RenderStaticOptions {
   /** The viewport to render for (default "xs", mobile-first). */
   breakpoint?: BreakpointName;
-  /** The route to render (default "/"); written to the container as `data-pfui-path`. */
+  /** The route to render (default "/"); written to the container as `data-gfui-path`. */
   path?: string;
   /**
    * The sub-path the app is served under (browser routing): links in the HTML
-   * carry it, and it is written to the container as `data-pfui-base`.
+   * carry it, and it is written to the container as `data-gfui-base`.
    */
   basename?: string;
 }

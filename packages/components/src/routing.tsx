@@ -1,7 +1,7 @@
 // Routing components (step 19, reduced): Pages, Page, Link. The router itself
 // (location, navigate, matching) is in the runtime. Design:
 // .ai/plan/poc-19-routing.md
-import { currentLocation, findRoute, hrefFor, navigate, redirect, registerRoutes, useComputed } from "@patchfuil/runtime";
+import { currentLocation, findRoute, hrefFor, navigate, redirect, registerRoutes, useComputed } from "@gluefuil/runtime";
 import { Children, isValidElement, useEffect, type MouseEvent, type ReactNode } from "react";
 import { LayoutScope, useLayout, useRecountedScope, type LayoutProps } from "./layout";
 
@@ -57,7 +57,7 @@ export function Link(props: LayoutProps & { to?: unknown; label?: unknown; child
     void navigate(target);
   };
   return (
-    <a className="pfui-Link" href={hrefFor(target)} onClick={onClick} {...layout.attributes} style={layout.style}>
+    <a className="gfui-Link" href={hrefFor(target)} onClick={onClick} {...layout.attributes} style={layout.style}>
       {label !== undefined && label !== null ? String(label) : children}
     </a>
   );

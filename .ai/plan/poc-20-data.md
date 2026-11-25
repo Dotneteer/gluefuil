@@ -168,14 +168,14 @@ hosts:
 
 ## Design
 
-### 1. The mock backend (`@patchfuil/mock-backend`, new package)
+### 1. The mock backend (`@gluefuil/mock-backend`, new package)
 
 A backend is defined in TypeScript (development tooling, so types and a
 debugger help):
 
 ```ts
 // test-apps/data/src/backend.ts (the playground has its own)
-import { defineBackend, created, noContent, status } from "@patchfuil/mock-backend";
+import { defineBackend, created, noContent, status } from "@gluefuil/mock-backend";
 
 export default defineBackend({
   // Collections, reset to this on POST /__mock/reset
@@ -252,11 +252,11 @@ They are thin, because the backend is already a `Request → Response`
 function.
 
 **The Vite plugin** (*as built:* a second plugin, not an option of
-`pfui()`. Vite allows one HTML transform per plugin, and this one must run
+`gfui()`. Vite allows one HTML transform per plugin, and this one must run
 before Vite's, while the prerender runs after it):
 
 ```ts
-plugins: [pfui(), pfuiMockBackend({ module: "src/backend.ts", host: "worker" /* or "middleware" */, build: false }), react()]
+plugins: [gfui(), gfuiMockBackend({ module: "src/backend.ts", host: "worker" /* or "middleware" */, build: false }), react()]
 ```
 
 - In development:
@@ -525,14 +525,14 @@ Built on one branch, `poc/20-data`, in this order (decision 7):
 
 ### 20A: The mock backend
 
-- [x] `@patchfuil/mock-backend`:
+- [x] `@gluefuil/mock-backend`:
   - `defineBackend`, routing with `:params`, the in-memory collections and
     the helpers;
   - faults, holds and the request log;
   - the `/__mock` control endpoints.
 - [x] The hosts: `startWorker` (MSW), `startTestServer` (MSW node),
       `backendMiddleware`.
-- [x] The Vite plugin `pfuiMockBackend` (a plugin of its own):
+- [x] The Vite plugin `gfuiMockBackend` (a plugin of its own):
   - the bootstrap that replaces the entry script;
   - the worker script in dev and with `build: true`;
   - the middleware host.
@@ -600,7 +600,7 @@ Built on one branch, `poc/20-data`, in this order (decision 7):
 2. **The mock design:** a Fetch-API backend (`Request` → `Response`) with
    three hosts: a service worker (MSW 3), dev-server middleware, and an
    in-process test server (MSW 3 `setupServer`). MSW is a dev dependency of
-   `@patchfuil/mock-backend` only.
+   `@gluefuil/mock-backend` only.
 3. **`when` on a `DataSource`** keeps XMLUI's meaning: the loader stays
    mounted and doesn't fetch (`users.loaded` reads `false`). A metadata
    flag, `whenDisablesOnly`, makes the compiler pass `when` as a prop.
@@ -611,7 +611,7 @@ Built on one branch, `poc/20-data`, in this order (decision 7):
 6. **Default retries:** two for `get` `DataSource`s, none for writes.
 7. **Sub-steps:** 20A–20D on one branch, `poc/20-data`, with one review at
    the end.
-8. **Mock backends for apps:** `@patchfuil/mock-backend` is offered to app
+8. **Mock backends for apps:** `@gluefuil/mock-backend` is offered to app
    authors through the Vite plugin's `mockBackend` option. Standalone mode
    is left for later.
 
@@ -637,7 +637,7 @@ The test names carry the row ids.
   cache.
 
 **Size** (rendered length in a production build of the fixture): query-core
-about 63 kB, pfui's data code about 23 kB. A build without `build: true`
+about 63 kB, gfui's data code about 23 kB. A build without `build: true`
 contains no mock code.
 
 **The playground:**
@@ -672,7 +672,7 @@ contains no mock code.
     resolved from the app.
   - Without it, MSW was discovered on the first page load, and the
     re-optimization reloaded every open page.
-  - The plugin now pre-bundles `@patchfuil/mock-backend > msw` itself.
+  - The plugin now pre-bundles `@gluefuil/mock-backend > msw` itself.
 - **A latent bug from step 13, now fixed:** the prerender's temporary Vite
   server used the app's `node_modules/.vite`. During a test run, a build's
   prerender rewrote a running dev server's pre-bundled dependencies, and
@@ -693,11 +693,11 @@ contains no mock code.
   step (XMLUI's behavior to be checked).
 - **A test pitfall:** a page that shows its own source also contains the
   texts a test looks for. Locators for rendered text are scoped to
-  `.pfui-Text`.
+  `.gfui-Text`.
 
 ## Deviations from this plan
 
-- `pfuiMockBackend` is a second plugin, not a `pfui()` option.
+- `gfuiMockBackend` is a second plugin, not a `gfui()` option.
 - MSW 3 (the current version), not 2. Same API shape, except that
   `onUnhandledFrame` replaces `onUnhandledRequest`.
 - `refetch()` isn't tied to the calling handler (§ 2).
@@ -714,6 +714,6 @@ contains no mock code.
 - Notifications and confirmation dialogs on `APICall` (step 27).
 - `deferredMode` (status polling), paging, `FileUpload`/`FileDownload`,
   `Actions.callApi`.
-- A mock backend in standalone mode; backends written in pfui script, like
+- A mock backend in standalone mode; backends written in gfui script, like
   XMLUI's `---api` blocks.
 - Forms submitting to `APICall` with 422 mapped to fields (step 22).

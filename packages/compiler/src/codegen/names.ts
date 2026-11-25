@@ -1,10 +1,10 @@
-// Name tables of the pfui script sandbox (compile-time side).
+// Name tables of the gfui script sandbox (compile-time side).
 //
-// The runtime (`@patchfuil/runtime`, src/script/sandbox.ts) builds the actual
+// The runtime (`@gluefuil/runtime`, src/script/sandbox.ts) builds the actual
 // objects. `tools/sandbox-drift.test.ts` checks that both sides agree.
 // Design: .ai/plan/poc-03-codegen.md
 
-/** Globals pfui script can read. Every other free name must come from the scope. */
+/** Globals gfui script can read. Every other free name must come from the scope. */
 export const ALLOWED_GLOBALS: ReadonlySet<string> = new Set([
   // Values
   "undefined",
@@ -76,7 +76,7 @@ export const LITERAL_GLOBALS: ReadonlyMap<string, string> = new Map([
 
 /**
  * Static callee paths allowed with `new`: XMLUI's list (eval-tree-common.ts,
- * allowedNewConstructors) without DOMException (not a pfui global), plus the
+ * allowedNewConstructors) without DOMException (not a gfui global), plus the
  * Intl formatters.
  */
 export const CONSTRUCTIBLE: ReadonlySet<string> = new Set([
@@ -130,18 +130,18 @@ export const CONSTRUCTIBLE: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Well-known platform globals, with the pfui replacement where one exists.
+ * Well-known platform globals, with the gfui replacement where one exists.
  * They are not reachable anyway (unknown names are compile errors); this table
  * only gives a better message.
  */
 export const BANNED_GLOBALS: ReadonlyMap<string, string | undefined> = new Map<string, string | undefined>([
-  ["window", "use pfui components and the navigation API"],
+  ["window", "use gfui components and the navigation API"],
   ["self", undefined],
   ["top", undefined],
   ["parent", undefined],
   ["frames", undefined],
   ["globalThis", undefined],
-  ["document", "use pfui components"],
+  ["document", "use gfui components"],
   ["navigator", undefined],
   ["location", "use navigate()"],
   ["history", "use navigate()"],

@@ -1,6 +1,6 @@
-import { mountApp } from "@patchfuil/runtime";
+import { mountApp } from "@gluefuil/runtime";
 import { StrictMode } from "react";
-import Main from "./Main.pfui";
+import Main from "./Main.gui";
 
 mountApp(
   document.getElementById("root")!,

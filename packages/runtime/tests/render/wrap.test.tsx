@@ -89,7 +89,7 @@ test("api: methods with a ref to the native component", () => {
   expect(focus).toHaveBeenCalled();
 });
 
-test("templates: a pfui template renderer becomes a native render prop with context variables", () => {
+test("templates: a gfui template renderer becomes a native render prop with context variables", () => {
   const renderer = vi.fn((context: Record<string, unknown>) => <span>{String(context.$item)}</span>);
   const Wrapped = wrapComponent(Native, { templates: { optionTemplate: { prop: "renderOption", context: (option: { label: string }) => ({ $item: option.label }) } } });
   render(<Wrapped optionTemplate={renderer} />);

@@ -1,11 +1,11 @@
 // The built-ins' stylesheet (steps 16-17): every visual value is a theme variable
-// (`--pfui-*`, compiled by the theme engine; defaults in the metadata's
+// (`--gfui-*`, compiled by the theme engine; defaults in the metadata's
 // `themeVars`). App renders it once as a React 19 hoisted <style>, which a
 // server render emits ahead of the app's HTML.
 
-import { BREAKPOINTS } from "@patchfuil/runtime";
+import { BREAKPOINTS } from "@gluefuil/runtime";
 
-export const BASE_STYLESHEET_HREF = "pfui-base";
+export const BASE_STYLESHEET_HREF = "gfui-base";
 
 /** Below md: a phone. The spacing ladder's page level steps down, and flows go one item per row. */
 const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
@@ -13,7 +13,7 @@ const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
 /**
  * The App shell (shell.tsx; design: .ai/plan/poc-19a-app-shell.md).
  *
- * - The regions are flex items: the header and footer of .pfui-AppColumn, the
+ * - The regions are flex items: the header and footer of .gfui-AppColumn, the
  *   nav in one of four slots (a nav in the header must be inside the header
  *   element, which grid areas can't express).
  * - What sticks and scrolls follows the root's data-* attributes; the sticky
@@ -22,204 +22,204 @@ const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
  *   drawer rules (SHELL_DRAWER, per breakpoint) win without specificity tricks.
  */
 const SHELL = `
-.pfui-App {
-  background-color: var(--pfui-backgroundColor-App);
-  color: var(--pfui-textColor-App);
-  font-family: var(--pfui-fontFamily-App);
-  font-size: var(--pfui-fontSize-App);
-  line-height: var(--pfui-lineHeight);
+.gfui-App {
+  background-color: var(--gfui-backgroundColor-App);
+  color: var(--gfui-textColor-App);
+  font-family: var(--gfui-fontFamily-App);
+  font-size: var(--gfui-fontSize-App);
+  line-height: var(--gfui-lineHeight);
   display: flex;
-  --pfui-shell-top: 0px;
-  --pfui-shell-bottom: 0px;
+  --gfui-shell-top: 0px;
+  --gfui-shell-bottom: 0px;
 }
-.pfui-App[data-scroll="page"] { min-height: 100dvh; }
-.pfui-App[data-scroll="content"] { height: 100dvh; overflow: hidden; }
-.pfui-App[data-header-sticky] { --pfui-shell-top: var(--pfui-height-AppHeader); }
-.pfui-App[data-footer-sticky] { --pfui-shell-bottom: var(--pfui-height-Footer); }
-.pfui-AppColumn { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.pfui-AppBody { flex: 1; display: flex; min-height: 0; }
-.pfui-AppMain { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.pfui-AppContent {
+.gfui-App[data-scroll="page"] { min-height: 100dvh; }
+.gfui-App[data-scroll="content"] { height: 100dvh; overflow: hidden; }
+.gfui-App[data-header-sticky] { --gfui-shell-top: var(--gfui-height-AppHeader); }
+.gfui-App[data-footer-sticky] { --gfui-shell-bottom: var(--gfui-height-Footer); }
+.gfui-AppColumn { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gfui-AppBody { flex: 1; display: flex; min-height: 0; }
+.gfui-AppMain { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gfui-AppContent {
   flex: 1 0 auto;
   box-sizing: border-box;
   width: 100%;
-  max-width: var(--pfui-maxWidth-content-App);
+  max-width: var(--gfui-maxWidth-content-App);
   margin-inline: auto;
   /* The page: level 0 of the spacing ladder (LAYOUT below). */
   display: flex;
   flex-direction: column;
-  --pfui-gap: var(--pfui-l0);
-  gap: var(--pfui-gap);
-  padding: var(--pfui-paddingVertical-content-App, var(--pfui-l0)) var(--pfui-paddingHorizontal-content-App, var(--pfui-l0));
+  --gfui-gap: var(--gfui-l0);
+  gap: var(--gfui-gap);
+  padding: var(--gfui-paddingVertical-content-App, var(--gfui-l0)) var(--gfui-paddingHorizontal-content-App, var(--gfui-l0));
 }
-:where(.pfui-App[data-scroll="content"]) .pfui-AppMain { overflow: auto; }
-:where(.pfui-App[data-scroll="content"]) .pfui-NavPanel { overflow-y: auto; }
+:where(.gfui-App[data-scroll="content"]) .gfui-AppMain { overflow: auto; }
+:where(.gfui-App[data-scroll="content"]) .gfui-NavPanel { overflow-y: auto; }
 
-.pfui-AppHeader {
+.gfui-AppHeader {
   box-sizing: border-box;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--pfui-gap-AppHeader);
-  height: var(--pfui-height-AppHeader);
-  padding: 0 var(--pfui-paddingHorizontal-AppHeader);
-  background-color: var(--pfui-backgroundColor-AppHeader);
-  color: var(--pfui-textColor-AppHeader);
-  border-bottom: 1px solid var(--pfui-borderColor-AppHeader);
+  gap: var(--gfui-gap-AppHeader);
+  height: var(--gfui-height-AppHeader);
+  padding: 0 var(--gfui-paddingHorizontal-AppHeader);
+  background-color: var(--gfui-backgroundColor-AppHeader);
+  color: var(--gfui-textColor-AppHeader);
+  border-bottom: 1px solid var(--gfui-borderColor-AppHeader);
 }
-:where(.pfui-App[data-scroll="page"]) .pfui-AppHeader[data-sticky] { position: sticky; top: 0; z-index: 100; }
-/* Mantine draws the lines with --mantine-color-black/white, which pfui doesn't define. */
-.pfui-AppHeader-burger { display: none; --burger-color: var(--pfui-textColor-AppHeader); }
-.pfui-AppHeader-logo { display: flex; align-items: center; }
-.pfui-AppHeader-title { font-weight: 600; white-space: nowrap; }
-.pfui-AppHeader-content { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--pfui-gap-AppHeader); }
-.pfui-AppHeader-profile { display: flex; align-items: center; }
-:where(.pfui-App:not([data-nav="header"])) .pfui-AppHeader[data-generated] { display: none; }
-:where(.pfui-App[data-nav-full-height]) .pfui-AppHeader-logo { display: none; }
-.pfui-AppLogo { display: block; max-height: calc(var(--pfui-height-AppHeader) - 16px); }
+:where(.gfui-App[data-scroll="page"]) .gfui-AppHeader[data-sticky] { position: sticky; top: 0; z-index: 100; }
+/* Mantine draws the lines with --mantine-color-black/white, which gfui doesn't define. */
+.gfui-AppHeader-burger { display: none; --burger-color: var(--gfui-textColor-AppHeader); }
+.gfui-AppHeader-logo { display: flex; align-items: center; }
+.gfui-AppHeader-title { font-weight: 600; white-space: nowrap; }
+.gfui-AppHeader-content { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--gfui-gap-AppHeader); }
+.gfui-AppHeader-profile { display: flex; align-items: center; }
+:where(.gfui-App:not([data-nav="header"])) .gfui-AppHeader[data-generated] { display: none; }
+:where(.gfui-App[data-nav-full-height]) .gfui-AppHeader-logo { display: none; }
+.gfui-AppLogo { display: block; max-height: calc(var(--gfui-height-AppHeader) - 16px); }
 
-.pfui-NavPanel {
+.gfui-NavPanel {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background-color: var(--pfui-backgroundColor-NavPanel);
+  background-color: var(--gfui-backgroundColor-NavPanel);
 }
-.pfui-NavPanel-items { display: flex; flex-direction: column; gap: var(--pfui-space-0_5); padding: var(--pfui-padding-NavPanel); flex: 1; }
-.pfui-NavPanel-logo { display: flex; align-items: center; min-height: var(--pfui-height-AppHeader); padding: 0 var(--pfui-paddingHorizontal-AppHeader); box-sizing: border-box; }
-.pfui-NavPanel-footer { padding: var(--pfui-padding-NavPanel); }
-.pfui-NavPanel[data-placement="side"] {
+.gfui-NavPanel-items { display: flex; flex-direction: column; gap: var(--gfui-space-0_5); padding: var(--gfui-padding-NavPanel); flex: 1; }
+.gfui-NavPanel-logo { display: flex; align-items: center; min-height: var(--gfui-height-AppHeader); padding: 0 var(--gfui-paddingHorizontal-AppHeader); box-sizing: border-box; }
+.gfui-NavPanel-footer { padding: var(--gfui-padding-NavPanel); }
+.gfui-NavPanel[data-placement="side"] {
   flex-shrink: 0;
-  width: var(--pfui-width-navPanel-App);
-  border-inline-end: 1px solid var(--pfui-borderColor-NavPanel);
+  width: var(--gfui-width-navPanel-App);
+  border-inline-end: 1px solid var(--gfui-borderColor-NavPanel);
 }
-:where(.pfui-App[data-scroll="page"]) .pfui-NavPanel[data-placement="side"][data-sticky] {
+:where(.gfui-App[data-scroll="page"]) .gfui-NavPanel[data-placement="side"][data-sticky] {
   position: sticky;
-  top: var(--pfui-shell-top);
-  height: calc(100dvh - var(--pfui-shell-top) - var(--pfui-shell-bottom));
+  top: var(--gfui-shell-top);
+  height: calc(100dvh - var(--gfui-shell-top) - var(--gfui-shell-bottom));
   overflow-y: auto;
 }
-:where(.pfui-App[data-scroll="page"][data-nav-full-height]) .pfui-NavPanel[data-placement="side"][data-sticky] { top: 0; height: 100dvh; }
-.pfui-NavPanel[data-placement="below-header"] { flex-shrink: 0; border-bottom: 1px solid var(--pfui-borderColor-NavPanel); }
-:where(.pfui-App[data-scroll="page"]) .pfui-NavPanel[data-placement="below-header"][data-sticky] { position: sticky; top: var(--pfui-shell-top); z-index: 99; }
-.pfui-NavPanel[data-placement="header"] { background-color: transparent; }
-.pfui-NavPanel[data-placement="below-header"] .pfui-NavPanel-items,
-.pfui-NavPanel[data-placement="header"] .pfui-NavPanel-items { flex-direction: row; align-items: center; }
-.pfui-NavPanel[data-placement="header"] .pfui-NavPanel-items { padding: 0; }
-:where(.pfui-App[data-nav-collapsed]) .pfui-NavPanel[data-placement="side"] { width: var(--pfui-width-navPanel-collapsed-App); }
-:where(.pfui-App[data-nav-collapsed]) .pfui-NavLink-label,
-:where(.pfui-App[data-nav-collapsed]) .pfui-NavGroup-chevron,
-:where(.pfui-App[data-nav-collapsed]) .pfui-NavPanel-logo { display: none; }
-:where(.pfui-App[data-nav-collapsed]) .pfui-NavLink-initial { display: inline-flex; }
-.pfui-App-overlay { display: none; }
+:where(.gfui-App[data-scroll="page"][data-nav-full-height]) .gfui-NavPanel[data-placement="side"][data-sticky] { top: 0; height: 100dvh; }
+.gfui-NavPanel[data-placement="below-header"] { flex-shrink: 0; border-bottom: 1px solid var(--gfui-borderColor-NavPanel); }
+:where(.gfui-App[data-scroll="page"]) .gfui-NavPanel[data-placement="below-header"][data-sticky] { position: sticky; top: var(--gfui-shell-top); z-index: 99; }
+.gfui-NavPanel[data-placement="header"] { background-color: transparent; }
+.gfui-NavPanel[data-placement="below-header"] .gfui-NavPanel-items,
+.gfui-NavPanel[data-placement="header"] .gfui-NavPanel-items { flex-direction: row; align-items: center; }
+.gfui-NavPanel[data-placement="header"] .gfui-NavPanel-items { padding: 0; }
+:where(.gfui-App[data-nav-collapsed]) .gfui-NavPanel[data-placement="side"] { width: var(--gfui-width-navPanel-collapsed-App); }
+:where(.gfui-App[data-nav-collapsed]) .gfui-NavLink-label,
+:where(.gfui-App[data-nav-collapsed]) .gfui-NavGroup-chevron,
+:where(.gfui-App[data-nav-collapsed]) .gfui-NavPanel-logo { display: none; }
+:where(.gfui-App[data-nav-collapsed]) .gfui-NavLink-initial { display: inline-flex; }
+.gfui-App-overlay { display: none; }
 
-.pfui-Footer {
+.gfui-Footer {
   box-sizing: border-box;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  min-height: var(--pfui-height-Footer);
-  padding: 0 var(--pfui-paddingHorizontal-Footer);
-  background-color: var(--pfui-backgroundColor-Footer);
-  color: var(--pfui-textColor-Footer);
-  border-top: 1px solid var(--pfui-borderColor-Footer);
+  min-height: var(--gfui-height-Footer);
+  padding: 0 var(--gfui-paddingHorizontal-Footer);
+  background-color: var(--gfui-backgroundColor-Footer);
+  color: var(--gfui-textColor-Footer);
+  border-top: 1px solid var(--gfui-borderColor-Footer);
 }
-:where(.pfui-App[data-scroll="page"]) .pfui-Footer[data-sticky] { position: sticky; bottom: 0; z-index: 100; }
+:where(.gfui-App[data-scroll="page"]) .gfui-Footer[data-sticky] { position: sticky; bottom: 0; z-index: 100; }
 
-.pfui-NavLink,
-.pfui-NavGroup-label {
+.gfui-NavLink,
+.gfui-NavGroup-label {
   display: flex;
   align-items: center;
-  gap: var(--pfui-space-2);
-  padding: var(--pfui-padding-NavLink);
-  border-radius: var(--pfui-borderRadius-NavLink);
-  color: var(--pfui-textColor-NavLink);
+  gap: var(--gfui-space-2);
+  padding: var(--gfui-padding-NavLink);
+  border-radius: var(--gfui-borderRadius-NavLink);
+  color: var(--gfui-textColor-NavLink);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
 }
-.pfui-NavLink:hover,
-.pfui-NavGroup-label:hover { background-color: var(--pfui-backgroundColor-NavLink--hover); }
-.pfui-NavLink[data-active] {
-  color: var(--pfui-textColor-NavLink--active);
-  background-color: var(--pfui-backgroundColor-NavLink--active);
+.gfui-NavLink:hover,
+.gfui-NavGroup-label:hover { background-color: var(--gfui-backgroundColor-NavLink--hover); }
+.gfui-NavLink[data-active] {
+  color: var(--gfui-textColor-NavLink--active);
+  background-color: var(--gfui-backgroundColor-NavLink--active);
   font-weight: 600;
 }
-.pfui-NavLink-icon { flex-shrink: 0; }
-.pfui-NavLink-initial {
+.gfui-NavLink-icon { flex-shrink: 0; }
+.gfui-NavLink-initial {
   display: none;
   flex-shrink: 0;
   width: 20px;
   justify-content: center;
   font-weight: 600;
 }
-.pfui-NavGroup-label { list-style: none; }
-.pfui-NavGroup-label::-webkit-details-marker { display: none; }
-.pfui-NavGroup-chevron { margin-inline-start: auto; transition: transform 150ms; }
-.pfui-NavGroup[open] > .pfui-NavGroup-label .pfui-NavGroup-chevron { transform: rotate(180deg); }
-.pfui-NavGroup-items { display: flex; flex-direction: column; gap: var(--pfui-space-0_5); padding-inline-start: var(--pfui-space-4); }
-:where(.pfui-NavPanel[data-placement="header"], .pfui-NavPanel[data-placement="below-header"]) .pfui-NavGroup { position: relative; }
-:where(.pfui-NavPanel[data-placement="header"], .pfui-NavPanel[data-placement="below-header"]) .pfui-NavGroup-items {
+.gfui-NavGroup-label { list-style: none; }
+.gfui-NavGroup-label::-webkit-details-marker { display: none; }
+.gfui-NavGroup-chevron { margin-inline-start: auto; transition: transform 150ms; }
+.gfui-NavGroup[open] > .gfui-NavGroup-label .gfui-NavGroup-chevron { transform: rotate(180deg); }
+.gfui-NavGroup-items { display: flex; flex-direction: column; gap: var(--gfui-space-0_5); padding-inline-start: var(--gfui-space-4); }
+:where(.gfui-NavPanel[data-placement="header"], .gfui-NavPanel[data-placement="below-header"]) .gfui-NavGroup { position: relative; }
+:where(.gfui-NavPanel[data-placement="header"], .gfui-NavPanel[data-placement="below-header"]) .gfui-NavGroup-items {
   position: absolute;
   top: 100%;
   inset-inline-start: 0;
   z-index: 102;
   min-width: 12rem;
-  padding: var(--pfui-padding-NavPanel);
-  background-color: var(--pfui-backgroundColor-NavPanel);
-  border: 1px solid var(--pfui-borderColor-NavPanel);
-  border-radius: var(--pfui-borderRadius);
+  padding: var(--gfui-padding-NavPanel);
+  background-color: var(--gfui-backgroundColor-NavPanel);
+  border: 1px solid var(--gfui-borderColor-NavPanel);
+  border-radius: var(--gfui-borderRadius);
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
 }
-.pfui-NavPanelCollapseButton {
+.gfui-NavPanelCollapseButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--pfui-space-1);
+  padding: var(--gfui-space-1);
   border: none;
-  border-radius: var(--pfui-borderRadius);
+  border-radius: var(--gfui-borderRadius);
   background: transparent;
   color: inherit;
   cursor: pointer;
 }
-.pfui-NavPanelCollapseButton:hover { background-color: var(--pfui-backgroundColor-NavLink--hover); }
+.gfui-NavPanelCollapseButton:hover { background-color: var(--gfui-backgroundColor-NavLink--hover); }
 `;
 
 /** Below `drawerBelow`: the nav becomes a drawer, opened by the header's toggle. One copy per breakpoint. */
 function shellDrawer(name: string, min: number): string {
-  const app = `.pfui-App[data-drawer-below="${name}"]`;
+  const app = `.gfui-App[data-drawer-below="${name}"]`;
   return `
 @media (max-width: ${min - 0.02}px) {
-  ${app} .pfui-AppHeader-burger { display: inline-block; }
-  ${app} .pfui-AppHeader[data-generated],
-  ${app} .pfui-AppHeader-logo { display: flex; }
-  ${app} .pfui-NavPanelCollapseButton { display: none; }
-  ${app} .pfui-NavPanel {
+  ${app} .gfui-AppHeader-burger { display: inline-block; }
+  ${app} .gfui-AppHeader[data-generated],
+  ${app} .gfui-AppHeader-logo { display: flex; }
+  ${app} .gfui-NavPanelCollapseButton { display: none; }
+  ${app} .gfui-NavPanel {
     position: fixed;
     inset-block: 0;
     inset-inline-start: 0;
     z-index: 101;
-    width: min(85vw, var(--pfui-width-navPanel-App));
+    width: min(85vw, var(--gfui-width-navPanel-App));
     height: auto;
     overflow-y: auto;
-    background-color: var(--pfui-backgroundColor-NavPanel);
-    border-inline-end: 1px solid var(--pfui-borderColor-NavPanel);
+    background-color: var(--gfui-backgroundColor-NavPanel);
+    border-inline-end: 1px solid var(--gfui-borderColor-NavPanel);
     transform: translateX(-100%);
     /* Hidden only after sliding out; visible at once when opening, so the focus can move in. */
     visibility: hidden;
     transition: transform 200ms ease, visibility 0s 200ms;
   }
-  ${app}[data-drawer-open] .pfui-NavPanel { transform: none; visibility: visible; transition: transform 200ms ease, visibility 0s; }
-  ${app} .pfui-NavPanel .pfui-NavPanel-items { flex-direction: column; align-items: stretch; padding: var(--pfui-padding-NavPanel); }
-  ${app} .pfui-NavPanel .pfui-NavLink-label,
-  ${app} .pfui-NavPanel .pfui-NavGroup-chevron { display: inline; }
-  ${app} .pfui-NavPanel .pfui-NavLink-initial { display: none; }
-  ${app} .pfui-NavPanel .pfui-NavGroup-items { position: static; box-shadow: none; border: none; min-width: 0; padding-block: 0; }
-  ${app} .pfui-App-overlay {
+  ${app}[data-drawer-open] .gfui-NavPanel { transform: none; visibility: visible; transition: transform 200ms ease, visibility 0s; }
+  ${app} .gfui-NavPanel .gfui-NavPanel-items { flex-direction: column; align-items: stretch; padding: var(--gfui-padding-NavPanel); }
+  ${app} .gfui-NavPanel .gfui-NavLink-label,
+  ${app} .gfui-NavPanel .gfui-NavGroup-chevron { display: inline; }
+  ${app} .gfui-NavPanel .gfui-NavLink-initial { display: none; }
+  ${app} .gfui-NavPanel .gfui-NavGroup-items { position: static; box-shadow: none; border: none; min-width: 0; padding-block: 0; }
+  ${app} .gfui-App-overlay {
     display: block;
     position: fixed;
     inset: 0;
     z-index: 99;
-    background-color: var(--pfui-backgroundColor-NavPanel-overlay);
+    background-color: var(--gfui-backgroundColor-NavPanel-overlay);
   }
 }`;
 }
@@ -229,66 +229,66 @@ function shellDrawer(name: string, min: number): string {
  * The layout system (layout.tsx; design: .ai/plan/poc-19d-layout.md).
  *
  * - The spacing ladder: a container's data-level (0-3) and orientation pick
- *   --pfui-step from the space-level* theme variables. A vertical stack and a
+ *   --gfui-step from the space-level* theme variables. A vertical stack and a
  *   horizontal stack of columns (one with a container child) use their level's
  *   step; a horizontal stack of items the next tighter one. A surface (a
  *   background or a border) gets its level's step as padding.
- * - --pfui-gap is the gap in effect: an explicit gap (inline), else gap-Stack
+ * - --gfui-gap is the gap in effect: an explicit gap (inline), else gap-Stack
  *   (a theme's flat override, XMLUI's behavior), else the step.
- * - Level 0 is smaller on phones (--pfui-l0); resolved on every container, so a
+ * - Level 0 is smaller on phones (--gfui-l0); resolved on every container, so a
  *   <Theme> below the App can change it.
  * - Percentage widths in a flow (a child's width, layout.tsx flowWidth, or
  *   itemWidth) are gap-aware: calc(W - gap * (1 - W/100%)), and 100% on
- *   phones (--pfui-flow-wide is 0 there).
+ *   phones (--gfui-flow-wide is 0 there).
  */
 const LAYOUT = `
-.pfui-AppContent,
-.pfui-Stack {
-  --pfui-l0: var(--pfui-space-level0);
+.gfui-AppContent,
+.gfui-Stack {
+  --gfui-l0: var(--gfui-space-level0);
 }
 @media (max-width: ${PHONE_MAX}px) {
-  .pfui-AppContent,
-  .pfui-Stack {
-    --pfui-l0: var(--pfui-space-level0-phone);
+  .gfui-AppContent,
+  .gfui-Stack {
+    --gfui-l0: var(--gfui-space-level0-phone);
   }
 }
-.pfui-Stack {
+.gfui-Stack {
   display: flex;
   box-sizing: border-box;
   min-width: 0;
   min-height: 0;
-  --pfui-gap: var(--pfui-gap-Stack, var(--pfui-step));
-  gap: var(--pfui-gap);
+  --gfui-gap: var(--gfui-gap-Stack, var(--gfui-step));
+  gap: var(--gfui-gap);
 }
-.pfui-Stack[data-level="0"] { --pfui-step: var(--pfui-l0); --pfui-pad: var(--pfui-l0); }
-.pfui-Stack[data-level="1"] { --pfui-step: var(--pfui-space-level1); --pfui-pad: var(--pfui-space-level1); }
-.pfui-Stack[data-level="2"] { --pfui-step: var(--pfui-space-level2); --pfui-pad: var(--pfui-space-level2); }
-.pfui-Stack[data-level="3"] { --pfui-step: var(--pfui-space-level3); --pfui-pad: var(--pfui-space-level3); }
-.pfui-Stack[data-orientation="horizontal"][data-level="0"] { --pfui-step: var(--pfui-space-level1); }
-.pfui-Stack[data-orientation="horizontal"][data-level="1"] { --pfui-step: var(--pfui-space-level2); }
-.pfui-Stack[data-orientation="horizontal"][data-level="2"],
-.pfui-Stack[data-orientation="horizontal"][data-level="3"] { --pfui-step: var(--pfui-space-level3); }
-.pfui-Stack[data-orientation="horizontal"][data-level="0"]:has(> .pfui-Stack) { --pfui-step: var(--pfui-l0); }
-.pfui-Stack[data-orientation="horizontal"][data-level="1"]:has(> .pfui-Stack) { --pfui-step: var(--pfui-space-level1); }
-.pfui-Stack[data-orientation="horizontal"][data-level="2"]:has(> .pfui-Stack) { --pfui-step: var(--pfui-space-level2); }
-.pfui-Stack[data-surface] { padding: var(--pfui-pad); }
-.pfui-Stack[data-wrap] {
+.gfui-Stack[data-level="0"] { --gfui-step: var(--gfui-l0); --gfui-pad: var(--gfui-l0); }
+.gfui-Stack[data-level="1"] { --gfui-step: var(--gfui-space-level1); --gfui-pad: var(--gfui-space-level1); }
+.gfui-Stack[data-level="2"] { --gfui-step: var(--gfui-space-level2); --gfui-pad: var(--gfui-space-level2); }
+.gfui-Stack[data-level="3"] { --gfui-step: var(--gfui-space-level3); --gfui-pad: var(--gfui-space-level3); }
+.gfui-Stack[data-orientation="horizontal"][data-level="0"] { --gfui-step: var(--gfui-space-level1); }
+.gfui-Stack[data-orientation="horizontal"][data-level="1"] { --gfui-step: var(--gfui-space-level2); }
+.gfui-Stack[data-orientation="horizontal"][data-level="2"],
+.gfui-Stack[data-orientation="horizontal"][data-level="3"] { --gfui-step: var(--gfui-space-level3); }
+.gfui-Stack[data-orientation="horizontal"][data-level="0"]:has(> .gfui-Stack) { --gfui-step: var(--gfui-l0); }
+.gfui-Stack[data-orientation="horizontal"][data-level="1"]:has(> .gfui-Stack) { --gfui-step: var(--gfui-space-level1); }
+.gfui-Stack[data-orientation="horizontal"][data-level="2"]:has(> .gfui-Stack) { --gfui-step: var(--gfui-space-level2); }
+.gfui-Stack[data-surface] { padding: var(--gfui-pad); }
+.gfui-Stack[data-wrap] {
   flex-wrap: wrap;
-  --pfui-flow-gap: var(--pfui-gap);
-  --pfui-flow-wide: 1;
+  --gfui-flow-gap: var(--gfui-gap);
+  --gfui-flow-wide: 1;
 }
 @media (max-width: ${PHONE_MAX}px) {
-  .pfui-Stack[data-wrap] { --pfui-flow-wide: 0; }
+  .gfui-Stack[data-wrap] { --gfui-flow-wide: 0; }
 }
-.pfui-Stack[data-wrap] > * { max-width: 100%; box-sizing: border-box; }
-.pfui-Stack[data-wrap][data-item-width] > :not(.pfui-SpaceFiller) { flex-shrink: 0; }
-.pfui-Stack[data-wrap][data-item-width="fixed"] > :not(.pfui-SpaceFiller) { width: var(--pfui-item-width); }
-.pfui-Stack[data-wrap][data-item-width="%"] > :not(.pfui-SpaceFiller) {
-  width: calc((var(--pfui-item-width) - var(--pfui-flow-gap) * (1 - var(--pfui-item-fraction))) * var(--pfui-flow-wide) + 100% * (1 - var(--pfui-flow-wide)));
+.gfui-Stack[data-wrap] > * { max-width: 100%; box-sizing: border-box; }
+.gfui-Stack[data-wrap][data-item-width] > :not(.gfui-SpaceFiller) { flex-shrink: 0; }
+.gfui-Stack[data-wrap][data-item-width="fixed"] > :not(.gfui-SpaceFiller) { width: var(--gfui-item-width); }
+.gfui-Stack[data-wrap][data-item-width="%"] > :not(.gfui-SpaceFiller) {
+  width: calc((var(--gfui-item-width) - var(--gfui-flow-gap) * (1 - var(--gfui-item-fraction))) * var(--gfui-flow-wide) + 100% * (1 - var(--gfui-flow-wide)));
 }
-.pfui-SpaceFiller { flex: 1 1 0px; }
+.gfui-SpaceFiller { flex: 1 1 0px; }
 /* A line break in a flow. Its zero-height line still has a row gap on each side (as XMLUI's FlowLayout .break). */
-.pfui-Stack[data-wrap] > .pfui-SpaceFiller {
+.gfui-Stack[data-wrap] > .gfui-SpaceFiller {
   flex: 0 0 100%;
   height: 0;
 }
@@ -297,15 +297,15 @@ const LAYOUT = `
  * § VStack; width="100%" fills it), not squeezed in a row (Mantine's root
  * clips its label, so it could shrink to nothing).
  */
-.pfui-AppContent > .pfui-Button,
-.pfui-Stack[data-orientation="vertical"] > .pfui-Button {
+.gfui-AppContent > .gfui-Button,
+.gfui-Stack[data-orientation="vertical"] > .gfui-Button {
   width: fit-content;
 }
-.pfui-Stack > .pfui-Button { flex-shrink: 0; }
+.gfui-Stack > .gfui-Button { flex-shrink: 0; }
 /* A heading belongs to what follows it: more space above it than below. */
-.pfui-AppContent > .pfui-Heading:not(:first-child),
-.pfui-Stack[data-orientation="vertical"] > .pfui-Heading:not(:first-child) {
-  margin-block-start: var(--pfui-gap);
+.gfui-AppContent > .gfui-Heading:not(:first-child),
+.gfui-Stack[data-orientation="vertical"] > .gfui-Heading:not(:first-child) {
+  margin-block-start: var(--gfui-gap);
 }
 `;
 
@@ -317,155 +317,155 @@ export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
 ${LAYOUT}
-.pfui-App,
-.pfui-Theme {
-  /* Mantine's global variables, redirected to the pfui theme. */
-  --mantine-font-family: var(--pfui-fontFamily);
-  --mantine-color-text: var(--pfui-textColor);
-  --mantine-color-body: var(--pfui-backgroundColor);
-  --mantine-color-dimmed: var(--pfui-textColor-secondary);
-  --mantine-color-placeholder: var(--pfui-textColor-secondary);
-  --mantine-color-default-border: var(--pfui-borderColor);
-  --mantine-primary-color-filled: var(--pfui-color-primary-500);
-  --mantine-primary-color-filled-hover: var(--pfui-color-primary-600);
-  --mantine-radius-default: var(--pfui-borderRadius);
+.gfui-App,
+.gfui-Theme {
+  /* Mantine's global variables, redirected to the gfui theme. */
+  --mantine-font-family: var(--gfui-fontFamily);
+  --mantine-color-text: var(--gfui-textColor);
+  --mantine-color-body: var(--gfui-backgroundColor);
+  --mantine-color-dimmed: var(--gfui-textColor-secondary);
+  --mantine-color-placeholder: var(--gfui-textColor-secondary);
+  --mantine-color-default-border: var(--gfui-borderColor);
+  --mantine-primary-color-filled: var(--gfui-color-primary-500);
+  --mantine-primary-color-filled-hover: var(--gfui-color-primary-600);
+  --mantine-radius-default: var(--gfui-borderRadius);
 }
-.pfui-Text {
-  color: var(--pfui-textColor-Text);
-  font-size: var(--pfui-fontSize-Text);
+.gfui-Text {
+  color: var(--gfui-textColor-Text);
+  font-size: var(--gfui-fontSize-Text);
 }
-.pfui-Text[data-variant="secondary"],
-.pfui-Text[data-variant="placeholder"],
-.pfui-Text[data-variant="caption"] {
-  color: var(--pfui-textColor-Text-secondary);
+.gfui-Text[data-variant="secondary"],
+.gfui-Text[data-variant="placeholder"],
+.gfui-Text[data-variant="caption"] {
+  color: var(--gfui-textColor-Text-secondary);
 }
-.pfui-Text[data-variant="code"],
-.pfui-Text[data-variant="keyboard"],
-.pfui-Text[data-variant="sample"],
-.pfui-Text[data-variant="mono"] {
-  font-family: var(--pfui-fontFamily-Text-code);
+.gfui-Text[data-variant="code"],
+.gfui-Text[data-variant="keyboard"],
+.gfui-Text[data-variant="sample"],
+.gfui-Text[data-variant="mono"] {
+  font-family: var(--gfui-fontFamily-Text-code);
 }
-.pfui-Text[data-variant="code"],
-.pfui-Text[data-variant="keyboard"] {
-  background-color: var(--pfui-backgroundColor-Text-code);
+.gfui-Text[data-variant="code"],
+.gfui-Text[data-variant="keyboard"] {
+  background-color: var(--gfui-backgroundColor-Text-code);
   border-radius: 4px;
   padding: 0 0.25em;
 }
-.pfui-Text[data-variant="marked"] {
-  background-color: var(--pfui-backgroundColor-Text-marked);
+.gfui-Text[data-variant="marked"] {
+  background-color: var(--gfui-backgroundColor-Text-marked);
   color: inherit;
 }
-.pfui-Text[data-variant="strong"] { font-weight: 700; }
-.pfui-Text[data-variant="title"] { font-size: 1.5em; font-weight: 600; }
-.pfui-Text[data-variant="subtitle"] { font-size: 1.15em; font-weight: 500; }
-.pfui-Text[data-variant="subheading"] { font-size: 0.8em; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-.pfui-Text[data-variant="caption"],
-.pfui-Text[data-variant="small"] { font-size: 0.85em; }
-.pfui-Text[data-variant="paragraph"] { display: block; margin: 0; }
-.pfui-Link {
-  color: var(--pfui-textColor-Link);
+.gfui-Text[data-variant="strong"] { font-weight: 700; }
+.gfui-Text[data-variant="title"] { font-size: 1.5em; font-weight: 600; }
+.gfui-Text[data-variant="subtitle"] { font-size: 1.15em; font-weight: 500; }
+.gfui-Text[data-variant="subheading"] { font-size: 0.8em; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.gfui-Text[data-variant="caption"],
+.gfui-Text[data-variant="small"] { font-size: 0.85em; }
+.gfui-Text[data-variant="paragraph"] { display: block; margin: 0; }
+.gfui-Link {
+  color: var(--gfui-textColor-Link);
   text-decoration: underline;
   cursor: pointer;
 }
-.pfui-Heading {
-  color: var(--pfui-textColor-Heading);
-  font-weight: var(--pfui-fontWeight-Heading);
-  line-height: var(--pfui-lineHeight-Heading);
+.gfui-Heading {
+  color: var(--gfui-textColor-Heading);
+  font-weight: var(--gfui-fontWeight-Heading);
+  line-height: var(--gfui-lineHeight-Heading);
   margin: 0;
 }
-.pfui-Heading[data-level="1"] { font-size: var(--pfui-fontSize-H1); }
-.pfui-Heading[data-level="2"] { font-size: var(--pfui-fontSize-H2); }
-.pfui-Heading[data-level="3"] { font-size: var(--pfui-fontSize-H3); }
-.pfui-Heading[data-level="4"] { font-size: var(--pfui-fontSize-H4); }
-.pfui-Heading[data-level="5"] { font-size: var(--pfui-fontSize-H5); }
-.pfui-Heading[data-level="6"] { font-size: var(--pfui-fontSize-H6); }
+.gfui-Heading[data-level="1"] { font-size: var(--gfui-fontSize-H1); }
+.gfui-Heading[data-level="2"] { font-size: var(--gfui-fontSize-H2); }
+.gfui-Heading[data-level="3"] { font-size: var(--gfui-fontSize-H3); }
+.gfui-Heading[data-level="4"] { font-size: var(--gfui-fontSize-H4); }
+.gfui-Heading[data-level="5"] { font-size: var(--gfui-fontSize-H5); }
+.gfui-Heading[data-level="6"] { font-size: var(--gfui-fontSize-H6); }
 /* Mantine inputs: variables Mantine sets from CSS, redirected (our rules are unlayered: they win). */
-.pfui-TextBox .mantine-Input-input {
-  --input-bg: var(--pfui-backgroundColor-TextBox);
-  --input-color: var(--pfui-textColor-TextBox);
-  --input-bd: var(--pfui-borderColor-TextBox);
-  --input-bd-focus: var(--pfui-borderColor-TextBox--focus);
+.gfui-TextBox .mantine-Input-input {
+  --input-bg: var(--gfui-backgroundColor-TextBox);
+  --input-color: var(--gfui-textColor-TextBox);
+  --input-bd: var(--gfui-borderColor-TextBox);
+  --input-bd-focus: var(--gfui-borderColor-TextBox--focus);
 }
-.pfui-Select .mantine-Input-input {
-  --input-bg: var(--pfui-backgroundColor-Select);
-  --input-color: var(--pfui-textColor-Select);
-  --input-bd: var(--pfui-borderColor-Select);
-  --input-bd-focus: var(--pfui-borderColor-Select--focus);
+.gfui-Select .mantine-Input-input {
+  --input-bg: var(--gfui-backgroundColor-Select);
+  --input-color: var(--gfui-textColor-Select);
+  --input-bd: var(--gfui-borderColor-Select);
+  --input-bd-focus: var(--gfui-borderColor-Select--focus);
 }
 /* Mantine expects its baseline.css (* { box-sizing: border-box }), which also styles <body>: only its input parts here. */
-.pfui-App :where(.mantine-InputWrapper-root, .mantine-Input-wrapper, .mantine-Input-input) {
+.gfui-App :where(.mantine-InputWrapper-root, .mantine-Input-wrapper, .mantine-Input-input) {
   box-sizing: border-box;
 }
-.pfui-TextBox .mantine-Input-input:focus,
-.pfui-Select .mantine-Input-input:focus {
+.gfui-TextBox .mantine-Input-input:focus,
+.gfui-Select .mantine-Input-input:focus {
   --input-bd: var(--input-bd-focus);
 }
-.pfui-Select .mantine-Select-dropdown {
-  background-color: var(--pfui-backgroundColor-Select);
-  color: var(--pfui-textColor-Select);
-  border-color: var(--pfui-borderColor-Select);
+.gfui-Select .mantine-Select-dropdown {
+  background-color: var(--gfui-backgroundColor-Select);
+  color: var(--gfui-textColor-Select);
+  border-color: var(--gfui-borderColor-Select);
 }
-.pfui-Label {
+.gfui-Label {
   display: inline-flex;
   flex-direction: column;
-  gap: var(--pfui-gap-Label);
+  gap: var(--gfui-gap-Label);
 }
-.pfui-Label[data-position="start"] {
+.gfui-Label[data-position="start"] {
   flex-direction: row;
   align-items: center;
 }
-.pfui-Label-text {
-  color: var(--pfui-textColor-Label);
-  font-size: var(--pfui-fontSize-Label);
+.gfui-Label-text {
+  color: var(--gfui-textColor-Label);
+  font-size: var(--gfui-fontSize-Label);
 }
-.pfui-Form {
+.gfui-Form {
   display: flex;
   flex-direction: column;
-  gap: var(--pfui-gap-Form);
+  gap: var(--gfui-gap-Form);
 }
-.pfui-Form-buttons {
+.gfui-Form-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: var(--pfui-gap-Form-buttons);
+  gap: var(--gfui-gap-Form-buttons);
 }
-.pfui-Field {
+.gfui-Field {
   display: inline-flex;
   flex-direction: column;
-  gap: var(--pfui-gap-Field);
+  gap: var(--gfui-gap-Field);
 }
-.pfui-Field-messages {
+.gfui-Field-messages {
   display: contents;
 }
-.pfui-ValidationMessage {
-  font-size: var(--pfui-fontSize-ValidationMessage);
+.gfui-ValidationMessage {
+  font-size: var(--gfui-fontSize-ValidationMessage);
 }
-.pfui-ValidationMessage[data-severity="error"] {
-  color: var(--pfui-textColor-ValidationMessage-error);
+.gfui-ValidationMessage[data-severity="error"] {
+  color: var(--gfui-textColor-ValidationMessage-error);
 }
-.pfui-ValidationMessage[data-severity="warning"] {
-  color: var(--pfui-textColor-ValidationMessage-warning);
+.gfui-ValidationMessage[data-severity="warning"] {
+  color: var(--gfui-textColor-ValidationMessage-warning);
 }
-.pfui-ValidationMessage[data-stale] {
+.gfui-ValidationMessage[data-stale] {
   opacity: 0.5;
 }
-.pfui-Field[data-required] > .pfui-Label > .pfui-Label-text::after {
+.gfui-Field[data-required] > .gfui-Label > .gfui-Label-text::after {
   content: " *";
-  color: var(--pfui-textColor-ValidationMessage-error);
+  color: var(--gfui-textColor-ValidationMessage-error);
 }
-.pfui-TooltipAnchor {
+.gfui-TooltipAnchor {
   position: relative;
   display: inline-flex;
 }
-.pfui-Tooltip {
+.gfui-Tooltip {
   position: absolute;
   bottom: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--pfui-backgroundColor-Tooltip);
-  color: var(--pfui-textColor-Tooltip);
-  border-radius: var(--pfui-borderRadius-Tooltip);
-  padding: var(--pfui-padding-Tooltip);
-  font-size: var(--pfui-fontSize-Tooltip);
+  background-color: var(--gfui-backgroundColor-Tooltip);
+  color: var(--gfui-textColor-Tooltip);
+  border-radius: var(--gfui-borderRadius-Tooltip);
+  padding: var(--gfui-padding-Tooltip);
+  font-size: var(--gfui-fontSize-Tooltip);
   white-space: nowrap;
   pointer-events: none;
   z-index: 1000;

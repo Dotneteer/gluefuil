@@ -18,10 +18,10 @@
 
 | Behavior | Props | Attaches when | Renders |
 |----------|-------|---------------|---------|
-| `label` | `label`, `labelPosition` (`top` \| `start`) | `label` is set and the component doesn't declare `label` (`Button` does) | `<label class="pfui-Label" data-position>` with `.pfui-Label-text` and the component: an input inside gets the label as its accessible name |
-| `tooltip` | `tooltip` | `tooltip` is set | `<span class="pfui-TooltipAnchor">` around the component; on hover or focus, `<span role="tooltip">` linked by `aria-describedby` |
-| `variant` | `variant` | `variant` is set and the component has `themeVars` | `<div class="pfui-Variant" style="display: contents">` setting each component variable to `var(--pfui-<name>-<variant>, <default>)` |
-| `formBinding` (step 22) | `bindTo`, `noSubmit` | `bindTo` is set and the component has a `value` and `setValue` API | `<span class="pfui-Field">`: the input bound to the enclosing Form's data, then its validation messages ([forms.md](forms.md)) |
+| `label` | `label`, `labelPosition` (`top` \| `start`) | `label` is set and the component doesn't declare `label` (`Button` does) | `<label class="gfui-Label" data-position>` with `.gfui-Label-text` and the component: an input inside gets the label as its accessible name |
+| `tooltip` | `tooltip` | `tooltip` is set | `<span class="gfui-TooltipAnchor">` around the component; on hover or focus, `<span role="tooltip">` linked by `aria-describedby` |
+| `variant` | `variant` | `variant` is set and the component has `themeVars` | `<div class="gfui-Variant" style="display: contents">` setting each component variable to `var(--gfui-<name>-<variant>, <default>)` |
+| `formBinding` (step 22) | `bindTo`, `noSubmit` | `bindTo` is set and the component has a `value` and `setValue` API | `<span class="gfui-Field">`: the input bound to the enclosing Form's data, then its validation messages ([forms.md](forms.md)) |
 | `validation` (step 22) | the rules (`required`, `minLength`, …), `validationMode`, …; event `onValidate` | the same | Nothing: it gives the rules to `formBinding` by context |
 
 - **Order** (`BEHAVIORS`): label innermost, then formBinding, validation,
@@ -43,7 +43,7 @@
 
 ## How they attach: at compile time
 
-`attachedBehaviors(metadata, attributes)` (in `@patchfuil/components/metadata`)
+`attachedBehaviors(metadata, attributes)` (in `@gluefuil/components/metadata`)
 is the whole rule:
 
 1. the element sets a trigger prop (literal or bound);
@@ -93,7 +93,7 @@ unknown prop.
 | `components/src/metadata.ts` | `attachedBehaviors`, `isKnownThemeVariable`; `nonVisual`; behavior theme defaults in `componentThemeDefaults` |
 | `components/src/behaviors.tsx` | `LabelBehavior`, `TooltipBehavior`, `VariantBehavior`, `variantVariable` |
 | `components/src/forms.tsx` | `FormBindingBehavior`, `ValidationBehavior` (and `Form`) |
-| `components/src/styles.ts` | `.pfui-Label*`, `.pfui-TooltipAnchor`, `.pfui-Tooltip` |
+| `components/src/styles.ts` | `.gfui-Label*`, `.gfui-TooltipAnchor`, `.gfui-Tooltip` |
 | `compiler/src/module/compile-module.ts` | `behaviorAttribute`, `withBehaviors` (in `element`) |
 
 ## Tests

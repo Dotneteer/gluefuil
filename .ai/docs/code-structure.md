@@ -7,8 +7,8 @@
 
 ## What this repository is
 
-**patchfuil** (short name **pfui**) is a re-invention of the XMLUI framework:
-XML markup (`.pfui` files, using XMLUI's markup syntax) plus a JavaScript subset,
+**gluefuil** (short name **gfui**) is a re-invention of the XMLUI framework:
+XML markup (`.gui` files, using XMLUI's markup syntax) plus a JavaScript subset,
 **compiled** to JavaScript that renders with React (and Mantine for most
 components). The design rationale is in
 [`../plan/architecture.md`](../plan/architecture.md); the build order is in
@@ -24,7 +24,7 @@ Current state:
   loads and runs them ([codegen.md](codegen.md)).
 - The runtime has the **reactivity core**: a signal store and one
   `useSyncExternalStore` subscription per component ([reactivity.md](reactivity.md)).
-- **The pipeline runs end to end:** a `.pfui` document compiles to one
+- **The pipeline runs end to end:** a `.gui` document compiles to one
   JavaScript module that renders with the runtime and four minimal built-in
   components (`App`, `Text`, `Button`, `Stack`) ([modules.md](modules.md)).
 - **Variables and handlers** work: `var.*`, `<variable>`, `global.*`,
@@ -39,17 +39,17 @@ Current state:
   `box.setValue()`), and name resolution is complete for variables, IDs,
   app globals and context variables ([scoping.md](scoping.md)). `TextBox`
   is the first component with an API.
-- **Source maps:** every compiled module maps back to its `.pfui` file
+- **Source maps:** every compiled module maps back to its `.gui` file
   (expressions, statements, handlers, elements), on both the Vite and the
   standalone path ([source-maps.md](source-maps.md)).
 - **Conditional rendering and templates:** `when`/`when-*`,
   `onMount`/`onUnmount`, template properties and `Items` with
   component-injected context variables
   ([visibility-templates.md](visibility-templates.md)).
-- **Standalone mode:** `pfui.js` (one file, React included) fetches,
-  compiles, caches and watches `Main.pfui` in the browser
+- **Standalone mode:** `gfui.js` (one file, React included) fetches,
+  compiles, caches and watches `Main.gui` in the browser
   ([standalone.md](standalone.md)).
-- **Build-time compilation:** `@patchfuil/vite-plugin` compiles `.pfui`
+- **Build-time compilation:** `@gluefuil/vite-plugin` compiles `.gui`
   files in Vite. A production build contains no compiler and needs no
   eval: it runs under `script-src 'self'` ([build-time.md](build-time.md)).
 - **Static generation:** a build can prerender the app into `index.html`;
@@ -58,7 +58,7 @@ Current state:
   ([ssg.md](ssg.md)).
 - **User-defined components:** `<Component>` in component files or inline,
   with `$props`, events, methods and `$self`, default and named slots with
-  slot props, complete scope isolation, and code-behind (`.pfui.xs`), in
+  slot props, complete scope isolation, and code-behind (`.gui.xs`), in
   every delivery mode ([user-components.md](user-components.md)).
 - **Contracts:** one metadata format describes every component (built-ins
   declare it, user components get it derived). Markup is checked for
@@ -66,12 +66,12 @@ Current state:
   required props, wrong literal types and enums, and deprecations
   ([contracts.md](contracts.md)).
 - **Theming:** theme definitions (with `extends`, tones, derived tokens and
-  `$refs`) compile to `--pfui-*` CSS variables. The built-ins are styled
+  `$refs`) compile to `--gfui-*` CSS variables. The built-ins are styled
   through them, `<Theme>` scopes them, and the app globals switch the tone
   and theme ([theming.md](theming.md)).
 - **Wrapped React components:** `wrapComponent` makes React components
   usable from markup. `Button`, `TextBox`, `Select` and `Checkbox` are
-  Mantine's, styled only through pfui theme variables, and `Text` variants
+  Mantine's, styled only through gfui theme variables, and `Text` variants
   and `Heading`/`H1`–`H6` are our own ([mantine.md](mantine.md)).
 - **Routing:** `Pages`/`Page`/`Link`, `navigate()` and
   `$pathname`/`$routeParams`/`$queryParams`, on our own small router (hash
@@ -106,7 +106,7 @@ Current state:
   errors, retries, timeouts and cancellation (tied to the calling handler),
   over `@tanstack/query-core` bridged to signals; `Items data="/api/…"`
   ([data.md](data.md)). A **mock backend** the app can't tell from a server
-  (`@patchfuil/mock-backend`: a service worker, dev-server middleware or a
+  (`@gluefuil/mock-backend`: a service worker, dev-server middleware or a
   test server answer real `fetch` requests; faults, holds and a request log
   under `/__mock`) ([mock-backend.md](mock-backend.md)).
 - **Behaviors:** `label`, `formBinding`, `validation`, `tooltip` and `variant` attach by trigger props,
@@ -117,23 +117,23 @@ Current state:
 
 | Document | Subsystem |
 |----------|-----------|
-| [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.pfui` markup text to a syntax tree with positions and diagnostics |
-| [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: pfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
+| [markup-parser.md](markup-parser.md) | `packages/compiler/src/markup/` and `src/source/`: `.gui` markup text to a syntax tree with positions and diagnostics |
+| [script-parser.md](script-parser.md) | `packages/compiler/src/script/`: gfui script (a JavaScript subset) to an ESTree-subset tree with file offsets; interpolated values |
 | [reactivity.md](reactivity.md) | `packages/runtime/src/reactivity/`: signals, computed values, batching, the React hooks, the scope object |
-| [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.pfui` document to a JavaScript module, and how it renders |
+| [modules.md](modules.md) | `packages/compiler/src/module/`, `packages/runtime/src/render/`, the built-in components: `.gui` document to a JavaScript module, and how it renders |
 | [build-time.md](build-time.md) | `packages/vite-plugin`: the Vite plugin, its options and errors, what a production build contains |
 | [routing.md](routing.md) | `runtime/src/render/router.ts`, `components/src/routing.tsx` |
 | [app-shell.md](app-shell.md) | `components/src/shell.tsx`, `icons.tsx`, the shell CSS in `styles.ts`, `compiler/src/module/shell.ts`, `runtime/src/render/shell-state.ts` |
 | [layout.md](layout.md) | `components/src/layout.tsx`, `layout-metadata.ts`, the `LAYOUT` CSS in `styles.ts`, the Stack family in `metadata.ts`, aliases, layout props and E031/E032 in the compiler |
 | [data.md](data.md) | `runtime/src/data/`, `runtime/src/render/deferred.ts`, `components/src/data.tsx`; the compiler's `whenIsProp`, `deferred`, `code`, `nullishUnresolved`, `eventResults` |
-| [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `pfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
+| [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `gfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
 | [mantine.md](mantine.md) | `runtime/src/render/wrap.ts`, `components/src/mantine.tsx`, `text.tsx` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
 | [forms.md](forms.md) | `runtime/src/forms/`, `runtime/src/render/context-scope.ts`, the field binding in `wrap.ts`, `components/src/forms.tsx`, `childContextVars` in the compiler, `test-apps/forms` |
 | [theming.md](theming.md) | `components/src/theming/` (the engine, built-in themes), `styles.ts`, `App`/`Theme`, `runtime/src/render/theme-state.ts` |
 | [contracts.md](contracts.md) | `ComponentMetadata`; the contract checks (E001, E004, E020–E024, C015); `strictContracts` |
 | [user-components.md](user-components.md) | `<Component>` definitions, analysis, compilation, `BoundUser`/`useComponent`/`Slot`, discovery in the plugin and standalone, code-behind |
-| [ssg.md](ssg.md) | Prerendering (`vite-plugin/src/prerender.ts`), takeover (`runtime/src/render/mount.ts`), the server view, `@patchfuil/runtime/server` |
+| [ssg.md](ssg.md) | Prerendering (`vite-plugin/src/prerender.ts`), takeover (`runtime/src/render/mount.ts`), the server view, `@gluefuil/runtime/server` |
 | [standalone.md](standalone.md) | `packages/standalone`: the one-file engine, loading, the compile cache, watching, the bundle |
 | [visibility-templates.md](visibility-templates.md) | `when`/`when-*`, lifecycle, templates and context variables, `Items` |
 | [source-maps.md](source-maps.md) | Source markers, Source Map v3, delivery through Vite and `loadModule`, the evidence |
@@ -146,26 +146,26 @@ Current state:
 ```
 .
 ├── packages/
-│   ├── compiler/        @patchfuil/compiler    markup + script compiler
+│   ├── compiler/        @gluefuil/compiler    markup + script compiler
 │   │   ├── src/source/      positions (LineMap), diagnostics, source maps and suggestions ("did you mean"), shared by all stages
 │   │   ├── src/markup/      markup parser: text -> syntax tree
 │   │   ├── src/script/      script parser: expressions, statements, interpolation
 │   │   ├── src/codegen/     bindings -> JavaScript; name resolution and the sandbox
-│   │   ├── src/module/      .pfui document -> JavaScript module; analyze.ts (what a file defines and uses)
+│   │   ├── src/module/      .gui document -> JavaScript module; analyze.ts (what a file defines and uses)
 │   │   ├── tests/           unit tests (mirrors src/)
 │   │   └── bench/           benchmarks (npm run bench)
-│   ├── runtime/         @patchfuil/runtime     what compiled code calls into
+│   ├── runtime/         @gluefuil/runtime     what compiled code calls into
 │   │   ├── src/script/      sandbox globals and helpers; the binding-value check; loadBinding (standalone only)
 │   │   ├── src/reactivity/  signal store, React hooks, scope object
 │   │   ├── src/render/      what compiled modules render with (Bound, BoundUser, useComponent, Slot, TextNode, useScope, loadModule, deferredValue), handler runtime, app globals, mountApp, wrapComponent, the router
 │   │   ├── src/data/        the HTTP gate, data errors, the retry policy, the query client, Loader (DataSource) and ApiCaller (APICall)
-│   │   ├── src/server.ts    @patchfuil/runtime/server: renderStatic (static generation; never in client bundles)
+│   │   ├── src/server.ts    @gluefuil/runtime/server: renderStatic (static generation; never in client bundles)
 │   │   ├── src/errors.ts    the runtime error reporter
 │   │   └── bench/           benchmarks (npm run bench)
-│   ├── standalone/      @patchfuil/standalone  the one-file engine (dist/pfui.js): fetch, compile, cache, watch
-│   ├── vite-plugin/     @patchfuil/vite-plugin build-time compilation: .pfui -> ES module in Vite; component discovery; prerendering; pfuiMockBackend
-│   ├── mock-backend/    @patchfuil/mock-backend a mock backend (Request -> Response) and its hosts: service worker, dev-server middleware, test server
-│   └── components/      @patchfuil/components  built-in components (+ React-free metadata)
+│   ├── standalone/      @gluefuil/standalone  the one-file engine (dist/gfui.js): fetch, compile, cache, watch
+│   ├── vite-plugin/     @gluefuil/vite-plugin build-time compilation: .gui -> ES module in Vite; component discovery; prerendering; gfuiMockBackend
+│   ├── mock-backend/    @gluefuil/mock-backend a mock backend (Request -> Response) and its hosts: service worker, dev-server middleware, test server
+│   └── components/      @gluefuil/components  built-in components (+ React-free metadata)
 │       ├── src/layout.tsx   Stack (VStack, HStack, … are compile-time aliases), SpaceFiller, the layout context and props (+ layout-metadata.ts, React-free)
 │       ├── src/mantine.tsx  Button, TextBox, Select, Checkbox (Mantine, through wrapComponent)
 │       ├── src/text.tsx     Text (variants), Heading, H1–H6
@@ -178,13 +178,13 @@ Current state:
 │       └── src/items.tsx    Items (templates with $item; a URL in data loads it)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, build-output check, static-server.mjs (E2E)
 ├── test-apps/
-│   ├── smoke/           @patchfuil/smoke-app   E2E fixture: packages load, parser runs in the browser
-│   ├── routing/         @patchfuil/routing-app E2E fixture: a dashboard of buttons and links opening routed pages, a navigation guard and log (dev and prerendered build)
-│   ├── routing-browser/ @patchfuil/routing-browser-app E2E fixture: browser routing, every static route prerendered, a guard and log
-│   ├── forms/           @patchfuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
-│   ├── hello/           @patchfuil/hello-app   E2E fixture: the step demos in Main.pfui (+ components/, code-behind), compiled by @patchfuil/vite-plugin, prerendered in builds
-│   └── data/            @patchfuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @patchfuil/playground  manual testing: a dashboard of 21 scenarios (steps 2–22B), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+│   ├── smoke/           @gluefuil/smoke-app   E2E fixture: packages load, parser runs in the browser
+│   ├── routing/         @gluefuil/routing-app E2E fixture: a dashboard of buttons and links opening routed pages, a navigation guard and log (dev and prerendered build)
+│   ├── routing-browser/ @gluefuil/routing-browser-app E2E fixture: browser routing, every static route prerendered, a guard and log
+│   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
+│   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
+│   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 21 scenarios (steps 2–22B), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -202,12 +202,12 @@ version `0.0.0`.
 
 | Package | Role | Entry points (`exports`) | Runs in |
 |---------|------|--------------------------|---------|
-| `@patchfuil/compiler` | Turns `.pfui` markup and scripts into JS modules. | `.` → `src/index.ts` | Node (build tools, static generation, editor) **and** the browser (standalone mode) |
-| `@patchfuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts`; `./server` → `src/server.ts` | Browser; `./server` in Node (static generation) |
-| `@patchfuil/components` | Built-in components (own and Mantine-wrapped). | `.` → `src/index.ts`; `./metadata` → `src/metadata.ts` | Browser; Node for server rendering |
-| `@patchfuil/standalone` | The one-file engine for standalone mode; built into `dist/pfui.js` (IIFE, global `pfui`). | `.` → `src/index.ts` | Browser |
-| `@patchfuil/vite-plugin` | Build-time compilation: the Vite plugin `pfui()`; `pfuiMockBackend()`. | `.` → `src/index.ts` | Node (Vite) |
-| `@patchfuil/mock-backend` | A mock backend for development and tests, and its hosts. Never imported by the app's packages. | `.` → `src/index.ts`; `./worker`, `./node`, `./middleware` | Browser (worker host), Node (middleware and test hosts) |
+| `@gluefuil/compiler` | Turns `.gui` markup and scripts into JS modules. | `.` → `src/index.ts` | Node (build tools, static generation, editor) **and** the browser (standalone mode) |
+| `@gluefuil/runtime` | Reactivity, scheduling, theming engine, wrapping API: everything compiled code calls. | `.` → `src/index.ts`; `./server` → `src/server.ts` | Browser; `./server` in Node (static generation) |
+| `@gluefuil/components` | Built-in components (own and Mantine-wrapped). | `.` → `src/index.ts`; `./metadata` → `src/metadata.ts` | Browser; Node for server rendering |
+| `@gluefuil/standalone` | The one-file engine for standalone mode; built into `dist/gfui.js` (IIFE, global `gfui`). | `.` → `src/index.ts` | Browser |
+| `@gluefuil/vite-plugin` | Build-time compilation: the Vite plugin `gfui()`; `gfuiMockBackend()`. | `.` → `src/index.ts` | Node (Vite) |
+| `@gluefuil/mock-backend` | A mock backend for development and tests, and its hosts. Never imported by the app's packages. | `.` → `src/index.ts`; `./worker`, `./node`, `./middleware` | Browser (worker host), Node (middleware and test hosts) |
 
 **Current contents:**
 
@@ -228,7 +228,7 @@ version `0.0.0`.
 | `src/codegen/` | Binding compilation and the sandbox tables ([codegen.md](codegen.md)) |
 | `src/module/` | Whole documents to modules ([modules.md](modules.md)) |
 
-Positions everywhere in the compiler are **UTF-16 offsets** into the `.pfui`
+Positions everywhere in the compiler are **UTF-16 offsets** into the `.gui`
 file, converted to line and column only when needed (diagnostics, and later
 source maps). Script inside markup is parsed with its offset in the file
 (`offset`, or `offsets` for entity-decoded text), so script nodes point
@@ -253,32 +253,32 @@ handler parsing across the XMLUI corpus with a heuristic (`on*` and
 
 Each package's `exports` points directly at TypeScript source. Vite, Vitest
 and `tsc` (with `moduleResolution: "bundler"`) all resolve it through the
-workspace symlinks in `node_modules/@patchfuil/`. Vite configs that use
+workspace symlinks in `node_modules/@gluefuil/`. Vite configs that use
 the workspace packages need `--configLoader runner`. Building the packages
 themselves (compiled JS plus type declarations, for publishing) is not done
-yet: apps compile their `.pfui` files at build time, and Vite bundles the
+yet: apps compile their `.gui` files at build time, and Vite bundles the
 packages' source.
 
 ### Dependency rules
 
 ```
-compiled app ──► @patchfuil/runtime ◄── @patchfuil/components
+compiled app ──► @gluefuil/runtime ◄── @gluefuil/components
                                             │
-@patchfuil/compiler ──► @patchfuil/components/metadata (React-free)
+@gluefuil/compiler ──► @gluefuil/components/metadata (React-free)
 
 delivery (imported by no package):
-  @patchfuil/standalone  ──► compiler, runtime, components
-  @patchfuil/vite-plugin ──► compiler, components/metadata, vite
+  @gluefuil/standalone  ──► compiler, runtime, components
+  @gluefuil/vite-plugin ──► compiler, components/metadata, vite
 ```
 
 | Package | May import | Must not import |
 |---------|-----------|-----------------|
-| compiler | relative files; `@patchfuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
+| compiler | relative files; `@gluefuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
 | components | runtime, React (later Mantine) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 | standalone | compiler, runtime, components, React | (no package imports it) |
-| vite-plugin | compiler, `@patchfuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
+| vite-plugin | compiler, `@gluefuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
 
 **Why:** the packages ship in different combinations. Standalone mode
 bundles all three; a build-time compiled app ships only runtime plus
@@ -344,9 +344,9 @@ Run from the repository root.
 | `npm install` | Installs everything and links the workspace packages (`packages/*`, `test-apps/*`, `playground`) |
 | `npm test` | All unit tests (Vitest, every project) |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `pfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176), the routing fixture (dev 5177, build 5178), the forms fixture (dev 5186, build 5187), the browser-routing fixture's prerendered build (5184) and the same built under `base: "/app/"` (5185), the playground (dev 5180, production build 5181), the data fixture (worker host 5182, middleware host 5183) |
+| `npm run test:e2e` | Playwright; starts a server per fixture: `test-apps/smoke` (Vite, 5173), `test-apps/hello` (Vite dev, 5174), the standalone site (builds `gfui.js`, then `tools/static-server.mjs`, 5175), the hello app's production build (`vite build` into `.tmp/hello-dist`, then `vite preview` with a strict CSP, 5176), the routing fixture (dev 5177, build 5178), the forms fixture (dev 5186, build 5187), the browser-routing fixture's prerendered build (5184) and the same built under `base: "/app/"` (5185), the playground (dev 5180, production build 5181), the data fixture (worker host 5182, middleware host 5183) |
 | `npm run playground` | The manual-testing playground on the Vite dev server, port 5190 (`playground:build`, and `playground:preview` on 5191, for the prerendered build) |
-| `npm run build:standalone` | Builds `packages/standalone/dist/pfui.js` (also run by the E2E web server) |
+| `npm run build:standalone` | Builds `packages/standalone/dist/gfui.js` (also run by the E2E web server) |
 | `npm run bench` | Benchmarks (`vitest bench --run --reporter=verbose`); not part of `check` |
 | `npm run typecheck` | `tsc -p` for each package and folder, each with its own settings |
 | `npm run check` | typecheck, then unit tests, then E2E. Must pass before a step is done. |
@@ -418,7 +418,7 @@ Conventions:
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 | `tools/data-build.test.ts` | A production build of `test-apps/data` has no mock code and no worker script unless `build: true` (see [mock-backend.md](mock-backend.md#tests)) |
 | `mock-backend/tests/*.test.ts`, `runtime/tests/data/*.test.ts`, `compiler/tests/module/data.test.ts`, `components/tests/data.test.tsx` | The mock backend and its hosts; the HTTP gate, retries, Loader and ApiCaller; the compiler's data features; DataSource and APICall in markup (see [data.md](data.md#tests), [mock-backend.md](mock-backend.md#tests)) |
-| `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.pfui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
+| `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.gui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
@@ -508,7 +508,7 @@ are current; the breakdowns in parentheses were last counted after steps
   - the fixture dev servers turn off Vite's `server.forwardConsole`. It is on
     by default under an AI agent, and would print the source-map tests'
     deliberate throws. The playground turns it off only under the E2E suite
-    (`PFUI_E2E`).
+    (`GFUI_E2E`).
 
   A new warning is therefore worth a look. `test-apps/hello` runs with `--configLoader runner` (see
   [build-time.md](build-time.md#using-it)). CI settings (retries,
@@ -535,19 +535,19 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/user-components.spec.ts` | The XMLUI user-defined-components examples (component files, code-behind, an inline component; `$props`, events, methods, slots), in dev and in the prerendered build |
 | `e2e/globals.spec.ts` | Globals (step 21B) in the hello app: a component file writes them, Main and another component read them, a local variable shadows one; dev and prerendered build |
 | `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled; takeover at the prerendered breakpoint changes no DOM node; at desktop width only the responsive text switches; the app is live afterwards |
-| `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.pfui` fetched |
-| `e2e/standalone.spec.ts` | Standalone mode against the built `pfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files) |
+| `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.gui` fetched |
+| `e2e/standalone.spec.ts` | Standalone mode against the built `gfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files) |
 | `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |
-| `e2e/source-maps.spec.ts` | Through CDP: a handler's exception resolves to its `throw` line in `Main.pfui` |
+| `e2e/source-maps.spec.ts` | Through CDP: a handler's exception resolves to its `throw` line in `Main.gui` |
 | `e2e/ids.spec.ts` | Reading and writing another component through its id |
 | `e2e/async-handlers.spec.ts` | A slow handler's progress, responsiveness while waiting, double-click under each handler policy |
 | `e2e/variables.spec.ts` | Counter and source/mirror (follow until assigned) in the hello app, with real clicks |
-| `e2e/first-app.spec.ts` | **The first compiled app**: `test-apps/hello/src/Main.pfui`, compiled by `@patchfuil/vite-plugin`, renders the expected texts and buttons, lays out a horizontal `Stack` in a row, with no errors |
+| `e2e/first-app.spec.ts` | **The first compiled app**: `test-apps/hello/src/Main.gui`, compiled by `@gluefuil/vite-plugin`, renders the expected texts and buttons, lays out a horizontal `Stack` in a row, with no errors |
 
 ## Conventions
 
-- **Naming:** the product is **patchfuil**, short name **pfui**. The npm
-  scope is `@patchfuil/*` and markup files are `.pfui`. "XMLUI" refers only
+- **Naming:** the product is **gluefuil**, short name **gfui**. The npm
+  scope is `@gluefuil/*` and markup files are `.gui`. "XMLUI" refers only
   to the original framework (the reference implementation, compatibility
   tests and research notes). See *Decisions* in `AGENTS.md`.
 

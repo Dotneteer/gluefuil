@@ -1,6 +1,6 @@
 // Step 16 in jsdom: Text variants and Heading levels.
-import { compileModule } from "@patchfuil/compiler";
-import { loadModule } from "@patchfuil/runtime";
+import { compileModule } from "@gluefuil/compiler";
+import { loadModule } from "@gluefuil/runtime";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import * as components from "../src/index";
@@ -12,19 +12,19 @@ function inner(markup: string): string {
   const { code, diagnostics } = compileModule(`<App>${markup}</App>`, { format: "function" });
   expect(diagnostics).toEqual([]);
   const Main = loadModule(code, { components });
-  return render(<Main />).container.querySelector(".pfui-AppContent")!.innerHTML.replace(/<style[^>]*>.*?<\/style>/gs, "");
+  return render(<Main />).container.querySelector(".gfui-AppContent")!.innerHTML.replace(/<style[^>]*>.*?<\/style>/gs, "");
 }
 
 describe("Text", () => {
   test.each<[markup: string, html: string]>([
-    ["<Text>plain</Text>", '<span class="pfui-Text">plain</span>'],
-    ['<Text variant="strong">bold</Text>', '<strong class="pfui-Text" data-variant="strong">bold</strong>'],
-    ['<Text variant="code" value="x = 1"/>', '<code class="pfui-Text" data-variant="code">x = 1</code>'],
-    ['<Text variant="keyboard">Ctrl</Text>', '<kbd class="pfui-Text" data-variant="keyboard">Ctrl</kbd>'],
-    ['<Text variant="deleted">old</Text>', '<del class="pfui-Text" data-variant="deleted">old</del>'],
-    ['<Text variant="paragraph">para</Text>', '<p class="pfui-Text" data-variant="paragraph">para</p>'],
-    ['<Text variant="secondary">dim</Text>', '<span class="pfui-Text" data-variant="secondary">dim</span>'],
-    ['<Text variant="{\'nope\'}">bound, unknown: plain</Text>', '<span class="pfui-Text">bound, unknown: plain</span>'],
+    ["<Text>plain</Text>", '<span class="gfui-Text">plain</span>'],
+    ['<Text variant="strong">bold</Text>', '<strong class="gfui-Text" data-variant="strong">bold</strong>'],
+    ['<Text variant="code" value="x = 1"/>', '<code class="gfui-Text" data-variant="code">x = 1</code>'],
+    ['<Text variant="keyboard">Ctrl</Text>', '<kbd class="gfui-Text" data-variant="keyboard">Ctrl</kbd>'],
+    ['<Text variant="deleted">old</Text>', '<del class="gfui-Text" data-variant="deleted">old</del>'],
+    ['<Text variant="paragraph">para</Text>', '<p class="gfui-Text" data-variant="paragraph">para</p>'],
+    ['<Text variant="secondary">dim</Text>', '<span class="gfui-Text" data-variant="secondary">dim</span>'],
+    ['<Text variant="{\'nope\'}">bound, unknown: plain</Text>', '<span class="gfui-Text">bound, unknown: plain</span>'],
   ])("%s", (markup, html) => {
     expect(inner(markup)).toBe(html);
   });
@@ -34,7 +34,7 @@ describe("Text", () => {
     expect(html).toContain("display: -webkit-box");
     expect(html).toContain("-webkit-box-orient: vertical");
     expect(html).toContain("overflow: hidden");
-    expect(inner('<Text maxLines="0">x</Text>')).toBe('<span class="pfui-Text">x</span>');
+    expect(inner('<Text maxLines="0">x</Text>')).toBe('<span class="gfui-Text">x</span>');
   });
 
   test("an unknown literal variant is a contract error; Text owns variant, so the variant behavior does not attach", () => {
@@ -56,11 +56,11 @@ describe("Heading", () => {
   });
 
   test.each<[markup: string, html: string]>([
-    ['<Heading value="Title"/>', '<h1 class="pfui-Heading" data-level="1">Title</h1>'],
-    ['<Heading level="h2">Sub</Heading>', '<h2 class="pfui-Heading" data-level="2">Sub</h2>'],
-    ['<Heading level="H4" value="Four"/>', '<h4 class="pfui-Heading" data-level="4">Four</h4>'],
-    ["<H3>Three</H3>", '<h3 class="pfui-Heading" data-level="3">Three</h3>'],
-    ['<H6 value="Six"/>', '<h6 class="pfui-Heading" data-level="6">Six</h6>'],
+    ['<Heading value="Title"/>', '<h1 class="gfui-Heading" data-level="1">Title</h1>'],
+    ['<Heading level="h2">Sub</Heading>', '<h2 class="gfui-Heading" data-level="2">Sub</h2>'],
+    ['<Heading level="H4" value="Four"/>', '<h4 class="gfui-Heading" data-level="4">Four</h4>'],
+    ["<H3>Three</H3>", '<h3 class="gfui-Heading" data-level="3">Three</h3>'],
+    ['<H6 value="Six"/>', '<h6 class="gfui-Heading" data-level="6">Six</h6>'],
   ])("%s", (markup, html) => {
     expect(inner(markup)).toBe(html);
   });

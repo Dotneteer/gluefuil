@@ -57,13 +57,13 @@ export const ROOT_THEME: ThemeDefinition = {
 
 export const BUILT_IN_THEMES: readonly ThemeDefinition[] = [
   ROOT_THEME,
-  { id: "pfui" },
-  { id: "pfui-green", extends: "pfui", themeVars: { "color-primary": "#16a34a" } },
-  { id: "pfui-red", extends: "pfui", themeVars: { "color-primary": "#dc2626" } },
+  { id: "gfui" },
+  { id: "gfui-green", extends: "gfui", themeVars: { "color-primary": "#16a34a" } },
+  { id: "gfui-red", extends: "gfui", themeVars: { "color-primary": "#dc2626" } },
 ];
 
 /** The theme an app uses unless it says otherwise. */
-export const DEFAULT_THEME = "pfui";
+export const DEFAULT_THEME = "gfui";
 
 /** The selectable built-in themes (not the root). */
 export const THEME_IDS: readonly string[] = BUILT_IN_THEMES.filter((t) => t.id !== "root").map((t) => t.id);

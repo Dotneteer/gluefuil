@@ -82,12 +82,12 @@ are ordinary props: unknown ones are E020, as before.
 
 | Behavior | Props | Renders |
 |----------|-------|---------|
-| `label` | `label`, `labelPosition` (`top` \| `start`) | `<label class="pfui-Label">` with the text and the component. A wrapping `<label>` gives an input its accessible name. |
-| `tooltip` | `tooltip` | `<span class="pfui-TooltipAnchor">` around the component. On hover or focus it shows `<span role="tooltip">`, linked with `aria-describedby`. |
-| `variant` | `variant` | `<div style="display: contents">` that sets each of the component's theme variables to `var(--pfui-<name>-<variant>, <its default>)`. A `<Theme backgroundColor-Button-danger="…">` (or a theme) defines a variant. |
+| `label` | `label`, `labelPosition` (`top` \| `start`) | `<label class="gfui-Label">` with the text and the component. A wrapping `<label>` gives an input its accessible name. |
+| `tooltip` | `tooltip` | `<span class="gfui-TooltipAnchor">` around the component. On hover or focus it shows `<span role="tooltip">`, linked with `aria-describedby`. |
+| `variant` | `variant` | `<div style="display: contents">` that sets each of the component's theme variables to `var(--gfui-<name>-<variant>, <its default>)`. A `<Theme backgroundColor-Button-danger="…">` (or a theme) defines a variant. |
 
 - **The variant fallback** is the component's default, with references
-  resolved (`var(--pfui-color-primary-500)`). A CSS variable can't refer to
+  resolved (`var(--gfui-color-primary-500)`). A CSS variable can't refer to
   its own inherited value.
 - **Theme variable names with a variant segment**
   (`backgroundColor-Button-danger`, `…-danger--hover`) are known names

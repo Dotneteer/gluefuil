@@ -1,5 +1,5 @@
 {
-  "name": "@patchfuil/runtime",
+  "name": "@gluefuil/runtime",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@patchfuil/compiler": "*",
-    "@patchfuil/mock-backend": "*"
+    "@gluefuil/compiler": "*",
+    "@gluefuil/mock-backend": "*"
   },
   "dependencies": {
     "@tanstack/query-core": "5.108.4"

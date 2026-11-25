@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // The layout system (steps 19D–19F) in a real browser: the spacing demo
-// (playground/src/layouts/spacing.pfui, served as layouts.html?layout=spacing)
+// (playground/src/layouts/spacing.gui, served as layouts.html?layout=spacing)
 // sets no gap and no padding. Measured, not looked at: every stack's actual
 // gap (from the children's boxes) and every surface's padding against the
 // ladder, at desktop and phone widths and at three values of space-base; then
@@ -17,7 +17,7 @@ async function open(page: Page) {
     if (message.type() === "error") errors.push(message.text());
   });
   await page.goto("/layouts.html?layout=spacing");
-  await expect(page.locator("#root[data-pfui-ready]")).toBeAttached();
+  await expect(page.locator("#root[data-gfui-ready]")).toBeAttached();
   await expect(page.getByRole("heading", { name: "Automatic spacing" })).toBeVisible();
   return errors;
 }
@@ -40,20 +40,20 @@ function ladderMismatches(page: Page, base: number, phone: boolean) {
         [...parent.children].flatMap((child) =>
           getComputedStyle(child).display === "contents" ? items(child) : getComputedStyle(child).display === "none" ? [] : [child as HTMLElement],
         );
-      for (const stack of document.querySelectorAll<HTMLElement>(".pfui-AppContent .pfui-Stack")) {
+      for (const stack of document.querySelectorAll<HTMLElement>(".gfui-AppContent .gfui-Stack")) {
         const level = Number(stack.dataset.level);
         const horizontal = stack.dataset.orientation === "horizontal";
         const children = items(stack);
-        const columns = children.some((child) => child.classList.contains("pfui-Stack"));
-        const explicit = stack.style.getPropertyValue("--pfui-gap");
-        const flat = stack.closest("[style*='--pfui-gap-Stack']") !== null;
+        const columns = children.some((child) => child.classList.contains("gfui-Stack"));
+        const explicit = stack.style.getPropertyValue("--gfui-gap");
+        const flat = stack.closest("[style*='--gfui-gap-Stack']") !== null;
         const gap = explicit !== "" ? Number.parseFloat(explicit) || 0 : flat ? 4 * base : steps[horizontal && !columns ? Math.min(level + 1, 3) : level]!;
         const name = `${stack.dataset.level}${horizontal ? "h" : "v"} "${(stack.textContent ?? "").trim().slice(0, 24)}"`;
         const wrap = stack.hasAttribute("data-wrap");
         // In a flow, a SpaceFiller is a line break of its own (zero height): a row gap on each side.
         const boxes = children
-          .map((child, index) => ({ child, rect: child.getBoundingClientRect(), afterBreak: wrap && index > 0 && children[index - 1]!.classList.contains("pfui-SpaceFiller") }))
-          .filter(({ child }) => !wrap || !child.classList.contains("pfui-SpaceFiller"));
+          .map((child, index) => ({ child, rect: child.getBoundingClientRect(), afterBreak: wrap && index > 0 && children[index - 1]!.classList.contains("gfui-SpaceFiller") }))
+          .filter(({ child }) => !wrap || !child.classList.contains("gfui-SpaceFiller"));
         let rowStart = 0;
         for (let i = 1; i < boxes.length; i++) {
           const previous = boxes[i - 1]!;
@@ -63,7 +63,7 @@ function ladderMismatches(page: Page, base: number, phone: boolean) {
           if (!horizontal) {
             actual = current.rect.top - previous.rect.bottom;
             // A heading gets the gap again above it.
-            if (current.child.classList.contains("pfui-Heading")) expected = 2 * gap;
+            if (current.child.classList.contains("gfui-Heading")) expected = 2 * gap;
           } else if (!wrap || current.rect.left > previous.rect.left) {
             actual = current.rect.left - previous.rect.right;
           } else {
@@ -104,7 +104,7 @@ for (const [name, viewport, phone] of [
       expect(measured).toBeGreaterThan(80);
     }
     // The page gutter is level 0 too (outside the demo's Theme: space-base 4px).
-    const gutter = await page.locator(".pfui-AppContent").evaluate((content) => getComputedStyle(content).paddingLeft);
+    const gutter = await page.locator(".gfui-AppContent").evaluate((content) => getComputedStyle(content).paddingLeft);
     expect(gutter).toBe(phone ? "16px" : "24px");
     expect(errors).toEqual([]);
   });
@@ -113,9 +113,9 @@ for (const [name, viewport, phone] of [
 /** The boxes of a stack's children: the stack is the `up`-th one around the element with exactly this text. */
 function childBoxes(page: Page, text: string, up = 1) {
   return page.evaluate(({ text, up }) => {
-    const element = [...document.querySelectorAll(".pfui-AppContent *")].find((e) => e.children.length === 0 && e.textContent === text)!;
-    let stack = element.closest(".pfui-Stack")!;
-    for (let i = 1; i < up; i++) stack = stack.parentElement!.closest(".pfui-Stack")!;
+    const element = [...document.querySelectorAll(".gfui-AppContent *")].find((e) => e.children.length === 0 && e.textContent === text)!;
+    let stack = element.closest(".gfui-Stack")!;
+    for (let i = 1; i < up; i++) stack = stack.parentElement!.closest(".gfui-Stack")!;
     const box = (element: Element) => {
       const { left, right, top, width } = element.getBoundingClientRect();
       const style = getComputedStyle(element);
@@ -159,8 +159,8 @@ for (const [name, viewport, phone] of [
     else expect(tiles.children[3]!.right).toBeCloseTo(tiles.stack.right, 0);
     // width="50%" twice, a SpaceFiller, width="100%": two rows on a desktop; three on a phone.
     const inputs = await page.evaluate(() => {
-      const box = (placeholder: string) => document.querySelector(`input[placeholder="${placeholder}"]`)!.closest(".pfui-TextBox")!.getBoundingClientRect().toJSON();
-      const stack = document.querySelector('input[placeholder="Street"]')!.closest(".pfui-Stack")!.getBoundingClientRect().toJSON();
+      const box = (placeholder: string) => document.querySelector(`input[placeholder="${placeholder}"]`)!.closest(".gfui-TextBox")!.getBoundingClientRect().toJSON();
+      const stack = document.querySelector('input[placeholder="Street"]')!.closest(".gfui-Stack")!.getBoundingClientRect().toJSON();
       return { first: box("First name"), last: box("Last name"), street: box("Street"), stack };
     });
     expect(inputs.street.width).toBeCloseTo(inputs.stack.width, 0);
@@ -180,10 +180,10 @@ test("density shifts the level; the inspector labels each stack", async ({ page 
   await page.setViewportSize(DESKTOP);
   await open(page);
   const levels = await page.evaluate(() =>
-    ["Normal", "Compact", "Comfortable"].map((title) => [...document.querySelectorAll("h3")].find((h) => h.textContent === title)!.closest(".pfui-Stack")!.getAttribute("data-level")),
+    ["Normal", "Compact", "Comfortable"].map((title) => [...document.querySelectorAll("h3")].find((h) => h.textContent === title)!.closest(".gfui-Stack")!.getAttribute("data-level")),
   );
   expect(levels).toEqual(["2", "3", "1"]);
   await page.getByRole("button", { name: "Spacing inspector: off" }).click();
-  await expect(page.locator(".pfui-Stack[data-inspect]").first()).toBeAttached();
-  expect(await page.locator(".pfui-AppContent > .pfui-Theme > .pfui-Stack").getAttribute("data-inspect")).toBe("L0 v · gap 24px");
+  await expect(page.locator(".gfui-Stack[data-inspect]").first()).toBeAttached();
+  expect(await page.locator(".gfui-AppContent > .gfui-Theme > .gfui-Stack").getAttribute("data-inspect")).toBe("L0 v · gap 24px");
 });

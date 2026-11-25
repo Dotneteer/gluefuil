@@ -1,10 +1,10 @@
-// The layout scenarios' preview: each layout demo (src/layouts/*.pfui) runs
+// The layout scenarios' preview: each layout demo (src/layouts/*.gui) runs
 // as its own page (layouts.html?layout=…) in a frame, at desktop or phone
 // width, with its source. An app's own React component, used from markup: see
 // `extensions` in vite.config.ts.
 import { useState, type CSSProperties } from "react";
 
-const sources = import.meta.glob("../layouts/*.pfui", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+const sources = import.meta.glob("../layouts/*.gui", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 
 /** The App shell demos, in the order of the comparison table in .ai/plan/poc-19a-app-shell.md. */
 export const LAYOUTS = [
@@ -27,9 +27,9 @@ const WIDTHS = { Desktop: "100%", Phone: "390px" } as const;
 const row: CSSProperties = { display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" };
 const choice = (selected: boolean): CSSProperties => ({
   padding: "4px 10px",
-  borderRadius: "var(--pfui-borderRadius)",
-  border: "1px solid var(--pfui-borderColor)",
-  background: selected ? "var(--pfui-color-primary-500)" : "transparent",
+  borderRadius: "var(--gfui-borderRadius)",
+  border: "1px solid var(--gfui-borderColor)",
+  background: selected ? "var(--gfui-color-primary-500)" : "transparent",
   color: selected ? "#fff" : "inherit",
   cursor: "pointer",
   font: "inherit",
@@ -41,16 +41,16 @@ const code: CSSProperties = {
   whiteSpace: "pre",
   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
   fontSize: "13px",
-  backgroundColor: "var(--pfui-backgroundColor-Text-code)",
-  border: "1px solid var(--pfui-borderColor)",
-  borderRadius: "var(--pfui-borderRadius)",
+  backgroundColor: "var(--gfui-backgroundColor-Text-code)",
+  border: "1px solid var(--gfui-borderColor)",
+  borderRadius: "var(--gfui-borderRadius)",
 };
 
 export function LayoutPreview({ group }: { group?: unknown }) {
   const demos = GROUPS[typeof group === "string" ? group : "shell"] ?? LAYOUTS;
   const [layout, setLayout] = useState(demos[0]!);
   const [width, setWidth] = useState<keyof typeof WIDTHS>("Desktop");
-  const source = sources[`../layouts/${layout}.pfui`] ?? "";
+  const source = sources[`../layouts/${layout}.gui`] ?? "";
   return (
     <section className="playground-LayoutPreview" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {demos.length > 1 ? (
@@ -74,10 +74,10 @@ export function LayoutPreview({ group }: { group?: unknown }) {
         key={layout}
         title={`Layout: ${layout}`}
         src={`layouts.html?layout=${layout}`}
-        style={{ width: WIDTHS[width], maxWidth: "100%", height: demos.length === 1 ? "720px" : "480px", border: "1px solid var(--pfui-borderColor)", borderRadius: "var(--pfui-borderRadius)" }}
+        style={{ width: WIDTHS[width], maxWidth: "100%", height: demos.length === 1 ? "720px" : "480px", border: "1px solid var(--gfui-borderColor)", borderRadius: "var(--gfui-borderRadius)" }}
       />
       <figure style={{ margin: 0 }}>
-        <figcaption style={{ fontSize: "0.85em", color: "var(--pfui-textColor-secondary)", margin: "0 0 4px" }}>layouts/{layout}.pfui</figcaption>
+        <figcaption style={{ fontSize: "0.85em", color: "var(--gfui-textColor-secondary)", margin: "0 0 4px" }}>layouts/{layout}.gui</figcaption>
         <pre style={code}>
           <code>{source.replace(/\s+$/, "")}</code>
         </pre>

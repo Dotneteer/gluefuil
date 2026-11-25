@@ -1,10 +1,10 @@
-// The source of a scenario (its .pfui file, and its code-behind if it has one),
+// The source of a scenario (its .gui file, and its code-behind if it has one),
 // shown in a monospace block that keeps line breaks and indentation. An app's
 // own React component, used from markup: see `extensions` in vite.config.ts.
 import type { CSSProperties } from "react";
 
-// The files' text at build time (Vite; `?raw` is not compiled by the pfui plugin).
-const sources = import.meta.glob(["../components/*.pfui", "../components/*.pfui.xs"], {
+// The files' text at build time (Vite; `?raw` is not compiled by the gfui plugin).
+const sources = import.meta.glob(["../components/*.gui", "../components/*.gui.xs"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -19,13 +19,13 @@ const block: CSSProperties = {
   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
   fontSize: "13px",
   lineHeight: 1.5,
-  backgroundColor: "var(--pfui-backgroundColor-Text-code)",
-  color: "var(--pfui-textColor)",
-  border: "1px solid var(--pfui-borderColor)",
-  borderRadius: "var(--pfui-borderRadius)",
+  backgroundColor: "var(--gfui-backgroundColor-Text-code)",
+  color: "var(--gfui-textColor)",
+  border: "1px solid var(--gfui-borderColor)",
+  borderRadius: "var(--gfui-borderRadius)",
 };
 
-const caption: CSSProperties = { fontSize: "0.85em", color: "var(--pfui-textColor-secondary)", margin: "8px 0 4px" };
+const caption: CSSProperties = { fontSize: "0.85em", color: "var(--gfui-textColor-secondary)", margin: "8px 0 4px" };
 
 function Source({ title, text }: { title: string; text: string }) {
   return (
@@ -38,16 +38,16 @@ function Source({ title, text }: { title: string; text: string }) {
   );
 }
 
-/** `<ScenarioSource file="CounterScenario"/>`: components/CounterScenario.pfui (and .pfui.xs). */
+/** `<ScenarioSource file="CounterScenario"/>`: components/CounterScenario.gui (and .gui.xs). */
 export function ScenarioSource({ file }: { file?: unknown }) {
   const name = String(file ?? "");
-  const markup = sources[`../components/${name}.pfui`];
-  const codeBehind = sources[`../components/${name}.pfui.xs`];
-  if (markup === undefined) return <Source title={`components/${name}.pfui`} text="(no such file)" />;
+  const markup = sources[`../components/${name}.gui`];
+  const codeBehind = sources[`../components/${name}.gui.xs`];
+  if (markup === undefined) return <Source title={`components/${name}.gui`} text="(no such file)" />;
   return (
     <section className="playground-ScenarioSource">
-      <Source title={`components/${name}.pfui`} text={markup} />
-      {codeBehind !== undefined ? <Source title={`components/${name}.pfui.xs (code-behind)`} text={codeBehind} /> : null}
+      <Source title={`components/${name}.gui`} text={markup} />
+      {codeBehind !== undefined ? <Source title={`components/${name}.gui.xs (code-behind)`} text={codeBehind} /> : null}
     </section>
   );
 }

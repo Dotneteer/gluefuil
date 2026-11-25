@@ -1,7 +1,7 @@
 // Literal value checks for component contracts (step 15). Only attribute
 // values without `{…}` are checked; bound values are known only at runtime.
 
-import type { PropMetadata } from "@patchfuil/components/metadata";
+import type { PropMetadata } from "@gluefuil/components/metadata";
 
 /** Why a literal does not fit the prop's type and enum, or undefined when it fits. */
 export function checkLiteral(prop: PropMetadata, text: string): { code: "E022" | "E023"; problem: string } | undefined {

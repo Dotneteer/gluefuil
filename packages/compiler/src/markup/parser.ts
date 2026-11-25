@@ -1,4 +1,4 @@
-// Markup parser: .pfui markup text (XMLUI syntax) -> syntax tree with source positions.
+// Markup parser: .gui markup text (XMLUI syntax) -> syntax tree with source positions.
 // Design and XMLUI compatibility notes: .ai/plan/poc-01-markup-parser.md
 //
 // A single-pass, iterative parser. Content mode reads text up to the next

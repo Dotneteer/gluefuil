@@ -93,7 +93,7 @@
 
 In a production build of `test-apps/data`, the rendered length of the
 modules (`tools/data-build.test.ts`): `@tanstack/query-core` about 63 kB, and
-pfui's data code (`runtime/src/data`, `components/src/data.tsx`) about 23 kB.
+gfui's data code (`runtime/src/data`, `components/src/data.tsx`) about 23 kB.
 
 ## Tests
 

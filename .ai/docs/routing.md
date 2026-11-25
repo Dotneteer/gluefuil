@@ -37,7 +37,7 @@
 | `$routeParams` | App global: the first matching registered route's parameters (`{ name: "theming" }`, `*` for a wildcard) |
 | `Pages` | Renders the **first** `Page` whose `url` matches, plus every non-`Page` child. No match: `navigate(fallbackPath, { replace: true })` (default `/`). |
 | `Page` | `url` (required, literal): `/static`, `/users/:id`, `/users/:id?`, `/files/*`. Only the active page's content is mounted, so it starts fresh on each visit. |
-| `Link` | `to` (required), `label` or content: `<a class="pfui-Link" href="#/x">`. A plain click navigates without a page load; modified clicks (new tab, …) are left to the browser. |
+| `Link` | `to` (required), `label` or content: `<a class="gfui-Link" href="#/x">`. A plain click navigates without a page load; modified clicks (new tab, …) are left to the browser. |
 | `App useHashBasedRouting` | Default true: routes live after `#`, so any static server works. With false, the path and the History API are used, and the server must answer every path with `index.html` (or with the route's own prerendered file: [ssg.md](ssg.md#prerendered-routes)). Under a sub-path, routes are below the basename ([below](#the-basename)). |
 | `App onWillNavigate="(to, query) => …"` | Before every navigation except the first load and the `Pages` fallback. `to` is the path with its query (`/docs?q=a+b`), `query` the decoded parameters. Resolving to `false` cancels; anything else proceeds. A throw or a timeout cancels too (fail closed) and is reported. |
 | `App onDidNavigate="(to, query) => …"` | After every navigation (the fallback redirect included), not the first load. Errors are reported; the navigation stands. |
@@ -68,7 +68,7 @@
   (`navigate('/login'); return false`) therefore ends on the redirect.
 - **A refused browser move is undone without a new history entry.** Every
   entry the router pushes or replaces carries its index (`history.state =
-  { pfui: n }`); an entry the browser pushed itself (a typed hash) gets the
+  { gfui: n }`); an entry the browser pushed itself (a typed hash) gets the
   next index when it arrives.
   - `entryIndex` is the app's entry, `browserIndex` the browser's current
     one. They differ only while a guard holds a move.
@@ -110,7 +110,7 @@ Hash routes ignore it (as XMLUI: `AppWrapper.tsx` passes `basename` only to
 - **Its source is Vite's `base`** (`/app/` → `/app`), as XMLUI's comes from
   the build (`__PUBLIC_PATH`, `StandaloneApp.tsx`): one setting moves the
   assets and the routes together.
-  - The Vite plugin writes `data-pfui-base` on the root element
+  - The Vite plugin writes `data-gfui-base` on the root element
     ([build-time.md](build-time.md)); `mountApp` reads it, and its
     `basename` option overrides it (standalone mode: the option, or the
     attribute by hand).
@@ -155,7 +155,7 @@ Our own router, not react-router; XMLUI wraps react-router v6.
     sees the routes only from the next navigation on.
 - **The server view:** `currentLocation()` returns the server path
   (`setServerPath`; `/` unless the prerender renders another route, which
-  `mountApp` reads back from `data-pfui-path`). Static HTML (and hydration)
+  `mountApp` reads back from `data-gfui-path`). Static HTML (and hydration)
   render that route; a deep link that was not prerendered (`/#/tests/x`)
   switches right after takeover, like a responsive `When` (step 13).
 - **`registeredRoutes()`** gives the prerender the patterns `Pages`

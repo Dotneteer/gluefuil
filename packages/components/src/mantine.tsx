@@ -1,6 +1,6 @@
 /// <reference path="./css.d.ts" />
 // Mantine-based components (step 16): Mantine React components made usable
-// from markup with wrapComponent, styled only through pfui theme variables.
+// from markup with wrapComponent, styled only through gfui theme variables.
 // Design: .ai/plan/poc-16-mantine.md
 //
 // Mantine's CSS is loaded in its `@layer mantine` form, so our (unlayered)
@@ -20,7 +20,7 @@ import inputCss from "@mantine/core/styles/Input.layer.css?inline";
 import popoverCss from "@mantine/core/styles/Popover.layer.css?inline";
 import scrollAreaCss from "@mantine/core/styles/ScrollArea.layer.css?inline";
 import unstyledButtonCss from "@mantine/core/styles/UnstyledButton.layer.css?inline";
-import { wrapComponent } from "@patchfuil/runtime";
+import { wrapComponent } from "@gluefuil/runtime";
 import { createElement, type ComponentType } from "react";
 import { useLayout, withoutLayoutProps, type LayoutProps } from "./layout";
 import { componentMetadata } from "./metadata";
@@ -58,7 +58,7 @@ export const MANTINE_STYLESHEET = [
   burgerCss,
 ].join("\n");
 
-export const MANTINE_STYLESHEET_HREF = "pfui-mantine";
+export const MANTINE_STYLESHEET_HREF = "gfui-mantine";
 
 const asText = (value: unknown) => (value === undefined || value === null ? "" : String(value));
 const enabledToDisabled = (enabled: unknown) => ({ disabled: enabled === false });
@@ -73,14 +73,14 @@ const buttonConfig = (type: "button" | "submit") => ({
   rename: { label: (label: unknown) => (label === undefined || label === null ? {} : { children: String(label) }), enabled: enabledToDisabled },
   fixed: {
     type,
-    className: "pfui-Button",
+    className: "gfui-Button",
     vars: () => ({
       root: {
-        "--button-bg": "var(--pfui-backgroundColor-Button)",
-        "--button-hover": "var(--pfui-backgroundColor-Button--hover)",
-        "--button-color": "var(--pfui-textColor-Button)",
-        "--button-bd": "1px solid var(--pfui-borderColor-Button)",
-        "--button-radius": "var(--pfui-borderRadius-Button)",
+        "--button-bg": "var(--gfui-backgroundColor-Button)",
+        "--button-hover": "var(--gfui-backgroundColor-Button--hover)",
+        "--button-color": "var(--gfui-textColor-Button)",
+        "--button-bd": "1px solid var(--gfui-borderColor-Button)",
+        "--button-radius": "var(--gfui-borderRadius-Button)",
       },
     }),
   },
@@ -97,7 +97,7 @@ export const TextBox = withLayout(wrapComponent(TextInput as never, {
   value: { prop: "value", change: "onChange", read: (event: { currentTarget: { value: string } }) => event.currentTarget.value, parse: asText },
   withRef: true,
   api: focusApi,
-  fixed: { className: "pfui-TextBox", vars: () => ({ wrapper: { "--input-radius": "var(--pfui-borderRadius-TextBox)" } }) },
+  fixed: { className: "gfui-TextBox", vars: () => ({ wrapper: { "--input-radius": "var(--gfui-borderRadius-TextBox)" } }) },
 }));
 
 /** `options`: strings or `{ value, label }` objects → Mantine's `data`. */
@@ -118,9 +118,9 @@ export const Select = withLayout(wrapComponent(MantineSelect as never, {
   withRef: true,
   api: focusApi,
   fixed: {
-    className: "pfui-Select",
+    className: "gfui-Select",
     comboboxProps: { withinPortal: false },
-    vars: () => ({ wrapper: { "--input-radius": "var(--pfui-borderRadius-Select)" } }),
+    vars: () => ({ wrapper: { "--input-radius": "var(--gfui-borderRadius-Select)" } }),
   },
 }));
 
@@ -134,7 +134,7 @@ export const Checkbox = withLayout(wrapComponent(MantineCheckbox as never, {
     parse: (value) => value === true || value === "true",
   },
   fixed: {
-    className: "pfui-Checkbox",
-    vars: () => ({ root: { "--checkbox-color": "var(--pfui-backgroundColor-Checkbox--checked)", "--checkbox-radius": "var(--pfui-borderRadius-Checkbox)" } }),
+    className: "gfui-Checkbox",
+    vars: () => ({ root: { "--checkbox-color": "var(--gfui-backgroundColor-Checkbox--checked)", "--checkbox-radius": "var(--gfui-borderRadius-Checkbox)" } }),
   },
 }));

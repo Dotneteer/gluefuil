@@ -135,9 +135,9 @@ and every input of steps 24–26.
   - `ValidationBehavior` renders nothing; it provides the rules (and the
     `onValidate` handler) by context.
   - `FormBindingBehavior` creates the field, provides the field binding,
-    and renders `<span class="pfui-Field" data-required>`: the labelled
-    input, then `<span class="pfui-Field-messages" aria-live="polite">` with
-    one `.pfui-ValidationMessage[data-severity]` per shown result (errors
+    and renders `<span class="gfui-Field" data-required>`: the labelled
+    input, then `<span class="gfui-Field-messages" aria-live="polite">` with
+    one `.gfui-ValidationMessage[data-severity]` per shown result (errors
     first). The messages are outside the `<label>`, so they are not part of
     the input's accessible name.
 - **`wrapComponent`** (`runtime/src/render/wrap.ts`): a value component that
@@ -152,7 +152,7 @@ and every input of steps 24–26.
   - It provides `null` to its templates and children, so an input inside
     an option template is not bound.
 - **The required mark** is CSS:
-  `.pfui-Field[data-required] > .pfui-Label > .pfui-Label-text::after`.
+  `.gfui-Field[data-required] > .gfui-Label > .gfui-Label-text::after`.
 
 ## `$data`: context variables without a template
 

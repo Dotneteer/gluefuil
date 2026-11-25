@@ -7,8 +7,8 @@ import { resolveRefs, THEME_VAR_PREFIX } from "./theming/engine";
 /** `label`: a <label> around the component, so an input inside gets it as its accessible name. */
 export function LabelBehavior({ label, labelPosition, children }: { label?: unknown; labelPosition?: unknown; children?: ReactNode }) {
   return (
-    <label className="pfui-Label" data-position={labelPosition === "start" ? "start" : "top"}>
-      <span className="pfui-Label-text">{label === undefined || label === null ? "" : String(label)}</span>
+    <label className="gfui-Label" data-position={labelPosition === "start" ? "start" : "top"}>
+      <span className="gfui-Label-text">{label === undefined || label === null ? "" : String(label)}</span>
       {children}
     </label>
   );
@@ -21,7 +21,7 @@ export function TooltipBehavior({ tooltip, children }: { tooltip?: unknown; chil
   const text = tooltip === undefined || tooltip === null ? "" : String(tooltip);
   return (
     <span
-      className="pfui-TooltipAnchor"
+      className="gfui-TooltipAnchor"
       aria-describedby={open && text ? id : undefined}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -30,7 +30,7 @@ export function TooltipBehavior({ tooltip, children }: { tooltip?: unknown; chil
     >
       {children}
       {open && text ? (
-        <span role="tooltip" id={id} className="pfui-Tooltip">
+        <span role="tooltip" id={id} className="gfui-Tooltip">
           {text}
         </span>
       ) : null}
@@ -62,7 +62,7 @@ export function VariantBehavior({ variant, component, children }: { variant?: un
     }
   }
   return (
-    <div className="pfui-Variant" data-variant={typeof variant === "string" ? variant : undefined} style={style as CSSProperties}>
+    <div className="gfui-Variant" data-variant={typeof variant === "string" ? variant : undefined} style={style as CSSProperties}>
       {children}
     </div>
   );

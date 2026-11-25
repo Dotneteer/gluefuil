@@ -1,5 +1,5 @@
 <App var.count="{0}">
   <Text>Standalone: count = {count}</Text>
   <Button label="Increment" onClick="count++"/>
-  <Greeting name="pfui"><Text>slot content, count = {count}</Text></Greeting>
+  <Greeting name="gfui"><Text>slot content, count = {count}</Text></Greeting>
 </App>

@@ -71,19 +71,19 @@ item without an icon shows its label's initial.
 ## The structure
 
 ```
-div.pfui-App                    data-scroll, data-nav, data-nav-full-height,
+div.gfui-App                    data-scroll, data-nav, data-nav-full-height,
                                 data-drawer-below, data-header-sticky,
                                 data-footer-sticky, data-nav-collapsed,
                                 data-drawer-open
   [nav: side + fullHeight]
-  div.pfui-AppColumn
-    header.pfui-AppHeader       burger, logo, title, [nav: header], content, profile menu
+  div.gfui-AppColumn
+    header.gfui-AppHeader       burger, logo, title, [nav: header], content, profile menu
     [nav: below-header]
-    div.pfui-AppBody
+    div.gfui-AppBody
       [nav: side]
-      main.pfui-AppMain > div.pfui-AppContent    (the content)
-    footer.pfui-Footer
-  div.pfui-App-overlay          (while the drawer is open)
+      main.gfui-AppMain > div.gfui-AppContent    (the content)
+    footer.gfui-Footer
+  div.gfui-App-overlay          (while the drawer is open)
 ```
 
 - **The landmarks:** `header` (banner), `nav` (labeled "Main"), `main`,
@@ -95,11 +95,11 @@ div.pfui-App                    data-scroll, data-nav, data-nav-full-height,
 
 - **Scrolling:** `[data-scroll="page"]` sets `min-height: 100dvh` and the
   window scrolls. `[data-scroll="content"]` sets `height: 100dvh`, and
-  `.pfui-AppMain` (and a side nav) scroll.
+  `.gfui-AppMain` (and a side nav) scroll.
 - **Sticking:** `[data-sticky]` regions are `position: sticky` under
   `[data-scroll="page"]`.
-  - The offsets come from the declared heights: `--pfui-shell-top` is
-    `height-AppHeader` when `data-header-sticky`, and `--pfui-shell-bottom`
+  - The offsets come from the declared heights: `--gfui-shell-top` is
+    `height-AppHeader` when `data-header-sticky`, and `--gfui-shell-bottom`
     is `height-Footer` when `data-footer-sticky`.
   - A sticky side nav is the viewport's height minus both, with its own
     scroll. A full-height one is the viewport's height, at `top: 0`.
@@ -118,7 +118,7 @@ div.pfui-App                    data-scroll, data-nav, data-nav-full-height,
 - **Z-order:** sticky header and footer 100, sticky below-header nav 99,
   overlay 99, drawer 101, a bar's dropdown group 102.
 - **Mantine:** `Burger.layer.css` is part of `MANTINE_STYLESHEET`. The
-  burger's color is `--burger-color: textColor-AppHeader`, because pfui
+  burger's color is `--burger-color: textColor-AppHeader`, because gfui
   doesn't define `--mantine-color-black`.
 
 **Theme variables** (defaults in `metadata.ts`):
@@ -163,8 +163,8 @@ entries).
 | `components/src/styles.ts` | `SHELL`, `shellDrawer()` |
 | `components/src/theme.tsx` | `App`: the root attributes and `Shell` |
 | `runtime/src/render/shell-state.ts` | `navPanelCollapsed`, `navDrawerOpen`, their setters, `resetShellState` |
-| `playground/src/layouts/*.pfui`, `playground/layouts.html`, `src/layouts.tsx` | One demo App per XMLUI layout (and one new combination), one per page |
-| `playground/src/react/LayoutPreview.tsx`, `components/AppShellScenario.pfui` | The playground's "App shell" scenario |
+| `playground/src/layouts/*.gui`, `playground/layouts.html`, `src/layouts.tsx` | One demo App per XMLUI layout (and one new combination), one per page |
+| `playground/src/react/LayoutPreview.tsx`, `components/AppShellScenario.gui` | The playground's "App shell" scenario |
 
 ## Tests
 

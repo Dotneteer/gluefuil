@@ -10,7 +10,7 @@
 ## Writing one
 
 ```xml
-<!-- components/Counter.pfui -->
+<!-- components/Counter.gui -->
 <Component name="Counter" method.reset="count = 0">
   <Stack>
     <Text value="{label(count)}"/>
@@ -22,13 +22,13 @@
 ```
 
 ```js
-// components/Counter.pfui.xs (code-behind)
+// components/Counter.gui.xs (code-behind)
 var count = 0;
 function label(n) { return 'Counter: ' + n; }
 ```
 
 ```xml
-<!-- Main.pfui -->
+<!-- Main.gui -->
 <App var.log="">
   <Counter id="c" onChanged="(n) => log += ' ' + n">
     <property name="footerTemplate"><Text>count is {$count}</Text></property>
@@ -40,14 +40,14 @@ function label(n) { return 'Counter: ' + n; }
 | Feature | How |
 |---------|-----|
 | Name | `[A-Z][A-Za-z0-9_$]*`, not a built-in's name |
-| Where | `components/<Name>.pfui`: exactly one `<Component>`, the file named after it. Or inline: any number of top-level `<Component>`s in an app file, beside its one app element, in any order. |
+| Where | `components/<Name>.gui`: exactly one `<Component>`, the file named after it. Or inline: any number of top-level `<Component>`s in an app file, beside its one app element, in any order. |
 | Properties | `$props.x`: the caller's attribute values, reactive, read-only |
 | Private state | `var.x` / `<variable>` on `<Component>`, or code-behind `var`: one set per instance |
 | Events | `emitEvent('name', ...args)` calls the caller's `onName` and returns a promise of its result (`undefined` without a handler). `hasEventHandler('name')`. The caller may use any event name. |
 | Methods | `method.x="…"` or `<method name="x">…</method>`: handlers in the component's scope. The caller calls them through the element's `id` (`c.reset()`), the component through `$self.x()`. Both return a promise of the result. |
 | Slots | `<Slot/>` renders the caller's children; `<Slot name="xTemplate"/>` renders the caller's `<property name="xTemplate">`. The Slot's children are the fallback. Other Slot attributes become context variables (`count="{count}"` gives `$count`) in the caller's content, which renders in the **caller's** scope. |
 | Isolation | The body sees its own variables, functions and IDs, `$props`, `$self`, `emitEvent`, `hasEventHandler`, the app's globals (`global.*` of the app root, `Globals.xs`: [scoping.md § Globals](scoping.md#globals)), app globals and sandbox globals. Anything else of the caller is C001. |
-| Code-behind | `<file>.pfui.xs`, also for `Main.pfui` (the app root): top-level `var` (a variable) and `function` (a function in scope; synchronous unless it awaits; it may write variables) |
+| Code-behind | `<file>.gui.xs`, also for `Main.gui` (the app root): top-level `var` (a variable) and `function` (a function in scope; synchronous unless it awaits; it may write variables) |
 
 ## Compiling (`compileModule`)
 
@@ -124,9 +124,9 @@ export default $$U_Counter;            // a component file; an app file exports 
   - Code-behind is read from `<file>.xs` (watched). Its errors fail the
     transform at the `.xs` file.
   - A component or code-behind file appearing or disappearing recompiles
-    every `.pfui` module and reloads.
+    every `.gui` module and reloads.
 - **Standalone:** see [standalone.md](standalone.md). It fetches
-  `components/<Name>.pfui` for each referenced unknown name,
+  `components/<Name>.gui` for each referenced unknown name,
   transitively, with code-behind.
 
 ## Files
@@ -139,7 +139,7 @@ export default $$U_Counter;            // a component file; an app file exports 
 | `runtime/src/render/user-components.ts` | `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput` |
 | `runtime/src/render/elements.ts` | `useWiring` (shared with `Bound`), `createVariableScope` (with code-behind `fn` entries) |
 | `vite-plugin/src/components.ts` | `ComponentFolder`, `importSpecifier`, `readCodeBehind` |
-| `test-apps/hello/src/components/` | The XMLUI examples (`IncButton`, `Counter` with code-behind, `StatusList`, `Panel`); `NameValue` inline in `Main.pfui`; `Main.pfui.xs` |
+| `test-apps/hello/src/components/` | The XMLUI examples (`IncButton`, `Counter` with code-behind, `StatusList`, `Panel`); `NameValue` inline in `Main.gui`; `Main.gui.xs` |
 
 ## Tests
 

@@ -37,7 +37,7 @@ export interface SignalOptions<T> {
  * Wrappers around a store node (such as variables) expose it under this key,
  * so `watch` and `observerCount` accept them like signals.
  */
-export const SIGNAL_NODE: unique symbol = Symbol("pfui.signalNode");
+export const SIGNAL_NODE: unique symbol = Symbol("gfui.signalNode");
 
 function nodeOf(source: ReadonlySignal<unknown>): Source {
   const wrapped = (source as { [SIGNAL_NODE]?: ReadonlySignal<unknown> })[SIGNAL_NODE];

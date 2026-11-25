@@ -1,5 +1,5 @@
 // The error overlay: compile errors (or a failed fetch) shown in place of the app.
-import { codeFrame, formatDiagnostic, LineMap, type Diagnostic } from "@patchfuil/compiler";
+import { codeFrame, formatDiagnostic, LineMap, type Diagnostic } from "@gluefuil/compiler";
 import type { CSSProperties } from "react";
 
 export interface LoadError {
@@ -34,8 +34,8 @@ export function ErrorOverlay({ error }: { error: LoadError }) {
     lines.push(`${error.file}: ${error.error instanceof Error ? error.error.message : String(error.error)}`);
   }
   return (
-    <div role="alert" className="pfui-error-overlay" style={box}>
-      <strong>pfui: the app could not be loaded</strong>
+    <div role="alert" className="gfui-error-overlay" style={box}>
+      <strong>gfui: the app could not be loaded</strong>
       {"\n\n"}
       {lines.join("\n")}
     </div>

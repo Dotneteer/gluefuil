@@ -1,13 +1,13 @@
-# AGENTS.md — patchfuil
+# AGENTS.md — gluefuil
 
 Read this first for any task in this repository. It is the single source of
 truth for AI agents; `CLAUDE.md` only imports it.
 
 ## What this project is
 
-**patchfuil** (short name **pfui**) is a **re-invention of the XMLUI
+**gluefuil** (short name **gfui**) is a **re-invention of the XMLUI
 framework**: a declarative, reactive UI framework where applications are
-written as XML markup (`.pfui` files, using XMLUI's markup syntax), with
+written as XML markup (`.gui` files, using XMLUI's markup syntax), with
 spreadsheet-like reactive expressions in `{...}` and no manual state wiring.
 
 We are not forking XMLUI. We learn from its design, its documented behavior and
@@ -96,18 +96,18 @@ Architectural decisions (stack, divergences from XMLUI, naming) are recorded
 here as one line each, with a link to the plan that justified them:
 
 - **Rendering target is React.** Existing React components must be wrappable with lightweight code and usable directly from markup. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § Area 1.
-- **Naming.** The project and product are **patchfuil**, short name **pfui**; XMLUI is only the origin and reference.
-  - The npm scope is `@patchfuil/*`.
-  - Markup files use `.pfui` (`Main.pfui`, `components/Name.pfui`).
-  - The short name `pfui` is used for the CSS custom-property prefix (`--pfui-*`), the standalone browser global, the CLI command and the docs code-fence language.
+- **Naming.** The project and product are **gluefuil**, short name **gfui**; XMLUI is only the origin and reference. (Renamed from patchfuil/pfui with `.pfui` files after step 22B.)
+  - The npm scope is `@gluefuil/*`.
+  - Markup files use `.gui` (`Main.gui`, `components/Name.gui`). Code-behind uses `.gui.xs`; the app-wide script stays `Globals.xs`.
+  - The short name `gfui` is used for the CSS custom-property prefix (`--gfui-*`), the standalone browser global, the CLI command and the docs code-fence language.
   - In prose, say "XMLUI" only when referring to the original framework.
 - **Toolchain:** TypeScript 7, npm workspaces, Vite 8, Vitest 5 (jsdom for React packages), Playwright, React 19. Packages: `compiler`, `runtime`, `components` (see [.ai/docs/code-structure.md](.ai/docs/code-structure.md)). See [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) step 0.
 - **Reactivity: signals with one `useSyncExternalStore` subscription per component**, using our own small store (`packages/runtime/src/reactivity/`). Plain React state was measured and rejected. See [.ai/plan/poc-04-reactivity.md](.ai/plan/poc-04-reactivity.md).
 - **The App shell has no `layout` property.** `App`'s regions (`AppHeader`, `NavPanel`, `Footer`) each carry their own literal settings (`sticky`, `placement`, `fullHeight`, `drawerBelow`, `collapsible`; `App scroll`); the defaults are XMLUI's `condensed-sticky`; the compiler passes the regions to `App` and CSS does the layout. See [.ai/plan/poc-19a-app-shell.md](.ai/plan/poc-19a-app-shell.md).
 - **Layout: `Stack` (with `VStack`/`HStack`/`CVStack`/`CHStack`) is the only layout container; `wrapContent` replaces `FlowLayout`.** Gaps and paddings are automatic: a four-level ladder (`space-level0`–`3`) chosen by nesting, orientation, surfaces and screen size, and every spacing value is a multiple of `space-base`. See [.ai/plan/poc-19d-layout.md](.ai/plan/poc-19d-layout.md).
 - **Data: `@tanstack/query-core` bridged to our signals, behind one HTTP gate.** `DataSource` and `APICall` keep XMLUI's markup. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
-- **Mock backend: a Fetch-API handler (`Request` → `Response`) in `@patchfuil/mock-backend`, hosted by a service worker (MSW), dev-server middleware or a test server (MSW node).** The app makes real requests and can't tell; faults and holds are driven through `/__mock`. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
-- **Globals are known at compile time.** Every file sees the globals of `Main.pfui`'s root and `Globals.xs` (an unknown name stays an error); React context carries their scope to user components. See [.ai/plan/poc-21b-globals.md](.ai/plan/poc-21b-globals.md).
+- **Mock backend: a Fetch-API handler (`Request` → `Response`) in `@gluefuil/mock-backend`, hosted by a service worker (MSW), dev-server middleware or a test server (MSW node).** The app makes real requests and can't tell; faults and holds are driven through `/__mock`. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
+- **Globals are known at compile time.** Every file sees the globals of `Main.gui`'s root and `Globals.xs` (an unknown name stays an error); React context carries their scope to user components. See [.ai/plan/poc-21b-globals.md](.ai/plan/poc-21b-globals.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

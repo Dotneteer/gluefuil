@@ -87,15 +87,15 @@ Step 21B ([../plan/poc-21b-globals.md](../plan/poc-21b-globals.md)). XMLUI:
 `website/content/docs/pages/scoping.md` § Global variables.
 
 ```xml
-<App global.likes="{0}">…<LikeButton/></App>     <!-- Main.pfui -->
+<App global.likes="{0}">…<LikeButton/></App>     <!-- Main.gui -->
 ```
 ```js
-// Globals.xs, beside Main.pfui
+// Globals.xs, beside Main.gui
 var visitor = 'guest';
 function like() { likes++; }
 ```
 ```xml
-<Component name="LikeButton">                      <!-- components/LikeButton.pfui -->
+<Component name="LikeButton">                      <!-- components/LikeButton.gui -->
   <Button label="Like" onClick="like(); visitor = 'member'"/>
 </Component>
 ```
@@ -121,14 +121,14 @@ function like() { likes++; }
   `GlobalScope` with its scope:
 
   ```
-  app scope ─ file scope (Main's IDs) ─ global container (globals) ─ root container (var.*, Main.pfui.xs) ─ …
+  app scope ─ file scope (Main's IDs) ─ global container (globals) ─ root container (var.*, Main.gui.xs) ─ …
                                               │ GlobalScope (React context)
                                               └─ every user component's scope (useComponent) ─ …
   ```
 
   - A global's initializer sees the other globals and Main's IDs, not the
     root's `var.*` (C001; accepted divergence). `Globals.xs` likewise.
-  - The root's `var.*` and `Main.pfui.xs` see the globals.
+  - The root's `var.*` and `Main.gui.xs` see the globals.
 - **Runtime:** `useComponent` takes `useGlobalScope() ?? appScope` as its
   parent (`runtime/src/render/global-scope.ts`). Reads, writes and deep
   writes are the ordinary variable accessors found through the prototype
@@ -141,7 +141,7 @@ function like() { likes++; }
   - a `var.*` and a `global.*` of one name on the root: E007;
   - a `Globals.xs` name that is also a `global.*`: E019 at `Globals.xs`
     ("declared twice");
-  - a `Globals.xs` name that is also a root `var.*` or a `Main.pfui.xs` declaration: E007 at
+  - a `Globals.xs` name that is also a root `var.*` or a `Main.gui.xs` declaration: E007 at
     `Globals.xs`;
   - a global named like an ID: E012.
 - **XMLUI** checks names only at run time (an assignment to an undeclared
