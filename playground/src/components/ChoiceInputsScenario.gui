@@ -1,0 +1,45 @@
+<Component name="ChoiceInputsScenario">
+  <VStack var.wifi="{true}" var.size="m" var.volume="{4}" var.committed="{4}" var.price="{[20, 60]}" var.color="#2563eb">
+    <ScenarioHeader title="Choice inputs" description="Step 24: Checkbox, Switch, RadioGroup with Option, Slider (a value or a range) and ColorPicker."/>
+
+    <H3>Checkbox and Switch</H3>
+    <HStack wrapContent="true">
+      <Checkbox label="A checkbox"/>
+      <Checkbox label="Indeterminate" indeterminate="true"/>
+      <Checkbox label="Read-only (checked)" readOnly="true" initialValue="true"/>
+      <Checkbox label="Disabled" enabled="false"/>
+    </HStack>
+    <HStack wrapContent="true">
+      <Switch label="Wi-Fi" initialValue="true" onDidChange="(v) => wifi = v"/>
+      <Switch label="Read-only" readOnly="true" initialValue="true"/>
+      <Switch label="Disabled" enabled="false"/>
+    </HStack>
+    <Text>Wi-Fi is {wifi ? 'on' : 'off'}.</Text>
+
+    <H3>RadioGroup</H3>
+    <RadioGroup label="Size" initialValue="m" orientation="horizontal" onDidChange="(v) => size = v">
+      <Items data="{[{ value: 's', label: 'Small' }, { value: 'm', label: 'Medium' }, { value: 'l', label: 'Large' }]}">
+        <Option value="{$item.value}" label="{$item.label}"/>
+      </Items>
+      <Option value="xl" enabled="false">Extra large (sold out)</Option>
+    </RadioGroup>
+    <Text>Size: {size}</Text>
+    <RadioGroup label="Delivery (vertical, read-only)" initialValue="standard" readOnly="true">
+      <Option value="standard" label="Standard"/>
+      <Option value="express" label="Express"/>
+    </RadioGroup>
+
+    <H3>Slider</H3>
+    <Slider label="Volume" initialValue="4" maxValue="10" onDidChange="(v) => volume = v" onDidCommit="(v) => committed = v"/>
+    <Text>Volume: {volume} (committed: {committed})</Text>
+    <Slider label="Price range" initialValue="{[20, 60]}" maxValue="100" step="5" minStepsBetweenThumbs="2" valueFormat="(v) => '$' + v" onDidChange="(v) => price = v"/>
+    <Text>Price: ${price[0]} to ${price[1]}</Text>
+
+    <H3>ColorPicker</H3>
+    <HStack verticalAlignment="end">
+      <ColorPicker label="Accent color" initialValue="#2563eb" onDidChange="(v) => color = v"/>
+      <VStack width="64px" height="36px" backgroundColor="{color}" border="1px solid $borderColor"/>
+      <Text>{color}</Text>
+    </HStack>
+  </VStack>
+</Component>

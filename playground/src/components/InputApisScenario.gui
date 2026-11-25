@@ -1,0 +1,81 @@
+<Component name="InputApisScenario">
+  <VStack var.messages="{[]}" var.noteSubmits="{0}">
+    <ScenarioHeader title="Input APIs and theming" description="Step 24: inputs driven by their APIs (value, setValue, focus), two inputs that keep one value, Enter in a TextArea that sends or doesn't, icons, and the inputs' theme variables in a scoped Theme."/>
+
+    <H3>Driven by their APIs</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <TextBox id="cityBox" label="City" placeholder="Where to?"/>
+      <NumberBox id="guestsBox" label="Guests" minValue="1" maxValue="12"/>
+      <RadioGroup id="roomGroup" label="Room" orientation="horizontal">
+        <Option value="single" label="Single"/>
+        <Option value="double" label="Double"/>
+        <Option value="suite" label="Suite"/>
+      </RadioGroup>
+      <ColorPicker id="tagColor" label="Tag color" initialValue="#64748b"/>
+      <Switch id="breakfastSwitch" label="Breakfast"/>
+      <Checkbox id="lateBox" label="Late check-in"/>
+    </HStack>
+    <Slider id="nightsSlider" label="Nights" minValue="1" maxValue="14" initialValue="1"/>
+    <HStack wrapContent="true">
+      <Button label="Fill in a sample booking" onClick="cityBox.setValue('Lisbon'); guestsBox.setValue(2); roomGroup.setValue('suite'); tagColor.setValue('#e11d48'); breakfastSwitch.setValue(true); lateBox.setValue(true); nightsSlider.setValue(5)"/>
+      <Button label="Clear" onClick="cityBox.setValue(''); guestsBox.setValue(undefined); roomGroup.setValue(''); tagColor.setValue('#64748b'); breakfastSwitch.setValue(false); lateBox.setValue(false); nightsSlider.setValue(1)"/>
+      <Button label="Focus the city" onClick="cityBox.focus()"/>
+      <Button label="Focus the room" onClick="roomGroup.focus()"/>
+      <Button label="Focus the nights" onClick="nightsSlider.focus()"/>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <VStack width="16px" height="16px" backgroundColor="{tagColor.value}"/>
+      <Text>Booking: {cityBox.value || 'Nowhere'}, {guestsBox.value ?? 'no'} guests, {roomGroup.value || 'no room'}, {nightsSlider.value} nights, breakfast {breakfastSwitch.value ? 'yes' : 'no'}, late check-in {lateBox.value ? 'yes' : 'no'}, tag {tagColor.value}</Text>
+    </HStack>
+    <Text variant="secondary">setValue doesn't fire didChange; the summary reads each input's reactive value.</Text>
+
+    <H3>Two inputs, one value</H3>
+    <HStack verticalAlignment="end">
+      <Slider id="widthSlider" label="Bar width" maxValue="100" step="5" initialValue="60" width="*" valueFormat="(v) => v + ' %'" onDidChange="(v) => widthBox.setValue(v)"/>
+      <NumberBox id="widthBox" label="Width" minValue="0" maxValue="100" step="5" initialValue="60" endText="%" width="120px" onDidChange="(v) => { if (v !== undefined) widthSlider.setValue(v) }"/>
+    </HStack>
+    <VStack width="{widthSlider.value + '%'}" height="12px" backgroundColor="$color-primary-500"/>
+    <Text variant="secondary">Each input's didChange calls the other's setValue; neither loops, as setValue fires no didChange.</Text>
+
+    <H3>Enter in a TextArea</H3>
+    <Form id="chatForm" data="{{ message: '' }}" hideButtonRow="true" dataAfterSubmit="reset" onSubmit="(data) => messages = [...messages, data.message]">
+      <TextArea bindTo="message" label="Message (Enter sends, Shift+Enter is a new line)" autoSize="true" minRows="1" maxRows="4" required="true" requiredInvalidMessage="Type something first"/>
+    </Form>
+    <Text variant="secondary" when="{messages.length === 0}">No messages yet.</Text>
+    <Items data="{messages}">
+      <Card>
+        <Text preserveLinebreaks="true" value="{$item}"/>
+      </Card>
+    </Items>
+    <Form data="{{ notes: '' }}" hideButtonRow="true" onSubmit="noteSubmits++">
+      <TextArea bindTo="notes" label="Notes (enterSubmits=false: Enter is a new line; resize=vertical)" enterSubmits="false" resize="vertical" rows="3"/>
+    </Form>
+    <Text>The notes form was submitted {noteSubmits} times.</Text>
+
+    <H3>Icons</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <PasswordInput label="PIN" initialValue="1234" showPasswordToggle="true" passwordVisibleIcon="lock" passwordHiddenIcon="eye-off"/>
+      <TextBox label="Website" startIcon="globe" endIcon="link" placeholder="example.com"/>
+      <NumberBox label="Rating" startIcon="star" endText="/ 5" minValue="0" maxValue="5" hasSpinBox="false" initialValue="4"/>
+    </HStack>
+    <Slider label="No tooltip (showValues=false)" showValues="false" initialValue="3"/>
+
+    <H3>Theme variables</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <InputSampler title="Default"/>
+      <Theme
+        borderColor-TextBox="$color-warn-500"
+        borderRadius-TextBox="999px"
+        textColor-adornment-Input="$color-warn-500"
+        backgroundColor-Checkbox--checked="$color-success-500"
+        backgroundColor-checked-Switch="$color-success-500"
+        backgroundColor-checked-RadioGroupOption="$color-success-500"
+        backgroundColor-track-Slider="$color-warn-200"
+        backgroundColor-range-Slider="$color-warn-500"
+        borderColor-thumb-Slider="$color-warn-500">
+        <InputSampler title="Themed"/>
+      </Theme>
+    </HStack>
+    <Text variant="secondary">The right column sets the inputs' theme variables in a Theme; the left keeps the defaults.</Text>
+  </VStack>
+</Component>

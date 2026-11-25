@@ -1,0 +1,14 @@
+<!-- The same inputs, for comparing theme variables: InputApisScenario renders it plain and in a Theme. -->
+<Component name="InputSampler">
+  <VStack>
+    <Text variant="strong">{$props.title}</Text>
+    <TextBox label="{$props.title + ' text'}" startIcon="search" initialValue="Some text"/>
+    <Checkbox label="{$props.title + ' checkbox'}" initialValue="true"/>
+    <Switch label="{$props.title + ' switch'}" initialValue="true"/>
+    <RadioGroup label="{$props.title + ' radio'}" initialValue="b" orientation="horizontal">
+      <Option value="a" label="A"/>
+      <Option value="b" label="B"/>
+    </RadioGroup>
+    <Slider label="{$props.title + ' slider'}" initialValue="6"/>
+  </VStack>
+</Component>

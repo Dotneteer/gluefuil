@@ -20,8 +20,8 @@ Proof-of-concept phase: steps 0–19 and the inserted 19A–19C (the App
 shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
 19 with a reduced scope); the inserted 19D–19F (the layout system) are done too.
 Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals),
-22 (client-side forms), 22B (form submission and server errors) and 23 (text
-and display components) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+22 (client-side forms), 22B (form submission and server errors), 23 (text
+and display components) and 24 (inputs) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).

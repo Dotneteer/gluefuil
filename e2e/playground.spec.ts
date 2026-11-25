@@ -49,6 +49,10 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Cards",
     "Links and text",
     "Markdown",
+    "Text inputs",
+    "Choice inputs",
+    "Input form",
+    "Input APIs and theming",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.
@@ -79,8 +83,8 @@ test("the side nav lists the dashboard and every scenario, and follows the route
   // The visible label of each link (each also has a hidden initial for the collapsed nav).
   expect(await nav.locator(".gfui-NavLink-label").allTextContents()).toEqual(["Dashboard", ...dashboard]);
   await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
-  await nav.getByRole("link", { name: "Theming" }).click();
+  await nav.getByRole("link", { name: "Theming", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText("Theming");
-  await expect(nav.getByRole("link", { name: "Theming" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Theming", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current", /.*/);
 });

@@ -122,3 +122,30 @@ test("a wrapped component without a value still publishes its api", () => {
   (api!.bump as () => void)();
   expect(counter.peek()).toBe(1);
 });
+
+test('value.readOnly "drop": with readOnly true, a native change is not applied and fires nothing (step 24)', () => {
+  const didChange = vi.fn();
+  const Wrapped = wrapComponent(Native, { props: { readOnly: { valueType: "boolean" } }, value: { prop: "checked", change: "onToggle", readOnly: "drop" } });
+  const { rerender } = render(<Wrapped initialValue={false} readOnly="true" onDidChange={didChange} />);
+  act(() => (received.onToggle as (v: boolean) => void)(true));
+  expect(received.checked).toBe(false);
+  expect(didChange).not.toHaveBeenCalled();
+  rerender(<Wrapped initialValue={false} readOnly={false} onDidChange={didChange} />);
+  act(() => (received.onToggle as (v: boolean) => void)(true));
+  expect(received.checked).toBe(true);
+  expect(didChange).toHaveBeenCalledWith(true);
+});
+
+test("api: getValue and setValue in the context work like the API's own (step 24)", () => {
+  let api: Record<string, unknown> = {};
+  const didChange = vi.fn();
+  const Wrapped = wrapComponent(Native, {
+    value: { prop: "value", change: "onChange" },
+    api: ({ getValue, setValue }) => ({ append: (s: string) => setValue(String(getValue()) + s) }),
+  });
+  render(<Wrapped initialValue="ab" onDidChange={didChange} registerApi={(a: unknown) => (api = (a ?? {}) as Record<string, unknown>)} />);
+  act(() => (api.append as (s: string) => void)("c"));
+  expect(received.value).toBe("abc");
+  expect(api.value).toBe("abc");
+  expect(didChange).not.toHaveBeenCalled();
+});

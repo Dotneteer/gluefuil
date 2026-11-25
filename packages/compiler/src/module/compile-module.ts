@@ -1127,11 +1127,23 @@ class ModuleCompiler {
         continue;
       }
       const behavior = behaviors.find((b) => Object.hasOwn(b.props, attributeName));
+      // A prop the component declares too goes to both (step 24: NumberBox minValue is the input's
+      // limit and the validation's range rule). The behavior checks its literal; the component's copy isn't checked again.
+      const shared = behavior !== undefined && Object.hasOwn(metadata.props, attributeName);
       if (behavior) {
         this.behaviorAttribute(attribute, behavior.props[attributeName]!, behaviorValues.get(behavior)!);
+        if (!shared) continue;
+      }
+      const prop = shared ? undefined : Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : layoutProp(metadata, attributeName);
+      if (shared) {
+        if (!attribute.value) constants.push([attributeName, '"true"']);
+        else {
+          const value = this.propValue(attribute as ValuedAttribute, metadata.props[attributeName]);
+          if ("constant" in value) constants.push([attributeName, value.constant]);
+          else bindings.push([attributeName, value.binding]);
+        }
         continue;
       }
-      const prop = Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : layoutProp(metadata, attributeName);
       if (!prop && metadata.themeVarAttributes) {
         // `<Theme backgroundColor-Button="…">`: a theme variable (step 17).
         const known = this.themeVariables();

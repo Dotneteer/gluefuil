@@ -8,7 +8,7 @@ export default defineConfig({
   // A test fixture: its E2E spec checks the browser itself; no console forwarding.
   server: { forwardConsole: false },
   // React, ReactDOM and Mantine: one ~500 kB chunk, known (.ai/docs/mantine.md § Size).
-  build: { chunkSizeWarningLimit: 700 },
+  build: { chunkSizeWarningLimit: 900 },
   // Pre-bundled at startup: otherwise the first page load discovers them,
   // and Vite reloads the page mid-test (a cold cache).
   // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).

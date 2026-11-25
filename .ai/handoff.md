@@ -11,6 +11,10 @@
 
 ## State
 
+- **Step 24 (inputs) is done and merged into master**
+  Plan and findings: [`plan/poc-24-inputs.md`](plan/poc-24-inputs.md);
+  reference: [`docs/inputs.md`](docs/inputs.md). `npm run check`: 2,743 unit
+  tests in 96 files, 198 E2E tests.
 - **Step 23 (text and display components) is merged into `master`.** Plan and findings:
   [`plan/poc-23-display.md`](plan/poc-23-display.md); reference:
   [`docs/display.md`](docs/display.md). `npm run check` passes: 2,697 unit
@@ -185,8 +189,9 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 24: inputs** (`TextBox`, `PasswordInput`, `TextArea`, `NumberBox`,
-  `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker`).
+- **Step 25: choice** (`Select` with `Option` children, `AutoComplete`);
+  move Select's dropdown out of its label (step 24 finding).
+- **Bundle size:** let unused built-ins drop (step 24 finding).
 - **Step 23's open items** (`poc-23-display.md`): compile-time icon imports
   (size), Markdown code highlighting and `highlightText`, Text search
   highlighting.

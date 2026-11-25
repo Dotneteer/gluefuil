@@ -13,7 +13,7 @@ const buildMock = process.env.GFUI_MOCK_BUILD === "1";
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
   server: { forwardConsole: false },
-  build: { chunkSizeWarningLimit: 700, rolldownOptions: { input: { main: "index.html", probe: "probe.html" } } },
+  build: { chunkSizeWarningLimit: 900, rolldownOptions: { input: { main: "index.html", probe: "probe.html" } } },
   // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).
   optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   plugins: [gfui(), gfuiMockBackend({ module: "src/backend.ts", host, build: buildMock }), react()],

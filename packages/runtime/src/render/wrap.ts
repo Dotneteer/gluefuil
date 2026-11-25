@@ -53,6 +53,12 @@ export interface WrapValue<V = unknown> {
   read?: (...nativeArgs: never[]) => V;
   /** The gfui event fired with the new value. Default "didChange". */
   event?: string;
+  /**
+   * `"drop"`: while the `readOnly` prop is true, a change is not applied (and
+   * fires no event). For native components without a read-only mode of their
+   * own: a checkbox, a switch, a slider (step 24).
+   */
+  readOnly?: "drop";
 }
 
 export interface WrapTemplate {
@@ -60,6 +66,18 @@ export interface WrapTemplate {
   prop: string;
   /** The template's context variables from the render prop's arguments (`{ $item: … }`). */
   context: (...args: never[]) => Record<string, unknown>;
+}
+
+/** What `config.api` receives. */
+export interface WrapApiContext {
+  /** The native component's ref (`withRef`, or a bound input). */
+  ref: { current: unknown };
+  /** The value's own signal (unbound only). */
+  value?: Signal<unknown>;
+  /** The current value: the field's in a form, else the signal's (step 24). */
+  getValue: () => unknown;
+  /** Sets the value as the `setValue` API does (no `didChange`), in a form too (step 24). */
+  setValue: (next: unknown) => void;
 }
 
 export interface WrapConfig {
@@ -75,7 +93,7 @@ export interface WrapConfig {
   events?: Record<string, string | WrapEvent>;
   value?: WrapValue;
   /** API methods besides value/setValue; `ref` is the native component's ref. */
-  api?: (context: { ref: { current: unknown }; value?: Signal<unknown> }) => Record<string, unknown>;
+  api?: (context: WrapApiContext) => Record<string, unknown>;
   templates?: Record<string, WrapTemplate>;
   /** Native props always passed (after the forwarded ones). */
   fixed?: Record<string, unknown>;
@@ -165,7 +183,9 @@ export function wrapComponent(Native: ComponentType<never>, config: WrapConfig =
         Object.defineProperty(methods, "value", { get: () => state.get(), enumerable: true });
         methods.setValue = (next: unknown) => state.set(value!.parse ? value!.parse(next) : next);
       }
-      return Object.assign(methods, config.api?.({ ref, ...(state ? { value: state } : {}) }));
+      const getValue = () => (methods as { value?: unknown }).value;
+      const setValue = (next: unknown) => (methods.setValue as ((v: unknown) => void) | undefined)?.(next);
+      return Object.assign(methods, config.api?.({ ref, ...(state ? { value: state } : {}), getValue, setValue }));
     }, [state, field]);
     useComponentApi(props.registerApi, api);
 
@@ -190,6 +210,7 @@ export function wrapComponent(Native: ComponentType<never>, config: WrapConfig =
     if (value && (state || field)) {
       native[value.prop] = field && value.parse ? value.parse(current) : current;
       native[value.change] = (...args: never[]) => {
+        if (value.readOnly === "drop" && coerceLiteral(latest.current.readOnly, "boolean") === true) return;
         const next = value.read ? value.read(...args) : (args[0] as unknown);
         if (field) field.change(next);
         else state!.set(next);

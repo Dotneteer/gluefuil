@@ -1,0 +1,29 @@
+<Component name="InputFormScenario">
+  <VStack var.submitted="">
+    <ScenarioHeader title="Input form" description="Step 24: every input bound to a Form with bindTo, validated, submitted and reset. Enter in the TextArea submits; Escape resets."/>
+    <Form id="profile"
+      data="{{ name: 'Ada Lovelace', password: '', bio: '', age: 36, plan: 'free', volume: 5, color: '#2563eb', newsletter: false, terms: false }}"
+      onSubmit="(data) => submitted = JSON.stringify(data, null, 2)">
+      <TextBox bindTo="name" label="Name" required="true" startIcon="user"/>
+      <PasswordInput bindTo="password" label="Password" required="true" minLength="8" showPasswordToggle="true"/>
+      <TextArea bindTo="bio" label="About you" autoSize="true" maxRows="5" escResets="true" maxLength="200" lengthInvalidSeverity="warning"/>
+      <NumberBox bindTo="age" label="Age" minValue="0" maxValue="130" integersOnly="true"/>
+      <RadioGroup bindTo="plan" label="Plan" orientation="horizontal">
+        <Option value="free" label="Free"/>
+        <Option value="pro" label="Pro"/>
+        <Option value="team" label="Team"/>
+      </RadioGroup>
+      <Slider bindTo="volume" label="Notification volume" maxValue="10"/>
+      <ColorPicker bindTo="color" label="Accent color"/>
+      <Switch bindTo="newsletter" label="Send me the newsletter"/>
+      <Checkbox bindTo="terms" label="I accept the terms" required="true" requiredInvalidMessage="Please accept the terms"/>
+    </Form>
+    <HStack>
+      <Button label="Reset" onClick="profile.reset()"/>
+      <Text>Dirty: {profile.isDirty() ? 'yes' : 'no'}</Text>
+    </HStack>
+    <Card title="Submitted" when="{submitted !== ''}">
+      <Text variant="mono" preserveLinebreaks="true" value="{submitted}"/>
+    </Card>
+  </VStack>
+</Component>
