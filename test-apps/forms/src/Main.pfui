@@ -1,6 +1,8 @@
 <!-- Step 22: client-side forms. Inputs bind to the form with bindTo (the
-     formBinding and validation behaviors); there is no FormItem. -->
-<App var.result="">
+     formBinding and validation behaviors); there is no FormItem.
+     Step 22B: a form loading its data from the mock backend and saving it
+     back (src/backend.ts), with the server's validation errors. -->
+<App var.result="" var.message="">
   <H1>Sign up</H1>
   <Form id="signup"
         data="{ { name: '', email: '', address: { city: '' }, role: 'user', agree: false } }"
@@ -16,4 +18,16 @@
   </Form>
   <Text>Dirty: {signup.isDirty()}</Text>
   <Text>Result: {result}</Text>
+
+  <H1>Profile</H1>
+  <DataSource id="people" url="/api/people"/>
+  <Form id="profile" data="/api/people/1" onSuccess="(saved) => message = 'Saved ' + saved.name">
+    <TextBox bindTo="name" label="Full name" required/>
+    <TextBox bindTo="email" label="E-mail" required pattern="email"/>
+    <TextBox bindTo="address.city" label="Town"/>
+  </Form>
+  <Button label="Stop saving" onClick="profile.cancel()"/>
+  <Text>Saved: {message}</Text>
+  <Text>People: {(people.value ?? []).map(p => p.name).join(', ')}</Text>
+  <Text>Cancelled: {profile.cancelled}</Text>
 </App>

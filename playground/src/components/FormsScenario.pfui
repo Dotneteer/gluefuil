@@ -1,0 +1,56 @@
+<!--
+  Forms (steps 22, 22B). There is no FormItem: an input joins the form with
+  bindTo (the formBinding and validation behaviors). The form loads a member
+  from the mock backend, saves it back with PUT, and shows the server's
+  validation errors on the inputs. While it has unsaved changes it writes the
+  global unsavedChanges (step 21B), which App's onWillNavigate checks: leaving
+  this page is blocked until you save or discard.
+-->
+<Component name="FormsScenario">
+  <VStack var.message="">
+    <ScenarioHeader
+      title="Forms"
+      description="Steps 22 and 22B: inputs bound with bindTo, declarative validation, a form that loads and saves through the mock backend, server errors on the inputs."/>
+    <HStack wrapContent="true">
+      <VStack width="3*">
+        <H2>Edit a member</H2>
+        <Form id="member" data="/api/members/1"
+              onSuccess="(saved) => message = 'Saved ' + saved.name"
+              onSubmitError="(error) => message = 'Not saved: ' + error.message"
+              onDirtyChanged="(dirty) => unsavedChanges = dirty">
+          <TextBox bindTo="name" label="Name" required minLength="2"/>
+          <TextBox bindTo="email" label="Email" required pattern="email"
+                   onValidate="(value) => { delay(400); return value === 'nobody@example.com' ? { isValid: false, invalidMessage: 'This address bounces', severity: 'warning' } : null; }"/>
+          <TextBox bindTo="address.city" label="City" maxLength="12" lengthInvalidSeverity="warning"/>
+          <Select bindTo="role" label="Role" options="{['member', 'editor', 'admin']}"/>
+          <Checkbox bindTo="newsletter" label="Newsletter"/>
+          <Text variant="secondary">$data: {JSON.stringify($data)}</Text>
+        </Form>
+        <HStack wrapContent="true">
+          <Button label="Discard changes" onClick="member.reset()"/>
+          <Button label="Stop saving" when="{member.isSubmitting}" onClick="member.cancel()"/>
+        </HStack>
+        <Text>{message}</Text>
+        <Text variant="secondary">Dirty: {member.isDirty()} · submitting: {member.isSubmitting} · cancelled: {member.cancelled}</Text>
+      </VStack>
+      <VStack width="2*">
+        <H2>Try</H2>
+        <Text>Leave a field invalid and tab away: the message appears late (errorLate).</Text>
+        <Text>Email taken@example.com, or City Atlantis: the server answers 422 and the messages land on those inputs.</Text>
+        <Text>Name Nobody: the server names a field with no input; it shows at the top. Name Crash: a 500.</Text>
+        <Text>Email nobody@example.com: an async check's warning (it doesn't block the save).</Text>
+        <Text>Change something, then try to leave the page: navigation is blocked while unsaved.</Text>
+        <APICall id="latency" method="put" url="/__mock/latency" body="{{ latency: $param }}"/>
+        <HStack wrapContent="true">
+          <Button label="Fast server" onClick="latency.execute(0)"/>
+          <Button label="Slow server (3 s)" onClick="latency.execute(3000)"/>
+        </HStack>
+        <H2>Members</H2>
+        <DataSource id="members" url="/api/members"/>
+        <Items data="{members.value}">
+          <Text>{$item.name} · {$item.email} · {$item.address.city}</Text>
+        </Items>
+      </VStack>
+    </HStack>
+  </VStack>
+</Component>

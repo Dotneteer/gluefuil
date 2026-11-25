@@ -16,7 +16,7 @@ the nav is a drawer, opened from the header.
 
 ## The scenarios
 
-One or more per concept of proof-of-concept steps 2–19
+One or more per concept of proof-of-concept steps 2–22B
 (`.ai/plan/poc-steps.md`):
 
 | Step | Scenario | Shows |
@@ -41,6 +41,7 @@ One or more per concept of proof-of-concept steps 2–19
 | 19A–C | App shell | Every XMLUI layout with the new settings, in a frame at desktop or phone width; collapsing this playground's own nav from script |
 | 19D–F | Layout and spacing | A page with no gap or padding anywhere, in a frame at desktop or phone width: stacks, surfaces, a form, flows, star sizes, density, overrides; space-base 3/4/5 px; a spacing inspector that labels each stack with its level and gap |
 | 20 | Data | People from a mock backend (`src/backend.ts`, a service worker in the page): search, details, rename. A network panel makes the backend slow, failing, offline, hanging or holding requests, and shows the requests it saw |
+| 22, 22B | Forms | A member form loading from the mock backend (`/api/members/1`) and saving with PUT: inputs bound with `bindTo`, rules, a warning, an async check, server errors (422 on the inputs, a name with no input, a 500), Stop saving, a slow server. Unsaved changes block navigation (the `unsavedChanges` global) |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the

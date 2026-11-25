@@ -11,6 +11,7 @@ import {
   type ApiCallEvents,
   type DataError,
   type LoaderOptions,
+  type LoaderState,
   type RegisterApi,
   type RequestSpec,
 } from "@patchfuil/runtime";
@@ -251,6 +252,12 @@ export function APICall(props: APICallProps) {
 /** A URL in `data` (`<Items data="/api/users">`): http(s) or a path. */
 export function isDataUrl(value: unknown): value is string {
   return typeof value === "string" && /^(\/|\.\/|\.\.\/|https?:\/\/)/.test(value.trim());
+}
+
+/** The state of a `data` URL's load (a Form's `data`, step 22B); nothing is fetched without a URL. */
+export function useDataUrlState(url: string | undefined): LoaderState {
+  const loader = useLoader(loaderOptions({ url }, undefined));
+  return useSignal(loader.state);
 }
 
 /** Loads a `data` URL like a DataSource without an id, and renders `render` with the value. */

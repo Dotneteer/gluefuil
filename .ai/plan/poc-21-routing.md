@@ -519,6 +519,14 @@ pfui({ prerender: { routes: ["/users/1"] } })
   app, `App` attaches the router while rendering, before any binding, so
   only tests can do this; they unmount first.
 
+- **A flaky E2E assertion (found after step 22B).** The guard test types a
+  hash right after a refused back move; whether the restore (`history.go`)
+  or the hash lands first decides whether the browser adds a forward entry
+  (`length + 1`) or replaces the app's entry, which the router rewrites
+  (`length`). Both are correct; the test accepted only the first. It now
+  accepts either, and `router-events.test.ts` pins the second order with a
+  held guard.
+
 ## Divergences from XMLUI
 
 - **`willNavigate` guards links and back/forward before rendering.** XMLUI

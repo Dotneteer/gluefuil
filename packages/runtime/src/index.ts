@@ -124,6 +124,7 @@ export { GlobalScope, useGlobalScope } from "./render/global-scope";
 export { createContextScope, provideContext, useContextScope } from "./render/context-scope";
 export { DEFAULT_FIELD_OPTIONS, FormField, FormStore, type FieldOptions, type ValidationSummary } from "./forms/store";
 export { customResults, highestSeverity, isEmptyValue, parseRegex, PATTERNS, validateRules, type FieldRules, type RuleResult, type Severity } from "./forms/rules";
+export { extractServerProblem, type ServerFieldError, type ServerProblem } from "./forms/server-errors";
 export { INITIAL_FLAGS, isShown, type InteractionFlags, type ValidationMode } from "./forms/display";
 export { deleteAt, getAt, parseFieldPath, setAt, type FieldKey } from "./forms/paths";
 export { FieldBindingProvider, FormProvider, useFieldBinding, useFormStore, type FieldBinding } from "./forms/react";
