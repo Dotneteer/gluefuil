@@ -11,6 +11,10 @@
 
 ## State
 
+- **Step 26 (date and time inputs) is done and merged into master.** Plan and findings:
+  [`plan/poc-26-dates.md`](plan/poc-26-dates.md); reference:
+  [`docs/dates.md`](docs/dates.md). `npm run check`: 2,814 unit tests in
+  99 files, 202 E2E tests.
 - **Step 25 (choice inputs) is done and merged into master.** Plan and findings:
   [`plan/poc-25-choice.md`](plan/poc-25-choice.md); reference:
   [`docs/choice.md`](docs/choice.md). `npm run check`: 2,780 unit tests in
@@ -193,7 +197,9 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 26: date and time** (`DateInput`, `DatePicker`, `TimeInput`).
+- **Step 27: overlays and menus** (`ModalDialog`, `Drawer`, `DropdownMenu`,
+  `ContextMenu`, `Tooltip`, `toast()`, `confirm()`).
+- **Step 26's open items** (`poc-26-dates.md`).
 - **Step 25's open items** (`poc-25-choice.md`).
 - **Bundle size:** let unused built-ins drop (step 24 finding).
 - **Step 23's open items** (`poc-23-display.md`): compile-time icon imports

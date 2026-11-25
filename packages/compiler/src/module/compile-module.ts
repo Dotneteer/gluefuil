@@ -1128,7 +1128,9 @@ class ModuleCompiler {
         this.reportContract(attribute.name, "E030", attributeName, name, instead);
         continue;
       }
-      const behavior = behaviors.find((b) => Object.hasOwn(b.props, attributeName));
+      // A prop the component keeps to itself (`exclusive`, step 26) never goes to a behavior.
+      const exclusive = Object.hasOwn(metadata.props, attributeName) && metadata.props[attributeName]!.exclusive === true;
+      const behavior = exclusive ? undefined : behaviors.find((b) => Object.hasOwn(b.props, attributeName));
       // A prop the component declares too goes to both (step 24: NumberBox minValue is the input's
       // limit and the validation's range rule). The behavior checks its literal; the component's copy isn't checked again.
       const shared = behavior !== undefined && Object.hasOwn(metadata.props, attributeName);

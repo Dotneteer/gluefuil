@@ -1,0 +1,32 @@
+<Component name="DatePickerScenario">
+  <VStack var.saved="">
+    <ScenarioHeader title="DatePicker" description="Step 26: DatePicker inline or in a popup, a date or a range, presets, disabled dates, the week's first day, week numbers, locales, and both date inputs in a Form."/>
+
+    <H3>In a popup</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <DatePicker id="due" label="Due date" initialValue="06/15/2026" clearable="true"/>
+      <DatePicker id="trip" label="Trip (range, presets)" mode="range" showPresets="true"/>
+    </HStack>
+    <Text>Due: {due.value ?? 'none'}; trip: {trip.value ? trip.value.from + ' to ' + trip.value.to : 'none'}</Text>
+    <Text variant="secondary">Type into the fields, or open the calendar with its button. A range takes two clicks; the value changes when both ends are set.</Text>
+
+    <H3>Inline</H3>
+    <HStack wrapContent="true">
+      <DatePicker id="workday" label="A workday in June 2026" inline="true" initialValue="2026-06-10"
+        startDate="06/01/2026" endDate="06/30/2026" disabledDates="{[{ dayOfWeek: [0, 6] }, '06/19/2026']}" weekStartsOn="1"/>
+      <DatePicker label="Week numbers, German" inline="true" showWeekNumber="true" locale="de-DE" weekStartsOn="1" initialValue="2026-03-02"/>
+    </HStack>
+    <Text>Workday: {workday.value ?? 'none'}</Text>
+    <Text variant="secondary">Weekends and 19 June are disabled; the calendar offers June 2026 only.</Text>
+
+    <H3>In a Form</H3>
+    <Form id="booking" data="{{ arrival: '', checkIn: '15:00', nights: { from: '07/01/2026', to: '07/05/2026' } }}" onSubmit="(data) => saved = JSON.stringify(data)">
+      <DateInput bindTo="arrival" label="Arrival" required="true" requiredInvalidMessage="Enter the arrival date"/>
+      <TimeInput bindTo="checkIn" label="Check-in"/>
+      <DatePicker bindTo="nights" label="Nights" mode="range"/>
+    </Form>
+    <Card title="Saved" when="{saved !== ''}">
+      <Text variant="mono" value="{saved}"/>
+    </Card>
+  </VStack>
+</Component>

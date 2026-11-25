@@ -30,6 +30,7 @@ import closeButtonCss from "@mantine/core/styles/CloseButton.layer.css?inline";
 import comboboxCss from "@mantine/core/styles/Combobox.layer.css?inline";
 import pillCss from "@mantine/core/styles/Pill.layer.css?inline";
 import pillsInputCss from "@mantine/core/styles/PillsInput.layer.css?inline";
+import datesCss from "@mantine/dates/styles.layer.css?inline";
 import defaultVariablesCss from "@mantine/core/styles/default-css-variables.layer.css?inline";
 import globalCss from "@mantine/core/styles/global.layer.css?inline";
 import inlineInputCss from "@mantine/core/styles/InlineInput.layer.css?inline";
@@ -56,6 +57,8 @@ export const MANTINE_STYLESHEET = [
   // Select and AutoComplete with several values (choice.tsx, step 25).
   pillCss,
   pillsInputCss,
+  // The date and time inputs (dates.tsx, step 26; their components are a lazy chunk, their CSS isn't).
+  datesCss,
   popoverCss,
   scrollAreaCss,
   closeButtonCss,

@@ -91,7 +91,7 @@ function sectionWidth(icon: boolean, text: string | undefined): string {
   return `calc(${parts.join(" + ")})`;
 }
 
-function section(icon: unknown, text: unknown): { node: ReactNode; width: string } | undefined {
+export function section(icon: unknown, text: unknown): { node: ReactNode; width: string } | undefined {
   const label = text === undefined || text === null || text === "" ? undefined : String(text);
   if (!icon && label === undefined) return undefined;
   return {

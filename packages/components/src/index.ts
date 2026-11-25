@@ -3,6 +3,7 @@ export { BAR_SCOPE, childCount, LayoutContext, layoutStyle, SpaceFiller, Stack, 
 export { isExternalUrl, Link, Page, Pages } from "./routing";
 export { Button, MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF, SubmitButton } from "./mantine";
 export { AutoComplete, choiceOptions, groupOptions, matchesSearch, Select } from "./choice";
+export { DateInput, DatePicker, preloadDates, TimeInput } from "./dates";
 export { Checkbox, ColorPicker, NumberBox, Option, parseNumberInput, PasswordInput, RadioGroup, radioValue, Slider, sliderValue, Switch, TextArea, TextBox } from "./inputs";
 export { H1, H2, H3, H4, H5, H6, Heading, headingId, headingLevel, Text, TEXT_VARIANT_ELEMENTS, textOverflow } from "./text";
 export { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";

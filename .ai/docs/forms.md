@@ -28,7 +28,9 @@
 **There is no `FormItem`** (the user's decision). Any component with a
 `value` and a `setValue` API binds: `TextBox`, `PasswordInput`, `TextArea`,
 `NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker`
-(step 24, [inputs.md](inputs.md)), `Select` and `AutoComplete` (step 25,
+(step 24, [inputs.md](inputs.md)), `DateInput`, `TimeInput`, `DatePicker` (step 26, [dates.md](dates.md); a
+DateInput's `minValue`/`maxValue` are its own dates, not the range rule),
+`Select` and `AutoComplete` (step 25,
 [choice.md](choice.md); with several values the field is an array, and
 `required` wants one). A native reset of the
 `<form>` (TextArea `escResets`) does what `reset()` does.

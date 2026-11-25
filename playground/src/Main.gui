@@ -48,7 +48,9 @@
     { path: '/input-form', step: '24', title: 'Input form', description: 'Every input bound to a Form: validation, submit, reset.' },
     { path: '/input-apis', step: '24', title: 'Input APIs and theming', description: 'setValue, focus and value from code; two inputs in sync; Enter in a TextArea; icons; theme variables.' },
     { path: '/select', step: '25', title: 'Select', description: 'Option children or data; search, several values, groups, templates, keys, the API.' },
-    { path: '/autocomplete', step: '25', title: 'AutoComplete', description: 'Type to filter, several values, new ones; both pickers in a Form.' }
+    { path: '/autocomplete', step: '25', title: 'AutoComplete', description: 'Type to filter, several values, new ones; both pickers in a Form.' },
+    { path: '/date-time', step: '26', title: 'Date and time inputs', description: 'DateInput in each dateFormat, limits; TimeInput in 24- and 12-hour mode; isoValue().' },
+    { path: '/date-picker', step: '26', title: 'DatePicker', description: 'A calendar inline or in a popup, ranges and presets, disabled dates; dates in a Form.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -124,6 +126,8 @@
     <Page url="/input-apis"><VStack><InputApisScenario/><ScenarioSource file="InputApisScenario"/><ScenarioSource file="InputSampler"/></VStack></Page>
     <Page url="/select"><VStack><SelectScenario/><ScenarioSource file="SelectScenario"/></VStack></Page>
     <Page url="/autocomplete"><VStack><AutoCompleteScenario/><ScenarioSource file="AutoCompleteScenario"/></VStack></Page>
+    <Page url="/date-time"><VStack><DateTimeScenario/><ScenarioSource file="DateTimeScenario"/></VStack></Page>
+    <Page url="/date-picker"><VStack><DatePickerScenario/><ScenarioSource file="DatePickerScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

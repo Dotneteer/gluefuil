@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 25 (choice inputs).
+> **Last updated:** step 26 (date and time inputs).
 
 ## What this repository is
 
@@ -122,6 +122,10 @@ Current state:
   selection), or `data` with `valueField`/`labelField`; search by value,
   label and keywords, several values as pills, groups, templates, creatable
   options ([choice.md](choice.md)).
+- **Date and time inputs (step 26):** `DateInput`, `TimeInput` and
+  `DatePicker` (inline or a popup, ranges, presets) on `@mantine/dates`, in
+  a lazy chunk; XMLUI's string values (a date in `dateFormat`, `HH:mm`) and
+  `isoValue()` ([dates.md](dates.md)).
 - **Display components (step 23):** `Icon` (XMLUI's names, drawn with
   Lucide; `registerIcon`), `Image`, `Avatar`, `Badge`, `ProgressBar`,
   `Spinner`, `ContentSeparator` (Mantine), and `Card` (a Stack that is a
@@ -150,6 +154,7 @@ Current state:
 | [data.md](data.md) | `runtime/src/data/`, `runtime/src/render/deferred.ts`, `components/src/data.tsx`; the compiler's `whenIsProp`, `deferred`, `code`, `nullishUnresolved`, `eventResults` |
 | [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `gfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
 | [mantine.md](mantine.md) | `runtime/src/render/wrap.ts`, `components/src/mantine.tsx`, `text.tsx` |
+| [dates.md](dates.md) | `components/src/date-format.ts`, `dates.tsx`, `dates-native.tsx` (lazy); `PropMetadata.exclusive` |
 | [choice.md](choice.md) | `components/src/choice.tsx`; the compiler's options (`childrenAsOptions`); runtime `optionItems`, `OptionContent` |
 | [inputs.md](inputs.md) | `components/src/inputs.tsx`, `layout-wrap.tsx`; `wrapComponent`'s `readOnly` and API context; props shared by a component and a behavior |
 | [display.md](display.md) | `components/src/display.tsx`, `icons.tsx`, `icon-names.ts`, `markdown*.ts(x)`, the text overflow of `text.tsx`, `Link`; `compiler/src/script/markdown-bindings.ts`; `runtime/src/render/lazy.ts` |
@@ -194,6 +199,7 @@ Current state:
 │       ├── src/layout.tsx   Stack (VStack, HStack, … are compile-time aliases), SpaceFiller, the layout context and props (+ layout-metadata.ts, React-free)
 │       ├── src/mantine.tsx  Button, SubmitButton (Mantine, through wrapComponent), MANTINE_STYLESHEET
 │       ├── src/choice.tsx   Select, AutoComplete (Mantine Combobox; Option children compiled to data)
+│       ├── src/dates.tsx    DateInput, TimeInput, DatePicker (+ date-format.ts; dates-native.tsx: the lazy chunk with @mantine/dates)
 │       ├── src/inputs.tsx   TextBox, PasswordInput, TextArea, NumberBox, Checkbox, Switch, RadioGroup, Option, Slider, ColorPicker (+ layout-wrap.tsx: withLayout)
 │       ├── src/text.tsx     Text (variants), Heading, H1–H6, the text-overflow props
 │       ├── src/display.tsx  Image, Avatar, Badge, ProgressBar, Spinner, ContentSeparator (Mantine), Card (a Stack)
@@ -214,7 +220,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 34 scenarios (steps 2–25), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 36 scenarios (steps 2–26), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -435,6 +441,7 @@ Conventions:
 | `packages/runtime/tests/render/router.test.ts`, `router-events.test.ts`, `packages/components/tests/routing.test.tsx` | The router and its navigation events; Pages, Page, Link (see [routing.md](routing.md#tests)) |
 | `packages/runtime/tests/render/wrap.test.tsx`, `packages/components/tests/mantine.test.tsx`, `text-heading.test.tsx` | `wrapComponent`; the Mantine components; Text and Heading (see [mantine.md](mantine.md#tests)) |
 | `packages/components/tests/inputs.test.tsx` | Step 24: every input through markup and bound in a Form (see [inputs.md](inputs.md#tests)) |
+| `packages/components/tests/dates.test.tsx` | Step 26: the formats, matchers, presets and times; the three date inputs through markup, in a Form, prerendered (see [dates.md](dates.md#tests)) |
 | `packages/compiler/tests/module/choice.test.ts`, `packages/components/tests/choice.test.tsx` | Step 25: Option children compiled to data; Select and AutoComplete through markup, in a Form, prerendered (see [choice.md](choice.md#tests)) |
 | `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
 | `packages/compiler/tests/module/behaviors.test.ts`, `packages/components/tests/behaviors.test.tsx` | Behaviors: attachment, order, generated code; rendering (see [behaviors.md](behaviors.md#tests)) |
@@ -451,7 +458,7 @@ Conventions:
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 | `tools/data-build.test.ts` | A production build of `test-apps/data` has no mock code and no worker script unless `build: true` (see [mock-backend.md](mock-backend.md#tests)) |
 | `mock-backend/tests/*.test.ts`, `runtime/tests/data/*.test.ts`, `compiler/tests/module/data.test.ts`, `components/tests/data.test.tsx` | The mock backend and its hosts; the HTTP gate, retries, Loader and ApiCaller; the compiler's data features; DataSource and APICall in markup (see [data.md](data.md#tests), [mock-backend.md](mock-backend.md#tests)) |
-| `tools/build-output.test.ts` | A real production build of `test-apps/hello` is one entry chunk plus Markdown's lazy renderer, contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.gui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
+| `tools/build-output.test.ts` | A real production build of `test-apps/hello` is one entry chunk (with a chunk it shares with the lazy ones) plus two lazy chunks, Markdown's renderer and the date inputs, contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.gui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |

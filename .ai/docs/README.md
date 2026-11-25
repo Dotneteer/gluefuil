@@ -15,6 +15,7 @@ on this repository. Plans (what we intend to build) live in
 | [ssg.md](ssg.md) | Static generation and takeover: the prerender, `mountApp`, the server view, what matches and what doesn't. |
 | [routing.md](routing.md) | Routing: `Pages`, `Page`, `Link`, `navigate`, `$pathname`/`$routeParams`/`$queryParams`, the router, hash and browser modes. |
 | [mantine.md](mantine.md) | `wrapComponent`; the Mantine-based built-ins and their theme mapping; `Text` variants and `Heading`. |
+| [dates.md](dates.md) | Step 26: DateInput, TimeInput, DatePicker on @mantine/dates in a lazy chunk; XMLUI's string values, formats, matchers, presets; `exclusive` props. |
 | [choice.md](choice.md) | Step 25: Select and AutoComplete; Option children compiled to data (`childrenAsOptions`, E035–E036); the Combobox component, search, several values, groups, templates. |
 | [inputs.md](inputs.md) | Step 24: the inputs (TextBox, PasswordInput, TextArea, NumberBox, Checkbox, Switch, RadioGroup and Option, Slider, ColorPicker), `readOnly`, `validationStatus`, props shared with a behavior, sizes. |
 | [display.md](display.md) | Step 23: Icon (the Lucide registry), Image, Avatar, Badge, ProgressBar, Spinner, ContentSeparator, Card; text overflow; Markdown (the lazy renderer, the HTML allowlist, compiled `@{…}`). |

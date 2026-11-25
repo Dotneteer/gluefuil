@@ -58,7 +58,8 @@ is the whole rule:
 - sends the behavior's attributes to it, type-checked against its props
   (E022/E023). A prop the component declares too goes to both (step 24:
   NumberBox and Slider `minValue`/`maxValue` limit the input and are the
-  validation's range rule); otherwise never to the component;
+  validation's range rule), unless the component's prop is `exclusive`
+  (step 26: DateInput's date limits); otherwise never to the component;
 - wraps the compiled element in one `Bound` per behavior, innermost first.
 
 ```js

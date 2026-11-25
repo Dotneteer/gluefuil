@@ -8,7 +8,7 @@ import { BREAKPOINTS } from "@gluefuil/runtime";
 export const BASE_STYLESHEET_HREF = "gfui-base";
 
 /** The text inputs: each has TextBox's five theme variables, with its own name (step 24). */
-const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker", "Select", "AutoComplete"];
+const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker", "Select", "AutoComplete", "DateInput", "TimeInput", "DatePicker"];
 
 /** Below md: a phone. The spacing ladder's page level steps down, and flows go one item per row. */
 const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
@@ -721,6 +721,21 @@ ${["Select", "AutoComplete"].map((name) => `.gfui-${name}-dropdown {
   background-color: var(--gfui-backgroundColor-${name}-badge);
   color: var(--gfui-textColor-${name}-badge);
 }`).join("\n")}
+/* The date and time inputs (dates.tsx, step 26). */
+.gfui-DatePicker-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--gfui-space-2);
+}
+.gfui-DatePicker-fields > .mantine-InputWrapper-root { flex: 1 1 0; min-width: 0; }
+.gfui-DatePicker-dash { padding-bottom: 0.5em; }
+.gfui-DatePicker-toggle { align-self: flex-end; margin-bottom: 0.25em; }
+.gfui-DatePicker-dropdown {
+  background-color: var(--gfui-backgroundColor-menu-DatePicker);
+  border-color: var(--gfui-borderColor-menu-DatePicker);
+}
+.gfui-DatePicker-inline[data-error="true"] { outline: 1px solid var(--gfui-borderColor-Input--error); }
+.gfui-Dates-loading { min-height: 2.25rem; }
 .gfui-Choice-option {
   display: flex;
   align-items: center;
