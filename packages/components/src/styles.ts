@@ -8,7 +8,7 @@ import { BREAKPOINTS } from "@gluefuil/runtime";
 export const BASE_STYLESHEET_HREF = "gfui-base";
 
 /** The text inputs: each has TextBox's five theme variables, with its own name (step 24). */
-const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker"];
+const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker", "Select", "AutoComplete"];
 
 /** Below md: a phone. The spacing ladder's page level steps down, and flows go one item per row. */
 const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
@@ -644,18 +644,12 @@ ${TEXT_INPUTS.map((name) => `.gfui-${name} .mantine-Input-input {
   --input-bd-focus: var(--gfui-borderColor-${name}--focus);
 }`).join("\n")}
 /* The radius is Mantine's wrapper variable (the input and its sections read it); missed until step 24's theming E2E test. */
-${[...TEXT_INPUTS, "Select"].map((name) => `.gfui-${name} .mantine-Input-wrapper { --input-radius: var(--gfui-borderRadius-${name}); }`).join("\n")}
-.gfui-Select .mantine-Input-input {
-  --input-bg: var(--gfui-backgroundColor-Select);
-  --input-color: var(--gfui-textColor-Select);
-  --input-bd: var(--gfui-borderColor-Select);
-  --input-bd-focus: var(--gfui-borderColor-Select--focus);
-}
+${TEXT_INPUTS.map((name) => `.gfui-${name} .mantine-Input-wrapper { --input-radius: var(--gfui-borderRadius-${name}); }`).join("\n")}
 /* Mantine expects its baseline.css (* { box-sizing: border-box }), which also styles <body>: only its input parts here. */
 .gfui-App :where(.mantine-InputWrapper-root, .mantine-Input-wrapper, .mantine-Input-input) {
   box-sizing: border-box;
 }
-${[...TEXT_INPUTS, "Select"].map((name) => `.gfui-${name} .mantine-Input-input:focus-within`).join(",\n")} {
+${TEXT_INPUTS.map((name) => `.gfui-${name} .mantine-Input-input:focus-within`).join(",\n")} {
   --input-bd: var(--input-bd-focus);
 }
 /*
@@ -716,10 +710,39 @@ ${[...TEXT_INPUTS, "Select"].map((name) => `.gfui-${name} .mantine-Input-input:f
   background-color: var(--gfui-backgroundColor-ColorPicker);
   border-color: var(--gfui-borderColor-ColorPicker);
 }
-.gfui-Select .mantine-Select-dropdown {
-  background-color: var(--gfui-backgroundColor-Select);
-  color: var(--gfui-textColor-Select);
-  border-color: var(--gfui-borderColor-Select);
+/* Select and AutoComplete (choice.tsx, step 25): the list, its options, the pills. */
+${["Select", "AutoComplete"].map((name) => `.gfui-${name}-dropdown {
+  background-color: var(--gfui-backgroundColor-menu-${name});
+  border-color: var(--gfui-borderColor-menu-${name});
+  color: var(--gfui-textColor-${name});
+}
+.gfui-${name}-dropdown .gfui-Choice-option:where(:hover, [data-combobox-selected]) { background-color: var(--gfui-backgroundColor-item-${name}--hover); }
+.gfui-${name} .gfui-Choice-pill {
+  background-color: var(--gfui-backgroundColor-${name}-badge);
+  color: var(--gfui-textColor-${name}-badge);
+}`).join("\n")}
+.gfui-Choice-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.gfui-Choice-option[data-combobox-disabled] { opacity: 0.5; }
+.gfui-Choice-check {
+  flex: 0 0 12px;
+  width: 12px;
+}
+.gfui-Choice-optionContent { flex: 1 1 auto; min-width: 0; }
+.gfui-Choice-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.gfui-Choice-placeholder { color: var(--mantine-color-placeholder); }
+.gfui-Choice-value, .gfui-Choice-placeholder {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .gfui-Label {
   display: inline-flex;
@@ -764,7 +787,8 @@ ${[...TEXT_INPUTS, "Select"].map((name) => `.gfui-${name} .mantine-Input-input:f
 .gfui-ValidationMessage[data-stale] {
   opacity: 0.5;
 }
-.gfui-Field[data-required] > .gfui-Label > .gfui-Label-text::after {
+/* The label behavior's text, or the own (Mantine) label of Select, AutoComplete, ColorPicker (step 25). */
+.gfui-Field[data-required] > * > .gfui-Label-text::after {
   content: " *";
   color: var(--gfui-textColor-ValidationMessage-error);
 }

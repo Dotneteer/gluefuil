@@ -22,7 +22,7 @@
           <TextBox bindTo="email" label="Email" required pattern="email"
                    onValidate="(value) => { delay(400); return value === 'nobody@example.com' ? { isValid: false, invalidMessage: 'This address bounces', severity: 'warning' } : null; }"/>
           <TextBox bindTo="address.city" label="City" maxLength="12" lengthInvalidSeverity="warning"/>
-          <Select bindTo="role" label="Role" options="{['member', 'editor', 'admin']}"/>
+          <Select bindTo="role" label="Role" data="{['member', 'editor', 'admin']}"/>
           <Checkbox bindTo="newsletter" label="Newsletter"/>
           <Text variant="secondary">$data: {JSON.stringify($data)}</Text>
         </Form>

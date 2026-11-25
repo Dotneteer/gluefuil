@@ -30,6 +30,12 @@ export interface ComponentMetadata {
   /** The template the element's children are, when given as plain children (`Items`: itemTemplate). */
   childrenTemplate?: string;
   /**
+   * The children are data (step 25: Select, AutoComplete): `Option` and `Items`
+   * (with `Option` inside) compile to one reactive options array, the hidden
+   * binding `$$options`. Other children are E035; with `data` set, E036.
+   */
+  childrenAsOptions?: boolean;
+  /**
    * Context variables the element's attributes and children see, without
    * being a template (step 22: Form's `$data`). The compiler gives the
    * component a `contextScope` to fill; IDs inside stay file-scoped.
@@ -251,6 +257,91 @@ const PASSWORD_PROPS: Record<string, PropMetadata> = {
   passwordHiddenIcon: { description: "The toggle's icon while the password shows (default eye-off).", valueType: "string", knownValues: ICON_NAMES },
 };
 
+/** Step 25: what Select and AutoComplete share (choice.tsx). */
+const CHOICE_PROPS: Record<string, PropMetadata> = {
+  // Its own label (Mantine's <label for>), not the label behavior's wrapper: the list must not be inside a <label>.
+  label: { description: "The input's label.", valueType: "string" },
+  initialValue: { description: "The selected value (or values) when the component mounts.", valueType: "any" },
+  placeholder: { description: "Shown while nothing is selected.", valueType: "string" },
+  ...INPUT_COMMON,
+  data: { description: "The options as data: strings, or objects read through valueField and labelField. Instead of Option children.", valueType: "any" },
+  valueField: { description: "The field of each data item that is the option's value (default value).", valueType: "string" },
+  labelField: { description: "The field of each data item that is the option's label (default label).", valueType: "string" },
+  dropdownHeight: { description: "The list's largest height (default 220px); it scrolls beyond.", valueType: "string" },
+  groupBy: { description: "The option field that groups the list (an Option attribute such as category); the ungrouped come first.", valueType: "string" },
+};
+
+const CHOICE_TEMPLATES = {
+  optionTemplate: { description: "An option in the list.", contextVars: ["$item", "$selectedValue", "$checked", "$inTrigger"] },
+  emptyListTemplate: { description: "Shown when no option is left (default: \"List is empty\").", contextVars: [] },
+  groupHeaderTemplate: { description: "A group's header (groupBy).", contextVars: ["$group"] },
+  ungroupedHeaderTemplate: { description: "The header of the ungrouped options (default: none).", contextVars: [] },
+};
+
+function choiceTheme(name: string): Record<string, string> {
+  return {
+    ...textInputTheme(name),
+    [`backgroundColor-menu-${name}`]: "$backgroundColor",
+    [`borderColor-menu-${name}`]: "$borderColor",
+    [`backgroundColor-item-${name}--hover`]: "$color-surface-100",
+    [`backgroundColor-${name}-badge`]: "$color-primary-500",
+    [`textColor-${name}-badge`]: "#ffffff",
+  };
+}
+
+const CHOICE_API = {
+  value: { description: "The selected value (\"\" when none), or the array of values (reactive)." },
+  setValue: { description: "Selects a value, or values (no didChange)." },
+  focus: { description: "Moves the keyboard focus to the input." },
+};
+
+const CHOICE_COMPONENTS: Record<string, ComponentMetadata> = {
+  Select: {
+    description: "Picks one value, or several, from a list: Option children (also from Items) or data (Mantine Combobox).",
+    childrenAsOptions: true,
+    props: {
+      ...CHOICE_PROPS,
+      searchable: { description: "Typing filters the options (value, label and keywords).", valueType: "boolean" },
+      multiSelect: { description: "Several values: the value is an array, shown as pills.", valueType: "boolean" },
+      clearable: { description: "A button that clears the selection.", valueType: "boolean" },
+      inProgress: { description: "The list shows inProgressNotificationMessage instead of the options.", valueType: "boolean" },
+      inProgressNotificationMessage: { description: "The message while inProgress.", valueType: "string" },
+    },
+    events: {
+      didChange: { description: "The user changed the selection; `$param` is the new value (\"\" or [] when cleared)." },
+      ...FOCUS_EVENTS,
+    },
+    templates: {
+      ...CHOICE_TEMPLATES,
+      valueTemplate: { description: "A selected value in the input (each pill with multiSelect); $itemContext.removeItem() removes it.", contextVars: ["$item", "$itemContext"] },
+    },
+    themeVars: choiceTheme("Select"),
+    api: CHOICE_API,
+  },
+  AutoComplete: {
+    description: "A searchable select: type to filter the options, pick one or several (multi), or create one (creatable) (Mantine Combobox).",
+    childrenAsOptions: true,
+    props: {
+      ...CHOICE_PROPS,
+      multi: { description: "Several values: the value is an array, shown as pills.", valueType: "boolean" },
+      creatable: { description: "The user can create an option that isn't in the list (a \"Create …\" item).", valueType: "boolean" },
+      initiallyOpen: { description: "The list is open when the component mounts.", valueType: "boolean" },
+      maxLength: { description: "The most characters the input takes.", valueType: "integer" },
+    },
+    events: {
+      didChange: { description: "The user changed the selection; `$param` is the new value (\"\" or [] when cleared)." },
+      itemCreated: { description: "The user created an option (creatable); `$param` is its text." },
+      ...FOCUS_EVENTS,
+    },
+    templates: {
+      ...CHOICE_TEMPLATES,
+      valueTemplate: { description: "A selected value's pill (multi); $itemContext.removeItem() removes it.", contextVars: ["$item", "$itemContext"] },
+    },
+    themeVars: choiceTheme("AutoComplete"),
+    api: CHOICE_API,
+  },
+};
+
 /** Step 24 (with step 16's TextBox and Checkbox): the inputs of inputs.tsx. */
 const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
   TextBox: {
@@ -401,11 +492,12 @@ const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
     },
   },
   Option: {
-    description: "One choice of a RadioGroup: a value and its label (Select's Option children come later).",
+    description: "One choice of a RadioGroup, a Select or an AutoComplete: a value and its label. In a Select or AutoComplete it is data: any other attribute is kept on the option (for groupBy), and element children are its content in the list.",
     props: {
       value: { description: "The value it stands for (a string; numbers and booleans are converted).", valueType: "any" },
       label: { description: "The text shown. Nested content is used when it is absent, then the value.", valueType: "string" },
       enabled: { description: "false: it can't be selected.", valueType: "boolean" },
+      keywords: { description: "Select, AutoComplete: more words the search matches (not shown).", valueType: "any" },
     },
     layoutProps: false,
   },
@@ -917,35 +1009,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       "borderRadius-Button": "$borderRadius",
     },
   },
-  Select: {
-    description: "Picks one value from a list (Mantine Select).",
-    props: {
-      options: { description: "The choices: strings, or { value, label } objects.", valueType: "any" },
-      initialValue: { description: "The selected value when the component mounts.", valueType: "any" },
-      placeholder: { description: "Shown while nothing is selected.", valueType: "string" },
-      enabled: { description: "false: disabled.", valueType: "boolean" },
-      searchable: { description: "Filter the options by typing.", valueType: "boolean" },
-      clearable: { description: "Show a button that clears the selection.", valueType: "boolean" },
-    },
-    events: {
-      didChange: { description: "The selection changed; `$param` is the new value (null when cleared)." },
-    },
-    templates: {
-      optionTemplate: { description: "The markup for one option in the list.", contextVars: ["$item", "$checked"] },
-    },
-    themeVars: {
-      "backgroundColor-Select": "$backgroundColor",
-      "textColor-Select": "$textColor",
-      "borderColor-Select": "$borderColor",
-      "borderColor-Select--focus": "$color-primary-500",
-      "borderRadius-Select": "$borderRadius",
-    },
-    api: {
-      value: { description: "The selected value (reactive); null when none." },
-      setValue: { description: "Selects a value." },
-      focus: { description: "Moves the keyboard focus to the input." },
-    },
-  },
+  ...CHOICE_COMPONENTS,
   ...INPUT_COMPONENTS,
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",

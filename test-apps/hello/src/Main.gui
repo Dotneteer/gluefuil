@@ -140,10 +140,11 @@
       <TextBox placeholder="Type into Mantine" onDidChange="(v) => typed = v"/>
       <Text>Typed: {typed}</Text>
       <Select
+        label="Fruit"
         placeholder="Pick a fruit"
         clearable
-        options="{['Apple', 'Banana', { value: 'cherry', label: 'Cherry' }]}"
-        onDidChange="(v) => fruit = v ?? 'none'">
+        data="{['Apple', 'Banana', { value: 'cherry', label: 'Cherry' }]}"
+        onDidChange="(v) => fruit = v || 'none'">
         <property name="optionTemplate">
           <Text>Fruit option: {$item.label}</Text>
         </property>

@@ -13,7 +13,7 @@
     </HStack>
     <Text>Events: {events || 'none yet'}</Text>
     <HStack verticalAlignment="end">
-      <Select label="validationStatus" initialValue="none" options="{['none', 'valid', 'warning', 'error']}" onDidChange="(v) => status = v ?? 'none'"/>
+      <Select label="validationStatus" initialValue="none" data="{['none', 'valid', 'warning', 'error']}" onDidChange="(v) => status = v ?? 'none'"/>
       <TextBox label="Shown without a form" validationStatus="{status}" initialValue="Look at the border"/>
     </HStack>
 

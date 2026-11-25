@@ -1,0 +1,55 @@
+<Component name="AutoCompleteScenario">
+  <VStack var.created="{[]}" var.saved="">
+    <ScenarioHeader title="AutoComplete" description="Step 25: AutoComplete (type to filter, pick one or several, create new ones) and both pickers bound in a Form."/>
+
+    <H3>Type to filter</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <AutoComplete id="hero" label="Hero" placeholder="Start typing a name">
+        <Option value="bruce" label="Bruce Wayne" keywords="{['batman']}"/>
+        <Option value="clark" label="Clark Kent" keywords="{['superman']}"/>
+        <Option value="diana" label="Diana Prince" keywords="{['wonder woman']}"/>
+        <Option value="barry" label="Barry Allen" enabled="false"/>
+      </AutoComplete>
+      <Text>Hero: {hero.value || 'none'}</Text>
+    </HStack>
+    <Text variant="secondary">Keywords count: "batman" finds Bruce Wayne. Enter picks the only match. Emptying the input clears the value when it loses the focus.</Text>
+
+    <H3>Several values, new ones</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <AutoComplete id="team" label="Team (multi)" multi="true" initialValue="{['clark']}">
+        <Option value="bruce" label="Bruce Wayne"/>
+        <Option value="clark" label="Clark Kent"/>
+        <Option value="diana" label="Diana Prince"/>
+      </AutoComplete>
+      <AutoComplete id="labels" label="Labels (multi, creatable)" multi="true" creatable="true" maxLength="20" onItemCreated="(item) => created = [...created, item]">
+        <Option value="bug" label="bug"/>
+        <Option value="feature" label="feature"/>
+      </AutoComplete>
+    </HStack>
+    <Text>Team: {JSON.stringify(team.value)}; labels: {JSON.stringify(labels.value)}; created: {created.join(', ') || 'none'}</Text>
+    <Text variant="secondary">Backspace in the empty input removes the last value. Type a label that isn't there and pick "Create …".</Text>
+
+    <H3>In a Form</H3>
+    <Form id="assignment" data="{{ owner: '', reviewers: [], component: 'ui' }}" onSubmit="(data) => saved = JSON.stringify(data)">
+      <AutoComplete bindTo="owner" label="Owner" required="true" requiredInvalidMessage="Pick an owner">
+        <Option value="ada" label="Ada Lovelace"/>
+        <Option value="alan" label="Alan Turing"/>
+        <Option value="grace" label="Grace Hopper"/>
+      </AutoComplete>
+      <Select bindTo="reviewers" label="Reviewers" multiSelect="true" required="true" requiredInvalidMessage="Pick at least one reviewer">
+        <Option value="ada" label="Ada Lovelace"/>
+        <Option value="alan" label="Alan Turing"/>
+        <Option value="grace" label="Grace Hopper"/>
+      </Select>
+      <Select bindTo="component" label="Component" searchable="true">
+        <Option value="ui" label="User interface"/>
+        <Option value="api" label="API"/>
+        <Option value="docs" label="Documentation"/>
+      </Select>
+    </Form>
+    <Text>Dirty: {assignment.isDirty() ? 'yes' : 'no'}</Text>
+    <Card title="Saved" when="{saved !== ''}">
+      <Text variant="mono" value="{saved}"/>
+    </Card>
+  </VStack>
+</Component>

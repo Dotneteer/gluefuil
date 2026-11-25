@@ -58,13 +58,13 @@ export const focusApi = ({ ref }: { ref: { current: unknown } }) => ({
 export const VALIDATION_STATUSES = ["none", "valid", "warning", "error"] as const;
 
 /** `validationStatus`: error is Mantine's error state; warning and valid a border color on the root (styles.ts). */
-const validationStatus = (status: unknown) => ({
+export const validationStatus = (status: unknown) => ({
   ...(status === "error" ? { error: true } : {}),
   ...(status === "warning" || status === "valid" ? { wrapperProps: { "data-validation": status } } : {}),
 });
 
 /** `gotFocus` and `lostFocus`: called without arguments (no DOM event reaches script). */
-const FOCUS_EVENTS: WrapConfig["events"] = {
+export const FOCUS_EVENTS: WrapConfig["events"] = {
   gotFocus: { prop: "onFocus", args: () => [] },
   lostFocus: { prop: "onBlur", args: () => [] },
 };
@@ -520,6 +520,8 @@ export const ColorPicker = withLayout(wrapComponent(ColorInput as never, {
     // dropper: it would be a button inside the label.
     leftSectionProps: { "aria-hidden": true },
     withEyeDropper: false,
+    // Its own label looks like the label behavior's (and gets the required mark in a form; step 25).
+    labelProps: { className: "gfui-Label-text" },
     vars: inputRadius("ColorPicker"),
   },
 }));

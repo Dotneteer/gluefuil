@@ -48,34 +48,7 @@ test("TextBox (Mantine TextInput): initialValue, typing fires didChange and upda
   expect(text(/^log:/)).toBe("log: changed to typed");
 });
 
-test("Select: options (strings or objects), picking fires didChange; the API value; an optionTemplate renders options with $item", async () => {
-  show(`
-    <App var.picked="nothing">
-      <Select id="fruit" placeholder="Fruit" options="{['Apple', { value: 'b', label: 'Banana' }]}" onDidChange="(v) => picked = v">
-        <property name="optionTemplate"><Text>option: {$item.label}</Text></property>
-      </Select>
-      <Text>picked: {picked}</Text>
-      <Text>api: {fruit.value}</Text>
-    </App>`);
-  await click(screen.getByPlaceholderText("Fruit"));
-  expect(screen.getByText("option: Apple")).toBeTruthy();
-  await click(screen.getByText("option: Banana"));
-  expect(text(/^picked:/)).toBe("picked: b");
-  expect(text(/^api:/)).toBe("api: b");
-  expect((screen.getByPlaceholderText("Fruit") as HTMLInputElement).value).toBe("Banana");
-});
-
-test("Select: initialValue and setValue", async () => {
-  show(`
-    <App>
-      <Select id="s" placeholder="Pick" options="{['x', 'y']}" initialValue="y"/>
-      <Button label="Clear" onClick="s.setValue(null)"/>
-    </App>`);
-  const input = screen.getByPlaceholderText("Pick") as HTMLInputElement;
-  expect(input.value).toBe("y");
-  await click(screen.getByRole("button", { name: "Clear" }));
-  expect(input.value).toBe("");
-});
+// Select moved to choice.test.tsx (step 25).
 
 test("Checkbox: its own label; clicking fires didChange with the new state; the API value", async () => {
   show(`

@@ -4,8 +4,8 @@
 
     <H3>Image</H3>
     <HStack verticalAlignment="end" wrapContent="true">
-      <Select label="fit" initialValue="contain" options="{['contain', 'cover']}" onDidChange="(v) => fit = v ?? 'contain'"/>
-      <Select label="aspectRatio" initialValue="16/9" options="{['16/9', '1', '3/4']}" onDidChange="(v) => ratio = v ?? '16/9'"/>
+      <Select label="fit" initialValue="contain" data="{['contain', 'cover']}" onDidChange="(v) => fit = v ?? 'contain'"/>
+      <Select label="aspectRatio" initialValue="16/9" data="{['16/9', '1', '3/4']}" onDidChange="(v) => ratio = v ?? '16/9'"/>
       <Checkbox label="grayscale" onDidChange="(v) => gray = v"/>
     </HStack>
     <HStack verticalAlignment="center">

@@ -1,5 +1,5 @@
 // Module (element tree) diagnostic codes. See .ai/plan/poc-05-first-app.md and
-// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030), poc-19d-layout.md (E031–E032), poc-23-display.md (E033–E034).
+// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030), poc-19d-layout.md (E031–E032), poc-23-display.md (E033–E034), poc-25-choice.md (E035–E036).
 
 export const ModuleDiagnostics = {
   E001: (name: string, hint = "") => `Unknown component '${name}'${hint ? `.${hint}` : ""}`,
@@ -52,6 +52,10 @@ export const ModuleDiagnostics = {
   E033: (prop: string, value: string, hint: string) => `'${value}' is not a known value of '${prop}'${hint ? `.${hint}` : ""}`,
   /** An element inside a component whose content is text (Markdown). */
   E034: (component: string, element: string) => `'${component}' takes text only; '<${element}>' can't be inside it (wrap HTML in <![CDATA[ … ]]>)`,
+  /** A child of a component whose children are options (Select) that is not an Option or an Items of Options. */
+  E035: (component: string, what: string) => `'${component}' takes Option and Items (of Option) children only; ${what} can't be inside it`,
+  /** Both `data` and Option children. */
+  E036: (component: string) => `'${component}' has both 'data' and Option children; use one of them`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;
