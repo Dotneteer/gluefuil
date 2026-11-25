@@ -12,7 +12,7 @@
     <TextBox bindTo="email" label="Email" required pattern="email"
              onValidate="(value) => { delay(200); return value === 'taken@example.com' ? 'Already registered' : null; }"/>
     <TextBox bindTo="address.city" label="City" maxLength="10" lengthInvalidSeverity="warning"/>
-    <Select bindTo="role" label="Role" options="{['user', 'admin']}"/>
+    <Select bindTo="role" label="Role" data="{['user', 'admin']}"/>
     <Checkbox bindTo="agree" label="I agree to the terms" required/>
     <Text>Preview: {$data.name} from {$data.address.city} ({$data.role})</Text>
   </Form>

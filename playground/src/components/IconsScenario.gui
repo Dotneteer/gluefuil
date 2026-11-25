@@ -3,7 +3,7 @@
     <ScenarioHeader title="Icons" description="Step 23: every built-in icon (XMLUI's names, drawn with Lucide). Filter by name, pick a size, click an icon to see it at every size."/>
     <HStack verticalAlignment="end" wrapContent="true">
       <TextBox label="Filter" placeholder="Part of a name: arrow, file, user…" onDidChange="(v) => query = v"/>
-      <Select label="Size" initialValue="md" options="{['xs', 'sm', 'md', 'lg', '40px']}" onDidChange="(v) => size = v ?? 'md'"/>
+      <Select label="Size" initialValue="md" data="{['xs', 'sm', 'md', 'lg', '40px']}" onDidChange="(v) => size = v ?? 'md'"/>
     </HStack>
     <Text variant="secondary">{matching(query).length} of {iconNames.length} icons</Text>
     <HStack wrapContent="true">

@@ -11,6 +11,10 @@
 
 ## State
 
+- **Step 25 (choice inputs) is done and merged into master.** Plan and findings:
+  [`plan/poc-25-choice.md`](plan/poc-25-choice.md); reference:
+  [`docs/choice.md`](docs/choice.md). `npm run check`: 2,780 unit tests in
+  98 files, 200 E2E tests.
 - **Step 24 (inputs) is done and merged into master**
   Plan and findings: [`plan/poc-24-inputs.md`](plan/poc-24-inputs.md);
   reference: [`docs/inputs.md`](docs/inputs.md). `npm run check`: 2,743 unit
@@ -189,8 +193,8 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 25: choice** (`Select` with `Option` children, `AutoComplete`);
-  move Select's dropdown out of its label (step 24 finding).
+- **Step 26: date and time** (`DateInput`, `DatePicker`, `TimeInput`).
+- **Step 25's open items** (`poc-25-choice.md`).
 - **Bundle size:** let unused built-ins drop (step 24 finding).
 - **Step 23's open items** (`poc-23-display.md`): compile-time icon imports
   (size), Markdown code highlighting and `highlightText`, Text search
@@ -203,7 +207,6 @@
 - **Gaps recorded in the plans' "Open for later steps":**
   - global variables in user components;
   - `<script>` blocks;
-  - `Select`'s `Option` children;
   - `Button` variants;
   - app components in standalone mode;
   - state-preserving hot reload;

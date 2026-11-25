@@ -21,7 +21,7 @@ shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
 19 with a reduced scope); the inserted 19D–19F (the layout system) are done too.
 Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals),
 22 (client-side forms), 22B (form submission and server errors), 23 (text
-and display components) and 24 (inputs) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+and display components), 24 (inputs) and 25 (choice inputs) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).
@@ -111,6 +111,7 @@ here as one line each, with a link to the plan that justified them:
 - **Globals are known at compile time.** Every file sees the globals of `Main.gui`'s root and `Globals.xs` (an unknown name stays an error); React context carries their scope to user components. See [.ai/plan/poc-21b-globals.md](.ai/plan/poc-21b-globals.md).
 - **Icons are Lucide** (`lucide-react`) behind our own name registry (XMLUI's names); only registered icons ship. See [.ai/plan/poc-23-display.md](.ai/plan/poc-23-display.md).
 - **Markdown: micromark/mdast (GFM) with our own renderer, in a lazy chunk;** raw HTML passes an allowlist; `@{…}` is compiled from markup, never evaluated from runtime strings. See [.ai/plan/poc-23-display.md](.ai/plan/poc-23-display.md).
+- **Select and AutoComplete: `Option` children compile to data** (one reactive options array, so the prerender shows the selection; XMLUI registers Options in effects), **on Mantine's Combobox primitives**; `data`/`valueField`/`labelField` replace step 16's `options`. See [.ai/plan/poc-25-choice.md](.ai/plan/poc-25-choice.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

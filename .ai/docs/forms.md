@@ -18,7 +18,7 @@
   <TextBox bindTo="email" label="Email" required pattern="email"
            onValidate="(value) => isTaken(value) ? 'Already registered' : null"/>
   <TextBox bindTo="address.city" label="City" maxLength="10" lengthInvalidSeverity="warning"/>
-  <Select bindTo="role" label="Role" options="{['user', 'admin']}"/>
+  <Select bindTo="role" label="Role" data="{['user', 'admin']}"/>
   <Checkbox bindTo="agree" label="I agree" required/>
   <Text>Preview: {$data.name}</Text>
 </Form>
@@ -28,7 +28,9 @@
 **There is no `FormItem`** (the user's decision). Any component with a
 `value` and a `setValue` API binds: `TextBox`, `PasswordInput`, `TextArea`,
 `NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker`
-(step 24, [inputs.md](inputs.md)) and `Select`. A native reset of the
+(step 24, [inputs.md](inputs.md)), `Select` and `AutoComplete` (step 25,
+[choice.md](choice.md); with several values the field is an array, and
+`required` wants one). A native reset of the
 `<form>` (TextArea `escResets`) does what `reset()` does.
 
 ### Form

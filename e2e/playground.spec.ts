@@ -53,6 +53,8 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Choice inputs",
     "Input form",
     "Input APIs and theming",
+    "Select",
+    "AutoComplete",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.

@@ -7,7 +7,7 @@
 // rules win. Variables Mantine sets inline from its `vars` resolvers
 // (--button-bg) are redirected with a fixed `vars` resolver; variables it sets
 // from CSS (--input-bd) are redirected in our stylesheet (styles.ts).
-import { Button as MantineButton, Select as MantineSelect } from "@mantine/core";
+import { Button as MantineButton } from "@mantine/core";
 import avatarCss from "@mantine/core/styles/Avatar.layer.css?inline";
 import badgeCss from "@mantine/core/styles/Badge.layer.css?inline";
 import actionIconCss from "@mantine/core/styles/ActionIcon.layer.css?inline";
@@ -28,6 +28,8 @@ import buttonCss from "@mantine/core/styles/Button.layer.css?inline";
 import checkboxCss from "@mantine/core/styles/Checkbox.layer.css?inline";
 import closeButtonCss from "@mantine/core/styles/CloseButton.layer.css?inline";
 import comboboxCss from "@mantine/core/styles/Combobox.layer.css?inline";
+import pillCss from "@mantine/core/styles/Pill.layer.css?inline";
+import pillsInputCss from "@mantine/core/styles/PillsInput.layer.css?inline";
 import defaultVariablesCss from "@mantine/core/styles/default-css-variables.layer.css?inline";
 import globalCss from "@mantine/core/styles/global.layer.css?inline";
 import inlineInputCss from "@mantine/core/styles/InlineInput.layer.css?inline";
@@ -36,7 +38,7 @@ import popoverCss from "@mantine/core/styles/Popover.layer.css?inline";
 import scrollAreaCss from "@mantine/core/styles/ScrollArea.layer.css?inline";
 import unstyledButtonCss from "@mantine/core/styles/UnstyledButton.layer.css?inline";
 import { wrapComponent } from "@gluefuil/runtime";
-import { enabledToDisabled, focusApi } from "./inputs";
+import { enabledToDisabled } from "./inputs";
 import { withLayout } from "./layout-wrap";
 import { componentMetadata } from "./metadata";
 
@@ -51,6 +53,9 @@ export const MANTINE_STYLESHEET = [
   inlineInputCss,
   checkboxCss,
   comboboxCss,
+  // Select and AutoComplete with several values (choice.tsx, step 25).
+  pillCss,
+  pillsInputCss,
   popoverCss,
   scrollAreaCss,
   closeButtonCss,
@@ -77,7 +82,6 @@ export const MANTINE_STYLESHEET = [
 
 export const MANTINE_STYLESHEET_HREF = "gfui-mantine";
 
-const asText = (value: unknown) => (value === undefined || value === null ? "" : String(value));
 
 const buttonConfig = (type: "button" | "submit") => ({
   props: componentMetadata.Button!.props,
@@ -101,27 +105,3 @@ export const Button = withLayout(wrapComponent(MantineButton as never, buttonCon
 
 /** A Form's Save button (step 22): a Button that submits its form (Enter in an input submits too). Not in the markup. */
 export const SubmitButton = wrapComponent(MantineButton as never, buttonConfig("submit"));
-
-/** `options`: strings or `{ value, label }` objects → Mantine's `data`. */
-function toData(options: unknown): { value: string; label: string }[] {
-  if (!Array.isArray(options)) return [];
-  return options.map((option) =>
-    option !== null && typeof option === "object"
-      ? { value: asText((option as { value?: unknown }).value), label: asText((option as { label?: unknown; value?: unknown }).label ?? (option as { value?: unknown }).value) }
-      : { value: asText(option), label: asText(option) },
-  );
-}
-
-export const Select = withLayout(wrapComponent(MantineSelect as never, {
-  props: componentMetadata.Select!.props,
-  rename: { options: (options) => ({ data: toData(options) }), enabled: enabledToDisabled },
-  value: { prop: "value", change: "onChange", parse: (value) => (value === undefined || value === null || value === "" ? null : String(value)) },
-  templates: { optionTemplate: { prop: "renderOption", context: (input: { option: unknown; checked?: boolean }) => ({ $item: input.option, $checked: input.checked === true }) } },
-  withRef: true,
-  api: focusApi,
-  fixed: {
-    className: "gfui-Select",
-    comboboxProps: { withinPortal: false },
-    vars: () => ({ wrapper: { "--input-radius": "var(--gfui-borderRadius-Select)" } }),
-  },
-}));

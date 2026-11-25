@@ -210,12 +210,12 @@ test("Select and Checkbox bind too; required on a checkbox means checked", async
   show(`
     <App>
       <Form data="{ { role: 'admin', agree: false } }">
-        <Select bindTo="role" placeholder="Role" options="{['user', 'admin']}"/>
+        <Select bindTo="role" label="Role" data="{['user', 'admin']}"/>
         <Checkbox bindTo="agree" label="I agree" required/>
         <Text>data: {JSON.stringify($data)}</Text>
       </Form>
     </App>`);
-  expect((screen.getByPlaceholderText("Role") as HTMLInputElement).value).toBe("admin");
+  expect(screen.getByRole("combobox", { name: "Role" }).textContent).toBe("admin");
   await click("Save");
   await settle();
   expect(messages()).toEqual(["error: This field is required"]);

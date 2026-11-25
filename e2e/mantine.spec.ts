@@ -16,12 +16,14 @@ test("a typed value round-trips through the Mantine TextInput into a variable", 
 });
 
 test("Select: the option template renders the options; picking updates a variable; clearing resets it", async ({ page }) => {
-  await page.getByPlaceholder("Pick a fruit").click();
+  const select = page.getByRole("combobox", { name: "Fruit" });
+  await expect(select).toHaveText("Pick a fruit");
+  await select.click();
   await expect(page.getByText("Fruit option: Apple")).toBeVisible();
   await page.getByText("Fruit option: Cherry").click();
   await expect(page.getByText("Fruit: cherry")).toBeVisible();
-  await expect(page.getByPlaceholder("Pick a fruit")).toHaveValue("Cherry");
-  await page.locator(".gfui-Select button").click(); // the clear button
+  await expect(select).toHaveText("Cherry");
+  await page.locator(".gfui-Select .mantine-InputClearButton-root").click(); // the clear button (aria-hidden, as Mantine's)
   await expect(page.getByText("Fruit: none")).toBeVisible();
 });
 

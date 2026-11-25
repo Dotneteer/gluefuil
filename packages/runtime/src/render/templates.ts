@@ -50,3 +50,26 @@ export function TemplateInstance({ parent, render, context }: TemplateInstancePr
 export function templateRenderer(parent: object, render: TemplateFunction): TemplateRenderer {
   return (context, key) => createElement(TemplateInstance, { key, parent, render, context });
 }
+
+/**
+ * Step 25: `<Items>` inside a Select (the children compiled to an options array):
+ * the template's options for each item, each in a scope with `$item`,
+ * `$itemIndex`, `$isFirst`, `$isLast`. No hook: it runs inside a binding.
+ * Arrays are the items; an object's values too (as XMLUI's Select `data`); else none.
+ */
+export function optionItems(parent: object, data: unknown, build: (scope: object) => unknown[]): unknown[] {
+  const list: unknown[] = Array.isArray(data) ? data : data !== null && typeof data === "object" ? Object.values(data) : [];
+  return list.flatMap((item, index) =>
+    build(
+      createScope(
+        { $item: { value: item }, $itemIndex: { value: index }, $isFirst: { value: index === 0 }, $isLast: { value: index === list.length - 1 } },
+        parent,
+      ),
+    ),
+  );
+}
+
+/** An Option's own content (element children), rendered in the option's scope. */
+export function OptionContent({ render, scope }: { render: TemplateFunction; scope: object }): ReactNode {
+  return render(scope);
+}

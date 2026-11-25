@@ -56,7 +56,7 @@ Standalone mode can't load them yet.
 |-----------|---------|-------|--------|-----|
 | `Button` | `Button` | `label` (→ children), `enabled` | `click` (no arguments) | |
 | `TextBox` | `TextInput` (in `inputs.tsx` since step 24, [inputs.md](inputs.md)) | `initialValue`, `placeholder`, `enabled` | `didChange` | `value`, `setValue`, `focus` |
-| `Select` | `Select` | `options` (strings or `{ value, label }` → `data`), `initialValue`, `placeholder`, `enabled`, `searchable`, `clearable`; template `optionTemplate` (`$item` = `{ value, label }`, `$checked`) | `didChange` (null when cleared) | `value`, `setValue`, `focus` |
+| `Select` | Combobox (in `choice.tsx` since step 25, [choice.md](choice.md); step 16 wrapped Mantine's `Select` with an `options` prop) | | | |
 | `Checkbox` | `Checkbox` (in `inputs.tsx` since step 24) | `label` (its own), `initialValue`, `enabled` | `didChange` | `value`, `setValue` |
 
 - **`App` wraps its children in `MantineProvider`:**
@@ -72,11 +72,9 @@ Standalone mode can't load them yet.
     React merges it with `gfui-base` (same precedence) into one element.
   - **Every Mantine rule is in `@layer mantine`,** so our unlayered rules
     win.
-- **`Select`'s dropdown** stays inside the app (`withinPortal: false`), so it
-  inherits the theme scope.
+- **Popups stay inside the app** (`withinPortal: false`: Select and
+  AutoComplete, ColorPicker), so they inherit the theme scope.
 - **Divergences:**
-  - `Select` takes `options`; XMLUI's `Option` children and `data` come
-    later.
   - `Button` doesn't declare XMLUI's `variant` (solid, outlined, ghost) yet,
     so the step 18 `variant` behavior still applies to it.
 
@@ -84,8 +82,8 @@ Standalone mode can't load them yet.
 
 | Where Mantine sets a variable | How it's redirected | Variables |
 |-------------------------------|---------------------|-----------|
-| Inline, from its `vars` resolvers | The wrapper's fixed `vars` resolver (it replaces Mantine's own values) | Button `--button-bg/hover/color/bd/radius` ← `*-Button`; Checkbox `--checkbox-color/radius` ← `backgroundColor-Checkbox--checked`, `borderRadius-Checkbox`; TextBox and Select `--input-radius` |
-| From CSS | `styles.ts` (unlayered) | `.gfui-TextBox` / `.gfui-Select .mantine-Input-input`: `--input-bg/color/bd/bd-focus`; the Select dropdown |
+| Inline, from its `vars` resolvers | The wrapper's fixed `vars` resolver (it replaces Mantine's own values) | Button `--button-bg/hover/color/bd/radius` ← `*-Button`; Checkbox `--checkbox-color/radius` ← `backgroundColor-Checkbox--checked`, `borderRadius-Checkbox`; TextBox `--input-radius` (every text input since step 24, also from CSS) |
+| From CSS | `styles.ts` (unlayered) | `.gfui-<Input> .mantine-Input-input` (`TEXT_INPUTS`: the text inputs, Select, AutoComplete): `--input-bg/color/bd/bd-focus`; the wrapper's `--input-radius`; the choice dropdowns |
 | Globally | `styles.ts` on `.gfui-App` and `.gfui-Theme` | `--mantine-font-family`, `-color-text`, `-color-body`, `-color-dimmed`, `-color-placeholder`, `-color-default-border`, `-primary-color-filled(-hover)`, `-radius-default` ← gfui tokens |
 
 The E2E tests check it with computed styles: the Mantine `Button` takes
@@ -139,7 +137,7 @@ recommends), and the components and standalone test projects load it
 | File | Contents |
 |------|----------|
 | `runtime/src/render/wrap.ts` | `wrapComponent`, `coerceLiteral`, the config types |
-| `components/src/mantine.tsx` | `Button`, `TextBox`, `Select`, `Checkbox`, `MANTINE_STYLESHEET` |
+| `components/src/mantine.tsx` | `Button`, `SubmitButton`, `MANTINE_STYLESHEET` |
 | `components/src/text.tsx` | `Text`, `Heading`, `H1`…`H6`, `headingLevel`, `TEXT_VARIANT_ELEMENTS` |
 | `components/src/theme.tsx` | `App` (with `MantineProvider`), `Theme` |
 | `components/src/styles.ts` | The Mantine variable redirections, Text variants, Heading |
@@ -150,6 +148,6 @@ recommends), and the components and standalone test projects load it
 | File | Covers |
 |------|--------|
 | `runtime/tests/render/wrap.test.tsx` | `coerceLiteral`; forwarding and typing; rename (also to children); events (mapped, and argument-free when unconfigured); the controlled value and its API; methods through a ref; templates as render props; fixed props and exclusions |
-| `components/tests/mantine.test.tsx` | Each Mantine component through compiled markup: click without arguments, disabled, typing and `didChange`, the API (`value`, `setValue`, `focus`), Select options and its option template, Checkbox, the Button variable redirection |
+| `components/tests/mantine.test.tsx` | Each Mantine component through compiled markup: click without arguments, disabled, typing and `didChange`, the API (`value`, `setValue`, `focus`), Checkbox (Select: [choice.md](choice.md)), the Button variable redirection |
 | `components/tests/text-heading.test.tsx` | Text variants, their elements, `maxLines`, contract errors; Heading levels and the shortcuts |
-| `e2e/mantine.spec.ts` (dev and build) | A typed value round-trips into a variable; Select (template, pick, clear); Checkbox; a disabled Button; the theme controls Mantine's Button color; text variants and headings |
+| `e2e/mantine.spec.ts` (dev and build) | A typed value round-trips into a variable; Select (template, pick, clear; a button target since step 25); Checkbox; a disabled Button; the theme controls Mantine's Button color; text variants and headings |

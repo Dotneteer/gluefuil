@@ -74,7 +74,8 @@ the validation props ([forms.md](forms.md)).
   - values are strings (`radioValue`, as XMLUI);
   - focus and blur count only when the focus enters or leaves the group;
   - `focus()` moves to the checked option, or the first enabled one;
-  - an `Option` outside a RadioGroup renders nothing.
+  - an `Option` outside a RadioGroup renders nothing; inside a Select or
+    AutoComplete it is data ([choice.md](choice.md)).
 - **Slider:**
   - an array value is a `RangeSlider` (`minRange` = `minStepsBetweenThumbs` × `step`);
   - the label is its own, and names the thumbs (`thumbLabel`, or

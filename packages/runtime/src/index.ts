@@ -74,7 +74,7 @@ export {
   type Condition,
   type WhenProps,
 } from "./render/visibility";
-export { TemplateInstance, templateRenderer, type TemplateFunction, type TemplateRenderer } from "./render/templates";
+export { OptionContent, optionItems, TemplateInstance, templateRenderer, type TemplateFunction, type TemplateRenderer } from "./render/templates";
 export { loadModule, type ModuleImports, type ModuleSourceMap } from "./render/module";
 export {
   activeThemeId,

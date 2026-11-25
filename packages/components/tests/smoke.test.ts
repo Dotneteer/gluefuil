@@ -8,7 +8,7 @@ test("components package loads", () => {
 
 test("every component has metadata, and the metadata entry point loads on its own", () => {
   expect(Object.keys(componentMetadata).sort()).toEqual([
-    "APICall", "App", "AppHeader", "Avatar", "Badge", "Button", "CHStack", "CVStack", "Card", "Checkbox", "ColorPicker", "ContentSeparator", "DataSource",
+    "APICall", "App", "AppHeader", "AutoComplete", "Avatar", "Badge", "Button", "CHStack", "CVStack", "Card", "Checkbox", "ColorPicker", "ContentSeparator", "DataSource",
     "FlowLayout", "Footer", "Form", "H1", "H2", "H3", "H4", "H5", "H6", "HStack", "Heading", "Icon", "Image", "Items", "Link", "Markdown", "NavGroup",
     "NavLink", "NavPanel", "NavPanelCollapseButton", "NumberBox", "Option", "Page", "Pages", "PasswordInput", "ProgressBar", "RadioGroup", "Select",
     "Slider", "SpaceFiller", "Spinner", "Stack", "Switch", "Text", "TextArea", "TextBox", "Theme", "VStack",

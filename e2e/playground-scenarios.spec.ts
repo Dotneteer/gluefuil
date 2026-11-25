@@ -988,3 +988,161 @@ test("Input APIs and theming: setValue, focus and value from code; two inputs in
   expect(await style(textBox("Themed"), "border-top-left-radius")).toBe("999px");
   expect(await style(textBox("Default"), "border-top-left-radius")).not.toBe("999px");
 });
+
+test("Select: options from children, Items and data; keys; search by keywords; several values; groups; templates; states; the API", async ({ page }) => {
+  await open(page, "/select");
+  const fruit = page.getByRole("combobox", { name: "Fruit", exact: true });
+  await expect(fruit).toHaveText("Pick a fruit");
+  await expect(page.getByRole("combobox", { name: "Country (data, valueField, labelField)" })).toHaveText("Japan");
+  await expect(page.getByRole("combobox", { name: "A number value" })).toHaveText("Two");
+
+  // Keys: ArrowDown opens on the first option, skips the disabled one; Enter picks; Escape closes.
+  await fruit.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Durian (out of season)" })).toHaveAttribute("data-combobox-disabled", "true");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(text(page, "Fruit: banana")).toBeVisible();
+  await expect(fruit).toHaveText("Banana");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Apple" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("option", { name: "Apple" })).toBeHidden();
+  // Items: a new option appears when its data changes.
+  await button(page, "Add a fruit").click();
+  await fruit.click();
+  await page.getByRole("option", { name: "Fig 1" }).click();
+  await expect(text(page, "Fruit: Fig 1")).toBeVisible();
+
+  // Search: keywords count; the clear button.
+  const color = page.getByRole("combobox", { name: "Color (searchable, clearable)" });
+  await color.fill("sea");
+  await expect(page.getByRole("option")).toHaveText(["Blue"]);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(text(page, "Color: blue")).toBeVisible();
+  await expect(color).toHaveValue("Blue");
+  await page.locator(".gfui-Select", { has: color }).locator(".mantine-InputClearButton-root").click();
+  await expect(text(page, "Color: none")).toBeVisible();
+
+  // Several values: pills; the list stays open; Backspace removes the last; a value template's remove button.
+  const toppings = page.getByRole("combobox", { name: "Toppings (multiSelect)" });
+  await toppings.click();
+  await page.getByRole("option", { name: "Ham" }).click();
+  await page.getByRole("option", { name: "Olives" }).click();
+  await expect(text(page, 'Toppings: ["cheese","ham","olives"]; tags: ["news","tech"]')).toBeVisible();
+  await page.keyboard.press("Backspace");
+  await expect(text(page, 'Toppings: ["cheese","ham"]; tags: ["news","tech"]')).toBeVisible();
+  await page.locator(".gfui-Select", { hasText: "Tags (valueTemplate)" }).getByRole("button", { name: "×" }).first().click();
+  await expect(text(page, 'Toppings: ["cheese","ham"]; tags: ["tech"]')).toBeVisible();
+
+  // Groups: headers from the template, by name; the ungrouped first under their own header.
+  await page.getByRole("combobox", { name: "Country by region (groupBy)" }).click();
+  const listbox = page.getByRole("listbox").filter({ visible: true });
+  await expect(listbox.locator(".mantine-Combobox-groupLabel")).toHaveText(["Americas", "Asia", "Europe"]);
+  await expect(listbox.getByRole("option")).toHaveText(["Brazil", "Canada", "Japan", "Portugal", "Norway"]);
+  await page.keyboard.press("Escape");
+  await page.getByRole("combobox", { name: "Food (ungrouped first)" }).click();
+  await expect(page.getByRole("listbox").filter({ visible: true }).locator(".mantine-Combobox-groupLabel")).toHaveText(["Other", "Fruit", "Vegetable"]);
+  await page.keyboard.press("Escape");
+  // Templates: the option template with $checked; an Option's own content.
+  await page.getByRole("combobox", { name: "Rating (optionTemplate)" }).click();
+  await expect(page.getByRole("option", { name: "★★★ Good (current)" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("combobox", { name: "Plan (an Option's own content)" }).click();
+  await page.getByRole("option", { name: "Pro For teams" }).click();
+  await expect(page.getByRole("combobox", { name: "Plan (an Option's own content)" })).toHaveText("Pro");
+
+  // Empty lists and in progress; a short list scrolls.
+  await page.getByRole("combobox", { name: "Nothing to pick" }).click();
+  await expect(text(page, "List is empty")).toBeVisible();
+  await page.getByRole("combobox", { name: "A custom empty list" }).click();
+  await expect(text(page, "No options yet. Add some!")).toBeVisible();
+  await page.getByRole("switch", { name: "Loading" }).click();
+  await page.getByRole("combobox", { name: "Loading (inProgress)" }).click();
+  await expect(text(page, "Loading the options…")).toBeVisible();
+  await expect(page.getByRole("option", { name: "Loaded A" })).toBeHidden();
+  await page.getByRole("combobox", { name: "dropdownHeight=120px" }).click();
+  const options = page.locator(".gfui-Select-dropdown .mantine-Combobox-options").filter({ visible: true });
+  expect((await options.boundingBox())!.height).toBeLessThanOrEqual(121);
+  await page.keyboard.press("Escape");
+
+  // States: disabled; read-only opens nothing; validationStatus colors the border.
+  await expect(page.getByRole("combobox", { name: "Disabled" })).toBeDisabled();
+  await page.getByRole("combobox", { name: "Read-only" }).click();
+  await expect(page.getByRole("option", { name: "Other" })).toBeHidden();
+  const status = page.getByRole("combobox", { name: "validationStatus" });
+  await status.click();
+  await page.getByRole("option", { name: "warning" }).click();
+  // The focus border wins while it is focused (as every input's).
+  await page.getByRole("combobox", { name: "Fruit", exact: true }).focus();
+  const warning = await themeColor(page, "--gfui-borderColor-Input--warning");
+  await expect.poll(() => style(status, "border-top-color")).toBe(warning);
+
+  // The API: setValue fires no didChange; focus.
+  await button(page, "Pick banana").click();
+  await expect(fruit).toHaveText("Banana");
+  await expect(text(page, "Fruit: Fig 1")).toBeVisible();
+  await button(page, "Clear the fruit").click();
+  await expect(fruit).toHaveText("Pick a fruit");
+  await button(page, "Focus the fruit").click();
+  await expect(fruit).toBeFocused();
+  await button(page, "Toppings: ham and basil").click();
+  await expect(text(page, 'Toppings: ["ham","basil"]; tags: ["tech"]')).toBeVisible();
+});
+
+test("AutoComplete: keywords, Enter on the only match, clearing; several values and created ones; both pickers in a Form", async ({ page }) => {
+  await open(page, "/autocomplete");
+  const hero = page.getByRole("combobox", { name: "Hero", exact: true });
+  await hero.fill("batman");
+  await expect(page.getByRole("option")).toHaveText(["Bruce Wayne"]);
+  await page.keyboard.press("Enter");
+  await expect(text(page, "Hero: bruce")).toBeVisible();
+  await expect(hero).toHaveValue("Bruce Wayne");
+  await hero.fill("");
+  await hero.blur();
+  await expect(text(page, "Hero: none")).toBeVisible();
+
+  // multi: pick, the search clears and the list stays; Backspace removes the last.
+  const team = page.getByRole("combobox", { name: "Team (multi)" });
+  await team.fill("dia");
+  await page.getByRole("option", { name: "Diana Prince" }).click();
+  await expect(team).toHaveValue("");
+  await expect(page.getByRole("option", { name: "Bruce Wayne" })).toBeVisible();
+  await expect(text(page, /^Team: \["clark","diana"\]/)).toBeVisible();
+  await page.keyboard.press("Backspace");
+  await expect(text(page, /^Team: \["clark"\]/)).toBeVisible();
+
+  // creatable: a Create item, itemCreated, the new value.
+  const labels = page.getByRole("combobox", { name: "Labels (multi, creatable)" });
+  await labels.fill("docs");
+  await page.getByRole("option", { name: 'Create "docs"' }).click();
+  await expect(text(page, 'Team: ["clark"]; labels: ["docs"]; created: docs')).toBeVisible();
+  await labels.fill("bug");
+  await expect(page.getByRole("option")).toHaveText(["bug"]);
+  await expect(labels).toHaveAttribute("maxlength", "20");
+
+  // The Form: required on an AutoComplete and a multi Select; submit with the values' types.
+  await button(page, "Save").click();
+  await expect(text(page, "Pick an owner")).toBeVisible();
+  await expect(text(page, "Pick at least one reviewer")).toBeVisible();
+  const owner = page.getByRole("combobox", { name: "Owner" });
+  await owner.fill("grace");
+  await page.keyboard.press("Enter");
+  await page.getByRole("combobox", { name: "Reviewers" }).click();
+  await page.getByRole("option", { name: "Ada Lovelace" }).click();
+  await page.getByRole("option", { name: "Alan Turing" }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("combobox", { name: "Component" }).fill("doc");
+  await page.getByRole("option", { name: "Documentation" }).click();
+  await expect(text(page, "Dirty: yes")).toBeVisible();
+  await button(page, "Save").click();
+  const saved = page.locator(".gfui-Card", { hasText: "Saved" }).locator(".gfui-Text");
+  await expect(saved).toBeVisible();
+  expect(JSON.parse((await saved.textContent())!)).toEqual({ owner: "grace", reviewers: ["ada", "alan"], component: "docs" });
+  // The required mark on the pickers' own labels.
+  const marks = await page.locator(".gfui-Form .gfui-Label-text").evaluateAll((labels) =>
+    labels.map((label) => `${label.textContent}${getComputedStyle(label, "::after").content.replace(/^none$/, "")}`),
+  );
+  expect(marks).toEqual(['Owner" *"', 'Reviewers" *"', "Component"]);
+});

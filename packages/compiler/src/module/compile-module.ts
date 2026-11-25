@@ -134,6 +134,8 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["scriptGlobals", "$$g"],
   ["scriptRuntime", "$$r"],
   ["deferredValue", "$$deferred"],
+  ["optionItems", "$$optionItems"],
+  ["OptionContent", "$$OptionContent"],
 ];
 
 /** Attribute forms that later steps implement; reported instead of ignored. */
@@ -1205,7 +1207,12 @@ class ModuleCompiler {
     // Children as the template (Items): unless the template is also given as a <property>.
     const childrenTemplate = metadata.childrenTemplate;
     const meaningful = content.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
-    if (isUser && !childrenTemplate && meaningful.length > 0) {
+    if (!isUser && metadata.childrenAsOptions) {
+      // Step 25: the children are data, one reactive options array.
+      const data = node.attributes.find((a) => a.name.full === "data");
+      if (meaningful.length > 0 && data) this.report(data.name, "E036", name);
+      else if (meaningful.length > 0) bindings.push(["$$options", this.hoistRaw("$$o", `($$s) => [${this.optionParts(content, "$$s", name).join(", ")}]`)]);
+    } else if (isUser && !childrenTemplate && meaningful.length > 0) {
       this.report(meaningful[0]!, "E018", name);
     } else if (childrenTemplate && meaningful.length > 0) {
       if (templates.some(([template]) => template === childrenTemplate)) {
@@ -1618,6 +1625,120 @@ class ModuleCompiler {
     const array: ArrayExpression = { type: "ArrayExpression", elements, start: first.start, end: last.end };
     const value = this.value([{ kind: "expression", expression: array, start: first.start, end: last.end }]);
     bindings.push(["$$parts", "constant" in value ? `() => ${value.constant}` : value.binding]);
+  }
+
+  /**
+   * Step 25: the children of a Select or AutoComplete as array elements: an
+   * `Option` is an object (its attributes, any name, as fields), an `Items` spreads
+   * its template's options for each item (in an item scope, `$$optionItems`).
+   * `sv` is the scope variable of the enclosing function.
+   */
+  private optionParts(content: ContentNode[], sv: string, component: string): string[] {
+    const parts: string[] = [];
+    for (const child of content) {
+      if (child.kind === "comment") continue;
+      if (child.kind === "text" && child.value.trim() === "") continue;
+      if (child.kind !== "element") {
+        this.report(child.kind === "script" ? { start: child.start, end: child.contentSpan.start } : child, "E035", component, "text");
+        continue;
+      }
+      const name = child.name.full;
+      if (name === "Option") {
+        const entry = this.optionEntry(child, sv, component);
+        parts.push(this.optionWhen(child, sv, component, `[${entry}]`, entry));
+      } else if (name === "Items") parts.push(this.optionWhen(child, sv, component, this.optionItems(child, sv, component)));
+      else this.report(child.name, "E035", component, `<${name}>`);
+    }
+    return parts.filter((part) => part !== "");
+  }
+
+  /** An option or Items with `when`: kept only while it holds (a spread of the array, or of nothing). `single`: the element itself, without `when`. */
+  private optionWhen(node: ElementNode, sv: string, component: string, array: string, single?: string): string {
+    let test: string | undefined;
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name.startsWith("when-")) this.report(attribute.name, "E002", `'${name}' on <${node.name.full}> inside <${component}>`);
+      if (name !== "when" || !attribute.value) continue;
+      const value = this.value(this.segments(attribute as ValuedAttribute));
+      if ("constant" in value) {
+        const text = (JSON.parse(value.constant) as string).trim();
+        if (text === "false" || text === "") return "";
+      } else test = `(${value.binding})(${sv})`;
+    }
+    if (test === undefined) return single ?? `...${array}`;
+    return `...(${test} ? ${array} : [])`;
+  }
+
+  /** `<Option>` inside a Select: `{ value, label, …any attribute }`; text is the label, elements its content. */
+  private optionEntry(node: ElementNode, sv: string, component: string): string {
+    const metadata = this.metadataOf("Option")!;
+    const fields: [string, string][] = [];
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name === "when" || name.startsWith("when-")) continue;
+      if (name === "id" || name.startsWith("var.") || name.startsWith("global.") || /^on[A-Z]/.test(name) || attribute.name.prefix !== undefined) {
+        this.report(attribute.name, "E002", `'${name}' on <Option> inside <${component}>`);
+        continue;
+      }
+      const prop = Object.hasOwn(metadata.props, name) ? metadata.props[name] : undefined;
+      if (!attribute.value) {
+        fields.push([name, '"true"']);
+        continue;
+      }
+      const value = this.propValue(attribute as ValuedAttribute, prop);
+      if ("constant" in value) {
+        if (prop) this.checkPropLiteral(prop, name, JSON.parse(value.constant) as string, attribute.value);
+        fields.push([name, value.constant]);
+      } else fields.push([name, `(${value.binding})(${sv})`]);
+    }
+    const content = node.children.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
+    if (content.length > 0 && content.every((c) => c.kind === "text" || c.kind === "cdata")) {
+      // A text child is the label (XMLUI Option.tsx 63–66), unless `label` is set.
+      if (!fields.some(([name]) => name === "label")) fields.push(["label", this.optionText(content, sv)]);
+    } else if (content.length > 0) {
+      fields.push(["$$content", `$$h($$OptionContent, { render: ${this.template(node.children, [])}, scope: ${sv} })`]);
+    }
+    return `{ ${fields.map(([key, code]) => `${jsString(key)}: ${code}`).join(", ")} }`;
+  }
+
+  /** An Option's text as its label: interpolated, whitespace collapsed and trimmed. */
+  private optionText(content: ContentNode[], sv: string): string {
+    const pieces: string[] = [];
+    for (const child of content) {
+      if (child.kind === "cdata") {
+        pieces.push(jsString(child.value));
+        continue;
+      }
+      if (child.kind !== "text") continue;
+      const decoded = decodeEntitiesWithOffsets(child.raw, child.start);
+      const parsed = parseInterpolation(decoded.value, { offsets: decoded.offsets });
+      this.diagnostics.push(...parsed.diagnostics);
+      const value = this.value(parsed.segments.map((s) => (s.kind === "literal" ? { ...s, value: s.value.replace(WHITESPACE_RUN, " ") } : s)));
+      pieces.push("constant" in value ? value.constant : `(${value.binding})(${sv})`);
+    }
+    return `String(${pieces.join(" + ")}).trim()`;
+  }
+
+  /** `<Items data>` inside a Select: its Options for each item, in an item scope. */
+  private optionItems(node: ElementNode, sv: string, component: string): string {
+    let data = "undefined";
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name === "when" || name.startsWith("when-")) continue;
+      if (name !== "data") {
+        this.report(attribute.name, "E002", `'${name}' on <Items> inside <${component}>`);
+        continue;
+      }
+      if (!attribute.value) continue;
+      const value = this.value(this.segments(attribute as ValuedAttribute));
+      data = "constant" in value ? value.constant : `(${value.binding})(${sv})`;
+    }
+    const inner = `$$s${this.counter++}`;
+    this.contextFrames.push(new Set(this.metadataOf("Items")!.templates!.itemTemplate!.contextVars));
+    const content = node.children.filter((c) => !(c.kind === "element" && c.name.full === "property"));
+    const parts = this.optionParts(content, inner, component);
+    this.contextFrames.pop();
+    return `$$optionItems(${sv}, ${data}, (${inner}) => [${parts.join(", ")}])`;
   }
 
   /** Text content: interpolated; whitespace runs in literal parts collapse to one space. */

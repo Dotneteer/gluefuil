@@ -20,7 +20,7 @@
     </HStack>
 
     <H3>Text overflow</H3>
-    <Select label="Width" initialValue="280px" options="{['160px', '280px', '480px']}" onDidChange="(v) => width = v ?? '280px'"/>
+    <Select label="Width" initialValue="280px" data="{['160px', '280px', '480px']}" onDidChange="(v) => width = v ?? '280px'"/>
     <VStack width="{width}" border="1px dashed $borderColor">
       <Text maxLines="1">maxLines="1": the quick brown fox jumps over the lazy dog, and back again.</Text>
       <Text maxLines="2">maxLines="2": the quick brown fox jumps over the lazy dog, and back again, and once more to be sure the text needs a third line.</Text>

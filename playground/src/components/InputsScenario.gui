@@ -5,7 +5,7 @@
       <TextBox id="nameBox" label="Name" placeholder="Type your name"/>
       <Text>Hello, {nameBox.value || 'stranger'}!</Text>
       <Button label="Shout" onClick="nameBox.setValue(nameBox.value.toUpperCase())"/>
-      <Select placeholder="Pick a fruit" clearable searchable options="{[{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }, { value: 'c', label: 'Cherry' }]}" onDidChange="(v) => fruit = v ?? 'none'">
+      <Select placeholder="Pick a fruit" clearable searchable data="{[{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }, { value: 'c', label: 'Cherry' }]}" onDidChange="(v) => fruit = v || 'none'">
         <property name="optionTemplate">
           <Text>{$checked ? '✓ ' : ''}{$item.label} ({$item.value})</Text>
         </property>

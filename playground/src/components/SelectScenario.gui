@@ -1,0 +1,130 @@
+<Component name="SelectScenario">
+  <VStack
+    var.fruit=""
+    var.countries="{[{ code: 'pt', name: 'Portugal', region: 'Europe' }, { code: 'jp', name: 'Japan', region: 'Asia' }, { code: 'br', name: 'Brazil', region: 'Americas' }, { code: 'no', name: 'Norway', region: 'Europe' }, { code: 'ca', name: 'Canada', region: 'Americas' }]}"
+    var.extra="{[]}"
+    var.loading="{false}"
+    var.status="none">
+    <ScenarioHeader title="Select" description="Step 25: Select with Option children (also from Items) or data; search, several values, groups, templates, the keyboard, and its API."/>
+
+    <H3>Options from children, from Items, from data</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <Select id="fruitSelect" label="Fruit" placeholder="Pick a fruit" onDidChange="(v) => fruit = v">
+        <Option value="apple" label="Apple"/>
+        <Option value="banana" label="Banana"/>
+        <Option value="cherry">Cherry</Option>
+        <Option value="durian" label="Durian (out of season)" enabled="false"/>
+        <Items data="{extra}">
+          <Option value="{$item}" label="{$item}"/>
+        </Items>
+      </Select>
+      <Select label="Country (data, valueField, labelField)" data="{countries}" valueField="code" labelField="name" initialValue="jp"/>
+      <Select label="A number value" initialValue="{2}">
+        <Option value="{1}" label="One"/>
+        <Option value="{2}" label="Two"/>
+      </Select>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <Text>Fruit: {fruit || 'none'}</Text>
+      <Button label="Add a fruit" onClick="extra = [...extra, 'Fig ' + (extra.length + 1)]"/>
+    </HStack>
+    <Text variant="secondary">The Options compile to a reactive list: Items adds options when its data changes. Arrow keys move over the enabled ones; Enter picks; Escape closes.</Text>
+
+    <H3>Search and clear</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <Select id="colorSelect" label="Color (searchable, clearable)" searchable="true" clearable="true" placeholder="Type to filter">
+        <Option value="red" label="Red" keywords="{['warm', 'fire']}"/>
+        <Option value="orange" label="Orange" keywords="{['warm']}"/>
+        <Option value="blue" label="Blue" keywords="{['cold', 'sea']}"/>
+        <Option value="green" label="Green"/>
+      </Select>
+      <Text>Color: {colorSelect.value || 'none'}</Text>
+    </HStack>
+    <Text variant="secondary">The search matches the value, the label and the keywords: try "warm" or "sea".</Text>
+
+    <H3>Several values</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <Select id="toppings" label="Toppings (multiSelect)" multiSelect="true" clearable="true" initialValue="{['cheese']}">
+        <Option value="cheese" label="Cheese"/>
+        <Option value="ham" label="Ham"/>
+        <Option value="olives" label="Olives"/>
+        <Option value="basil" label="Basil"/>
+      </Select>
+      <Select id="tags" label="Tags (valueTemplate)" multiSelect="true" searchable="true" initialValue="{['news', 'tech']}">
+        <property name="valueTemplate">
+          <HStack verticalAlignment="center" border="1px solid $color-primary-500" borderRadius="999px" paddingHorizontal="$space-2">
+            <Text>#{$item.label}</Text>
+            <Button label="×" onClick="$itemContext.removeItem()"/>
+          </HStack>
+        </property>
+        <Option value="news" label="news"/>
+        <Option value="tech" label="tech"/>
+        <Option value="sports" label="sports"/>
+      </Select>
+    </HStack>
+    <Text>Toppings: {JSON.stringify(toppings.value)}; tags: {JSON.stringify(tags.value)}</Text>
+
+    <H3>Groups and templates</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <Select label="Country by region (groupBy)" data="{countries}" valueField="code" labelField="name" groupBy="region">
+        <property name="groupHeaderTemplate">
+          <HStack verticalAlignment="center"><Icon name="globe"/><Text variant="strong">{$group}</Text></HStack>
+        </property>
+      </Select>
+      <Select label="Food (ungrouped first)" groupBy="category">
+        <property name="ungroupedHeaderTemplate"><Text variant="secondary">Other</Text></property>
+        <Option value="carrot" label="Carrot" category="Vegetable"/>
+        <Option value="water" label="Water"/>
+        <Option value="apple" label="Apple" category="Fruit"/>
+        <Option value="leek" label="Leek" category="Vegetable"/>
+      </Select>
+      <Select label="Rating (optionTemplate)" initialValue="3">
+        <property name="optionTemplate">
+          <HStack verticalAlignment="center">
+            <Text>{'★'.repeat(Number($item.value))}</Text>
+            <Text variant="secondary">{$item.label}{$checked ? ' (current)' : ''}</Text>
+          </HStack>
+        </property>
+        <Option value="1" label="Poor"/>
+        <Option value="2" label="Fair"/>
+        <Option value="3" label="Good"/>
+      </Select>
+      <Select label="Plan (an Option's own content)">
+        <Option value="free" label="Free"><VStack><Text variant="strong">Free</Text><Text variant="secondary">For trying it out</Text></VStack></Option>
+        <Option value="pro" label="Pro"><VStack><Text variant="strong">Pro</Text><Text variant="secondary">For teams</Text></VStack></Option>
+      </Select>
+    </HStack>
+
+    <H3>Empty, in progress, a short list</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <Select label="Nothing to pick"/>
+      <Select label="A custom empty list">
+        <property name="emptyListTemplate"><Text>No options yet. Add some!</Text></property>
+      </Select>
+      <Select label="Loading (inProgress)" inProgress="{loading}" inProgressNotificationMessage="Loading the options…">
+        <Option value="a" label="Loaded A"/>
+        <Option value="b" label="Loaded B"/>
+      </Select>
+    </HStack>
+    <HStack wrapContent="true" itemWidth="33%">
+      <Switch label="Loading" onDidChange="(v) => loading = v"/>
+      <Select label="dropdownHeight=120px" dropdownHeight="120px">
+        <Items data="{Array.from({ length: 20 }, (_, i) => i + 1)}"><Option value="{$item}" label="{'Option ' + $item}"/></Items>
+      </Select>
+    </HStack>
+
+    <H3>States and the API</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <Select label="Disabled" enabled="false" initialValue="a"><Option value="a" label="Can't change"/></Select>
+      <Select label="Read-only" readOnly="true" initialValue="a"><Option value="a" label="Read only"/><Option value="b" label="Other"/></Select>
+      <Select label="validationStatus" initialValue="none" onDidChange="(v) => status = v" validationStatus="{status}" data="{['none', 'valid', 'warning', 'error']}"/>
+    </HStack>
+    <HStack wrapContent="true">
+      <Button label="Pick banana" onClick="fruitSelect.setValue('banana')"/>
+      <Button label="Clear the fruit" onClick="fruitSelect.setValue('')"/>
+      <Button label="Focus the fruit" onClick="fruitSelect.focus()"/>
+      <Button label="Toppings: ham and basil" onClick="toppings.setValue(['ham', 'basil'])"/>
+    </HStack>
+    <Text variant="secondary">setValue fires no didChange: "Fruit" above follows the user's picks only; the API value is {fruitSelect.value || 'empty'}.</Text>
+  </VStack>
+</Component>

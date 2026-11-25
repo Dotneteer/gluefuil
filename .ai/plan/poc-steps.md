@@ -484,6 +484,10 @@ step 22B (inserted) is submission and server errors.
 
 ## Phase F: Components, in batches
 
+**Step 25 (choice) ✅.** Plan and findings:
+[poc-25-choice.md](poc-25-choice.md). Option children compile to data; Select
+and AutoComplete are one component on Mantine's Combobox (the user's choices).
+
 **Step 24 (inputs) ✅.** Plan and findings:
 [poc-24-inputs.md](poc-24-inputs.md).
 
@@ -501,7 +505,7 @@ E2E tests for interaction-heavy ones.
 |------|-------|----------------|
 | 23 ✅ | Text and display: `Text`, `Heading`, `Link`, `Icon`, `Image`, `Avatar`, `Badge`, `ProgressBar`, `Spinner`, `ContentSeparator`, `Card`, `Markdown` | `Link` navigation, `Markdown` rendering |
 | 24 ✅ | Inputs: `TextBox`, `PasswordInput`, `TextArea`, `NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker` | Keyboard input, form binding |
-| 25 | Choice: `Select`, `AutoComplete`, `Option` | Search, multi-select, keyboard |
+| 25 ✅ | Choice: `Select`, `AutoComplete`, `Option` | Search, multi-select, keyboard |
 | 26 | Date and time: `DateInput`, `DatePicker`, `TimeInput` | Calendar interaction, locale |
 | 27 | Overlays and menus: `ModalDialog` (declarative and imperative), `Drawer`, `DropdownMenu`, `SubMenuItem`, `ContextMenu`, `Tooltip`, `toast()`, `confirm()` | Focus trap, Escape, outside click |
 | 28 | Structure: `Tabs`, `ExpandableItem`, `Stepper`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar` | Resizing, sticky, overflow |
