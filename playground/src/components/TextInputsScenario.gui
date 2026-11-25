@@ -1,0 +1,45 @@
+<Component name="TextInputsScenario">
+  <VStack var.events="" var.status="none">
+    <ScenarioHeader title="Text inputs" description="Step 24: TextBox (types, adornments, read-only, focus events), PasswordInput, TextArea (rows, auto size, insert) and NumberBox (limits, integers, steps)."/>
+
+    <H3>TextBox</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <TextBox label="Search" type="search" placeholder="Find…" startIcon="search"/>
+      <TextBox label="E-mail" type="email" placeholder="name@example.com" startIcon="email"/>
+      <TextBox label="Weight" startText="≈" endText="kg" placeholder="0"/>
+      <TextBox label="Read-only" readOnly="true" initialValue="You can select this, not change it"/>
+      <TextBox label="Disabled" enabled="false" initialValue="Disabled"/>
+      <TextBox label="Focus events" placeholder="Click in and out" onGotFocus="events += 'got focus; '" onLostFocus="events += 'lost focus; '"/>
+    </HStack>
+    <Text>Events: {events || 'none yet'}</Text>
+    <HStack verticalAlignment="end">
+      <Select label="validationStatus" initialValue="none" options="{['none', 'valid', 'warning', 'error']}" onDidChange="(v) => status = v ?? 'none'"/>
+      <TextBox label="Shown without a form" validationStatus="{status}" initialValue="Look at the border"/>
+    </HStack>
+
+    <H3>PasswordInput</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <PasswordInput label="Password" initialValue="secret" showPasswordToggle="true"/>
+      <PasswordInput label="No toggle" initialValue="secret"/>
+    </HStack>
+
+    <H3>TextArea</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <TextArea id="notes" label="Notes (4 rows)" rows="4" initialValue="Put the cursor somewhere and press Insert."/>
+      <TextArea label="Grows with the text (2 to 6 rows)" autoSize="true" minRows="2" maxRows="6" placeholder="Type several lines…"/>
+    </HStack>
+    <HStack>
+      <Button label="Insert" onClick="notes.insert('[inserted]')"/>
+      <Text variant="secondary">{notes.value.length} characters</Text>
+    </HStack>
+
+    <H3>NumberBox</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <NumberBox id="amount" label="Amount (0–100, step 5)" minValue="0" maxValue="100" step="5" initialValue="10"/>
+      <NumberBox label="Whole numbers" integersOnly="true" placeholder="No decimals"/>
+      <NumberBox label="Zero or positive" zeroOrPositive="true" startText="$"/>
+      <NumberBox label="No spin box" hasSpinBox="false" initialValue="42"/>
+    </HStack>
+    <Text>Amount: {amount.value === undefined ? 'empty' : amount.value} ({typeof amount.value})</Text>
+  </VStack>
+</Component>

@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 23 (text and display components, icons, Markdown).
+> **Last updated:** step 24 (inputs).
 
 ## What this repository is
 
@@ -109,6 +109,13 @@ Current state:
   (`@gluefuil/mock-backend`: a service worker, dev-server middleware or a
   test server answer real `fetch` requests; faults, holds and a request log
   under `/__mock`) ([mock-backend.md](mock-backend.md)).
+- **Inputs (step 24):** `TextBox` (types, adornments, password),
+  `PasswordInput`, `TextArea` (auto size, Enter submits, Escape resets),
+  `NumberBox` (a number value, limits), `Checkbox`, `Switch`, `RadioGroup`
+  with `Option` children, `Slider` (a value or a range), `ColorPicker`, all
+  on Mantine through `wrapComponent`. Each has `readOnly`, `autoFocus`,
+  `validationStatus`, focus events, and binds to a `Form` with `bindTo`
+  ([inputs.md](inputs.md)).
 - **Display components (step 23):** `Icon` (XMLUI's names, drawn with
   Lucide; `registerIcon`), `Image`, `Avatar`, `Badge`, `ProgressBar`,
   `Spinner`, `ContentSeparator` (Mantine), and `Card` (a Stack that is a
@@ -137,6 +144,7 @@ Current state:
 | [data.md](data.md) | `runtime/src/data/`, `runtime/src/render/deferred.ts`, `components/src/data.tsx`; the compiler's `whenIsProp`, `deferred`, `code`, `nullishUnresolved`, `eventResults` |
 | [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `gfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
 | [mantine.md](mantine.md) | `runtime/src/render/wrap.ts`, `components/src/mantine.tsx`, `text.tsx` |
+| [inputs.md](inputs.md) | `components/src/inputs.tsx`, `layout-wrap.tsx`; `wrapComponent`'s `readOnly` and API context; props shared by a component and a behavior |
 | [display.md](display.md) | `components/src/display.tsx`, `icons.tsx`, `icon-names.ts`, `markdown*.ts(x)`, the text overflow of `text.tsx`, `Link`; `compiler/src/script/markdown-bindings.ts`; `runtime/src/render/lazy.ts` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
 | [forms.md](forms.md) | `runtime/src/forms/`, `runtime/src/render/context-scope.ts`, the field binding in `wrap.ts`, `components/src/forms.tsx`, `childContextVars` in the compiler, `test-apps/forms` |
@@ -177,7 +185,8 @@ Current state:
 │   ├── mock-backend/    @gluefuil/mock-backend a mock backend (Request -> Response) and its hosts: service worker, dev-server middleware, test server
 │   └── components/      @gluefuil/components  built-in components (+ React-free metadata)
 │       ├── src/layout.tsx   Stack (VStack, HStack, … are compile-time aliases), SpaceFiller, the layout context and props (+ layout-metadata.ts, React-free)
-│       ├── src/mantine.tsx  Button, TextBox, Select, Checkbox (Mantine, through wrapComponent)
+│       ├── src/mantine.tsx  Button, Select (Mantine, through wrapComponent), MANTINE_STYLESHEET
+│       ├── src/inputs.tsx   TextBox, PasswordInput, TextArea, NumberBox, Checkbox, Switch, RadioGroup, Option, Slider, ColorPicker (+ layout-wrap.tsx: withLayout)
 │       ├── src/text.tsx     Text (variants), Heading, H1–H6, the text-overflow props
 │       ├── src/display.tsx  Image, Avatar, Badge, ProgressBar, Spinner, ContentSeparator (Mantine), Card (a Stack)
 │       ├── src/icons.tsx    the icon registry (Lucide drawings, XMLUI's names), Icon (+ icon-names.ts, React-free)
@@ -197,7 +206,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 28 scenarios (steps 2–23), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 32 scenarios (steps 2–24), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -417,6 +426,7 @@ Conventions:
 | `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule`; the server view and `mountApp` (`server-view.test.tsx`, see [ssg.md](ssg.md#tests)) |
 | `packages/runtime/tests/render/router.test.ts`, `router-events.test.ts`, `packages/components/tests/routing.test.tsx` | The router and its navigation events; Pages, Page, Link (see [routing.md](routing.md#tests)) |
 | `packages/runtime/tests/render/wrap.test.tsx`, `packages/components/tests/mantine.test.tsx`, `text-heading.test.tsx` | `wrapComponent`; the Mantine components; Text and Heading (see [mantine.md](mantine.md#tests)) |
+| `packages/components/tests/inputs.test.tsx` | Step 24: every input through markup and bound in a Form (see [inputs.md](inputs.md#tests)) |
 | `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
 | `packages/compiler/tests/module/behaviors.test.ts`, `packages/components/tests/behaviors.test.tsx` | Behaviors: attachment, order, generated code; rendering (see [behaviors.md](behaviors.md#tests)) |
 | `packages/components/tests/theming.test.ts`, `theme-components.test.tsx` | The theme engine tables; `App`/`Theme` and the globals (see [theming.md](theming.md#tests)) |
@@ -517,8 +527,8 @@ are current; the breakdowns in parentheses were last counted after steps
 - **The output stays quiet (`npm run check` prints no warnings), on purpose:**
   - the standalone build filters Mantine's `"use client"` directive messages
     (`MODULE_LEVEL_DIRECTIVE`, 800+ lines; meaningless in a client bundle);
-  - the fixture apps raise `chunkSizeWarningLimit` (React, ReactDOM and
-    Mantine are a known ~500 kB);
+  - the fixture apps raise `chunkSizeWarningLimit` to 900 kB (React,
+    ReactDOM, Mantine and every built-in are a known ~820 kB since step 24);
   - the fixtures' `optimizeDeps.include` lists `lucide-react` and the
     Markdown parser's packages (step 23): the parser is found only on the
     chunk's dynamic import, and the dev server would reload the page

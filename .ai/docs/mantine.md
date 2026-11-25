@@ -55,9 +55,9 @@ Standalone mode can't load them yet.
 | Component | Mantine | Props | Events | API |
 |-----------|---------|-------|--------|-----|
 | `Button` | `Button` | `label` (→ children), `enabled` | `click` (no arguments) | |
-| `TextBox` | `TextInput` | `initialValue`, `placeholder`, `enabled` | `didChange` | `value`, `setValue`, `focus` |
+| `TextBox` | `TextInput` (in `inputs.tsx` since step 24, [inputs.md](inputs.md)) | `initialValue`, `placeholder`, `enabled` | `didChange` | `value`, `setValue`, `focus` |
 | `Select` | `Select` | `options` (strings or `{ value, label }` → `data`), `initialValue`, `placeholder`, `enabled`, `searchable`, `clearable`; template `optionTemplate` (`$item` = `{ value, label }`, `$checked`) | `didChange` (null when cleared) | `value`, `setValue`, `focus` |
-| `Checkbox` | `Checkbox` | `label` (its own), `initialValue`, `enabled` | `didChange` | `value`, `setValue` |
+| `Checkbox` | `Checkbox` (in `inputs.tsx` since step 24) | `label` (its own), `initialValue`, `enabled` | `didChange` | `value`, `setValue` |
 
 - **`App` wraps its children in `MantineProvider`:**
   - `forceColorScheme` = the active tone;

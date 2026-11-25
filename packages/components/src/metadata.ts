@@ -194,6 +194,273 @@ function headingShortcut(level: number): ComponentMetadata {
 
 const ALIGNMENTS = ["start", "center", "end", "stretch"];
 
+/** Step 24: what every input has. `required`, `minLength`, … are the validation behavior's (forms). */
+const INPUT_COMMON: Record<string, PropMetadata> = {
+  enabled: { description: "false: disabled.", valueType: "boolean" },
+  readOnly: { description: "The value shows but can't be changed.", valueType: "boolean" },
+  autoFocus: { description: "Takes the keyboard focus when it mounts.", valueType: "boolean" },
+  validationStatus: {
+    description: "A validation state to show without a form: none (default), valid, warning, error. In a form, the field's state wins.",
+    valueType: "string",
+    availableValues: ["none", "valid", "warning", "error"],
+  },
+};
+
+const FOCUS_EVENTS: Record<string, EventMetadata> = {
+  gotFocus: { description: "The input got the keyboard focus. No arguments." },
+  lostFocus: { description: "The input lost the keyboard focus. No arguments." },
+};
+
+/** startText, endText, startIcon, endIcon: adornments inside the input's edges. */
+const ADORNMENT_PROPS: Record<string, PropMetadata> = {
+  startText: { description: "Text inside the input, before the value.", valueType: "string" },
+  endText: { description: "Text inside the input, after the value.", valueType: "string" },
+  startIcon: { description: "An icon inside the input, before the value.", valueType: "string", knownValues: ICON_NAMES },
+  endIcon: { description: "An icon inside the input, after the value.", valueType: "string", knownValues: ICON_NAMES },
+};
+
+/** The native text-entry attributes, forwarded to the input element. */
+const TEXT_ENTRY_PROPS: Record<string, PropMetadata> = {
+  placeholder: { description: "Shown while the text is empty.", valueType: "string" },
+  autoComplete: { description: "The browser's autocomplete hint (off, on, email, current-password, …).", valueType: "string" },
+  autoCapitalize: { description: "Mobile keyboards: off, none, sentences, words, characters.", valueType: "string", availableValues: ["off", "none", "sentences", "words", "characters"] },
+  autoCorrect: { description: "Mobile keyboards: on or off.", valueType: "string" },
+  spellCheck: { description: "The browser's spell check.", valueType: "boolean" },
+};
+
+const TEXT_API = {
+  value: { description: "The current text (reactive)." },
+  setValue: { description: "Replaces the text (no didChange)." },
+  focus: { description: "Moves the keyboard focus to the input." },
+};
+
+/** TextBox's theme variables, for one text input (step 16's names). */
+function textInputTheme(name: string): Record<string, string> {
+  return {
+    [`backgroundColor-${name}`]: "$backgroundColor",
+    [`textColor-${name}`]: "$textColor",
+    [`borderColor-${name}`]: "$borderColor",
+    [`borderColor-${name}--focus`]: "$color-primary-500",
+    [`borderRadius-${name}`]: "$borderRadius",
+  };
+}
+
+const PASSWORD_PROPS: Record<string, PropMetadata> = {
+  showPasswordToggle: { description: "A button that shows and hides the password.", valueType: "boolean" },
+  passwordVisibleIcon: { description: "The toggle's icon while the password is hidden (default eye).", valueType: "string", knownValues: ICON_NAMES },
+  passwordHiddenIcon: { description: "The toggle's icon while the password shows (default eye-off).", valueType: "string", knownValues: ICON_NAMES },
+};
+
+/** Step 24 (with step 16's TextBox and Checkbox): the inputs of inputs.tsx. */
+const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
+  TextBox: {
+    description: "A single-line text input (Mantine TextInput; PasswordInput for type=\"password\").",
+    props: {
+      initialValue: { description: "The text when the component mounts.", valueType: "any" },
+      type: { description: "text (default), password, search or email.", valueType: "string", availableValues: ["text", "password", "search", "email"] },
+      ...INPUT_COMMON,
+      ...TEXT_ENTRY_PROPS,
+      ...ADORNMENT_PROPS,
+      ...PASSWORD_PROPS,
+    },
+    events: {
+      didChange: { description: "The text changed by typing; `$param` is the new text." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: {
+      ...textInputTheme("TextBox"),
+      // The validation states without a form (validationStatus), for every input.
+      "borderColor-Input--error": "$color-danger-500",
+      "borderColor-Input--warning": "$color-warn-500",
+      "borderColor-Input--success": "$color-success-500",
+      "textColor-adornment-Input": "$textColor-secondary",
+    },
+    api: TEXT_API,
+  },
+  PasswordInput: {
+    description: "A text input whose text is masked (Mantine PasswordInput).",
+    props: {
+      initialValue: { description: "The text when the component mounts.", valueType: "any" },
+      ...INPUT_COMMON,
+      ...TEXT_ENTRY_PROPS,
+      ...ADORNMENT_PROPS,
+      ...PASSWORD_PROPS,
+    },
+    events: {
+      didChange: { description: "The text changed by typing; `$param` is the new text." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: textInputTheme("PasswordInput"),
+    api: TEXT_API,
+  },
+  TextArea: {
+    description: "A multi-line text input (Mantine Textarea).",
+    props: {
+      initialValue: { description: "The text when the component mounts.", valueType: "any" },
+      ...INPUT_COMMON,
+      ...TEXT_ENTRY_PROPS,
+      rows: { description: "The number of lines shown (default 2).", valueType: "integer" },
+      autoSize: { description: "Grows with the text, between minRows and maxRows.", valueType: "boolean" },
+      minRows: { description: "With autoSize: the fewest lines.", valueType: "integer" },
+      maxRows: { description: "With autoSize: the most lines; it scrolls after that.", valueType: "integer" },
+      resize: { description: "Whether the user can resize it: horizontal, vertical, both (default: none).", valueType: "string", availableValues: ["horizontal", "vertical", "both"] },
+      enterSubmits: { description: "In a Form: Enter submits it (default true); Shift+Enter is a new line. false: Enter is a new line.", valueType: "boolean" },
+      escResets: { description: "In a Form: Escape resets the form.", valueType: "boolean" },
+    },
+    events: {
+      didChange: { description: "The text changed by typing; `$param` is the new text." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: textInputTheme("TextArea"),
+    api: { ...TEXT_API, insert: { description: "Inserts text at the cursor (replacing the selection), as typing would; no didChange." } },
+  },
+  NumberBox: {
+    description: "A number input with a spin box (Mantine NumberInput). Its value is a number, or undefined while empty.",
+    props: {
+      initialValue: { description: "The number when the component mounts.", valueType: "number" },
+      placeholder: { description: "Shown while it is empty.", valueType: "string" },
+      ...INPUT_COMMON,
+      ...ADORNMENT_PROPS,
+      minValue: { description: "The smallest value: a smaller one becomes it when the input loses the focus.", valueType: "number" },
+      maxValue: { description: "The largest value: a larger one becomes it when the input loses the focus.", valueType: "number" },
+      step: { description: "What the arrows (keys and spin box) add or take (default 1).", valueType: "number" },
+      integersOnly: { description: "No decimal separator.", valueType: "boolean" },
+      zeroOrPositive: { description: "No negative numbers.", valueType: "boolean" },
+      hasSpinBox: { description: "The up and down buttons (default true).", valueType: "boolean" },
+    },
+    events: {
+      didChange: { description: "The number changed; `$param` is the new value (undefined while empty or incomplete)." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: textInputTheme("NumberBox"),
+    api: { value: { description: "The current number, or undefined (reactive)." }, setValue: { description: "Sets the number (no didChange)." }, focus: TEXT_API.focus },
+  },
+  Checkbox: {
+    description: "A checkbox with its own label (Mantine Checkbox).",
+    props: {
+      label: { description: "The checkbox's label.", valueType: "string" },
+      initialValue: { description: "Checked when the component mounts.", valueType: "boolean" },
+      indeterminate: { description: "Shows a dash: neither checked nor unchecked (the value doesn't change).", valueType: "boolean" },
+      ...INPUT_COMMON,
+    },
+    events: {
+      click: { description: "Clicked. The handler receives no arguments." },
+      didChange: { description: "Checked or unchecked by the user; `$param` is the new state." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: {
+      "backgroundColor-Checkbox--checked": "$color-primary-500",
+      "borderRadius-Checkbox": "$borderRadius",
+    },
+    api: {
+      value: { description: "Whether it is checked (reactive)." },
+      setValue: { description: "Checks or unchecks it." },
+      focus: TEXT_API.focus,
+    },
+  },
+  Switch: {
+    description: "An on/off switch with its own label (Mantine Switch).",
+    props: {
+      label: { description: "The switch's label.", valueType: "string" },
+      initialValue: { description: "On when the component mounts.", valueType: "boolean" },
+      ...INPUT_COMMON,
+    },
+    events: {
+      click: { description: "Clicked. The handler receives no arguments." },
+      didChange: { description: "Turned on or off by the user; `$param` is the new state." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: {
+      "backgroundColor-checked-Switch": "$color-primary-500",
+      "backgroundColor-Switch": "$color-surface-200",
+      "backgroundColor-indicator-Switch": "#ffffff",
+    },
+    api: {
+      value: { description: "Whether it is on (reactive)." },
+      setValue: { description: "Turns it on or off." },
+      focus: TEXT_API.focus,
+    },
+  },
+  RadioGroup: {
+    description: "One choice of several: Option children (anywhere inside, also from Items), shown as radio buttons (Mantine Radio.Group).",
+    props: {
+      label: { description: "The group's label.", valueType: "string" },
+      initialValue: { description: "The selected option's value when the component mounts (values are strings).", valueType: "any" },
+      orientation: { description: "vertical (default) or horizontal.", valueType: "string", availableValues: ["vertical", "horizontal"] },
+      ...INPUT_COMMON,
+    },
+    events: {
+      didChange: { description: "Another option was selected; `$param` is its value." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: { "backgroundColor-checked-RadioGroupOption": "$color-primary-500" },
+    api: {
+      value: { description: "The selected value (reactive); \"\" when none." },
+      setValue: { description: "Selects the option with this value." },
+      focus: { description: "Moves the focus to the selected option (or the first)." },
+    },
+  },
+  Option: {
+    description: "One choice of a RadioGroup: a value and its label (Select's Option children come later).",
+    props: {
+      value: { description: "The value it stands for (a string; numbers and booleans are converted).", valueType: "any" },
+      label: { description: "The text shown. Nested content is used when it is absent, then the value.", valueType: "string" },
+      enabled: { description: "false: it can't be selected.", valueType: "boolean" },
+    },
+    layoutProps: false,
+  },
+  Slider: {
+    description: "Picks a number, or a range of two, by dragging (Mantine Slider and RangeSlider).",
+    props: {
+      label: { description: "The slider's label (it also names the thumbs).", valueType: "string" },
+      initialValue: { description: "A number, or [from, to] for a range with two thumbs.", valueType: "any" },
+      minValue: { description: "The smallest value (default 0).", valueType: "number" },
+      maxValue: { description: "The largest value (default 10).", valueType: "number" },
+      step: { description: "The distance between values (default 1).", valueType: "number" },
+      minStepsBetweenThumbs: { description: "A range: the fewest steps between its thumbs (default 1).", valueType: "integer" },
+      showValues: { description: "The value in a tooltip while dragging (default true).", valueType: "boolean" },
+      valueFormat: { description: "A function that formats the value for the tooltip: (value) => value + ' %'. A literal is code, as in XMLUI.", valueType: "any", code: true },
+      ...INPUT_COMMON,
+    },
+    events: {
+      didChange: { description: "The value changed (while dragging too); `$param` is the new value." },
+      didCommit: { description: "The drag (or the key press) ended; `$param` is the final value." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: {
+      "backgroundColor-track-Slider": "$color-surface-200",
+      "backgroundColor-range-Slider": "$color-primary-500",
+      "backgroundColor-thumb-Slider": "#ffffff",
+      "borderColor-thumb-Slider": "$color-primary-500",
+    },
+    api: {
+      value: { description: "The number, or [from, to] (reactive)." },
+      setValue: { description: "Moves the thumb (or thumbs)." },
+      focus: { description: "Moves the focus to the (first) thumb." },
+    },
+  },
+  ColorPicker: {
+    description: "Picks a color: type it, or choose it in a popup (Mantine ColorInput). The value is a hex color.",
+    props: {
+      // Its own label (Mantine's <label for>), not the label behavior's wrapper: the popup must not be inside a <label>.
+      label: { description: "The input's label.", valueType: "string" },
+      initialValue: { description: "The color when the component mounts (default #000000).", valueType: "string" },
+      placeholder: { description: "Shown while it is empty.", valueType: "string" },
+      ...INPUT_COMMON,
+    },
+    events: {
+      didChange: { description: "The color changed; `$param` is the new hex color." },
+      ...FOCUS_EVENTS,
+    },
+    themeVars: textInputTheme("ColorPicker"),
+    api: {
+      value: { description: "The color (reactive)." },
+      setValue: { description: "Sets the color." },
+      focus: TEXT_API.focus,
+    },
+  },
+};
+
 /** A click handler's description: no DOM event reaches script. */
 const CLICK = { description: "Clicked (or Enter or Space when focused). The handler receives no arguments." };
 const CONTEXT_MENU = { description: "Right-clicked: replaces the browser's menu. The handler receives no arguments." };
@@ -650,29 +917,6 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       "borderRadius-Button": "$borderRadius",
     },
   },
-  TextBox: {
-    description: "A single-line text input (Mantine TextInput).",
-    props: {
-      initialValue: { description: "The text when the component mounts.", valueType: "any" },
-      placeholder: { description: "Shown while the text is empty.", valueType: "string" },
-      enabled: { description: "false: disabled.", valueType: "boolean" },
-    },
-    events: {
-      didChange: { description: "The text changed by typing; `$param` is the new text." },
-    },
-    themeVars: {
-      "backgroundColor-TextBox": "$backgroundColor",
-      "textColor-TextBox": "$textColor",
-      "borderColor-TextBox": "$borderColor",
-      "borderColor-TextBox--focus": "$color-primary-500",
-      "borderRadius-TextBox": "$borderRadius",
-    },
-    api: {
-      value: { description: "The current text (reactive)." },
-      setValue: { description: "Replaces the text." },
-      focus: { description: "Moves the keyboard focus to the input." },
-    },
-  },
   Select: {
     description: "Picks one value from a list (Mantine Select).",
     props: {
@@ -702,25 +946,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       focus: { description: "Moves the keyboard focus to the input." },
     },
   },
-  Checkbox: {
-    description: "A checkbox with its own label (Mantine Checkbox).",
-    props: {
-      label: { description: "The checkbox's label.", valueType: "string" },
-      initialValue: { description: "Checked when the component mounts.", valueType: "boolean" },
-      enabled: { description: "false: disabled.", valueType: "boolean" },
-    },
-    events: {
-      didChange: { description: "Checked or unchecked by the user; `$param` is the new state." },
-    },
-    themeVars: {
-      "backgroundColor-Checkbox--checked": "$color-primary-500",
-      "borderRadius-Checkbox": "$borderRadius",
-    },
-    api: {
-      value: { description: "Whether it is checked (reactive)." },
-      setValue: { description: "Checks or unchecks it." },
-    },
-  },
+  ...INPUT_COMPONENTS,
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",
     props: {

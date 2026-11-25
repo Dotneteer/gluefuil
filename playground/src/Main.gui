@@ -42,7 +42,11 @@
     { path: '/status', step: '23', title: 'Status indicators', description: 'Badge colorMap, a simulated download, spinner delays, separators.' },
     { path: '/cards', step: '23', title: 'Cards', description: 'Cards from data, selection, title rows, orientation, nesting, theming.' },
     { path: '/links', step: '23', title: 'Links and text', description: 'Link kinds, text overflow at three widths, heading anchors, hasOverflow().' },
-    { path: '/markdown', step: '23', title: 'Markdown', description: 'GFM samples, the HTML allowlist, @{…} bindings, a data URL.' }
+    { path: '/markdown', step: '23', title: 'Markdown', description: 'GFM samples, the HTML allowlist, @{…} bindings, a data URL.' },
+    { path: '/text-inputs', step: '24', title: 'Text inputs', description: 'TextBox types and adornments, PasswordInput, TextArea, NumberBox.' },
+    { path: '/choice-inputs', step: '24', title: 'Choice inputs', description: 'Checkbox, Switch, RadioGroup, Slider (value and range), ColorPicker.' },
+    { path: '/input-form', step: '24', title: 'Input form', description: 'Every input bound to a Form: validation, submit, reset.' },
+    { path: '/input-apis', step: '24', title: 'Input APIs and theming', description: 'setValue, focus and value from code; two inputs in sync; Enter in a TextArea; icons; theme variables.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -112,6 +116,10 @@
     <Page url="/cards"><VStack><CardsScenario/><ScenarioSource file="CardsScenario"/></VStack></Page>
     <Page url="/links"><VStack><LinksTextScenario/><ScenarioSource file="LinksTextScenario"/></VStack></Page>
     <Page url="/markdown"><VStack><MarkdownScenario/><ScenarioSource file="MarkdownScenario"/></VStack></Page>
+    <Page url="/text-inputs"><VStack><TextInputsScenario/><ScenarioSource file="TextInputsScenario"/></VStack></Page>
+    <Page url="/choice-inputs"><VStack><ChoiceInputsScenario/><ScenarioSource file="ChoiceInputsScenario"/></VStack></Page>
+    <Page url="/input-form"><VStack><InputFormScenario/><ScenarioSource file="InputFormScenario"/></VStack></Page>
+    <Page url="/input-apis"><VStack><InputApisScenario/><ScenarioSource file="InputApisScenario"/><ScenarioSource file="InputSampler"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

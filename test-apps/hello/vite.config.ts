@@ -14,8 +14,8 @@ export default defineConfig({
   optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime", "lucide-react", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   // prerender: a build renders Main.gui into index.html (step 13).
   plugins: [gfui({ prerender: true }), react()],
-  // React, ReactDOM and Mantine: one ~500 kB chunk, known (.ai/docs/mantine.md § Size).
-  build: { chunkSizeWarningLimit: 700 },
+  // React, ReactDOM, Mantine and every built-in: one ~820 kB chunk, known (.ai/docs/inputs.md § Size).
+  build: { chunkSizeWarningLimit: 900 },
   // `vite preview` serves the built app under a strict CSP: build-time
   // compilation must need no eval (step 12). The dev server is unaffected.
   preview: {

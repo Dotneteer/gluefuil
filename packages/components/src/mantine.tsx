@@ -7,10 +7,19 @@
 // rules win. Variables Mantine sets inline from its `vars` resolvers
 // (--button-bg) are redirected with a fixed `vars` resolver; variables it sets
 // from CSS (--input-bd) are redirected in our stylesheet (styles.ts).
-import { Button as MantineButton, Checkbox as MantineCheckbox, Select as MantineSelect, TextInput } from "@mantine/core";
+import { Button as MantineButton, Select as MantineSelect } from "@mantine/core";
 import avatarCss from "@mantine/core/styles/Avatar.layer.css?inline";
 import badgeCss from "@mantine/core/styles/Badge.layer.css?inline";
+import actionIconCss from "@mantine/core/styles/ActionIcon.layer.css?inline";
 import burgerCss from "@mantine/core/styles/Burger.layer.css?inline";
+import colorInputCss from "@mantine/core/styles/ColorInput.layer.css?inline";
+import colorPickerCss from "@mantine/core/styles/ColorPicker.layer.css?inline";
+import colorSwatchCss from "@mantine/core/styles/ColorSwatch.layer.css?inline";
+import numberInputCss from "@mantine/core/styles/NumberInput.layer.css?inline";
+import passwordInputCss from "@mantine/core/styles/PasswordInput.layer.css?inline";
+import radioCss from "@mantine/core/styles/Radio.layer.css?inline";
+import sliderCss from "@mantine/core/styles/Slider.layer.css?inline";
+import switchCss from "@mantine/core/styles/Switch.layer.css?inline";
 import dividerCss from "@mantine/core/styles/Divider.layer.css?inline";
 import imageCss from "@mantine/core/styles/Image.layer.css?inline";
 import loaderCss from "@mantine/core/styles/Loader.layer.css?inline";
@@ -27,24 +36,9 @@ import popoverCss from "@mantine/core/styles/Popover.layer.css?inline";
 import scrollAreaCss from "@mantine/core/styles/ScrollArea.layer.css?inline";
 import unstyledButtonCss from "@mantine/core/styles/UnstyledButton.layer.css?inline";
 import { wrapComponent } from "@gluefuil/runtime";
-import { createElement, type ComponentType } from "react";
-import { useLayout, withoutLayoutProps, type LayoutProps } from "./layout";
+import { enabledToDisabled, focusApi } from "./inputs";
+import { withLayout } from "./layout-wrap";
 import { componentMetadata } from "./metadata";
-
-/**
- * The layout props (width, padding, …) for a wrapped component: applied to the
- * Mantine component's root as `style`; the rest of the props go through the
- * wrapper unchanged.
- */
-function withLayout(Wrapped: ComponentType<Record<string, unknown>>): ComponentType<LayoutProps> {
-  function Layout(props: LayoutProps) {
-    // Only the style: Mantine puts it on the root, but other attributes on the input (TextInput).
-    const { style } = useLayout(props);
-    return createElement(Wrapped, { ...withoutLayoutProps(props), ...(style ? { style } : {}) });
-  }
-  Layout.displayName = Wrapped.displayName;
-  return Layout;
-}
 
 /** The CSS of the Mantine components in use (all in `@layer mantine`). */
 export const MANTINE_STYLESHEET = [
@@ -69,17 +63,21 @@ export const MANTINE_STYLESHEET = [
   imageCss,
   loaderCss,
   progressCss,
+  // The inputs (inputs.tsx, step 24).
+  actionIconCss,
+  passwordInputCss,
+  numberInputCss,
+  switchCss,
+  radioCss,
+  sliderCss,
+  colorInputCss,
+  colorPickerCss,
+  colorSwatchCss,
 ].join("\n");
 
 export const MANTINE_STYLESHEET_HREF = "gfui-mantine";
 
 const asText = (value: unknown) => (value === undefined || value === null ? "" : String(value));
-const enabledToDisabled = (enabled: unknown) => ({ disabled: enabled === false });
-const focusApi = ({ ref }: { ref: { current: unknown } }) => ({
-  focus() {
-    (ref.current as { focus?: () => void } | null)?.focus?.();
-  },
-});
 
 const buttonConfig = (type: "button" | "submit") => ({
   props: componentMetadata.Button!.props,
@@ -104,15 +102,6 @@ export const Button = withLayout(wrapComponent(MantineButton as never, buttonCon
 /** A Form's Save button (step 22): a Button that submits its form (Enter in an input submits too). Not in the markup. */
 export const SubmitButton = wrapComponent(MantineButton as never, buttonConfig("submit"));
 
-export const TextBox = withLayout(wrapComponent(TextInput as never, {
-  props: componentMetadata.TextBox!.props,
-  rename: { enabled: enabledToDisabled },
-  value: { prop: "value", change: "onChange", read: (event: { currentTarget: { value: string } }) => event.currentTarget.value, parse: asText },
-  withRef: true,
-  api: focusApi,
-  fixed: { className: "gfui-TextBox", vars: () => ({ wrapper: { "--input-radius": "var(--gfui-borderRadius-TextBox)" } }) },
-}));
-
 /** `options`: strings or `{ value, label }` objects → Mantine's `data`. */
 function toData(options: unknown): { value: string; label: string }[] {
   if (!Array.isArray(options)) return [];
@@ -134,20 +123,5 @@ export const Select = withLayout(wrapComponent(MantineSelect as never, {
     className: "gfui-Select",
     comboboxProps: { withinPortal: false },
     vars: () => ({ wrapper: { "--input-radius": "var(--gfui-borderRadius-Select)" } }),
-  },
-}));
-
-export const Checkbox = withLayout(wrapComponent(MantineCheckbox as never, {
-  props: componentMetadata.Checkbox!.props,
-  rename: { enabled: enabledToDisabled },
-  value: {
-    prop: "checked",
-    change: "onChange",
-    read: (event: { currentTarget: { checked: boolean } }) => event.currentTarget.checked,
-    parse: (value) => value === true || value === "true",
-  },
-  fixed: {
-    className: "gfui-Checkbox",
-    vars: () => ({ root: { "--checkbox-color": "var(--gfui-backgroundColor-Checkbox--checked)", "--checkbox-radius": "var(--gfui-borderRadius-Checkbox)" } }),
   },
 }));

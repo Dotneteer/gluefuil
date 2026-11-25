@@ -56,7 +56,9 @@ is the whole rule:
 
 `compileModule` then:
 - sends the behavior's attributes to it, type-checked against its props
-  (E022/E023), never to the component;
+  (E022/E023). A prop the component declares too goes to both (step 24:
+  NumberBox and Slider `minValue`/`maxValue` limit the input and are the
+  validation's range rule); otherwise never to the component;
 - wraps the compiled element in one `Bound` per behavior, innermost first.
 
 ```js

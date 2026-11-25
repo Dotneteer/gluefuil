@@ -7,6 +7,9 @@ import { BREAKPOINTS } from "@gluefuil/runtime";
 
 export const BASE_STYLESHEET_HREF = "gfui-base";
 
+/** The text inputs: each has TextBox's five theme variables, with its own name (step 24). */
+const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker"];
+
 /** Below md: a phone. The spacing ladder's page level steps down, and flows go one item per row. */
 const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
 
@@ -634,12 +637,14 @@ ${DISPLAY}
 .gfui-Heading[data-level="5"] { font-size: var(--gfui-fontSize-H5); }
 .gfui-Heading[data-level="6"] { font-size: var(--gfui-fontSize-H6); }
 /* Mantine inputs: variables Mantine sets from CSS, redirected (our rules are unlayered: they win). */
-.gfui-TextBox .mantine-Input-input {
-  --input-bg: var(--gfui-backgroundColor-TextBox);
-  --input-color: var(--gfui-textColor-TextBox);
-  --input-bd: var(--gfui-borderColor-TextBox);
-  --input-bd-focus: var(--gfui-borderColor-TextBox--focus);
-}
+${TEXT_INPUTS.map((name) => `.gfui-${name} .mantine-Input-input {
+  --input-bg: var(--gfui-backgroundColor-${name});
+  --input-color: var(--gfui-textColor-${name});
+  --input-bd: var(--gfui-borderColor-${name});
+  --input-bd-focus: var(--gfui-borderColor-${name}--focus);
+}`).join("\n")}
+/* The radius is Mantine's wrapper variable (the input and its sections read it); missed until step 24's theming E2E test. */
+${[...TEXT_INPUTS, "Select"].map((name) => `.gfui-${name} .mantine-Input-wrapper { --input-radius: var(--gfui-borderRadius-${name}); }`).join("\n")}
 .gfui-Select .mantine-Input-input {
   --input-bg: var(--gfui-backgroundColor-Select);
   --input-color: var(--gfui-textColor-Select);
@@ -650,9 +655,66 @@ ${DISPLAY}
 .gfui-App :where(.mantine-InputWrapper-root, .mantine-Input-wrapper, .mantine-Input-input) {
   box-sizing: border-box;
 }
-.gfui-TextBox .mantine-Input-input:focus,
-.gfui-Select .mantine-Input-input:focus {
+${[...TEXT_INPUTS, "Select"].map((name) => `.gfui-${name} .mantine-Input-input:focus-within`).join(",\n")} {
   --input-bd: var(--input-bd-focus);
+}
+/*
+ * Mantine's error state (a form's error, or validationStatus="error"). Mantine sets --input-bd for it
+ * in its layered CSS, which our unlayered redirects above override, so it is set again here, after the
+ * focus rule: an input in error stays red while focused (found in step 24).
+ */
+.gfui-App .mantine-Input-input[data-error] { --input-bd: var(--gfui-borderColor-Input--error); }
+/* Step 24: the validation states without a form (validationStatus), and Mantine's error state. */
+.gfui-App, .gfui-Theme { --mantine-color-error: var(--gfui-borderColor-Input--error); }
+[data-validation="warning"] .mantine-Input-input,
+.gfui-RadioGroup-options[data-validation="warning"] .mantine-Radio-radio,
+.gfui-Slider[data-validation="warning"] :is(.mantine-Slider-track, .mantine-RangeSlider-track) { --input-bd: var(--gfui-borderColor-Input--warning); outline: 1px solid var(--gfui-borderColor-Input--warning); }
+[data-validation="valid"] .mantine-Input-input,
+.gfui-RadioGroup-options[data-validation="valid"] .mantine-Radio-radio,
+.gfui-Slider[data-validation="valid"] :is(.mantine-Slider-track, .mantine-RangeSlider-track) { --input-bd: var(--gfui-borderColor-Input--success); outline: 1px solid var(--gfui-borderColor-Input--success); }
+[data-validation="warning"].mantine-Checkbox-root .mantine-Checkbox-input,
+[data-validation="warning"].mantine-Switch-root .mantine-Switch-track { border-color: var(--gfui-borderColor-Input--warning); }
+[data-validation="valid"].mantine-Checkbox-root .mantine-Checkbox-input,
+[data-validation="valid"].mantine-Switch-root .mantine-Switch-track { border-color: var(--gfui-borderColor-Input--success); }
+.gfui-Slider[data-error] :is(.mantine-Slider-track, .mantine-RangeSlider-track) { outline: 1px solid var(--gfui-borderColor-Input--error); }
+.gfui-Adornment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  color: var(--gfui-textColor-adornment-Input);
+  white-space: nowrap;
+}
+.gfui-Adornment-icon { width: 1.1em; height: 1.1em; }
+.gfui-Switch {
+  --switch-bg: var(--gfui-backgroundColor-Switch);
+  --switch-thumb-bg: var(--gfui-backgroundColor-indicator-Switch);
+}
+.gfui-Switch .mantine-Switch-track { background-color: var(--gfui-backgroundColor-Switch); }
+.gfui-Switch .mantine-Switch-input:checked + .mantine-Switch-track { background-color: var(--gfui-backgroundColor-checked-Switch); border-color: var(--gfui-backgroundColor-checked-Switch); }
+.gfui-RadioGroup-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gfui-space-2);
+  margin-block-start: var(--gfui-space-1);
+}
+.gfui-RadioGroup-options[data-orientation="horizontal"] { flex-direction: row; flex-wrap: wrap; gap: var(--gfui-space-4); }
+.gfui-Slider { display: flex; flex-direction: column; gap: var(--gfui-space-2); min-width: 120px; }
+.gfui-Slider-label { color: var(--gfui-textColor-Label); font-size: var(--gfui-fontSize-Label); }
+/* Slider and RangeSlider have their own static class names. */
+.gfui-Slider :is(.mantine-Slider-track, .mantine-RangeSlider-track)::before { background-color: var(--gfui-backgroundColor-track-Slider); }
+.gfui-Slider :is(.mantine-Slider-bar, .mantine-RangeSlider-bar) { background-color: var(--gfui-backgroundColor-range-Slider); }
+.gfui-Slider :is(.mantine-Slider-thumb, .mantine-RangeSlider-thumb) {
+  background-color: var(--gfui-backgroundColor-thumb-Slider);
+  border-color: var(--gfui-borderColor-thumb-Slider);
+}
+.gfui-ColorPicker .mantine-InputWrapper-label {
+  color: var(--gfui-textColor-Label);
+  font-size: var(--gfui-fontSize-Label);
+  font-weight: normal;
+}
+.gfui-ColorPicker .mantine-ColorInput-dropdown {
+  background-color: var(--gfui-backgroundColor-ColorPicker);
+  border-color: var(--gfui-borderColor-ColorPicker);
 }
 .gfui-Select .mantine-Select-dropdown {
   background-color: var(--gfui-backgroundColor-Select);

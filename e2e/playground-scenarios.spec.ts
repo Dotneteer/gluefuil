@@ -713,3 +713,278 @@ test("Markdown: samples from a variable, the allowlist, the flags, @{…} bindin
 
   await expect(page.getByRole("heading", { name: "Loaded from the server" })).toBeVisible();
 });
+
+test("Text inputs: types, adornments, read-only, focus events, validation states, password toggle, TextArea, NumberBox", async ({ page }) => {
+  await open(page, "/text-inputs");
+  await expect(page.getByRole("searchbox", { name: "Search" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "E-mail" })).toHaveAttribute("type", "email");
+  await expect(page.locator(".gfui-Adornment", { hasText: "kg" })).toBeVisible();
+  const readOnly = page.getByRole("textbox", { name: "Read-only" });
+  await readOnly.click();
+  await page.keyboard.type("xyz");
+  await expect(readOnly).toHaveValue("You can select this, not change it");
+  await expect(page.getByRole("textbox", { name: "Disabled" })).toBeDisabled();
+
+  await page.getByRole("textbox", { name: "Focus events" }).click();
+  await page.getByRole("textbox", { name: "E-mail" }).click();
+  await expect(text(page, "Events: got focus; lost focus;")).toBeVisible();
+
+  // validationStatus: the border takes the state's color.
+  const shown = page.getByRole("textbox", { name: "Shown without a form" });
+  await page.getByRole("combobox", { name: "validationStatus" }).click();
+  await page.getByRole("option", { name: "warning", exact: true }).click();
+  // Mantine animates border colors (100 ms): wait for the settled value.
+  const warning = await themeColor(page, "--gfui-borderColor-Input--warning");
+  await expect.poll(() => style(shown, "border-top-color")).toBe(warning);
+  // The select keeps the focus after a pick, and a click on it then doesn't open it: focus elsewhere first.
+  await shown.focus();
+  await page.getByRole("combobox", { name: "validationStatus" }).click();
+  await page.getByRole("option", { name: "error", exact: true }).click();
+  await expect(shown).toHaveAttribute("aria-invalid", "true");
+  const error = await themeColor(page, "--gfui-borderColor-Input--error");
+  await expect.poll(() => style(shown, "border-top-color")).toBe(error);
+
+  // PasswordInput: masked; the toggle shows it.
+  const password = page.locator('.gfui-PasswordInput input').first();
+  await expect(password).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Show the password" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+  await expect(page.locator(".gfui-PasswordInput").nth(1).getByRole("button")).toHaveCount(0);
+
+  // TextArea: insert() at the cursor; auto size grows, up to maxRows.
+  const notes = page.getByRole("textbox", { name: "Notes (4 rows)" });
+  await expect(notes).toHaveAttribute("rows", "4");
+  await notes.click();
+  await page.keyboard.press("End");
+  await button(page, "Insert").click();
+  await expect(notes).toHaveValue("Put the cursor somewhere and press Insert.[inserted]");
+  const grows = page.getByRole("textbox", { name: "Grows with the text (2 to 6 rows)" });
+  const before = (await grows.boundingBox())!.height;
+  await grows.fill("1\n2\n3\n4");
+  await expect.poll(async () => (await grows.boundingBox())!.height).toBeGreaterThan(before);
+  await grows.fill("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12");
+  const capped = (await grows.boundingBox())!.height;
+  await grows.fill("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16");
+  expect((await grows.boundingBox())!.height).toBe(capped);
+
+  // NumberBox: arrows step; limits clamp on blur; integers only; zero or positive.
+  const amount = page.getByRole("textbox", { name: "Amount (0–100, step 5)" });
+  await amount.focus();
+  await page.keyboard.press("ArrowUp");
+  await expect(amount).toHaveValue("15");
+  await expect(text(page, "Amount: 15 (number)")).toBeVisible();
+  await amount.fill("500");
+  await amount.blur();
+  await expect(amount).toHaveValue("100");
+  await amount.fill("");
+  await expect(text(page, "Amount: empty (undefined)")).toBeVisible();
+  await page.getByRole("textbox", { name: "Whole numbers" }).pressSequentially("1.5");
+  await expect(page.getByRole("textbox", { name: "Whole numbers" })).toHaveValue("15");
+  await page.getByRole("textbox", { name: "Zero or positive" }).pressSequentially("-3");
+  await expect(page.getByRole("textbox", { name: "Zero or positive" })).toHaveValue("3");
+});
+
+test("Choice inputs: Space on a switch, arrows in a radio group and on sliders, a range, the color picker", async ({ page }) => {
+  await open(page, "/choice-inputs");
+  await expect(page.getByRole("checkbox", { name: "Indeterminate" })).toHaveAttribute("data-indeterminate", "true");
+  const locked = page.getByRole("checkbox", { name: "Read-only (checked)" });
+  await locked.click();
+  await expect(locked).toBeChecked();
+
+  const wifi = page.getByRole("switch", { name: "Wi-Fi" });
+  await wifi.click();
+  await expect(text(page, "Wi-Fi is off.")).toBeVisible();
+  await page.keyboard.press("Space");
+  await expect(text(page, "Wi-Fi is on.")).toBeVisible();
+  const readOnlySwitch = page.getByRole("switch", { name: "Read-only" });
+  await readOnlySwitch.click();
+  await expect(readOnlySwitch).toBeChecked();
+
+  // RadioGroup: click, then arrows move the selection (the disabled option is skipped).
+  await page.getByRole("radio", { name: "Large", exact: true }).click();
+  await expect(text(page, "Size: l")).toBeVisible();
+  await page.keyboard.press("ArrowLeft");
+  await expect(text(page, "Size: m")).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Extra large (sold out)" })).toBeDisabled();
+  const delivery = page.getByRole("radiogroup", { name: "Delivery (vertical, read-only)" });
+  await delivery.getByRole("radio", { name: "Express" }).click();
+  await expect(delivery.getByRole("radio", { name: "Standard" })).toBeChecked();
+
+  // Slider: arrow keys change and commit.
+  const volume = page.getByRole("slider", { name: "Volume" });
+  await volume.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await expect(volume).toHaveAttribute("aria-valuenow", "6");
+  await expect(text(page, "Volume: 6 (committed: 6)")).toBeVisible();
+  // A range: two thumbs, the formatted value in the tooltip.
+  const thumbs = page.locator(".gfui-Slider", { hasText: "Price range" }).getByRole("slider");
+  await expect(thumbs).toHaveCount(2);
+  await thumbs.nth(1).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(text(page, "Price: $20 to $65")).toBeVisible();
+  await thumbs.nth(1).hover();
+  await expect(page.locator(".mantine-RangeSlider-label", { hasText: "$65" })).toBeVisible();
+  // The theme's colors reach the range slider too (its class names differ from Slider's).
+  expect(await style(page.locator(".mantine-RangeSlider-bar"), "background-color")).toBe(await themeColor(page, "--gfui-backgroundColor-range-Slider"));
+
+  // ColorPicker: type a color, or pick one in the popup.
+  const color = page.getByRole("textbox", { name: "Accent color", exact: true });
+  await color.fill("#ff0000");
+  await expect(text(page, "#ff0000")).toBeVisible();
+  const swatch = page.locator('.gfui-Stack[style*="background-color"]').filter({ hasText: "" }).last();
+  await expect(swatch).toHaveCSS("background-color", "rgb(255, 0, 0)");
+  await color.click();
+  // Inside ColorInput the picker's parts are named ColorInput's.
+  const area = page.locator(".mantine-ColorInput-saturation");
+  await expect(area).toBeVisible();
+  const box = (await area.boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.2, box.y + box.height * 0.8);
+  await expect(text(page, "#ff0000")).toHaveCount(0);
+  await expect(color).not.toHaveValue("#ff0000");
+});
+
+test("Input form: every input bound; errors block the submit; values keep their types; Enter submits, Escape resets", async ({ page }) => {
+  await open(page, "/input-form");
+  await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Ada Lovelace");
+  await expect(page.getByRole("radio", { name: "Free" })).toBeChecked();
+  await button(page, "Save").click();
+  await expect(text(page, "Please accept the terms")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Submitted" })).toHaveCount(0);
+
+  await page.locator(".gfui-PasswordInput input").fill("correct horse");
+  await page.getByRole("textbox", { name: "Age" }).fill("37");
+  await page.getByRole("radio", { name: "Pro" }).click();
+  const volume = page.getByRole("slider", { name: "Notification volume" });
+  await volume.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.getByRole("switch", { name: "Send me the newsletter" }).click();
+  await page.getByRole("checkbox", { name: "I accept the terms" }).check();
+  await expect(text(page, "Dirty: yes")).toBeVisible();
+  await button(page, "Save").click();
+  const submitted = page.locator(".gfui-Card", { hasText: "Submitted" }).locator(".gfui-Text");
+  await expect(submitted).toBeVisible();
+  expect(JSON.parse((await submitted.textContent())!)).toEqual({
+    name: "Ada Lovelace", password: "correct horse", bio: "", age: 37, plan: "pro", volume: 6, color: "#2563eb", newsletter: true, terms: true,
+  });
+
+  // Enter in the TextArea submits; Escape resets the form.
+  const bio = page.getByRole("textbox", { name: "About you" });
+  await bio.fill("Mathematician");
+  await bio.press("Enter");
+  await expect.poll(async () => JSON.parse((await submitted.textContent())!).bio).toBe("Mathematician");
+  await bio.fill("Changed");
+  await bio.press("Escape");
+  await expect(bio).toHaveValue("");
+  await expect(page.getByRole("radio", { name: "Free" })).toBeChecked();
+  await expect(text(page, "Dirty: no")).toBeVisible();
+});
+
+test("Input APIs and theming: setValue, focus and value from code; two inputs in sync; Enter in a TextArea; icons; theme variables", async ({ page }) => {
+  await open(page, "/input-apis");
+  const empty = "Booking: Nowhere, no guests, no room, 1 nights, breakfast no, late check-in no, tag #64748b";
+  await expect(text(page, empty)).toBeVisible();
+
+  // setValue on every input; the summary reads their reactive values.
+  await button(page, "Fill in a sample booking").click();
+  await expect(text(page, "Booking: Lisbon, 2 guests, suite, 5 nights, breakfast yes, late check-in yes, tag #e11d48")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "City" })).toHaveValue("Lisbon");
+  await expect(page.getByRole("textbox", { name: "Guests" })).toHaveValue("2");
+  await expect(page.getByRole("radio", { name: "Suite" })).toBeChecked();
+  await expect(page.getByRole("textbox", { name: "Tag color" })).toHaveValue("#e11d48");
+  await expect(page.getByRole("switch", { name: "Breakfast" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Late check-in" })).toBeChecked();
+  await expect(page.getByRole("slider", { name: "Nights" })).toHaveAttribute("aria-valuenow", "5");
+  // The swatch beside the summary takes the color (the innermost stack holding the summary, then its first child).
+  const bookingRow = page.locator(".gfui-Stack", { has: text(page, /^Booking:/) }).last();
+  await expect(bookingRow.locator(".gfui-Stack").first()).toHaveCSS("background-color", "rgb(225, 29, 72)");
+
+  // focus(): the room group focuses its checked option; the slider its thumb.
+  await button(page, "Focus the room").click();
+  await expect(page.getByRole("radio", { name: "Suite" })).toBeFocused();
+  await button(page, "Focus the nights").click();
+  await expect(page.getByRole("slider", { name: "Nights" })).toBeFocused();
+  await button(page, "Focus the city").click();
+  await expect(page.getByRole("textbox", { name: "City" })).toBeFocused();
+
+  await button(page, "Clear").click();
+  await expect(text(page, empty)).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Suite" })).not.toBeChecked();
+  await expect(page.getByRole("textbox", { name: "Guests" })).toHaveValue("");
+  // With nothing selected, focus() goes to the first option.
+  await button(page, "Focus the room").click();
+  await expect(page.getByRole("radio", { name: "Single" })).toBeFocused();
+
+  // Two inputs, one value: each one's didChange sets the other.
+  const widthSlider = page.getByRole("slider", { name: "Bar width" });
+  const widthBox = page.getByRole("textbox", { name: "Width" });
+  await widthBox.fill("25");
+  await expect(widthSlider).toHaveAttribute("aria-valuenow", "25");
+  await widthSlider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(widthBox).toHaveValue("30");
+  await expect(widthSlider).toHaveAttribute("aria-valuenow", "30");
+
+  // Enter sends the message and the form resets; Shift+Enter is a new line; an empty message doesn't send.
+  await expect(text(page, "No messages yet.")).toBeVisible();
+  const message = page.getByRole("textbox", { name: "Message (Enter sends, Shift+Enter is a new line)" });
+  await message.click();
+  await page.keyboard.type("Hello");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".gfui-Card", { hasText: "Hello" })).toBeVisible();
+  await expect(message).toHaveValue("");
+  await expect(text(page, "No messages yet.")).toHaveCount(0);
+  await page.keyboard.type("Line 1");
+  await page.keyboard.press("Shift+Enter");
+  await page.keyboard.type("Line 2");
+  await expect(message).toHaveValue("Line 1\nLine 2");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".gfui-Card", { hasText: "Line 2" })).toHaveText("Line 1\nLine 2");
+  await page.keyboard.press("Enter");
+  await expect(text(page, "Type something first")).toBeVisible();
+  await expect(page.locator(".gfui-Card")).toHaveCount(2);
+
+  // enterSubmits="false": Enter is a new line, no submit.
+  const notes = page.getByRole("textbox", { name: /^Notes \(enterSubmits=false/ });
+  await notes.click();
+  await page.keyboard.type("a");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("b");
+  await expect(notes).toHaveValue("a\nb");
+  await expect(text(page, "The notes form was submitted 0 times.")).toBeVisible();
+  await expect(notes).toHaveCSS("resize", "vertical");
+
+  // Icons: the password toggle's own icons; adornment icons.
+  const pin = page.locator(".gfui-Label", { hasText: "PIN" });
+  await expect(pin.locator("svg.lucide-lock")).toBeVisible();
+  await pin.getByRole("button", { name: "Show the password" }).click();
+  await expect(pin.locator("input")).toHaveAttribute("type", "text");
+  await expect(pin.locator("svg.lucide-eye-off")).toBeVisible();
+  const website = page.locator(".gfui-Label", { hasText: "Website" });
+  await expect(website.locator("svg.lucide-globe")).toBeVisible();
+  await expect(website.locator("svg.lucide-link")).toBeVisible();
+  // showValues="false": no tooltip on hover.
+  await page.getByRole("slider", { name: "No tooltip (showValues=false)" }).hover();
+  await expect(page.locator(".gfui-Slider", { hasText: "No tooltip" }).locator(".mantine-Slider-label")).toHaveCount(0);
+
+  // Theme variables: the themed column takes the Theme's colors, the default one keeps the theme's.
+  const success = await themeColor(page, "--gfui-color-success-500");
+  const warn = await themeColor(page, "--gfui-color-warn-500");
+  const primary = await themeColor(page, "--gfui-color-primary-500");
+  const checkbox = (title: string) => page.locator(".mantine-Checkbox-root", { hasText: `${title} checkbox` }).locator(".mantine-Checkbox-input");
+  const track = (title: string) => page.locator(".gfui-Switch", { hasText: `${title} switch` }).locator(".mantine-Switch-track");
+  const radio = (title: string) => page.getByRole("radiogroup", { name: `${title} radio` }).getByRole("radio", { name: "B" });
+  const bar = (title: string) => page.locator(".gfui-Slider", { hasText: `${title} slider` }).locator(".mantine-Slider-bar");
+  const textBox = (title: string) => page.getByRole("textbox", { name: `${title} text` });
+  await expect.poll(() => style(checkbox("Default"), "background-color")).toBe(primary);
+  await expect.poll(() => style(checkbox("Themed"), "background-color")).toBe(success);
+  expect(await style(track("Default"), "background-color")).toBe(primary);
+  expect(await style(track("Themed"), "background-color")).toBe(success);
+  expect(await style(radio("Default"), "background-color")).toBe(primary);
+  expect(await style(radio("Themed"), "background-color")).toBe(success);
+  expect(await style(bar("Default"), "background-color")).toBe(primary);
+  expect(await style(bar("Themed"), "background-color")).toBe(warn);
+  await expect.poll(() => style(textBox("Themed"), "border-top-color")).toBe(warn);
+  expect(await style(textBox("Themed"), "border-top-left-radius")).toBe("999px");
+  expect(await style(textBox("Default"), "border-top-left-radius")).not.toBe("999px");
+});

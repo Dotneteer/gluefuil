@@ -145,6 +145,11 @@ export function Form(props: FormProps) {
         event.preventDefault();
         void submit();
       }}
+      // A native reset (TextArea escResets, step 24, as XMLUI): what reset() does.
+      onReset={(event) => {
+        event.preventDefault();
+        api.reset();
+      }}
     >
       <ErrorSummary store={store} />
       <FormProvider store={store}>{props.children}</FormProvider>

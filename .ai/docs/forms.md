@@ -26,8 +26,10 @@
 ```
 
 **There is no `FormItem`** (the user's decision). Any component with a
-`value` and a `setValue` API binds: `TextBox`, `Select` and `Checkbox` now,
-and every input of steps 24–26.
+`value` and a `setValue` API binds: `TextBox`, `PasswordInput`, `TextArea`,
+`NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker`
+(step 24, [inputs.md](inputs.md)) and `Select`. A native reset of the
+`<form>` (TextArea `escResets`) does what `reset()` does.
 
 ### Form
 
@@ -146,7 +148,9 @@ and every input of steps 24–26.
     API is the field.
   - Focus and blur reach the field.
   - It is disabled while the form is disabled or submitting.
-  - A shown error sets Mantine's `error` (red border, `aria-invalid`).
+  - A shown error sets Mantine's `error` (red border, `aria-invalid`). The
+    red border works only since step 24: our `--input-bd` redirects had
+    overridden Mantine's error color ([inputs.md](inputs.md#theme-variables)).
   - `aria-describedby` points to the messages. It is set on the element
     through the ref, because Mantine's inputs override the prop.
   - It provides `null` to its templates and children, so an input inside

@@ -89,6 +89,7 @@ export { navDrawerOpen, navPanelCollapsed, resetShellState, setNavDrawerOpen, se
 export {
   coerceLiteral,
   wrapComponent,
+  type WrapApiContext,
   type WrapConfig,
   type WrapEvent,
   type WrapMetadata,
