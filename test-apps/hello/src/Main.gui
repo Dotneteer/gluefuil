@@ -176,5 +176,17 @@
     <Text>Likes in Main: {likes} ({visitor})</Text>
     <LikeButton/>
     <LikeCount/>
+
+    <!-- Step 23: display components; Markdown's renderer is a lazy chunk, prerendered and hydrated. -->
+    <H2>Step 23 · Display</H2>
+    <Markdown>
+      ### Markdown, prerendered
+
+      The count is **@{count}**, and this is a [link](https://example.com).
+    </Markdown>
+    <Card title="A card" subtitle="With a badge and progress">
+      <Badge value="new"/>
+      <ProgressBar value="0.5"/>
+    </Card>
   </Stack>
 </App>

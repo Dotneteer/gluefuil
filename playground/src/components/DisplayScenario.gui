@@ -1,0 +1,131 @@
+<Component name="DisplayScenario">
+  <VStack var.clicks="{0}" var.cardClicks="{0}" var.progress="{0.3}" var.status="active" var.busy="{false}" var.person="Ada Lovelace">
+    <ScenarioHeader title="Display" description="Step 23: Icon (Lucide, XMLUI's names), Image, Avatar, Badge, ProgressBar, Spinner, ContentSeparator, Card, Link, text overflow and Markdown."/>
+
+    <H3>Icons</H3>
+    <HStack wrapContent="true">
+      <Items data="{['home', 'search', 'trash', 'email', 'user', 'users', 'star', 'cog', 'info', 'warning', 'error', 'valid', 'download', 'upload', 'lock', 'eye', 'sun', 'moon']}">
+        <VStack horizontalAlignment="center" width="72px">
+          <Icon name="{$item}" size="md"/>
+          <Text variant="caption">{$item}</Text>
+        </VStack>
+      </Items>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <Icon name="plus-circle" size="lg" onClick="clicks++"/>
+      <Text>Icon clicked {clicks} times (click it, or Tab to it and press Enter).</Text>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <Icon name="{'not-an-icon'}" fallback="help" size="md"/>
+      <Text>An unknown name shows its fallback.</Text>
+    </HStack>
+
+    <H3>Image and Avatar</H3>
+    <HStack wrapContent="true" verticalAlignment="center">
+      <Image src="/sample-landscape.svg" alt="A landscape" width="160px"/>
+      <Image src="/sample-landscape.svg" alt="Cropped to a square" fit="cover" width="90px" aspectRatio="1"/>
+      <Image src="/sample-landscape.svg" alt="In grayscale" width="160px" grayscale="true"/>
+    </HStack>
+    <HStack wrapContent="true" verticalAlignment="center">
+      <Avatar name="Ada Lovelace" size="xs"/>
+      <Avatar name="Ada Lovelace"/>
+      <Avatar name="Grace Brewster Murray Hopper" size="md"/>
+      <Avatar name="Landscape" url="/sample-landscape.svg" size="md"/>
+      <Avatar name="Alan Turing" url="data:image/png;base64,broken" size="md"/>
+      <Avatar name="Custom Size" size="64px"/>
+      <Text variant="secondary">The fifth picture fails to load: its initials show.</Text>
+    </HStack>
+
+    <H3>Badge and ProgressBar</H3>
+    <HStack verticalAlignment="center">
+      <Badge value="{status}" colorMap="{{ active: '$color-success-500', away: '$color-warn-500', offline: { label: '$textColor', background: '$color-surface-200' } }}"/>
+      <Badge value="{status}" variant="pill" colorMap="{{ active: '$color-success-500', away: '$color-warn-500', offline: { label: '$textColor', background: '$color-surface-200' } }}"/>
+      <Badge>default</Badge>
+      <Button label="Next status" onClick="status = status === 'active' ? 'away' : status === 'away' ? 'offline' : 'active'"/>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <ProgressBar value="{progress}" width="*"/>
+      <Text width="48px">{Math.round(progress * 100)}%</Text>
+      <Button label="−10%" onClick="progress = Math.max(0, Math.round((progress - 0.1) * 10) / 10)"/>
+      <Button label="+10%" onClick="progress = Math.min(1, Math.round((progress + 0.1) * 10) / 10)"/>
+    </HStack>
+
+    <H3>Spinner and ContentSeparator</H3>
+    <HStack verticalAlignment="center">
+      <Button label="Work for 2 seconds" enabled="{!busy}" onClick="busy = true; delay(2000); busy = false"/>
+      <Spinner when="{busy}"/>
+      <Text variant="secondary">The spinner waits 400 ms before it shows (its delay).</Text>
+    </HStack>
+    <ContentSeparator/>
+    <HStack height="48px" verticalAlignment="center">
+      <Text>Left</Text>
+      <ContentSeparator orientation="vertical"/>
+      <Text>Middle</Text>
+      <ContentSeparator orientation="vertical" thickness="3px"/>
+      <Text>Right</Text>
+    </HStack>
+
+    <H3>Card</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <Card title="Ada Lovelace" subtitle="Analyst" showAvatar="true">
+        <Text>A card is a surface: its padding and gaps come from the spacing ladder.</Text>
+      </Card>
+      <Card title="Text and headings" subtitle="The title links to the Text scenario" avatarUrl="/sample-landscape.svg" linkTo="/text">
+        <Text>linkTo makes the title a link.</Text>
+      </Card>
+      <Card title="Clickable" onClick="cardClicks++">
+        <Text>Clicked {cardClicks} times.</Text>
+      </Card>
+      <Card title="Horizontal" orientation="horizontal">
+        <Badge value="one"/>
+        <Badge value="two"/>
+        <Badge value="three"/>
+      </Card>
+    </HStack>
+
+    <H3>Link</H3>
+    <HStack wrapContent="true">
+      <Link to="/text">Internal route</Link>
+      <Link to="https://github.com/Dotneteer/gluefuil" target="_blank" icon="new-window">External, new tab</Link>
+      <Link to="/text" enabled="false">Disabled</Link>
+      <Link to="/display" active="true">Active</Link>
+      <Link to="/display" noIndicator="true">No indicator</Link>
+      <Link onClick="clicks++">No route: click only (adds to the icon clicks)</Link>
+    </HStack>
+
+    <H3 showAnchor="true">Text overflow</H3>
+    <VStack width="280px">
+      <Text maxLines="1">maxLines="1": the quick brown fox jumps over the lazy dog, twice over.</Text>
+      <Text overflowMode="ellipsis" ellipses="false">ellipses="false": the quick brown fox jumps over the lazy dog.</Text>
+      <Text overflowMode="scroll">overflowMode="scroll": the quick brown fox jumps over the lazy dog.</Text>
+      <Text breakMode="anywhere">breakMode="anywhere": Supercalifragilisticexpialidocious-and-then-some</Text>
+      <Text preserveLinebreaks="true" value="{'preserveLinebreaks:\nline two\nline three'}"/>
+    </VStack>
+
+    <H3>Markdown</H3>
+    <Markdown showHeadingAnchors="true">
+      <![CDATA[
+      #### Written in markup
+
+      Hello **@{person}**: the progress above is @{Math.round(progress * 100)}% and the status is `@{status}`... no, *@{status}* (inline code keeps `@{…}` as written).
+
+      - [x] GFM task lists
+      - [ ] tables, ~~strikethrough~~ and autolinks: https://github.com
+
+      | Component | Built on |
+      |:----------|---------:|
+      | Badge     | Mantine  |
+      | Card      | Stack    |
+
+      > Links route through the app: [the Text scenario](/text).
+
+      <details><summary>Raw HTML (an allowlist)</summary>A <b>details</b> element; a <script> tag would show as text.</details>
+
+      ```js
+      // A code fence keeps @{progress} as written.
+      ```
+      ]]>
+    </Markdown>
+    <Markdown data="/api/docs/markdown"/>
+  </VStack>
+</Component>

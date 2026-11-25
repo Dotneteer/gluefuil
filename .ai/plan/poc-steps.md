@@ -484,13 +484,19 @@ step 22B (inserted) is submission and server errors.
 
 ## Phase F: Components, in batches
 
+**Step 23 (text and display) ✅.** Plan and findings:
+[poc-23-display.md](poc-23-display.md). Icons are Lucide (the user's choice)
+behind a registry of XMLUI's names. Markdown is our own renderer on mdast in a
+lazy chunk (prerendered and hydrated), with an HTML allowlist; `@{…}` is
+compiled.
+
 Each batch: wrap or build the components listed in the *Component
 implementation map* (architecture.md), with unit tests per component and
 E2E tests for interaction-heavy ones.
 
 | Step | Batch | E2E needed for |
 |------|-------|----------------|
-| 23 | Text and display: `Text`, `Heading`, `Link`, `Icon`, `Image`, `Avatar`, `Badge`, `ProgressBar`, `Spinner`, `ContentSeparator`, `Card`, `Markdown` | `Link` navigation, `Markdown` rendering |
+| 23 ✅ | Text and display: `Text`, `Heading`, `Link`, `Icon`, `Image`, `Avatar`, `Badge`, `ProgressBar`, `Spinner`, `ContentSeparator`, `Card`, `Markdown` | `Link` navigation, `Markdown` rendering |
 | 24 | Inputs: `TextBox`, `PasswordInput`, `TextArea`, `NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker` | Keyboard input, form binding |
 | 25 | Choice: `Select`, `AutoComplete`, `Option` | Search, multi-select, keyboard |
 | 26 | Date and time: `DateInput`, `DatePicker`, `TimeInput` | Calendar interaction, locale |

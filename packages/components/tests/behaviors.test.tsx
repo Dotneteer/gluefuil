@@ -59,8 +59,8 @@ test.each([
 
 test("behaviors on a user-defined component tag; the component does not receive the prop", () => {
   show(`
-    <Component name="Card"><Text>card: {$props.title} {JSON.stringify(Object.keys($props))}</Text></Component>
-    <App><Card title="x" tooltip="about the card"/></App>`);
+    <Component name="InfoCard"><Text>card: {$props.title} {JSON.stringify(Object.keys($props))}</Text></Component>
+    <App><InfoCard title="x" tooltip="about the card"/></App>`);
   expect(screen.getByText('card: x ["title"]')).toBeTruthy();
   act(() => fireEvent.mouseEnter(screen.getByText(/^card:/).closest(".gfui-TooltipAnchor")!));
   expect(screen.getByRole("tooltip").textContent).toBe("about the card");

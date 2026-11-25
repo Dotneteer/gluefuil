@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 22B (form submission and server errors).
+> **Last updated:** step 23 (text and display components, icons, Markdown).
 
 ## What this repository is
 
@@ -109,6 +109,15 @@ Current state:
   (`@gluefuil/mock-backend`: a service worker, dev-server middleware or a
   test server answer real `fetch` requests; faults, holds and a request log
   under `/__mock`) ([mock-backend.md](mock-backend.md)).
+- **Display components (step 23):** `Icon` (XMLUI's names, drawn with
+  Lucide; `registerIcon`), `Image`, `Avatar`, `Badge`, `ProgressBar`,
+  `Spinner`, `ContentSeparator` (Mantine), and `Card` (a Stack that is a
+  surface of the spacing ladder); `Text`, `Heading` and `Link` gained the
+  overflow props, anchors, external URLs and their APIs. **`Markdown`** (GFM)
+  is our own renderer in a lazy chunk: prerendered, and hydrated without
+  touching the server HTML. Raw HTML passes an allowlist. `@{…}` in the nested
+  text is compiled like any binding; runtime strings are never evaluated
+  ([display.md](display.md)).
 - **Behaviors:** `label`, `formBinding`, `validation`, `tooltip` and `variant` attach by trigger props,
   decided at compile time and compiled to `Bound` wrappers, on built-ins
   and user-defined components ([behaviors.md](behaviors.md)).
@@ -128,6 +137,7 @@ Current state:
 | [data.md](data.md) | `runtime/src/data/`, `runtime/src/render/deferred.ts`, `components/src/data.tsx`; the compiler's `whenIsProp`, `deferred`, `code`, `nullishUnresolved`, `eventResults` |
 | [mock-backend.md](mock-backend.md) | `packages/mock-backend`, the Vite plugin's `gfuiMockBackend` (`vite-plugin/src/mock.ts`), `test-apps/data` |
 | [mantine.md](mantine.md) | `runtime/src/render/wrap.ts`, `components/src/mantine.tsx`, `text.tsx` |
+| [display.md](display.md) | `components/src/display.tsx`, `icons.tsx`, `icon-names.ts`, `markdown*.ts(x)`, the text overflow of `text.tsx`, `Link`; `compiler/src/script/markdown-bindings.ts`; `runtime/src/render/lazy.ts` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
 | [forms.md](forms.md) | `runtime/src/forms/`, `runtime/src/render/context-scope.ts`, the field binding in `wrap.ts`, `components/src/forms.tsx`, `childContextVars` in the compiler, `test-apps/forms` |
 | [theming.md](theming.md) | `components/src/theming/` (the engine, built-in themes), `styles.ts`, `App`/`Theme`, `runtime/src/render/theme-state.ts` |
@@ -168,9 +178,12 @@ Current state:
 │   └── components/      @gluefuil/components  built-in components (+ React-free metadata)
 │       ├── src/layout.tsx   Stack (VStack, HStack, … are compile-time aliases), SpaceFiller, the layout context and props (+ layout-metadata.ts, React-free)
 │       ├── src/mantine.tsx  Button, TextBox, Select, Checkbox (Mantine, through wrapComponent)
-│       ├── src/text.tsx     Text (variants), Heading, H1–H6
-│       ├── src/routing.tsx  Pages, Page, Link
-│       ├── src/shell.tsx    the App shell: AppHeader, NavPanel, Footer, NavLink, NavGroup, NavPanelCollapseButton (+ icons.tsx)
+│       ├── src/text.tsx     Text (variants), Heading, H1–H6, the text-overflow props
+│       ├── src/display.tsx  Image, Avatar, Badge, ProgressBar, Spinner, ContentSeparator (Mantine), Card (a Stack)
+│       ├── src/icons.tsx    the icon registry (Lucide drawings, XMLUI's names), Icon (+ icon-names.ts, React-free)
+│       ├── src/markdown.tsx Markdown; markdown-render.tsx its lazy renderer (mdast → React); markdown-html.ts the HTML allowlist
+│       ├── src/routing.tsx  Pages, Page, Link (routes and URLs)
+│       ├── src/shell.tsx    the App shell: AppHeader, NavPanel, Footer, NavLink, NavGroup, NavPanelCollapseButton
 │       ├── src/theme.tsx    App, Theme; src/styles.ts the stylesheet; src/theming/ the theme engine (React-free)
 │       ├── src/behaviors.tsx  LabelBehavior, TooltipBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
 │       ├── src/data.tsx     DataSource, APICall, DataUrl
@@ -184,7 +197,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 21 scenarios (steps 2–22B), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 28 scenarios (steps 2–23), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -275,7 +288,7 @@ delivery (imported by no package):
 |---------|-----------|-----------------|
 | compiler | relative files; `@gluefuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
-| components | runtime, React (later Mantine) | compiler (its *tests* may import the compiler, a devDependency) |
+| components | runtime, React, Mantine, `lucide-react`, the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 | standalone | compiler, runtime, components, React | (no package imports it) |
 | vite-plugin | compiler, `@gluefuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
@@ -404,6 +417,7 @@ Conventions:
 | `packages/runtime/tests/render/*.test.tsx` | `Bound`, `TextNode`, `loadModule`; the server view and `mountApp` (`server-view.test.tsx`, see [ssg.md](ssg.md#tests)) |
 | `packages/runtime/tests/render/router.test.ts`, `router-events.test.ts`, `packages/components/tests/routing.test.tsx` | The router and its navigation events; Pages, Page, Link (see [routing.md](routing.md#tests)) |
 | `packages/runtime/tests/render/wrap.test.tsx`, `packages/components/tests/mantine.test.tsx`, `text-heading.test.tsx` | `wrapComponent`; the Mantine components; Text and Heading (see [mantine.md](mantine.md#tests)) |
+| `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
 | `packages/compiler/tests/module/behaviors.test.ts`, `packages/components/tests/behaviors.test.tsx` | Behaviors: attachment, order, generated code; rendering (see [behaviors.md](behaviors.md#tests)) |
 | `packages/components/tests/theming.test.ts`, `theme-components.test.tsx` | The theme engine tables; `App`/`Theme` and the globals (see [theming.md](theming.md#tests)) |
 | `packages/components/tests/user-components.test.tsx` | User-defined components, one test per feature (see [user-components.md](user-components.md#tests)) |
@@ -418,7 +432,7 @@ Conventions:
 | `tools/sandbox-drift.test.ts` | The compiler's sandbox tables agree with the runtime's globals object |
 | `tools/data-build.test.ts` | A production build of `test-apps/data` has no mock code and no worker script unless `build: true` (see [mock-backend.md](mock-backend.md#tests)) |
 | `mock-backend/tests/*.test.ts`, `runtime/tests/data/*.test.ts`, `compiler/tests/module/data.test.ts`, `components/tests/data.test.tsx` | The mock backend and its hosts; the HTTP gate, retries, Loader and ApiCaller; the compiler's data features; DataSource and APICall in markup (see [data.md](data.md#tests), [mock-backend.md](mock-backend.md#tests)) |
-| `tools/build-output.test.ts` | A real production build of `test-apps/hello` contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.gui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
+| `tools/build-output.test.ts` | A real production build of `test-apps/hello` is one entry chunk plus Markdown's lazy renderer, contains no compiler module and no eval, drops the standalone loader and the server renderer, maps back to `Main.gui` with `build.sourcemap`, and has the app prerendered in `index.html`; prerender failures fail the build (see [build-time.md](build-time.md#tests), [ssg.md](ssg.md#tests)) |
 | `packages/vite-plugin/tests/plugin.test.ts` | The plugin's hooks: ids, output, source-map modes, errors (see [build-time.md](build-time.md#tests)) |
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
@@ -505,6 +519,10 @@ are current; the breakdowns in parentheses were last counted after steps
     (`MODULE_LEVEL_DIRECTIVE`, 800+ lines; meaningless in a client bundle);
   - the fixture apps raise `chunkSizeWarningLimit` (React, ReactDOM and
     Mantine are a known ~500 kB);
+  - the fixtures' `optimizeDeps.include` lists `lucide-react` and the
+    Markdown parser's packages (step 23): the parser is found only on the
+    chunk's dynamic import, and the dev server would reload the page
+    mid-test to pre-bundle it;
   - the fixture dev servers turn off Vite's `server.forwardConsole`. It is on
     by default under an AI agent, and would print the source-map tests'
     deliberate throws. The playground turns it off only under the E2E suite
@@ -534,7 +552,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
 | `e2e/user-components.spec.ts` | The XMLUI user-defined-components examples (component files, code-behind, an inline component; `$props`, events, methods, slots), in dev and in the prerendered build |
 | `e2e/globals.spec.ts` | Globals (step 21B) in the hello app: a component file writes them, Main and another component read them, a local variable shadows one; dev and prerendered build |
-| `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled; takeover at the prerendered breakpoint changes no DOM node; at desktop width only the responsive text switches; the app is live afterwards |
+| `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled (prerendered Markdown included); takeover at the prerendered breakpoint changes no DOM node; with Markdown's chunk held back, the takeover still changes none and the Markdown is live afterwards; at desktop width only the responsive text switches; the app is live afterwards |
 | `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.gui` fetched |
 | `e2e/standalone.spec.ts` | Standalone mode against the built `gfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files) |
 | `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |

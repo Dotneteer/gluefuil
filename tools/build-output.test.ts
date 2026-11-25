@@ -39,12 +39,20 @@ describe("a production build (no source maps)", () => {
     output = await buildHello(false);
   }, 60_000);
 
-  test("is one JS chunk containing the app's compiled markup, the runtime and the components", () => {
-    expect(chunks(output)).toHaveLength(1);
-    const ids = relativeIds(chunks(output)[0]!);
+  test("is one entry chunk with the app's compiled markup, the runtime and the components, plus Markdown's lazy renderer", () => {
+    const entries = chunks(output).filter((chunk) => chunk.isEntry);
+    expect(entries).toHaveLength(1);
+    const ids = relativeIds(entries[0]!);
     expect(ids).toContain("test-apps/hello/src/Main.gui");
     expect(ids.some((id) => id.startsWith("packages/runtime/src/"))).toBe(true);
     expect(ids.some((id) => id.startsWith("packages/components/src/"))).toBe(true);
+    // Step 23: the Markdown parser and renderer are a chunk of their own, loaded on demand.
+    expect(ids).not.toContain("packages/components/src/markdown-render.tsx");
+    expect(ids.some((id) => id.includes("micromark") || id.includes("mdast-util"))).toBe(false);
+    // Besides it, only the bundler's small shared runtime (rolldown-runtime) is a chunk of its own.
+    const lazy = chunks(output).filter((chunk) => !chunk.isEntry && chunk.moduleIds.some((id) => !id.includes("rolldown")));
+    expect(lazy).toHaveLength(1);
+    expect(relativeIds(lazy[0]!)).toContain("packages/components/src/markdown-render.tsx");
   });
 
   test("contains no compiler module", () => {

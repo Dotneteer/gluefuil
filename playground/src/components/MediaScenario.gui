@@ -1,0 +1,56 @@
+<Component name="MediaScenario">
+  <VStack var.fit="contain" var.ratio="16/9" var.gray="{false}" var.imageClicks="{0}" var.name="Ada Lovelace" var.avatarClicks="{0}">
+    <ScenarioHeader title="Images and avatars" description="Step 23: Image (fit, aspect ratio, grayscale, inline, lazy loading, click) and Avatar (initials, pictures, a picture that fails, sizes)."/>
+
+    <H3>Image</H3>
+    <HStack verticalAlignment="end" wrapContent="true">
+      <Select label="fit" initialValue="contain" options="{['contain', 'cover']}" onDidChange="(v) => fit = v ?? 'contain'"/>
+      <Select label="aspectRatio" initialValue="16/9" options="{['16/9', '1', '3/4']}" onDidChange="(v) => ratio = v ?? '16/9'"/>
+      <Checkbox label="grayscale" onDidChange="(v) => gray = v"/>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <Image src="/sample-landscape.svg" alt="The sample landscape" fit="{fit}" aspectRatio="{ratio}" grayscale="{gray}" width="240px" backgroundColor="$color-surface-100" onClick="imageClicks++"/>
+      <Text>fit="{fit}", aspectRatio="{ratio}"{gray ? ', grayscale' : ''}. The picture was clicked {imageClicks} times.</Text>
+    </HStack>
+    <Text>An inline picture <Image src="/sample-landscape.svg" alt="a tiny landscape" inline="true" width="32px"/> sits in a line of text.</Text>
+    <HStack verticalAlignment="center">
+      <Image src="/sample-landscape.svg" alt="Loaded lazily" lazyLoad="true" width="120px"/>
+      <Text variant="secondary">lazyLoad="true": the browser loads it only when it is about to scroll into view.</Text>
+    </HStack>
+    <Text variant="secondary">No src: an Image renders nothing.</Text>
+
+    <H3>Avatar</H3>
+    <TextBox label="Name" initialValue="Ada Lovelace" onDidChange="(v) => name = v"/>
+    <HStack verticalAlignment="end" wrapContent="true">
+      <Items data="{['xs', 'sm', 'md', 'lg']}">
+        <VStack horizontalAlignment="center">
+          <Avatar name="{name}" size="{$item}"/>
+          <Text variant="caption">{$item}</Text>
+        </VStack>
+      </Items>
+      <VStack horizontalAlignment="center">
+        <Avatar name="{name}" size="64px"/>
+        <Text variant="caption">64px</Text>
+      </VStack>
+    </HStack>
+    <HStack verticalAlignment="center" wrapContent="true">
+      <VStack horizontalAlignment="center">
+        <Avatar name="{name}" url="/sample-landscape.svg" size="md"/>
+        <Text variant="caption">a picture</Text>
+      </VStack>
+      <VStack horizontalAlignment="center">
+        <Avatar name="{name}" url="data:image/png;base64,broken" size="md"/>
+        <Text variant="caption">a picture that fails</Text>
+      </VStack>
+      <VStack horizontalAlignment="center">
+        <Avatar size="md"/>
+        <Text variant="caption">no name</Text>
+      </VStack>
+      <VStack horizontalAlignment="center">
+        <Avatar name="{name}" size="md" onClick="avatarClicks++"/>
+        <Text variant="caption">clicked {avatarClicks} times</Text>
+      </VStack>
+    </HStack>
+    <Text variant="secondary">Initials: the first letters of up to three words. The label (for screen readers) is "Avatar of …".</Text>
+  </VStack>
+</Component>

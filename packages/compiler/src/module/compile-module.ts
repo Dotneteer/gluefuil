@@ -38,7 +38,8 @@ import type { AttributeNode, ContentNode, ElementNode, Span } from "../markup/as
 import { decodeEntitiesWithOffsets } from "../markup/entities";
 import { parseMarkup } from "../markup/parser";
 import { parseInterpolation, type InterpolationSegment } from "../script/interpolation";
-import type { Expression, FunctionDeclaration } from "../script/ast";
+import { parseMarkdownBindings } from "../script/markdown-bindings";
+import type { ArrayExpression, Expression, FunctionDeclaration, Literal } from "../script/ast";
 import { parseStatements } from "../script/parse";
 import type { Diagnostic } from "../source/diagnostic";
 import { buildSourceMap, type SourceMap } from "../source/source-map";
@@ -1200,6 +1201,9 @@ class ModuleCompiler {
       } else {
         templates.push([childrenTemplate, this.template(content, metadata.templates![childrenTemplate]!.contextVars)]);
       }
+    } else if (metadata.rawText) {
+      const interpolate = node.attributes.find((a) => a.name.full === "interpolateBindings")?.value?.value !== "false";
+      this.rawText(name, content, bindings, children, interpolate);
     } else if (!isUser) {
       for (const child of content) {
         const compiled = this.child(child, scopeVar);
@@ -1432,6 +1436,10 @@ class ModuleCompiler {
   private checkPropLiteral(prop: PropMetadata, propName: string, text: string, span: Span): void {
     const failure = checkLiteral(prop, text);
     if (failure) this.reportContract(span, failure.code, propName, text, failure.problem);
+    else if (prop.knownValues && !prop.knownValues.includes(text)) {
+      this.report(span, "E033", propName, text, didYouMean(text, prop.knownValues));
+      this.diagnostics[this.diagnostics.length - 1]!.severity = "warning";
+    }
   }
 
   private checkEvent(metadata: ComponentMetadata, component: string, event: string, span: Span): boolean {
@@ -1551,6 +1559,53 @@ class ModuleCompiler {
       case "comment":
         return undefined;
     }
+  }
+
+  /**
+   * The content of a `rawText` component (Markdown), as written: text (entities
+   * decoded) and CDATA joined, `@{…}` compiled. Without bindings it is one string
+   * child; with them, `$$parts` is a binding to an array of strings and values.
+   */
+  private rawText(component: string, content: ContentNode[], bindings: [string, string][], children: string[], interpolate: boolean): void {
+    let text = "";
+    const offsets: number[] = [];
+    for (const child of content) {
+      if (child.kind === "element") {
+        this.report(child.name, "E034", component, child.name.full);
+        continue;
+      }
+      if (child.kind === "text") {
+        const decoded = decodeEntitiesWithOffsets(child.raw, child.start);
+        text += decoded.value;
+        offsets.push(...decoded.offsets.slice(0, decoded.value.length));
+      } else if (child.kind === "cdata") {
+        const start = child.start + "<![CDATA[".length;
+        text += child.value;
+        for (let i = 0; i < child.value.length; i++) offsets.push(start + i);
+      }
+    }
+    if (text.trim() === "") return;
+    if (!interpolate) {
+      children.push(jsString(text));
+      return;
+    }
+    offsets.push(offsets.length > 0 ? offsets[offsets.length - 1]! + 1 : 0);
+    const parsed = parseMarkdownBindings(text, { offsets });
+    this.diagnostics.push(...parsed.diagnostics);
+    if (parsed.parts.every((part) => part.kind === "literal")) {
+      children.push(jsString(parsed.parts.map((part) => (part as { value: string }).value).join("")));
+      return;
+    }
+    const first = parsed.parts[0]!;
+    const last = parsed.parts[parsed.parts.length - 1]!;
+    const elements: Expression[] = parsed.parts.map((part) =>
+      part.kind === "literal"
+        ? ({ type: "Literal", value: part.value, raw: JSON.stringify(part.value), start: part.start, end: part.end } satisfies Literal)
+        : (part.expression ?? ({ type: "Identifier", name: "undefined", start: part.start, end: part.end } as Expression)),
+    );
+    const array: ArrayExpression = { type: "ArrayExpression", elements, start: first.start, end: last.end };
+    const value = this.value([{ kind: "expression", expression: array, start: first.start, end: last.end }]);
+    bindings.push(["$$parts", "constant" in value ? `() => ${value.constant}` : value.binding]);
   }
 
   /** Text content: interpolated; whitespace runs in literal parts collapse to one space. */

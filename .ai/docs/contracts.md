@@ -5,7 +5,7 @@
 > is. Design and XMLUI comparison:
 > [`../plan/poc-15-contracts.md`](../plan/poc-15-contracts.md).
 >
-> **Last updated:** step 15.
+> **Last updated:** step 23 (E033, E034; `knownValues`, `rawText`). Earlier: step 15.
 
 ## The format (`@gluefuil/components/metadata`, React-free)
 
@@ -32,11 +32,13 @@ interface ComponentMetadata {
   optionalThemeVars?: readonly string[];          // known theme variables without a default (gap-Stack)
   whenIsProp?: boolean;                           // `when` is a prop (DataSource: stays mounted, doesn't fetch); `when-*` is E002
   eventResults?: boolean;                         // handlers return their result to the component (APICall)
+  rawText?: boolean;                              // the content is text as written; @{…} compiled; elements are E034 (Markdown, step 23)
 }
 interface PropMetadata {
   description: string;
   valueType?: "string" | "boolean" | "number" | "integer" | "any";   // default "any"
   availableValues?: readonly string[];            // a closed enum
+  knownValues?: readonly string[];                // an open list: another literal is E033, a warning (icon names, step 23)
   isRequired?: boolean;
   deprecationMessage?: string;
   isLiteral?: boolean;                           // E026: no `{…}` (step 19)
@@ -92,6 +94,8 @@ props:** `id`, `when`, `when-*`, `var.*`, `global.*`, `handlerPolicy*`,
 | E030 | A removed prop (`removedProps`: App `layout`, `scrollWholePage`, `fitContent`), with what to write instead | the attribute name |
 | E031 | A literal layout value (a prop with `cssKind`: the layout props, `Stack gap`, `itemWidth`) that is not valid for its kind, or names an unknown theme variable (`$space-forty`) ([layout.md](layout.md)) | the value |
 | E032 | A removed component (`removed`: `FlowLayout`), with what to write instead | the tag name |
+| E033 | **A warning:** a literal outside a prop's `knownValues` (an icon name that isn't built in; the app may register it), with "did you mean" ([display.md](display.md#icons-iconstsx-icon-namests)) | the value |
+| E034 | An element inside a `rawText` component (`Markdown`): its content is text; HTML goes in CDATA ([display.md](display.md#markdown)) | the element name |
 | C015 | An unknown member of a component ID (`box.valu`, `c.rest()`), with "did you mean"; a component without `api` has no members | the member |
 
 - **Bound values are not type-checked:** their values are known only at

@@ -173,15 +173,15 @@ test("methods: through the caller's id (method.* attribute and <method>), and in
 
 test("the default slot renders the caller's children, in the caller's scope; the fallback otherwise", async () => {
   show(`
-    <Component name="Card">
+    <Component name="InfoCard">
       <Stack>
         <Text>[{$props.title}]</Text>
         <Slot><Text>nothing given</Text></Slot>
       </Stack>
     </Component>
     <App var.name="caller">
-      <Card title="a"><Text>child of {name}</Text><Button label="Rename" onClick="name = 'renamed'"/></Card>
-      <Card title="b"/>
+      <InfoCard title="a"><Text>child of {name}</Text><Button label="Rename" onClick="name = 'renamed'"/></InfoCard>
+      <InfoCard title="b"/>
     </App>`);
   expect(texts()).toEqual(["[a]", "child of caller", "[b]", "nothing given"]);
   await click("Rename");

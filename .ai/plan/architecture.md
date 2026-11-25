@@ -569,9 +569,9 @@ review, not a decision.
 |-------|--------------------------|-------|
 | Text | Own; variants use Mantine `Code`, `Kbd`, `Mark`, `Highlight` | Hot path |
 | Heading, H1–H6 | Mantine `Title` (`order` 1–6), or own | |
-| Markdown | `react-markdown` + `remark-gfm` (XMLUI uses both); code blocks via `@mantine/code-highlight` ⚠ | |
+| Markdown | **Step 23:** `mdast-util-from-markdown` + GFM, with our own renderer in a lazy chunk; raw HTML through an allowlist; `@{…}` compiled (not `react-markdown`, which XMLUI uses) | Code highlighting not yet |
 | Link | Mantine `Anchor` rendered as a router link | |
-| Icon | Own registry; default icon set `@tabler/icons-react` | Tabler is Mantine's customary icon set |
+| Icon | **Step 23:** own registry of XMLUI's names, drawn with `lucide-react` (the user's choice over Tabler) | Only registered icons ship; `registerIcon` adds more |
 | Image | Mantine `Image` | |
 | Avatar | Mantine `Avatar` | Has initials fallback |
 | Badge | Mantine `Badge` | |

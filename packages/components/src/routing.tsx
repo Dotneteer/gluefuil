@@ -3,7 +3,9 @@
 // .ai/plan/poc-19-routing.md
 import { currentLocation, findRoute, hrefFor, navigate, redirect, registerRoutes, useComputed } from "@gluefuil/runtime";
 import { Children, isValidElement, useEffect, type MouseEvent, type ReactNode } from "react";
+import { Glyph } from "./icons";
 import { LayoutScope, useLayout, useRecountedScope, type LayoutProps } from "./layout";
+import { mergeStyles, textOverflow, type TextOverflowProps } from "./text";
 
 /** A Page's content; Pages decides whether it is rendered. */
 export function Page({ children }: { url?: unknown; children?: ReactNode }) {
@@ -45,20 +47,70 @@ export function Pages({ fallbackPath, children }: { fallbackPath?: unknown; chil
   return <>{items.filter((_, index) => urls[index] === undefined || index === activeIndex)}</>;
 }
 
-/** A link to a route: a real href (`#/x` in hash mode); a plain click navigates without a page load. */
-export function Link(props: LayoutProps & { to?: unknown; label?: unknown; children?: ReactNode }) {
-  const { to, label, children } = props;
+/** A URL with a scheme (`https:`, `mailto:`) or protocol-relative (`//host`): not a route. */
+export function isExternalUrl(to: string): boolean {
+  return /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(to);
+}
+
+type LinkProps = LayoutProps &
+  TextOverflowProps & {
+    to?: unknown;
+    label?: unknown;
+    icon?: unknown;
+    target?: unknown;
+    enabled?: unknown;
+    active?: unknown;
+    noIndicator?: unknown;
+    onClick?: () => unknown;
+    children?: ReactNode;
+  };
+
+/**
+ * A link: to a route (a real href, `#/x` in hash mode; a plain click navigates
+ * without a page load, through the router's guard), or to an external URL (the
+ * browser follows it). `target` other than `_self` leaves the click to the
+ * browser. `enabled="false"` renders no href. `click` runs before the
+ * navigation.
+ */
+export function Link(props: LinkProps) {
+  const { to, label, icon, target, enabled, active, noIndicator, onClick, children } = props;
   const layout = useLayout(props);
-  const target = typeof to === "string" ? to : "/";
-  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    // Let the browser handle new tabs and windows.
+  const overflow = textOverflow(props);
+  const disabled = enabled === false || enabled === "false";
+  const destination = typeof to === "string" && to !== "" ? to : undefined;
+  const external = destination !== undefined && isExternalUrl(destination);
+  const newContext = typeof target === "string" && target !== "" && target !== "_self";
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (disabled) {
+      event.preventDefault();
+      return;
+    }
+    if (typeof onClick === "function") void onClick();
+    // Let the browser handle external URLs, targets, new tabs and windows.
+    if (destination === undefined || external || newContext) return;
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    void navigate(target);
+    void navigate(destination);
   };
+  const text = label !== undefined && label !== null ? String(label) : children;
   return (
-    <a className="gfui-Link" href={hrefFor(target)} onClick={onClick} {...layout.attributes} style={layout.style}>
-      {label !== undefined && label !== null ? String(label) : children}
+    <a
+      className="gfui-Link"
+      href={disabled || destination === undefined ? undefined : external ? destination : hrefFor(destination)}
+      target={newContext ? String(target) : undefined}
+      rel={newContext ? "noopener noreferrer" : undefined}
+      aria-disabled={disabled ? true : undefined}
+      data-active={active === true || active === "true" ? "" : undefined}
+      data-no-indicator={noIndicator === true || noIndicator === "true" ? "" : undefined}
+      tabIndex={destination === undefined && !disabled && typeof onClick === "function" ? 0 : undefined}
+      role={destination === undefined && typeof onClick === "function" ? "button" : undefined}
+      onClick={handleClick}
+      {...overflow.attributes}
+      {...layout.attributes}
+      style={mergeStyles(layout.style, overflow.style)}
+    >
+      {icon ? <Glyph name={icon} className="gfui-Link-icon" /> : null}
+      {icon ? <span className="gfui-Link-text">{text}</span> : text}
     </a>
   );
 }

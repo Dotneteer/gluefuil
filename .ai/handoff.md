@@ -6,9 +6,17 @@
 >
 > **Written:** after proof-of-concept steps 0–19 (2026-11-23); updated
 > after the inserted steps 19A–19C (the App shell), 19D–19F (the layout
-> system) and step 20 (data binding and the mock backend).
+> system), step 20 (data binding and the mock backend), and step 23 (text and
+> display components; 2026-11-25).
 
 ## State
+
+- **Step 23 (text and display components) is merged into `master`.** Plan and findings:
+  [`plan/poc-23-display.md`](plan/poc-23-display.md); reference:
+  [`docs/display.md`](docs/display.md). `npm run check` passes: 2,697 unit
+  tests in 95 files, 188 E2E tests. The bullets below predate steps 21–23
+  where they say otherwise (21, 21B, 22, 22B are merged on `master`, and the
+  project was renamed to gluefuil after 22B).
 
 - **`master` holds steps 0–20, with 19A–19C (the App shell) and 19D–19F
   (the layout system), merged.** Each step's branch was deleted after its
@@ -155,6 +163,14 @@
 - **Don't reset the router while an app is mounted** in a test: unmount
   first. Otherwise the next render attaches the router inside a computed
   value (`ReactivityError`).
+- **Lazy chunks and the prerender (step 23):** a component that suspends on
+  a dynamic import records it with `noteServerLoad`; the prerender renders the
+  route again once it loaded. Call `use()` on every render, and memoize the
+  Suspense boundary on its inputs: an update to a boundary that is still
+  dehydrated makes React drop the server HTML.
+- **New dependencies need `optimizeDeps.include`** in every fixture config,
+  including those found only by a dynamic import (the Markdown parser);
+  otherwise the dev server reloads the page mid-test.
 - **The sandbox invariant:** no platform object reaches script.
   `wrapComponent` calls an unconfigured `on*` handler without arguments for
   this reason.
@@ -168,6 +184,12 @@
   step 20). Trim it? XMLUI's behavior is to be checked first.
 
 ## Candidates for what comes next (the user decides)
+
+- **Step 24: inputs** (`TextBox`, `PasswordInput`, `TextArea`, `NumberBox`,
+  `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker`).
+- **Step 23's open items** (`poc-23-display.md`): compile-time icon imports
+  (size), Markdown code highlighting and `highlightText`, Text search
+  highlighting.
 
 - **Step 21: routing** (the rest): `willNavigate`/`didNavigate`,
   prerendering every static route.

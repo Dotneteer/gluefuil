@@ -1,12 +1,15 @@
 export * from "./metadata";
 export { BAR_SCOPE, childCount, LayoutContext, layoutStyle, SpaceFiller, Stack, useLayout, withoutLayoutProps, type LayoutContextValue } from "./layout";
-export { Link, Page, Pages } from "./routing";
+export { isExternalUrl, Link, Page, Pages } from "./routing";
 export { Button, Checkbox, MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF, Select, SubmitButton, TextBox } from "./mantine";
-export { H1, H2, H3, H4, H5, H6, Heading, headingLevel, Text, TEXT_VARIANT_ELEMENTS } from "./text";
+export { H1, H2, H3, H4, H5, H6, Heading, headingId, headingLevel, Text, TEXT_VARIANT_ELEMENTS, textOverflow } from "./text";
 export { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
 export { App, Theme } from "./theme";
 export { AppHeader, Footer, isActiveRoute, NavGroup, NavLink, NavPanel, NavPanelCollapseButton, type ShellConfig } from "./shell";
-export { Icon, ICON_NAMES } from "./icons";
+export { Glyph, Icon, iconSize, lookupIcon, registeredIconNames, registerIcon, type IconComponent } from "./icons";
+export { Avatar, Badge, Card, ContentSeparator, Image, initials, ProgressBar, Spinner } from "./display";
+export { bindingText, Markdown, preloadMarkdown, removeIndents } from "./markdown";
+export { ALLOWED_TAGS, decodeHtmlEntities, isSafeUrl, tokenizeHtml, type HtmlToken } from "./markdown-html";
 export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
 export { Items } from "./items";
 export { LabelBehavior, TooltipBehavior, VariantBehavior, variantVariable } from "./behaviors";

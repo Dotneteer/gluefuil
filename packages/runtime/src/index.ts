@@ -154,4 +154,5 @@ export { Loader, type LoaderEvents, type LoaderOptions, type LoaderState } from 
 export { ApiCaller, type ApiCallEvents, type ApiCallOptions, type ApiCallState } from "./data/api-call";
 export { deferredValue, isDeferred, resolveDeferred, type DeferredValue } from "./render/deferred";
 // Compiled code creates elements through the runtime, never through React directly.
+export { lazyResource, noteServerLoad, type LazyResource } from "./render/lazy";
 export { createElement, Fragment } from "react";

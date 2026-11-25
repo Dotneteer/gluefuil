@@ -115,7 +115,7 @@ describe("E032: FlowLayout is removed", () => {
 
 describe("a user component's root applies the layout props of its tag", () => {
   test("the root reads them from $props ($$layoutFrom)", () => {
-    const code = ok('<App><Card width="50%"/></App>\n<Component name="Card"><VStack><Text>x</Text></VStack></Component>');
+    const code = ok('<App><InfoCard width="50%"/></App>\n<Component name="InfoCard"><VStack><Text>x</Text></VStack></Component>');
     expect(code).toMatch(/"\$\$layoutFrom": \(\$\$s\) =>/);
     expect(code).toContain('"width": "50%"');
   });
@@ -126,7 +126,7 @@ describe("a user component's root applies the layout props of its tag", () => {
   });
 
   test("only the root: nested elements don't", () => {
-    const code = ok('<App/>\n<Component name="Card"><VStack><Text>x</Text></VStack></Component>');
+    const code = ok('<App/>\n<Component name="InfoCard"><VStack><Text>x</Text></VStack></Component>');
     expect(code.match(/\$\$layoutFrom/g)).toHaveLength(1);
   });
 });

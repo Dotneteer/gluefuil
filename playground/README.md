@@ -16,7 +16,7 @@ the nav is a drawer, opened from the header.
 
 ## The scenarios
 
-One or more per concept of proof-of-concept steps 2–22B
+One or more per concept of proof-of-concept steps 2–23
 (`.ai/plan/poc-steps.md`):
 
 | Step | Scenario | Shows |
@@ -42,6 +42,13 @@ One or more per concept of proof-of-concept steps 2–22B
 | 19D–F | Layout and spacing | A page with no gap or padding anywhere, in a frame at desktop or phone width: stacks, surfaces, a form, flows, star sizes, density, overrides; space-base 3/4/5 px; a spacing inspector that labels each stack with its level and gap |
 | 20 | Data | People from a mock backend (`src/backend.ts`, a service worker in the page): search, details, rename. A network panel makes the backend slow, failing, offline, hanging or holding requests, and shows the requests it saw |
 | 22, 22B | Forms | A member form loading from the mock backend (`/api/members/1`) and saving with PUT: inputs bound with `bindTo`, rules, a warning, an async check, server errors (422 on the inputs, a name with no input, a 500), Stop saving, a slow server. Unsaved changes block navigation (the `unsavedChanges` global) |
+| 23 | Display | An overview: Icons (XMLUI's names, Lucide), images, avatars (a picture that fails shows initials), badges with a `colorMap`, a progress bar, a delayed spinner, separators, cards (surfaces, a clickable one, a horizontal one), links (external, disabled, active), text overflow, and Markdown: `@{…}` bound to the page's variables, GFM, the HTML allowlist, a `data` URL from the mock backend (`/api/docs/markdown`) |
+| 23 | Icons | Every built-in icon name (code-behind holds the list): a filter, a size picker, a selected icon at every size and its markup, a fallback, icons taking the text color |
+| 23 | Images and avatars | Image `fit`, `aspectRatio` and `grayscale` from controls, a click count, an inline picture, `lazyLoad`; Avatar initials from a name you type, every size, a picture, a picture that fails, no name, a click count |
+| 23 | Status indicators | Badges of build checks with a `colorMap` (background, both colors, unmapped), fixing a check; a simulated download filling a ProgressBar; clamped values; spinners with delays 0, 400 and 1500 ms side by side; a full-screen spinner; separators (thickness, length, vertical) |
+| 23 | Cards | Cards from data (click selects, double click opens), title rows (avatar, picture, a linked title, none), a horizontal and a centered card, a card in a card, cards themed by a `Theme` |
+| 23 | Links and text | Every kind of link (route, query, URL in a new tab, e-mail, active, no indicator, click only, icons) with an enabled switch; every text-overflow mode at three widths; `hasOverflow()`; heading anchors and `scrollIntoView()` |
+| 23 | Markdown | Samples from a variable (basics, GFM, links and images, untrusted input) shown as source and rendered, with `allowHtml`, `openLinkInNewTab` and `showHeadingAnchors` switches; `@{…}` bound to a text box and a counter (inline code, a fence and an escape keep it); `interpolateBindings="false"`; a `data` URL |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the

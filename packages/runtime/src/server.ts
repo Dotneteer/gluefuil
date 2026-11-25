@@ -11,6 +11,8 @@ import { resetThemeState } from "./render/theme-state";
 import { BREAKPOINT_NAMES, breakpointFromName, setServerBreakpoint, type BreakpointName } from "./render/visibility";
 
 export { BASE_ATTRIBUTE, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE } from "./render/mount";
+// For the prerender: loads a render waited for (step 23: lazy chunks such as Markdown's renderer).
+export { takeServerLoads } from "./render/lazy";
 // For the prerender: which routes the app registered, and in which mode (step 21).
 export { findRoute, registeredRoutes, routingMode } from "./render/router";
 

@@ -1,5 +1,5 @@
 // Module (element tree) diagnostic codes. See .ai/plan/poc-05-first-app.md and
-// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030), poc-19d-layout.md (E031–E032).
+// .ai/plan/poc-14-user-components.md (E016–E019), poc-19a-app-shell.md (E028–E030), poc-19d-layout.md (E031–E032), poc-23-display.md (E033–E034).
 
 export const ModuleDiagnostics = {
   E001: (name: string, hint = "") => `Unknown component '${name}'${hint ? `.${hint}` : ""}`,
@@ -48,6 +48,10 @@ export const ModuleDiagnostics = {
   E031: (prop: string, value: string, problem: string) => `'${value}' is not a valid value for '${prop}': ${problem}`,
   /** A component that no longer exists, with what to use instead (FlowLayout). */
   E032: (component: string, instead: string) => `'${component}' is not a component any more: ${instead}`,
+  /** A warning: a literal outside a prop's known values (an icon name that isn't built in; an app may register it). */
+  E033: (prop: string, value: string, hint: string) => `'${value}' is not a known value of '${prop}'${hint ? `.${hint}` : ""}`,
+  /** An element inside a component whose content is text (Markdown). */
+  E034: (component: string, element: string) => `'${component}' takes text only; '<${element}>' can't be inside it (wrap HTML in <![CDATA[ … ]]>)`,
 } as const;
 
 export type ModuleDiagnosticCode = keyof typeof ModuleDiagnostics;

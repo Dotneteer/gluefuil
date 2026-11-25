@@ -3,6 +3,7 @@
 // or @gluefuil/runtime. The boundary test in tools/ enforces this.
 
 import { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
+import { ICON_NAMES } from "./icon-names";
 import { LAYOUT_PROPS, type LayoutValueKind } from "./layout-metadata";
 import { themeVariables, TONES } from "./theming/engine";
 import { BUILT_IN_THEME_MAP, THEME_IDS } from "./theming/themes";
@@ -34,6 +35,13 @@ export interface ComponentMetadata {
    * component a `contextScope` to fill; IDs inside stay file-scoped.
    */
   childContextVars?: readonly string[];
+  /**
+   * The element's content is text kept as written (step 23: Markdown): no `{…}`
+   * interpolation and no whitespace collapsing; `@{…}` are compiled bindings.
+   * The component receives the parts as `$$parts` (strings and values) or, with
+   * no binding, the text as `children`. Elements inside are E034.
+   */
+  rawText?: boolean;
   /** Any attribute is accepted as a prop (no unknown-prop check). */
   allowArbitraryProps?: boolean;
   /** Any event is accepted (no unknown-event check). */
@@ -96,6 +104,8 @@ export interface PropMetadata {
   valueType?: PropValueType;
   /** The only values a literal may have (a closed enum). */
   availableValues?: readonly string[];
+  /** The values a literal is expected to have; another one is a warning (E033), not an error (icon names: an app may register more). */
+  knownValues?: readonly string[];
   /** Markup must set it. */
   isRequired?: boolean;
   /** Using it is a warning with this message. */
@@ -136,6 +146,7 @@ const HEADING_THEME_VARS: Record<string, string> = {
   "textColor-Heading": "$textColor",
   "fontWeight-Heading": "600",
   "lineHeight-Heading": "1.25",
+  "color-anchor-Heading": "$color-surface-400",
   "fontSize-H1": "2em",
   "fontSize-H2": "1.5em",
   "fontSize-H3": "1.25em",
@@ -144,15 +155,220 @@ const HEADING_THEME_VARS: Record<string, string> = {
   "fontSize-H6": "0.9em",
 };
 
+/** The text-overflow props of Text, Heading and Link (text.tsx textOverflow; XMLUI Text.md). */
+const TEXT_OVERFLOW_PROPS: Record<string, PropMetadata> = {
+  maxLines: { description: "Truncates the text at this many lines: one line ends in an ellipsis, more are clamped.", valueType: "integer" },
+  overflowMode: {
+    description:
+      "none: one line, clipped; ellipsis: truncated with an ellipsis (at maxLines, or one line); scroll: one line that scrolls sideways; flow: wraps, and scrolls vertically in a constrained height. none, scroll and flow ignore maxLines.",
+    valueType: "string",
+    availableValues: ["none", "ellipsis", "scroll", "flow"],
+  },
+  breakMode: {
+    description: "normal (word boundaries), word (long words break), anywhere (any character), keep (no breaks inside words), hyphenate.",
+    valueType: "string",
+    availableValues: ["normal", "word", "anywhere", "keep", "hyphenate"],
+  },
+  ellipses: { description: "false: truncated text is clipped without an ellipsis (default true).", valueType: "boolean" },
+  preserveLinebreaks: { description: "Keeps the line breaks of `value` (nested text has its line breaks collapsed by the markup).", valueType: "boolean" },
+};
+
+const HEADING_PROPS: Record<string, PropMetadata> = {
+  value: { description: "The heading text. Nested text is used when it is absent.", valueType: "any" },
+  ...TEXT_OVERFLOW_PROPS,
+  showAnchor: { description: "Gives the heading an id from its text and a # link to it, shown on hover.", valueType: "boolean" },
+};
+
+const HEADING_API = {
+  hasOverflow: { description: "Whether the text is cut off (it overflows its box)." },
+  scrollIntoView: { description: "Scrolls the heading into view." },
+};
+
 function headingShortcut(level: number): ComponentMetadata {
   return {
     description: `A level ${level} heading (Heading level="h${level}").`,
-    props: {
-      value: { description: "The heading text. Nested text is used when it is absent.", valueType: "any" },
-      maxLines: { description: "Clamps the heading to this many lines, with an ellipsis.", valueType: "integer" },
-    },
+    props: HEADING_PROPS,
+    api: HEADING_API,
   };
 }
+
+const ALIGNMENTS = ["start", "center", "end", "stretch"];
+
+/** A click handler's description: no DOM event reaches script. */
+const CLICK = { description: "Clicked (or Enter or Space when focused). The handler receives no arguments." };
+const CONTEXT_MENU = { description: "Right-clicked: replaces the browser's menu. The handler receives no arguments." };
+
+/** XMLUI's named sizes of Icon (xs 12px, sm 16px, md 24px, lg 32px). */
+const ICON_SIZES = ["xs", "sm", "md", "lg"];
+
+/** Step 23: the display components (display.tsx, icons.tsx). */
+const DISPLAY_COMPONENTS: Record<string, ComponentMetadata> = {
+  Icon: {
+    description: "An icon from the registry by name (XMLUI's names, drawn with Lucide; registerIcon adds more).",
+    props: {
+      name: { description: "The icon's name: home, search, trash, email, …", valueType: "string", knownValues: ICON_NAMES },
+      fallback: { description: "The icon to show when `name` isn't registered.", valueType: "string", knownValues: ICON_NAMES },
+      size: { description: "xs (12px), sm (16px), md (24px), lg (32px), or a CSS size. Default: the theme's size-Icon.", valueType: "string" },
+    },
+    events: { click: CLICK },
+    themeVars: { "size-Icon": "1.2em" },
+  },
+  Image: {
+    description: "A picture from a URL.",
+    props: {
+      src: { description: "The image's URL. Without one, nothing is shown.", valueType: "string" },
+      alt: { description: "The alternative text, for screen readers and when the image can't load.", valueType: "string" },
+      fit: { description: "contain (default: the whole image fits) or cover (it fills the box, cropped).", valueType: "string", availableValues: ["contain", "cover"] },
+      aspectRatio: { description: "A width/height ratio: 1.5 or 16/9.", valueType: "string" },
+      lazyLoad: { description: "Loads the image only when it is about to scroll into view.", valueType: "boolean" },
+      inline: { description: "An inline element (in a line of text) instead of a block.", valueType: "boolean" },
+      grayscale: { description: "Shows the image in grayscale.", valueType: "boolean" },
+    },
+    events: { click: CLICK },
+    themeVars: { "borderRadius-Image": "0" },
+  },
+  Avatar: {
+    description: "A person's picture, or the initials of their name without one (or when it fails to load).",
+    props: {
+      name: { description: "The name: its initials (up to three) and the accessible label.", valueType: "string" },
+      url: { description: "The picture's URL.", valueType: "string" },
+      size: { description: "xs, sm (default), md, lg, xl, or a CSS size.", valueType: "string" },
+    },
+    events: { click: CLICK, contextMenu: CONTEXT_MENU },
+    themeVars: {
+      "backgroundColor-Avatar": "$color-surface-100",
+      "textColor-Avatar": "$textColor-secondary",
+      "borderRadius-Avatar": "4px",
+      "border-Avatar": "0px solid $borderColor",
+      "boxShadow-Avatar": "inset 0 0 0 1px rgba(4,32,69,0.1)",
+      "fontWeight-Avatar": "700",
+    },
+  },
+  Badge: {
+    description: "A small label with a colored background (a status, a tag, a count).",
+    props: {
+      value: { description: "The text. The nested content is used when it is absent.", valueType: "any" },
+      variant: { description: "badge (default: rounded corners) or pill (fully rounded).", valueType: "string", availableValues: ["badge", "pill"] },
+      colorMap: {
+        description: "Colors by value: { active: '$color-success-500' } (the background), or { active: { label: 'white', background: 'green' } }.",
+        valueType: "any",
+      },
+    },
+    events: { contextMenu: CONTEXT_MENU },
+    themeVars: {
+      "backgroundColor-Badge": "$color-secondary-500",
+      "textColor-Badge": "#ffffff",
+      "borderRadius-Badge": "4px",
+      "border-Badge": "0px solid $borderColor",
+      "padding-Badge": "$space-1 $space-2",
+      "fontSize-Badge": "0.8em",
+      "fontWeight-Badge": "600",
+      "textTransform-Badge": "uppercase",
+    },
+  },
+  ProgressBar: {
+    description: "A horizontal bar filled by `value`, from 0 to 1.",
+    props: {
+      value: { description: "The progress, from 0 (empty) to 1 (complete); clamped. Default 0.", valueType: "number" },
+    },
+    themeVars: {
+      "backgroundColor-ProgressBar": "$color-surface-200",
+      "color-indicator-ProgressBar": "$color-primary-500",
+      "color-indicator-ProgressBar--complete": "$color-success-500",
+      "thickness-ProgressBar": "0.5em",
+      "borderRadius-ProgressBar": "999em",
+      "borderRadius-indicator-ProgressBar": "999em",
+    },
+  },
+  Spinner: {
+    description: "An animated ring: something is in progress.",
+    props: {
+      delay: { description: "Milliseconds before it shows (default 400), so a quick operation shows none.", valueType: "integer" },
+      fullScreen: { description: "Centered over the whole viewport.", valueType: "boolean" },
+    },
+    themeVars: {
+      "size-Spinner": "2.5em",
+      "thickness-Spinner": "0.125em",
+      "borderColor-Spinner": "$color-surface-400",
+    },
+  },
+  ContentSeparator: {
+    description: "A horizontal or vertical line between content.",
+    props: {
+      orientation: { description: "horizontal (default) or vertical.", valueType: "string", availableValues: ["horizontal", "vertical"] },
+      thickness: { description: "The line's thickness (default: the theme's thickness-ContentSeparator, 1px).", valueType: "string", cssKind: "size" },
+      length: { description: "The line's length (default: the full width; a vertical line stretches to its row).", valueType: "string", cssKind: "size" },
+    },
+    themeVars: {
+      "backgroundColor-ContentSeparator": "$color-surface-200",
+      "thickness-ContentSeparator": "1px",
+      "length-ContentSeparator": "100%",
+    },
+  },
+  Markdown: {
+    description: "Renders Markdown (GFM: tables, task lists, strikethrough, autolinks): the nested text, `content` or `data`.",
+    props: {
+      content: { description: "The Markdown text (wins over the nested text). `@{…}` is not evaluated in it.", valueType: "string" },
+      data: { description: "A URL to load the Markdown text from (used without `content` and nested text).", valueType: "string" },
+      removeIndents: { description: "Removes the common leading indent of the lines (default true), so nested text can be indented with the markup.", valueType: "boolean" },
+      allowHtml: { description: "Renders raw HTML of an allowlist (tables, details, formatting; no scripts, styles or event attributes). false: HTML shows as text. Default true.", valueType: "boolean" },
+      interpolateBindings: {
+        description: "false: `@{…}` in the nested text stays as written (default true: compiled as bindings).",
+        valueType: "boolean",
+        isLiteral: true,
+      },
+      openLinkInNewTab: { description: "Every link opens in a new tab.", valueType: "boolean" },
+      showHeadingAnchors: { description: "Headings get ids and a # link, shown on hover.", valueType: "boolean" },
+      grayscale: { description: "Shows the images in grayscale.", valueType: "boolean" },
+      truncateLinks: { description: "Long link texts are cut off with an ellipsis.", valueType: "boolean" },
+    },
+    rawText: true,
+    themeVars: {
+      "backgroundColor-Markdown-code": "$color-surface-100",
+      "borderColor-Markdown-blockquote": "$color-surface-300",
+      "borderColor-Markdown-table": "$borderColor",
+      "backgroundColor-Markdown-th": "$color-surface-50",
+      "paddingCell-Markdown-table": "$space-2",
+      "gap-Markdown": "$space-3",
+    },
+  },
+  Card: {
+    description: "A surface that groups content: a stack with a background, a border and automatic padding, and an optional title row.",
+    props: {
+      title: { description: "The title (an h2), above the content.", valueType: "string" },
+      subtitle: { description: "The subtitle, under the title.", valueType: "string" },
+      avatarUrl: { description: "An avatar picture next to the title (it turns showAvatar on).", valueType: "string" },
+      showAvatar: { description: "Shows the avatar: the picture, or the title's initials.", valueType: "boolean" },
+      avatarSize: { description: "The avatar's size (default sm).", valueType: "string", availableValues: ["xs", "sm", "md", "lg"] },
+      linkTo: { description: "Makes the title a link to this route or URL.", valueType: "string" },
+      orientation: { description: "vertical (default) or horizontal: the children in a row (the title row stays above).", valueType: "string", availableValues: ["vertical", "horizontal"] },
+      horizontalAlignment: { description: "start (default), center, end or stretch.", valueType: "string", availableValues: ALIGNMENTS },
+      verticalAlignment: { description: "start (default), center, end or stretch.", valueType: "string", availableValues: ALIGNMENTS },
+    },
+    events: {
+      click: { description: "Clicked (the second click of a double click is not one). The handler receives no arguments." },
+      doubleClick: { description: "Double-clicked. The handler receives no arguments." },
+      contextMenu: CONTEXT_MENU,
+    },
+    api: {
+      scrollToTop: { description: "Scrolls the card's content to the top (it needs a height and overflowY)." },
+      scrollToBottom: { description: "Scrolls the card's content to the bottom." },
+      scrollToStart: { description: "Scrolls to the start (left in a left-to-right page)." },
+      scrollToEnd: { description: "Scrolls to the end." },
+    },
+    themeVars: {
+      "backgroundColor-Card": "$backgroundColor",
+      "backgroundColor-Card--hover": "$backgroundColor",
+      "border-Card": "1px solid $borderColor",
+      "borderRadius-Card": "$borderRadius",
+      "boxShadow-Card": "none",
+      "gap-avatar-Card": "$gap-normal",
+      "gap-title-Card": "$gap-none",
+    },
+    // Default: the spacing ladder (a surface's padding, the level's gap).
+    optionalThemeVars: ["gap-Card", "padding-Card"],
+  },
+};
 
 
 /** Breakpoints a NavPanel can move into its drawer below (`drawerBelow`). */
@@ -261,7 +477,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     props: {
       label: { description: "The link's text. Nested content is used when it is absent.", valueType: "string" },
       to: { description: "The route to go to.", valueType: "string" },
-      icon: { description: "A built-in icon name: home, list, settings, user, info, star, folder, chart, mail, search, layout.", valueType: "string" },
+      icon: { description: "An icon name (see Icon): home, list, settings, user, info, star, folder, chart, mail, search, …", valueType: "string", knownValues: ICON_NAMES },
       exact: { description: "Active only on exactly `to` (default: also on paths below it; \"/\" is always exact).", valueType: "boolean" },
       active: { description: "Forces the active look (true) or turns it off (false), whatever the route.", valueType: "boolean" },
     },
@@ -279,7 +495,7 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
     description: "A group of navigation items under a label: expands in place in a side nav or a drawer, drops down in a bar.",
     props: {
       label: { description: "The group's text.", valueType: "string" },
-      icon: { description: "A built-in icon name (see NavLink).", valueType: "string" },
+      icon: { description: "An icon name (see Icon).", valueType: "string", knownValues: ICON_NAMES },
       initiallyExpanded: { description: "Expanded when it first renders (default false).", valueType: "boolean" },
     },
   },
@@ -293,7 +509,6 @@ const SHELL_COMPONENTS: Record<string, ComponentMetadata> = {
   },
 };
 
-const ALIGNMENTS = ["start", "center", "end", "stretch"];
 
 const HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
 
@@ -397,17 +612,20 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
         valueType: "string",
         availableValues: TEXT_VARIANTS,
       },
-      maxLines: { description: "Clamps the text to this many lines, with an ellipsis.", valueType: "integer" },
+      ...TEXT_OVERFLOW_PROPS,
+      inline: { description: "A true inline run: adjacent Text elements wrap as one text (ignores the overflow props).", valueType: "boolean" },
     },
+    events: { contextMenu: CONTEXT_MENU },
+    api: { hasOverflow: { description: "Whether the text is cut off (it overflows its box)." } },
   },
   Heading: {
     description: "A heading, h1 to h6: `value`, or the nested text.",
     themeVars: HEADING_THEME_VARS,
     props: {
-      value: { description: "The heading text. Nested text is used when it is absent.", valueType: "any" },
+      ...HEADING_PROPS,
       level: { description: "h1 (default) … h6; also H1 … H6 and 1 … 6.", valueType: "string", availableValues: HEADING_LEVELS },
-      maxLines: { description: "Clamps the heading to this many lines, with an ellipsis.", valueType: "integer" },
     },
+    api: HEADING_API,
   },
   H1: headingShortcut(1),
   H2: headingShortcut(2),
@@ -665,15 +883,33 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     isRoute: true,
   },
   Link: {
-    description: "A link to a route: `label`, or the nested content.",
+    description: "A link to a route or a URL: `label`, or the nested content.",
     props: {
-      to: { description: "The route to go to: /tests/theming.", valueType: "string", isRequired: true },
+      to: { description: "A route (/tests/theming) or a URL (https://…, mailto:…). Without one the link can only be clicked.", valueType: "string" },
       label: { description: "The link's text. Nested content is used when it is absent.", valueType: "string" },
+      icon: { description: "An icon before the text (an Icon name).", valueType: "string", knownValues: ICON_NAMES },
+      target: {
+        description: "Where to open it: _self (default), _blank (a new tab), _parent, _top.",
+        valueType: "string",
+        availableValues: ["_self", "_blank", "_parent", "_top", "_unfencedTop"],
+      },
+      enabled: { description: "false: the link can't be followed (default true).", valueType: "boolean" },
+      active: { description: "Shows the link as active.", valueType: "boolean" },
+      noIndicator: { description: "No underline or link color: it looks like its content.", valueType: "boolean" },
+      ...TEXT_OVERFLOW_PROPS,
     },
+    events: { click: { description: "Clicked, before the navigation. The handler receives no arguments." } },
     themeVars: {
       "textColor-Link": "$color-primary-600",
+      "textColor-Link--hover": "$color-primary-500",
+      "textColor-Link--active": "$color-primary-700",
+      "fontWeight-Link--active": "600",
+      "textDecorationLine-Link": "underline",
+      "textUnderlineOffset-Link": "$space-1",
+      "gap-icon-Link": "$gap-tight",
     },
   },
+  ...DISPLAY_COMPONENTS,
   ...SHELL_COMPONENTS,
   Stack: {
     description: "Lays out its children in a column or a row, or wraps them into rows (a flow). Gaps and paddings are automatic.",
@@ -732,6 +968,7 @@ export function attachedBehaviors(metadata: ComponentMetadata, attributes: Reado
 }
 
 export { BEHAVIORS, type BehaviorMetadata } from "./behaviors-metadata";
+export { ICON_NAMES } from "./icon-names";
 export * from "./layout-metadata";
 
 /** Whether elements of the component accept the layout props (LAYOUT_PROPS). */

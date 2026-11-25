@@ -130,7 +130,8 @@ test("contracts: Page url is required and literal; a Page cannot use when or var
   expect(codes('<App><Pages><Page url="/" when="{true}"/></Pages></App>')).toEqual([["E027", "when"]]);
   expect(codes('<App><Pages><Page url="/" var.x="1"/></Pages></App>')).toEqual([["E027", "var.x"]]);
   expect(codes('<App><Pages><Page url="/"><variable name="x" value="1"/></Page></Pages></App>')).toEqual([["E027", "variable"]]);
-  expect(codes("<App><Link/></App>")).toEqual([["E021", "Link"]]);
+  // Link without `to` is allowed (as in XMLUI, Link.md): it can still be clicked (step 23).
+  expect(codes("<App><Link/></App>")).toEqual([]);
 });
 
 // Step 21: App willNavigate / didNavigate through compiled markup.

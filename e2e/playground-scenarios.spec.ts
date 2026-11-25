@@ -403,3 +403,313 @@ test("Forms: load, a server 422 on the inputs, save and refresh; unsaved changes
   await page.locator(".gfui-NavLink", { hasText: "Dashboard" }).first().click();
   await expect(page).toHaveURL(/#\/$/);
 });
+
+/** A theme variable's color as the browser computes it, from an element inside the app. */
+const themeColor = (page: Page, variable: string) =>
+  page.evaluate((name) => {
+    const probe = document.createElement("div");
+    probe.style.backgroundColor = `var(${name})`;
+    document.querySelector(".gfui-AppContent")!.appendChild(probe);
+    const color = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return color;
+  }, variable);
+
+test("Display: icons, a failed picture's initials, colors from the theme, the spinner's delay, cards, links, Markdown", async ({ page }) => {
+  await open(page, "/display");
+
+  // A clickable icon, by mouse and keyboard.
+  const plus = page.locator('.gfui-Icon[data-icon-name="plus-circle"]');
+  await plus.click();
+  await plus.focus();
+  await page.keyboard.press("Enter");
+  await expect(text(page, "Icon clicked 2 times (click it, or Tab to it and press Enter).")).toBeVisible();
+  await expect(page.locator('.gfui-Icon[data-icon-name="help"]')).toBeVisible();
+
+  // The picture that fails to load shows its initials (the browser's error event).
+  const avatars = page.locator(".gfui-Avatar");
+  await expect(avatars.filter({ hasText: "AT" })).toBeVisible();
+  await expect(page.getByLabel("Avatar of Landscape").locator('img[src="/sample-landscape.svg"]')).toBeVisible();
+
+  // Badge colors follow the colorMap; the next status takes the next color.
+  const badge = page.locator(".gfui-Badge").first();
+  await expect(badge).toHaveText("active");
+  expect(await style(badge, "background-color")).toBe(await themeColor(page, "--gfui-color-success-500"));
+  await button(page, "Next status").click();
+  await expect(badge).toHaveText("away");
+  expect(await style(badge, "background-color")).toBe(await themeColor(page, "--gfui-color-warn-500"));
+
+  // The progress bar takes the complete color at 100%.
+  const section = page.locator(".gfui-ProgressBar .mantine-Progress-section");
+  expect(await style(section, "background-color")).toBe(await themeColor(page, "--gfui-color-primary-500"));
+  for (let i = 0; i < 7; i++) await button(page, "+10%").click();
+  await expect(text(page, "100%")).toBeVisible();
+  expect(await style(section, "background-color")).toBe(await themeColor(page, "--gfui-color-success-500"));
+
+  // The spinner shows only after its 400 ms delay, and goes when the work is done.
+  await button(page, "Work for 2 seconds").click();
+  const spinner = page.locator(".gfui-Spinner");
+  await page.waitForTimeout(200);
+  await expect(spinner).toHaveCount(0);
+  await expect(spinner).toBeVisible();
+  await expect(spinner).toHaveCount(0, { timeout: 4000 });
+
+  // A clickable card.
+  await page.locator(".gfui-Card").filter({ hasText: "Clickable" }).click();
+  await expect(text(page, "Clicked 1 times.")).toBeVisible();
+
+  // Links: an external one opens a new tab; a disabled one has no href.
+  const external = page.getByRole("link", { name: "External, new tab" });
+  await expect(external).toHaveAttribute("target", "_blank");
+  await expect(external).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(page.locator(".gfui-Link", { hasText: "Disabled" })).not.toHaveAttribute("href", /.*/);
+
+  // Text overflow: one line, cut off.
+  const clamped = text(page, /^maxLines="1"/);
+  expect(await clamped.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+
+  // Markdown: @{…} follows the variables; inline code and fences keep it; the HTML allowlist; data from the server.
+  const markdown = page.locator(".gfui-Markdown").first();
+  await expect(markdown.locator("strong").first()).toHaveText("Ada Lovelace");
+  await expect(markdown).toContainText("the progress above is 100%");
+  await expect(markdown.locator("code").filter({ hasText: "@{status}" })).toBeVisible();
+  await expect(markdown.locator("em").first()).toHaveText("away");
+  await expect(markdown.locator("pre code")).toContainText("@{progress}");
+  await expect(markdown.locator("details summary")).toHaveText("Raw HTML (an allowlist)");
+  await expect(markdown.locator("script")).toHaveCount(0);
+  await expect(markdown.locator("table th")).toHaveText(["Component", "Built on"]);
+  await expect(page.getByRole("heading", { name: "Loaded from the server" })).toBeVisible();
+  // A Markdown link is a route.
+  await markdown.getByRole("link", { name: "the Text scenario" }).click();
+  await expect(page).toHaveURL(/#\/text$/);
+  await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText("Text and headings");
+});
+
+/** The stack whose own text child reads `caption` (a captioned item in the step 23 scenarios). */
+const captioned = (page: Page, caption: string) => page.locator(`.gfui-Stack:has(> .gfui-Text:text-is("${caption}"))`);
+
+test("Icons: every name, a filter, the size, the selection, a fallback", async ({ page }) => {
+  await open(page, "/icons");
+  await expect(text(page, "139 of 139 icons")).toBeVisible();
+  await page.getByLabel("Filter", { exact: true }).fill("arrow");
+  await expect(text(page, "4 of 139 icons")).toBeVisible();
+  const grid = page.locator('.gfui-Stack[data-wrap] .gfui-Icon');
+  await expect(grid).toHaveCount(4);
+  await page.locator('.gfui-Stack[data-wrap] .gfui-Icon[data-icon-name="arrowleft"]').click();
+  await expect(page.getByRole("heading", { name: "Selected: arrowleft" })).toBeVisible();
+  await expect(text(page, '<Icon name="arrowleft" size="md"/>')).toBeVisible();
+  // The size applies to the grid.
+  expect((await grid.first().boundingBox())!.width).toBe(24);
+  await page.getByRole("combobox", { name: "Size", exact: true }).click();
+  await page.getByRole("option", { name: "lg", exact: true }).click();
+  await expect.poll(async () => (await grid.first().boundingBox())!.width).toBe(32);
+  await page.getByLabel("Filter", { exact: true }).fill("zzz");
+  await expect(text(page, "No icon name contains “zzz”.")).toBeVisible();
+  await expect(page.locator('.gfui-Icon[data-icon-name="unknownfile"]')).toBeVisible();
+});
+
+test("Images and avatars: fit, aspect ratio, grayscale, inline, lazy; initials, failures, sizes, clicks", async ({ page }) => {
+  await open(page, "/media");
+  const image = page.getByAltText("The sample landscape");
+  await expect(image).toHaveCSS("object-fit", "contain");
+  await page.getByRole("combobox", { name: "fit", exact: true }).click();
+  await page.getByRole("option", { name: "cover", exact: true }).click();
+  await expect(image).toHaveCSS("object-fit", "cover");
+  await page.getByRole("combobox", { name: "aspectRatio", exact: true }).click();
+  await page.getByRole("option", { name: "1", exact: true }).click();
+  await expect.poll(async () => Math.round((await image.boundingBox())!.height)).toBe(240);
+  await page.getByLabel("grayscale").check();
+  await expect(image).toHaveCSS("filter", "grayscale(1)");
+  await image.click();
+  await expect(text(page, /clicked 1 times\.$/)).toBeVisible();
+  await expect(page.getByAltText("a tiny landscape")).toHaveCSS("display", "inline");
+  await expect(page.getByAltText("Loaded lazily")).toHaveAttribute("loading", "lazy");
+
+  // Initials follow the name; a failed picture shows them; no name shows an empty avatar.
+  await page.getByLabel("Name", { exact: true }).fill("Grace Brewster Hopper");
+  await expect(captioned(page, "md").locator(".gfui-Avatar")).toHaveText("GBH");
+  await expect(captioned(page, "a picture that fails").locator(".gfui-Avatar")).toHaveText("GBH");
+  await expect(captioned(page, "a picture").locator(".gfui-Avatar img")).toHaveAttribute("src", "/sample-landscape.svg");
+  await expect(captioned(page, "no name").locator(".gfui-Avatar")).toHaveAttribute("aria-label", "Avatar");
+  const widths = [];
+  for (const size of ["xs", "sm", "md", "lg", "64px"]) widths.push((await captioned(page, size).locator(".gfui-Avatar").boundingBox())!.width);
+  expect(widths[4]).toBe(64);
+  expect(widths.slice(0, 4)).toEqual([...widths.slice(0, 4)].sort((a, b) => a - b));
+  await captioned(page, "clicked 0 times").locator(".gfui-Avatar").click();
+  await expect(text(page, "clicked 1 times")).toBeVisible();
+});
+
+test("Status indicators: badge colors, a download, spinner delays and full screen, separators", async ({ page }) => {
+  await open(page, "/status");
+  const badge = (name: string) => page.locator(`.gfui-Stack:has(> .gfui-Text:text-is("${name}")) > .gfui-Badge`).first();
+  const bg = (name: string) => style(badge(name), "background-color");
+  expect(await bg("Build")).toBe(await themeColor(page, "--gfui-color-success-500"));
+  expect(await bg("Tests")).toBe(await themeColor(page, "--gfui-color-danger-500"));
+  expect(await bg("Deploy")).toBe(await themeColor(page, "--gfui-color-warn-200"));
+  expect(await style(badge("Deploy"), "color")).toBe(await themeColor(page, "--gfui-color-surface-900"));
+  expect(await bg("Docs")).toBe(await themeColor(page, "--gfui-backgroundColor-Badge"));
+  await button(page, "Fix the tests").click();
+  await expect(badge("Tests")).toHaveText("passing");
+  expect(await bg("Tests")).toBe(await themeColor(page, "--gfui-color-success-500"));
+  await expect(button(page, "Fix the tests")).toBeDisabled();
+
+  // A simulated download fills the bar.
+  await button(page, "Download").click();
+  await expect(text(page, "100%")).toBeVisible({ timeout: 5000 });
+  await expect(page.locator(".gfui-Badge", { hasText: "done" })).toBeVisible();
+  const bar = (value: string) => page.locator(`.gfui-Stack:has(> .gfui-Text:text-is("value=${value}")) [role=progressbar]`);
+  await expect(bar("1.5")).toHaveAttribute("aria-valuenow", "100");
+  await expect(bar("-0.2")).toHaveAttribute("aria-valuenow", "0");
+
+  // Spinners show after their delays: lower bounds only (they can't show earlier).
+  const spinner = (delay: number) => captioned(page, `delay=${delay}`).locator(".gfui-Spinner");
+  const start = Date.now();
+  await button(page, "Spin for 2 seconds").click();
+  await expect(spinner(0)).toBeVisible();
+  if (Date.now() - start < 1400) await expect(spinner(1500)).toHaveCount(0);
+  await expect(spinner(1500)).toBeVisible();
+  expect(Date.now() - start).toBeGreaterThanOrEqual(1500);
+  await expect(page.locator(".gfui-Spinner")).toHaveCount(0, { timeout: 5000 });
+  await button(page, "Full-screen spinner for 1.5 seconds").click();
+  await expect(page.locator(".gfui-Spinner-fullScreen .gfui-Spinner")).toBeVisible();
+  await expect(page.locator(".gfui-Spinner-fullScreen")).toHaveCount(0, { timeout: 5000 });
+
+  // Separators: thickness and length; a vertical one stretches to its row, or has a length.
+  const separators = page.locator(".gfui-ContentSeparator");
+  const half = separators.nth(1);
+  await expect(half).toHaveCSS("border-top-width", "4px");
+  const parent = (await half.evaluate((el) => el.parentElement!.clientWidth)) as number;
+  expect(Math.abs((await half.boundingBox())!.width - parent / 2)).toBeLessThan(2);
+  expect((await separators.nth(2).boundingBox())!.height).toBe(40);
+  expect((await separators.nth(3).boundingBox())!.height).toBe(16);
+});
+
+test("Cards: selection by click and double click, title rows, a linked title, a horizontal card, nesting, a theme", async ({ page }) => {
+  await open(page, "/cards");
+  // A card by its own title (a card inside another must not match the outer one).
+  const card = (title: string) => page.locator(`.gfui-Card:has(> .gfui-Card-header h2:text-is("${title}"))`);
+  await card("Alan Turing").click();
+  await expect(text(page, "Selected: Alan Turing. Opened: none.")).toBeVisible();
+  expect(await style(card("Alan Turing"), "background-color")).toBe(await themeColor(page, "--gfui-color-primary-50"));
+  await card("Grace Hopper").dblclick();
+  await expect(text(page, "Selected: Grace Hopper. Opened: Grace Hopper.")).toBeVisible();
+  await expect(card("Ada Lovelace").locator(".gfui-Avatar")).toHaveText("AL");
+  await expect(card("With a picture").locator(".gfui-Avatar img")).toBeVisible();
+
+  // A horizontal card: the children in a row, under the title row.
+  const horizontal = card("Horizontal");
+  const header = (await horizontal.locator(".gfui-Card-header").boundingBox())!;
+  const avatar = (await horizontal.locator(":scope > .gfui-Avatar").boundingBox())!;
+  const action = (await horizontal.getByRole("button", { name: "Action" }).boundingBox())!;
+  expect(avatar.y).toBeGreaterThanOrEqual(header.y + header.height);
+  expect(action.x).toBeGreaterThan(avatar.x + avatar.width);
+  expect(Math.abs(action.y + action.height / 2 - (avatar.y + avatar.height / 2))).toBeLessThan(2);
+
+  // Nesting: the inner card is a level deeper, with less padding.
+  const outer = card("Outer card");
+  const inner = card("Inner card");
+  expect(Number(await inner.getAttribute("data-level"))).toBe(Number(await outer.getAttribute("data-level")) + 1);
+  expect(parseFloat(await style(inner, "padding-top"))).toBeLessThan(parseFloat(await style(outer, "padding-top")));
+
+  // Theme variables in a Theme.
+  await expect(card("Themed")).toHaveCSS("border-radius", "12px");
+  expect(await style(card("Themed"), "background-color")).toBe(await themeColor(page, "--gfui-color-primary-50"));
+
+  // The linked title routes.
+  await page.getByRole("link", { name: "A linked title" }).click();
+  await expect(page).toHaveURL(/#\/icons$/);
+});
+
+test("Links and text: link kinds and enabled, overflow modes at a width, hasOverflow, heading anchors", async ({ page }) => {
+  await open(page, "/links");
+  const route = page.locator(".gfui-Link", { hasText: "A route: the Icons scenario" });
+  await expect(route).toHaveAttribute("href", "#/icons");
+  await expect(page.getByRole("link", { name: "A URL in a new tab" })).toHaveAttribute("target", "_blank");
+  await expect(page.getByRole("link", { name: "An e-mail address" })).toHaveAttribute("href", "mailto:someone@example.com");
+  await page.locator(".gfui-Link", { hasText: "No route, only a click handler" }).click();
+  await expect(page.locator(".gfui-Link", { hasText: "(1 clicks)" })).toBeVisible();
+  await page.getByLabel("Links enabled").uncheck();
+  await expect(route).not.toHaveAttribute("href", /.*/);
+  await expect(route).toHaveAttribute("aria-disabled", "true");
+  await page.getByLabel("Links enabled").check();
+  await expect(route).toHaveAttribute("href", "#/icons");
+  await expect(page.locator(".gfui-Link:has(> .gfui-Link-icon)")).toHaveCount(7);
+
+  // Overflow at 280px, then at 480px.
+  const box = page.locator(".gfui-Stack:has(> .gfui-Text[data-overflow])").first();
+  expect((await box.boundingBox())!.width).toBe(280);
+  const cut = (pattern: RegExp) => text(page, pattern).evaluate((el) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight);
+  expect(await cut(/^maxLines="1"/)).toBe(true);
+  expect(await cut(/^maxLines="2"/)).toBe(true);
+  await expect(text(page, /^overflowMode="scroll"/)).toHaveCSS("overflow-x", "auto");
+  await expect(text(page, /^overflowMode="flow"/)).toHaveCSS("overflow-y", "auto");
+  expect(await text(page, /^preserveLinebreaks/).evaluate((el) => (el as HTMLElement).innerText.split("\n").length)).toBe(3);
+  await page.getByRole("combobox", { name: "Width", exact: true }).click();
+  await page.getByRole("option", { name: "480px", exact: true }).click();
+  await expect.poll(async () => (await box.boundingBox())!.width).toBe(480);
+  await button(page, "hasOverflow()").click();
+  await expect(text(page, "cut off")).toBeVisible();
+
+  // Headings: anchors from the text; scrollIntoView.
+  await expect(page.getByRole("heading", { name: /An anchored heading/ })).toHaveAttribute("id", "an-anchored-heading-hover-me");
+  await button(page, "Scroll to the last heading").click();
+  await expect(page.locator("#the-last-heading")).toBeInViewport();
+  await route.click();
+  await expect(page).toHaveURL(/#\/icons$/);
+});
+
+test("Markdown: samples from a variable, the allowlist, the flags, @{…} bindings, a data URL", async ({ page }) => {
+  await open(page, "/markdown");
+  const rendered = page.locator(".gfui-Card", { has: page.getByRole("heading", { name: "Rendered", exact: true }) }).locator(".gfui-Markdown");
+  await expect(rendered.getByRole("heading", { name: "Basics" })).toBeVisible();
+  await expect(rendered.locator("ol li")).toHaveCount(2);
+  await expect(rendered.locator("pre code")).toHaveText("const answer = 42;");
+  await page.getByLabel("showHeadingAnchors").check();
+  await expect(rendered.getByRole("heading", { name: "Basics" })).toHaveAttribute("id", "basics");
+
+  await button(page, "gfm").click();
+  await expect(rendered.locator("th")).toHaveText(["Feature", "Status"]);
+  await expect(rendered.locator("li[data-task] input")).toHaveCount(2);
+  await expect(rendered.locator("li[data-task] input").first()).toBeChecked();
+  await expect(rendered.locator(".gfui-Markdown-footnotes")).toContainText("Footnotes are listed at the end.");
+
+  await button(page, "links").click();
+  await expect(rendered.getByRole("link", { name: "A route" })).toHaveAttribute("href", "#/icons");
+  await expect(rendered.getByRole("link", { name: "A reference link" })).toHaveAttribute("href", "#/cards");
+  await expect(rendered.getByRole("img", { name: "The sample landscape" })).toBeVisible();
+  await page.getByLabel("openLinkInNewTab").check();
+  await expect(rendered.getByRole("link", { name: "A route" })).toHaveAttribute("target", "_blank");
+
+  await button(page, "unsafe").click();
+  await expect(rendered.locator("b")).toHaveText("bold");
+  await expect(rendered.locator("details summary")).toHaveText("details");
+  await expect(rendered.locator("script")).toHaveCount(0);
+  await expect(rendered).toContainText('<script>alert("x")</script>');
+  const img = rendered.locator("img");
+  await expect(img).toHaveCount(1);
+  expect(await img.evaluate((el) => [el.getAttribute("src"), el.getAttribute("onerror")])).toEqual([null, null]);
+  // The javascript: link is its text only (the one link left is the heading's # anchor).
+  await expect(rendered.getByRole("link", { name: "javascript: link" })).toHaveCount(0);
+  await expect(rendered).toContainText("a javascript: link are made harmless");
+  await expect(rendered).toContainText("@{secret} stays as written");
+  await page.getByLabel("allowHtml").uncheck();
+  await expect(rendered.locator("b")).toHaveCount(0);
+  await expect(rendered).toContainText("<b>bold</b>");
+
+  // @{…} in markup: compiled, reactive; code and escapes keep it.
+  const greeting = page.locator(".gfui-Markdown", { hasText: "Hello," });
+  await expect(greeting.locator("strong")).toHaveText("reader");
+  await page.getByLabel("Your name", { exact: true }).fill("Ada");
+  await expect(greeting.locator("strong")).toHaveText("Ada");
+  await page.getByLabel("Your name", { exact: true }).fill("");
+  await expect(greeting.locator("strong")).toHaveText("stranger");
+  await button(page, "Count").click();
+  await expect(greeting.locator("em")).toHaveText("1");
+  await expect(greeting).toContainText('an object: {"count":1}.');
+  await expect(greeting.locator("p code")).toHaveText("@{name}");
+  await expect(greeting.locator("pre code")).toHaveText("@{count}");
+  await expect(greeting).toContainText("An escaped @{name} is literal too.");
+  await expect(page.locator(".gfui-Markdown", { hasText: "interpolateBindings" }).locator("strong")).toHaveText("@{name}");
+
+  await expect(page.getByRole("heading", { name: "Loaded from the server" })).toBeVisible();
+});

@@ -20,7 +20,7 @@ const LIST = { name: "List", slots: { $$slot: ["$item"], rowTemplate: ["$index",
 describe("analyzeModule", () => {
   test("an app file: inline definitions with their slots and methods; every referenced component", () => {
     const analysis = analyzeModule(`
-      <Component name="Card" method.open="x" var.x="{1}">
+      <Component name="InfoCard" method.open="x" var.x="{1}">
         <method name="close">x = 0</method>
         <Stack>
           <Slot name="headerTemplate" title="{1}" level="2"/>
@@ -28,12 +28,12 @@ describe("analyzeModule", () => {
           <Slot/>
         </Stack>
       </Component>
-      <App><Card/><Other/><Text/></App>`);
+      <App><InfoCard/><Other/><Text/></App>`);
     expect(analysis).toEqual({
       kind: "app",
       globals: [],
-      components: [{ name: "Card", slots: { headerTemplate: ["$level", "$title"], $$slot: ["$item"] }, methods: ["close", "open"], props: [], events: [] }],
-      references: ["App", "Card", "Items", "Other", "Stack", "Text"],
+      components: [{ name: "InfoCard", slots: { headerTemplate: ["$level", "$title"], $$slot: ["$item"] }, methods: ["close", "open"], props: [], events: [] }],
+      references: ["App", "InfoCard", "Items", "Other", "Stack", "Text"],
     });
   });
 

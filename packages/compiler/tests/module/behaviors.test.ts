@@ -61,10 +61,10 @@ describe("the generated code", () => {
 
 describe("user-defined components (gfui applies behaviors to them; XMLUI does not)", () => {
   test.each<[label: string, markup: string, attached: string[], expected: [string, string][]]>([
-    ["a UDC that does not read the prop: the behavior wraps it", '<Component name="Card"><Text>{$props.title}</Text></Component><App><Card title="x" tooltip="t"/></App>', ["TooltipBehavior"], []],
-    ["a UDC that reads $props.tooltip handles it itself", '<Component name="Card"><Text>{$props.tooltip}</Text></Component><App><Card tooltip="t"/></App>', [], []],
-    ["an open UDC contract: the behavior attaches", "<Component name=\"Card\"><Text>{$props['x']}</Text></Component><App><Card tooltip=\"t\"/></App>", ["TooltipBehavior"], []],
-    ["variant needs theme variables, which UDCs don't have", '<Component name="Card"><Text>{$props.title}</Text></Component><App><Card variant="v"/></App>', [], [["E020", "variant"]]],
+    ["a UDC that does not read the prop: the behavior wraps it", '<Component name="InfoCard"><Text>{$props.title}</Text></Component><App><InfoCard title="x" tooltip="t"/></App>', ["TooltipBehavior"], []],
+    ["a UDC that reads $props.tooltip handles it itself", '<Component name="InfoCard"><Text>{$props.tooltip}</Text></Component><App><InfoCard tooltip="t"/></App>', [], []],
+    ["an open UDC contract: the behavior attaches", "<Component name=\"InfoCard\"><Text>{$props['x']}</Text></Component><App><InfoCard tooltip=\"t\"/></App>", ["TooltipBehavior"], []],
+    ["variant needs theme variables, which UDCs don't have", '<Component name="InfoCard"><Text>{$props.title}</Text></Component><App><InfoCard variant="v"/></App>', [], [["E020", "variant"]]],
   ])("%s", (_, markup, attached, expected) => {
     const result = compile(markup);
     expect(result.diagnostics.map((d) => [d.code, markup.slice(d.start, d.end)])).toEqual(expected);

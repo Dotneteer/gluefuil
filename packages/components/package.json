@@ -9,9 +9,14 @@
     "./metadata": "./src/metadata.ts"
   },
   "dependencies": {
+    "@gluefuil/runtime": "0.0.0",
     "@mantine/core": "9.8.2",
     "@mantine/hooks": "9.8.2",
-    "@gluefuil/runtime": "0.0.0"
+    "lucide-react": "1.80.0",
+    "mdast-util-from-markdown": "2.1.0",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-to-string": "4.0.0",
+    "micromark-extension-gfm": "3.0.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",
@@ -19,6 +24,7 @@
   },
   "devDependencies": {
     "@gluefuil/compiler": "*",
-    "@gluefuil/mock-backend": "*"
+    "@gluefuil/mock-backend": "*",
+    "@types/mdast": "4.0.4"
   }
 }

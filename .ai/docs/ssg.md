@@ -4,7 +4,7 @@
 > and taking that HTML over in the browser. Describes the code as it is.
 > Design and XMLUI comparison: [`../plan/poc-13-ssg.md`](../plan/poc-13-ssg.md).
 >
-> **Last updated:** step 21 (prerendered routes; design:
+> **Last updated:** step 23 (lazy code: a render that waited is done again). Earlier: step 21 (prerendered routes; design:
 > [`../plan/poc-21-routing.md`](../plan/poc-21-routing.md)).
 
 ## Using it
@@ -53,6 +53,12 @@ build:
    the same module graph**, so both use one runtime (one signal store, one
    breakpoint) and one React.
 3. `renderStatic(Main, { breakpoint })` returns `{ html, attributes }`.
+   - **Lazy code (step 23):** a component that suspends on a chunk
+     (Markdown's renderer) records the load with `noteServerLoad`. After each
+     render the prerender calls `takeServerLoads()`. If there were loads, it
+     awaits them and renders the route again, at most 4 times (more is an
+     error). The second render finds the module loaded
+     ([display.md](display.md#lazy-loading-prerendering-and-hydration)).
 4. **`injectPrerendered`** fills the root element and adds the
    attributes. The element must exist, be empty (whitespace is fine) and
    not be self-closing. Otherwise the build fails with a message, rather
@@ -173,7 +179,7 @@ dist/users/1/index.html       /users/1   (prerender: { routes: ["/users/1"] })
 | `runtime/src/reactivity/react.ts` | `useComputed`'s server snapshot |
 | `runtime/src/render/visibility.ts` | `setServerBreakpoint`, `currentBreakpoint`, `breakpointFromName` |
 | `runtime/src/render/mount.ts` | `mountApp`, `PRERENDERED_ATTRIBUTE`, `READY_ATTRIBUTE` |
-| `runtime/src/server.ts` | `@gluefuil/runtime/server`: `renderStatic` (with `path`), `resetServerState`, `registeredRoutes`, `routingMode`, `findRoute` |
+| `runtime/src/server.ts` | `@gluefuil/runtime/server`: `renderStatic` (with `path`), `resetServerState`, `registeredRoutes`, `routingMode`, `findRoute`, `takeServerLoads` |
 | `vite-plugin/src/prerender.ts` | `resolvePrerender`, `injectPrerendered`, `renderEntry` (every route), `isStaticRoute`, `routeFileName`, `routesToRender`, `previewRewrite` |
 | `test-apps/routing-browser/` | Browser routing with prerendered routes (E2E) |
 | `test-apps/hello/src/main.tsx` | `mountApp` in use |
