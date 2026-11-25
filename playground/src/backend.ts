@@ -33,6 +33,9 @@ export default defineBackend({
       if (typeof field !== "string" || field.trim() === "") return status(422, { message: "The field is required", errors: { field: "Required" } });
       return db.people!.update(params.id, { field }) ?? status(404, { message: `No person ${params.id}` });
     },
+    // Markdown for the Display scenario (step 23): Markdown data="/api/docs/markdown".
+    "GET /api/docs/markdown": () =>
+      "### Loaded from the server\n\nThis text came from `GET /api/docs/markdown` through the data layer (`data` is a URL).",
     "GET /api/members": ({ db }) => db.members!.list(),
     "GET /api/members/:id": ({ db, params }) => db.members!.get(params.id) ?? status(404, { message: `No member ${params.id}` }),
     // Server-side validation as RFC 7807 problem details: the form puts each message on its input.

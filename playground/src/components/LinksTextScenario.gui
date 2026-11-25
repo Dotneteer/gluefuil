@@ -1,0 +1,50 @@
+<Component name="LinksTextScenario">
+  <VStack var.linksEnabled="{true}" var.linkClicks="{0}" var.width="280px" var.overflowing="">
+    <ScenarioHeader title="Links and text" description="Step 23: Link (routes, URLs, targets, icons, enabled, active) and the text-overflow props of Text, Heading and Link; heading anchors and the text APIs."/>
+
+    <H3>Links</H3>
+    <Checkbox label="Links enabled" initialValue="true" onDidChange="(v) => linksEnabled = v"/>
+    <VStack>
+      <Link to="/icons" enabled="{linksEnabled}">A route: the Icons scenario</Link>
+      <Link to="/routing?from=links" enabled="{linksEnabled}">A route with a query</Link>
+      <Link to="https://github.com/Dotneteer/gluefuil" target="_blank" icon="new-window" enabled="{linksEnabled}">A URL in a new tab</Link>
+      <Link to="mailto:someone@example.com" icon="email" enabled="{linksEnabled}">An e-mail address</Link>
+      <Link to="/links" active="true">active="true"</Link>
+      <Link to="/links" noIndicator="true">noIndicator="true": looks like its content</Link>
+      <Link onClick="linkClicks++" enabled="{linksEnabled}">No route, only a click handler ({linkClicks} clicks)</Link>
+    </VStack>
+    <HStack wrapContent="true">
+      <Items data="{['home', 'search', 'user', 'cog', 'download']}">
+        <Link to="/links" icon="{$item}">{$item}</Link>
+      </Items>
+    </HStack>
+
+    <H3>Text overflow</H3>
+    <Select label="Width" initialValue="280px" options="{['160px', '280px', '480px']}" onDidChange="(v) => width = v ?? '280px'"/>
+    <VStack width="{width}" border="1px dashed $borderColor">
+      <Text maxLines="1">maxLines="1": the quick brown fox jumps over the lazy dog, and back again.</Text>
+      <Text maxLines="2">maxLines="2": the quick brown fox jumps over the lazy dog, and back again, and once more to be sure the text needs a third line.</Text>
+      <Text overflowMode="ellipsis" ellipses="false">ellipses="false": cut off without the three dots, the quick brown fox.</Text>
+      <Text overflowMode="none">overflowMode="none": one line, cut off, the quick brown fox jumps.</Text>
+      <Text overflowMode="scroll">overflowMode="scroll": one line that scrolls sideways, the quick brown fox jumps over.</Text>
+      <Text overflowMode="flow" height="48px">overflowMode="flow": wraps, and scrolls vertically in a height of 48px. The quick brown fox jumps over the lazy dog, and back again, and once more.</Text>
+      <Text breakMode="anywhere">breakMode="anywhere": Supercalifragilisticexpialidocious-and-then-some-more</Text>
+      <Text breakMode="hyphenate">breakMode="hyphenate": incomprehensibilities internationalization</Text>
+      <Text preserveLinebreaks="true" value="{'preserveLinebreaks=\'true\':\n  a second line\n  a third line'}"/>
+      <Text><Text inline="true" variant="strong">inline="true":</Text> <Text inline="true" variant="marked">runs</Text><Text inline="true">that wrap as one text, breaking only at spaces.</Text></Text>
+      <Link to="/links" maxLines="1">A link with maxLines="1" whose text is far too long for the box</Link>
+    </VStack>
+    <HStack verticalAlignment="center">
+      <Text id="probe" maxLines="1" width="160px">A text that may or may not fit in 160px</Text>
+      <Button label="hasOverflow()" onClick="overflowing = probe.hasOverflow() ? 'cut off' : 'fits'"/>
+      <Text>{overflowing}</Text>
+    </HStack>
+
+    <H3>Headings</H3>
+    <Button label="Scroll to the last heading" onClick="last.scrollIntoView()"/>
+    <H4 showAnchor="true">An anchored heading (hover me)</H4>
+    <H5 maxLines="1" width="220px">A level 5 heading cut to a single line of 220px</H5>
+    <H4 id="last" showAnchor="true">The last heading</H4>
+    <Text variant="secondary">showAnchor gives the heading an id from its text (the-last-heading) and a # link that scrolls to it.</Text>
+  </VStack>
+</Component>

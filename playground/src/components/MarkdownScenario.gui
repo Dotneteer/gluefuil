@@ -1,0 +1,56 @@
+<Component name="MarkdownScenario">
+  <VStack var.sample="basics" var.allowHtml="{true}" var.newTab="{false}" var.anchors="{false}" var.name="reader" var.count="{0}">
+    <ScenarioHeader title="Markdown" description="Step 23: GFM rendered by our renderer (a lazy chunk), the HTML allowlist, @\{…} bindings compiled from markup, text from a variable or a URL."/>
+
+    <H3>Text from a variable</H3>
+    <HStack wrapContent="true">
+      <Items data="{['basics', 'gfm', 'links', 'unsafe']}">
+        <Button label="{$item}" onClick="sample = $item"/>
+      </Items>
+    </HStack>
+    <HStack wrapContent="true">
+      <Checkbox label="allowHtml" initialValue="true" onDidChange="(v) => allowHtml = v"/>
+      <Checkbox label="openLinkInNewTab" onDidChange="(v) => newTab = v"/>
+      <Checkbox label="showHeadingAnchors" onDidChange="(v) => anchors = v"/>
+    </HStack>
+    <HStack wrapContent="true" itemWidth="50%">
+      <Card title="Source">
+        <Text variant="mono" preserveLinebreaks="true" value="{samples[sample]}"/>
+      </Card>
+      <Card title="Rendered">
+        <Markdown content="{samples[sample]}" allowHtml="{allowHtml}" openLinkInNewTab="{newTab}" showHeadingAnchors="{anchors}"/>
+      </Card>
+    </HStack>
+
+    <H3>Bindings in markup: @\{…}</H3>
+    <HStack verticalAlignment="end">
+      <TextBox label="Your name" initialValue="reader" onDidChange="(v) => name = v"/>
+      <Button label="Count" onClick="count++"/>
+    </HStack>
+    <Card>
+      <Markdown>
+        <![CDATA[
+        Hello, **@{name || 'stranger'}**! You clicked *@{count}* times; an object: @{ { count: count } }.
+
+        Inline code keeps `@{name}` as written, and so does a fence:
+
+        ```
+        @{count}
+        ```
+
+        An escaped \@{name} is literal too.
+        ]]>
+      </Markdown>
+    </Card>
+    <Card>
+      <Markdown interpolateBindings="false">
+        <![CDATA[With interpolateBindings="false", **@{name}** stays as written.]]>
+      </Markdown>
+    </Card>
+
+    <H3>Text from a URL</H3>
+    <Card>
+      <Markdown data="/api/docs/markdown"/>
+    </Card>
+  </VStack>
+</Component>

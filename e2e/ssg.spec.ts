@@ -53,6 +53,9 @@ test("with JavaScript disabled, the prerendered content is there", async ({ brow
   await expect(page.getByText("Todo #1: Write tests")).toBeVisible();
   await expect(page.getByText("Layout: compact")).toBeVisible();
   await expect(page.getByRole("button", { name: "Increment", exact: true })).toBeVisible();
+  // Step 23: Markdown's renderer is a lazy chunk; the prerender waited for it.
+  await expect(page.getByRole("heading", { name: "Markdown, prerendered" })).toBeVisible();
+  await expect(page.locator(".gfui-Markdown strong")).toHaveText("0");
   // Not live: nothing took it over.
   await expect(page.locator("#root")).toHaveAttribute("data-gfui-prerendered", "xs");
   await expect(page.locator("#root")).not.toHaveAttribute("data-gfui-ready", /.*/);
@@ -75,9 +78,36 @@ test("at the prerendered breakpoint (xs), takeover changes nothing; then the app
 
   await page.getByRole("button", { name: "Increment", exact: true }).click();
   await expect(page.getByText(/^Count: \d+$/)).toHaveText("Count: 1");
+  // The prerendered Markdown was taken over too: its @{count} follows the variable.
+  await expect(page.locator(".gfui-Markdown strong")).toHaveText("1");
   await page.getByPlaceholder("Your name").fill("Ada");
   await expect(page.getByText(/^Greeting:/)).toHaveText("Greeting: Hello, Ada!");
   expect(takeover.errors).toEqual([]);
+});
+
+test("Markdown's renderer is a chunk of its own: hydration waits for it without touching the prerendered DOM", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  // Hold the chunk until the rest of the app is live, so the takeover happens without it.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const chunks: string[] = [];
+  await page.route(/markdown-render-[\w-]+\.js$/, async (route) => {
+    chunks.push(route.request().url());
+    await held;
+    await route.continue();
+  });
+  const takeover = await watchTakeover(page);
+  await page.goto("/");
+  await ready(page);
+  await expect.poll(() => chunks.length).toBe(1);
+  // Live, but the Markdown is still the prerendered HTML.
+  await expect(page.getByRole("heading", { name: "Markdown, prerendered" })).toBeVisible();
+  release();
+  await page.getByRole("button", { name: "Increment", exact: true }).click();
+  await expect(page.locator(".gfui-Markdown strong")).toHaveText("1");
+  expect(takeover.errors).toEqual([]);
+  expect((await takeover.changes()).filter((change) => !change.startsWith("text: "))).toEqual([]);
+  expect((await takeover.replaced()).gone).toBe(0);
 });
 
 test("at desktop width, only the responsive text switches after takeover", async ({ page }) => {

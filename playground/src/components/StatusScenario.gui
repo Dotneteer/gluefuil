@@ -1,0 +1,70 @@
+<Component name="StatusScenario">
+  <VStack
+    var.colors="{{ passing: '$color-success-500', failing: '$color-danger-500', pending: { label: '$color-surface-900', background: '$color-warn-200' } }}"
+    var.checks="{[{ name: 'Build', status: 'passing' }, { name: 'Tests', status: 'failing' }, { name: 'Deploy', status: 'pending' }, { name: 'Docs', status: 'unknown' }]}"
+    var.progress="{0}"
+    var.downloading="{false}"
+    var.spinning="{false}"
+    var.covering="{false}">
+    <ScenarioHeader title="Status indicators" description="Step 23: Badge (colorMap, pill), ProgressBar (a simulated download), Spinner (delays, full screen) and ContentSeparator."/>
+
+    <H3>Badge</H3>
+    <Items data="{checks}">
+      <HStack verticalAlignment="center">
+        <Text width="72px">{$item.name}</Text>
+        <Badge value="{$item.status}" colorMap="{colors}"/>
+        <Badge value="{$item.status}" variant="pill" colorMap="{colors}"/>
+      </HStack>
+    </Items>
+    <Button label="Fix the tests" enabled="{checks[1].status !== 'passing'}" onClick="checks[1].status = 'passing'"/>
+    <Text variant="secondary">colorMap: passing and failing set the background; pending sets both colors; unknown isn't mapped, so it has the theme's.</Text>
+    <HStack verticalAlignment="center">
+      <Text>Inbox</Text>
+      <Badge variant="pill">3 new</Badge>
+      <Text>Empty:</Text>
+      <Badge/>
+    </HStack>
+
+    <H3>ProgressBar</H3>
+    <HStack verticalAlignment="center">
+      <Button label="Download" enabled="{!downloading}" onClick="downloading = true; progress = 0; for (let i = 1; i &lt;= 10; i++) { delay(120); progress = i / 10; } downloading = false"/>
+      <ProgressBar value="{progress}" width="*"/>
+      <Text width="48px">{Math.round(progress * 100)}%</Text>
+      <Badge value="done" when="{progress === 1}" colorMap="{{ done: '$color-success-500' }}"/>
+    </HStack>
+    <Items data="{[0, 0.33, 1, 1.5, -0.2]}">
+      <HStack verticalAlignment="center">
+        <Text width="96px" variant="mono">value={$item}</Text>
+        <ProgressBar value="{$item}" width="*"/>
+      </HStack>
+    </Items>
+    <Text variant="secondary">Values are clamped to 0…1; a full bar takes the complete color.</Text>
+
+    <H3>Spinner</H3>
+    <Button label="Spin for 2 seconds" enabled="{!spinning}" onClick="spinning = true; delay(2000); spinning = false"/>
+    <HStack>
+      <Items data="{[0, 400, 1500]}">
+        <VStack horizontalAlignment="center" width="120px" height="80px">
+          <Text variant="caption">delay={$item}</Text>
+          <Spinner when="{spinning}" delay="{$item}"/>
+        </VStack>
+      </Items>
+    </HStack>
+    <Text variant="secondary">The default delay (400 ms) hides the spinner for quick work.</Text>
+    <Button label="Full-screen spinner for 1.5 seconds" enabled="{!covering}" onClick="covering = true; delay(1500); covering = false"/>
+    <Spinner when="{covering}" fullScreen="true" delay="0"/>
+
+    <H3>ContentSeparator</H3>
+    <Text>Default: the full width, 1px.</Text>
+    <ContentSeparator/>
+    <Text>thickness="4px" length="50%"</Text>
+    <ContentSeparator thickness="4px" length="50%"/>
+    <HStack height="40px" verticalAlignment="center">
+      <Text>Vertical:</Text>
+      <ContentSeparator orientation="vertical"/>
+      <Text>stretches to the row</Text>
+      <ContentSeparator orientation="vertical" length="16px" thickness="2px"/>
+      <Text>or has a length</Text>
+    </HStack>
+  </VStack>
+</Component>

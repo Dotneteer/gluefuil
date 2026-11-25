@@ -19,8 +19,9 @@ from XMLUI, record the decision and the reason (see *Decisions* below).
 Proof-of-concept phase: steps 0–19 and the inserted 19A–19C (the App
 shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
 19 with a reduced scope); the inserted 19D–19F (the layout system) are done too.
-Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals) and
-22 (client-side forms) and 22B (form submission and server errors) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals),
+22 (client-side forms), 22B (form submission and server errors) and 23 (text
+and display components) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).
@@ -108,6 +109,8 @@ here as one line each, with a link to the plan that justified them:
 - **Data: `@tanstack/query-core` bridged to our signals, behind one HTTP gate.** `DataSource` and `APICall` keep XMLUI's markup. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
 - **Mock backend: a Fetch-API handler (`Request` → `Response`) in `@gluefuil/mock-backend`, hosted by a service worker (MSW), dev-server middleware or a test server (MSW node).** The app makes real requests and can't tell; faults and holds are driven through `/__mock`. See [.ai/plan/poc-20-data.md](.ai/plan/poc-20-data.md).
 - **Globals are known at compile time.** Every file sees the globals of `Main.gui`'s root and `Globals.xs` (an unknown name stays an error); React context carries their scope to user components. See [.ai/plan/poc-21b-globals.md](.ai/plan/poc-21b-globals.md).
+- **Icons are Lucide** (`lucide-react`) behind our own name registry (XMLUI's names); only registered icons ship. See [.ai/plan/poc-23-display.md](.ai/plan/poc-23-display.md).
+- **Markdown: micromark/mdast (GFM) with our own renderer, in a lazy chunk;** raw HTML passes an allowlist; `@{…}` is compiled from markup, never evaluated from runtime strings. See [.ai/plan/poc-23-display.md](.ai/plan/poc-23-display.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

@@ -29,11 +29,9 @@ describe("Text", () => {
     expect(inner(markup)).toBe(html);
   });
 
-  test("maxLines clamps (jsdom serializes the clamp itself oddly: check the properties)", () => {
-    const html = inner('<Text maxLines="2">long</Text>');
-    expect(html).toContain("display: -webkit-box");
-    expect(html).toContain("-webkit-box-orient: vertical");
-    expect(html).toContain("overflow: hidden");
+  test("maxLines clamps (the clamp's display and overflow are CSS: styles.ts TEXT_OVERFLOW)", () => {
+    expect(inner('<Text maxLines="2">long</Text>')).toContain('data-overflow="clamp"');
+    expect(inner('<Text maxLines="1">long</Text>')).toContain('data-overflow="truncate"');
     expect(inner('<Text maxLines="0">x</Text>')).toBe('<span class="gfui-Text">x</span>');
   });
 

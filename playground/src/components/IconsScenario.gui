@@ -1,0 +1,43 @@
+<Component name="IconsScenario">
+  <VStack var.query="" var.size="md" var.picked="home">
+    <ScenarioHeader title="Icons" description="Step 23: every built-in icon (XMLUI's names, drawn with Lucide). Filter by name, pick a size, click an icon to see it at every size."/>
+    <HStack verticalAlignment="end" wrapContent="true">
+      <TextBox label="Filter" placeholder="Part of a name: arrow, file, user…" onDidChange="(v) => query = v"/>
+      <Select label="Size" initialValue="md" options="{['xs', 'sm', 'md', 'lg', '40px']}" onDidChange="(v) => size = v ?? 'md'"/>
+    </HStack>
+    <Text variant="secondary">{matching(query).length} of {iconNames.length} icons</Text>
+    <HStack wrapContent="true">
+      <Items data="{matching(query)}">
+        <VStack horizontalAlignment="center" width="104px">
+          <Icon name="{$item}" size="{size}" onClick="picked = $item"/>
+          <Text variant="caption" maxLines="1">{$item}</Text>
+        </VStack>
+      </Items>
+    </HStack>
+    <Text when="{matching(query).length === 0}">No icon name contains “{query}”.</Text>
+
+    <Card title="Selected: {picked}" subtitle="The named sizes are xs 12px, sm 16px, md 24px, lg 32px; any CSS size works too.">
+      <HStack verticalAlignment="end">
+        <Items data="{['xs', 'sm', 'md', 'lg', '48px']}">
+          <VStack horizontalAlignment="center">
+            <Icon name="{picked}" size="{$item}"/>
+            <Text variant="caption">{$item}</Text>
+          </VStack>
+        </Items>
+      </HStack>
+      <Text variant="code">&lt;Icon name="{picked}" size="md"/&gt;</Text>
+    </Card>
+
+    <H3>Fallback and color</H3>
+    <HStack verticalAlignment="center">
+      <Icon name="{'no-such-icon'}" fallback="unknownfile" size="md"/>
+      <Text>An unknown name shows its fallback (unknownfile here); without one, nothing.</Text>
+    </HStack>
+    <HStack verticalAlignment="center">
+      <Text variant="strong">Icons take the text color:</Text>
+      <Link to="/icons" icon="link">a link's icon</Link>
+      <Badge value="badge"/>
+      <Theme textColor-Text="$color-danger-600"><Text><Icon name="error"/> an error</Text></Theme>
+    </HStack>
+  </VStack>
+</Component>

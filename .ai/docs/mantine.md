@@ -5,7 +5,7 @@
 > code as it is. Design and XMLUI comparison:
 > [`../plan/poc-16-mantine.md`](../plan/poc-16-mantine.md).
 >
-> **Last updated:** step 16 (done after step 18).
+> **Last updated:** step 23 (the display components on Mantine are in [display.md](display.md)). Earlier: step 16 (done after step 18).
 
 ## `wrapComponent` (`runtime/src/render/wrap.ts`)
 
@@ -101,7 +101,9 @@ The E2E tests check it with computed styles: the Mantine `Button` takes
     `cite`, `small`, `sub`, `sup`, `p` (paragraph); otherwise a `span`
     with `data-variant` (title, subtitle, subheading, secondary, caption,
     mono, placeholder) styled in `styles.ts`;
-  - `maxLines`: a line clamp.
+  - `maxLines` and, since step 23, the other text-overflow props
+    (`overflowMode`, `breakMode`, `ellipses`, `preserveLinebreaks`, `inline`;
+    [display.md](display.md#text-overflow-textoverflow-texttsx)).
 
   `Text` declares `variant`, so the variant behavior skips it.
 - **`Heading`:** `value` or nested text, `level` (`h1`…`h6`, `H1`…`H6`, `1`…`6`;
@@ -112,6 +114,9 @@ The E2E tests check it with computed styles: the Mantine `Button` takes
 - **`H1`…`H6`:** shortcuts for `Heading`.
 
 ## Size
+
+Step 23's sizes (Lucide, six more Mantine components, the Markdown chunk) are
+in [display.md](display.md#size). At step 16:
 
 - **Hello app:** 502 KB (144 KB gzipped), up from 251 KB (78 KB) before
   Mantine.

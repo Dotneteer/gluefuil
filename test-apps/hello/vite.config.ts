@@ -10,7 +10,8 @@ export default defineConfig({
   server: { forwardConsole: false },
   // Pre-bundled at startup: otherwise the first page load discovers them,
   // and Vite reloads the page mid-test (a cold cache).
-  optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime"] },
+  // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).
+  optimizeDeps: { include: ["@mantine/core", "react", "react-dom/client", "react/jsx-runtime", "lucide-react", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   // prerender: a build renders Main.gui into index.html (step 13).
   plugins: [gfui({ prerender: true }), react()],
   // React, ReactDOM and Mantine: one ~500 kB chunk, known (.ai/docs/mantine.md § Size).

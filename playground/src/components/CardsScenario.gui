@@ -1,0 +1,70 @@
+<Component name="CardsScenario">
+  <VStack
+    var.selected=""
+    var.opened=""
+    var.people="{[
+      { name: 'Ada Lovelace', field: 'Mathematics', note: 'Wrote the first published algorithm.' },
+      { name: 'Alan Turing', field: 'Computer science', note: 'Defined computability.' },
+      { name: 'Grace Hopper', field: 'Computer science', note: 'Built the first compiler.' }
+    ]}">
+    <ScenarioHeader title="Cards" description="Step 23: Card is a stack that is always a surface: padding and gaps come from the spacing ladder. Title rows, avatars, links, click and double click, orientation, theming."/>
+
+    <H3>From data: click to select, double-click to open</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <Items data="{people}">
+        <Card
+          title="{$item.name}"
+          subtitle="{$item.field}"
+          showAvatar="true"
+          backgroundColor="{selected === $item.name ? '$color-primary-50' : undefined}"
+          onClick="selected = $item.name"
+          onDoubleClick="opened = $item.name">
+          <Text>{$item.note}</Text>
+        </Card>
+      </Items>
+    </HStack>
+    <Text>Selected: {selected || 'none'}. Opened: {opened || 'none'}.</Text>
+    <Text variant="secondary">The second click of a double click is not a click, so a double click opens without selecting twice.</Text>
+
+    <H3>Title rows</H3>
+    <HStack wrapContent="true" itemWidth="50%">
+      <Card title="Title only">
+        <Text>An h2, cut to one line.</Text>
+      </Card>
+      <Card title="With a picture" subtitle="avatarUrl turns the avatar on" avatarUrl="/sample-landscape.svg" avatarSize="md">
+        <Text>The avatar is next to the titles.</Text>
+      </Card>
+      <Card title="A linked title" subtitle="linkTo: the Icons scenario" linkTo="/icons">
+        <Text>Click the title to go there.</Text>
+      </Card>
+      <Card>
+        <Text>No title row: just content in a surface.</Text>
+        <Text>A second line, with the card's gap above it.</Text>
+      </Card>
+    </HStack>
+
+    <H3>Orientation and alignment</H3>
+    <Card title="Horizontal" subtitle="The children in a row; the title row stays above" orientation="horizontal" verticalAlignment="center">
+      <Avatar name="One Two"/>
+      <Text width="*">Text that takes the rest of the row (width="*").</Text>
+      <Button label="Action"/>
+    </Card>
+    <Card title="Centered" horizontalAlignment="center">
+      <Text>horizontalAlignment="center"</Text>
+      <Badge value="centered"/>
+    </Card>
+
+    <H3>Nested and themed</H3>
+    <Card title="Outer card">
+      <Text>A card inside a card is one level deeper: its padding and gap are tighter.</Text>
+      <Card title="Inner card">
+        <Text>Inner content</Text>
+      </Card>
+    </Card>
+    <Theme backgroundColor-Card="$color-primary-50" border-Card="2px solid $color-primary-300" borderRadius-Card="12px">
+      <Card title="Themed" subtitle="backgroundColor-Card, border-Card and borderRadius-Card in a Theme">
+        <Text>Every card inside the Theme looks like this.</Text>
+      </Card>
+    </Theme>
+  </VStack>
+</Component>

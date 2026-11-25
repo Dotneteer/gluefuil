@@ -1,7 +1,9 @@
 // Text and Heading (step 16, our own components; XMLUI reference: Text.md,
 // Heading.md). Text variants render the semantic element where one exists;
-// all styling comes from theme variables (styles.ts).
-import { createElement, type CSSProperties, type ReactNode } from "react";
+// all styling comes from theme variables (styles.ts). Step 23 added the text
+// overflow props (shared with Link) and the APIs.
+import { useComponentApi, type RegisterApi } from "@gluefuil/runtime";
+import { createElement, useMemo, useRef, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { useLayout, type LayoutProps } from "./layout";
 
 /** Text variants and the element each renders (default: span). */
@@ -30,31 +32,111 @@ export const TEXT_VARIANT_ELEMENTS: Readonly<Record<string, string>> = {
   var: "var",
 };
 
-/** `maxLines`: a line clamp (with an ellipsis). */
-function clamp(maxLines: unknown): CSSProperties | undefined {
+export const OVERFLOW_MODES = ["none", "ellipsis", "scroll", "flow"] as const;
+export const BREAK_MODES = ["normal", "word", "anywhere", "keep", "hyphenate"] as const;
+
+const isTrue = (value: unknown) => value === true || value === "true";
+const isFalse = (value: unknown) => value === false || value === "false";
+
+function lineCount(maxLines: unknown): number | undefined {
   const lines = typeof maxLines === "number" ? maxLines : typeof maxLines === "string" ? Number(maxLines) : NaN;
-  if (!Number.isInteger(lines) || lines < 1) return undefined;
-  return { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: lines, overflow: "hidden" };
+  return Number.isInteger(lines) && lines >= 1 ? lines : undefined;
+}
+
+/** The text-overflow props shared by Text, Heading and Link (XMLUI TextReact.tsx 429–540). */
+export interface TextOverflowProps {
+  maxLines?: unknown;
+  overflowMode?: unknown;
+  breakMode?: unknown;
+  ellipses?: unknown;
+  preserveLinebreaks?: unknown;
+  inline?: unknown;
+}
+
+export interface TextOverflow {
+  /** data-overflow (clamp, truncate, none, scroll, flow), data-break, data-preserve-linebreaks, data-inline, data-clip. */
+  attributes: Record<string, string>;
+  /** The line clamp of a multi-line truncation. */
+  style: CSSProperties | undefined;
+}
+
+/**
+ * The text-overflow props as data attributes (styled in styles.ts TEXT) and a
+ * line-clamp style:
+ * - `overflowMode` unset: `maxLines` truncates (one line: an ellipsis; more: a clamp);
+ * - `ellipsis`: truncates, at `maxLines` or one line; `ellipses="false"` clips instead;
+ * - `none` (one line, clipped), `scroll` (one line, scrolls), `flow` (wraps, scrolls vertically) ignore `maxLines`;
+ * - `inline` ignores all of them (it has no block to clip), but not `breakMode`.
+ */
+export function textOverflow(props: TextOverflowProps): TextOverflow {
+  const attributes: Record<string, string> = {};
+  let style: CSSProperties | undefined;
+  const { overflowMode, breakMode } = props;
+  const lines = lineCount(props.maxLines);
+  const inline = isTrue(props.inline);
+  if (inline) attributes["data-inline"] = "";
+  else if (overflowMode === "none" || overflowMode === "scroll" || overflowMode === "flow") attributes["data-overflow"] = overflowMode;
+  else if (overflowMode === "ellipsis" || lines !== undefined) {
+    if (lines !== undefined && lines > 1) {
+      attributes["data-overflow"] = "clamp";
+      style = { WebkitLineClamp: lines };
+    } else attributes["data-overflow"] = "truncate";
+    if (isFalse(props.ellipses)) attributes["data-clip"] = "";
+  }
+  if (typeof breakMode === "string" && (BREAK_MODES as readonly string[]).includes(breakMode)) attributes["data-break"] = breakMode;
+  if (isTrue(props.preserveLinebreaks)) attributes["data-preserve-linebreaks"] = "";
+  return { attributes, style };
 }
 
 const content = (value: unknown, children: ReactNode) => (value !== undefined && value !== null ? String(value) : children);
 
 /** A style from the layout props and a component's own, merged (the component's own win). */
-function merge(layout: CSSProperties | undefined, own: CSSProperties | undefined): CSSProperties | undefined {
+export function mergeStyles(layout: CSSProperties | undefined, own: CSSProperties | undefined): CSSProperties | undefined {
   return layout && own ? { ...layout, ...own } : (layout ?? own);
 }
 
-type TextProps = LayoutProps & { value?: unknown; variant?: unknown; maxLines?: unknown; children?: ReactNode };
+/** Whether an element's content is cut off (XMLUI's `hasOverflow()`). */
+function overflows(element: HTMLElement | null): boolean {
+  return element !== null && (element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight);
+}
+
+function useOverflowApi(registerApi: RegisterApi | undefined, ref: RefObject<HTMLElement | null>, extra?: Record<string, () => unknown>) {
+  const api = useMemo(() => ({ hasOverflow: () => overflows(ref.current), ...extra }), [ref, extra]);
+  useComponentApi(registerApi, api);
+}
+
+type TextProps = LayoutProps &
+  TextOverflowProps & { value?: unknown; variant?: unknown; registerApi?: RegisterApi; onContextMenu?: () => unknown; children?: ReactNode };
 
 export function Text(props: TextProps) {
-  const { value, variant, maxLines, children } = props;
+  const { value, variant, registerApi, onContextMenu, children } = props;
   const layout = useLayout(props);
+  const overflow = textOverflow(props);
+  const ref = useRef<HTMLElement>(null);
+  useOverflowApi(registerApi, ref);
   const name = typeof variant === "string" && Object.hasOwn(TEXT_VARIANT_ELEMENTS, variant) ? variant : undefined;
   return createElement(
     name ? TEXT_VARIANT_ELEMENTS[name]! : "span",
-    { className: "gfui-Text", "data-variant": name, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
+    {
+      ref,
+      className: "gfui-Text",
+      "data-variant": name,
+      ...overflow.attributes,
+      ...layout.attributes,
+      style: mergeStyles(layout.style, overflow.style),
+      onContextMenu: contextMenuHandler(onContextMenu),
+    },
     content(value, children),
   );
+}
+
+/** A `contextMenu` handler replaces the browser's menu; it gets no DOM event (the sandbox invariant). */
+export function contextMenuHandler(handler: unknown) {
+  if (typeof handler !== "function") return undefined;
+  return (event: MouseEvent) => {
+    event.preventDefault();
+    void (handler as () => unknown)();
+  };
 }
 
 /** `h3`, `H3` and `3` all mean level 3; anything else is 1. */
@@ -63,17 +145,73 @@ export function headingLevel(level: unknown): number {
   return match ? Number(match[1]) : 1;
 }
 
-type HeadingProps = LayoutProps & { value?: unknown; level?: unknown; maxLines?: unknown; children?: ReactNode };
+/**
+ * A heading's anchor id from its text (XMLUI: lowercase, spaces to dashes,
+ * other punctuation removed), so `#getting-started` links to "Getting started".
+ */
+export function headingId(text: unknown): string | undefined {
+  if (typeof text !== "string" && typeof text !== "number") return undefined;
+  const id = String(text)
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/\s+/g, "-");
+  return id === "" ? undefined : id;
+}
+
+/** The text of React children made of strings and numbers (for an anchor id). */
+function childrenText(children: ReactNode): string | undefined {
+  if (typeof children === "string" || typeof children === "number") return String(children);
+  if (Array.isArray(children) && children.every((child) => typeof child === "string" || typeof child === "number")) return children.join("");
+  return undefined;
+}
+
+type HeadingProps = LayoutProps &
+  TextOverflowProps & {
+    value?: unknown;
+    level?: unknown;
+    showAnchor?: unknown;
+    registerApi?: RegisterApi;
+    /** Internal (Markdown): the text for the anchor id when the children are elements. */
+    $$anchorText?: string;
+    children?: ReactNode;
+  };
 
 export function Heading(props: HeadingProps) {
-  const { value, level, maxLines, children } = props;
+  const { value, level, showAnchor, registerApi, children } = props;
   const layout = useLayout(props);
+  const overflow = textOverflow(props);
+  const ref = useRef<HTMLHeadingElement>(null);
+  const scroll = useMemo(() => ({ scrollIntoView: () => ref.current?.scrollIntoView({ block: "start", behavior: "smooth" }) }), []);
+  useOverflowApi(registerApi, ref, scroll);
   const n = headingLevel(level);
+  const text = content(value, children);
+  const anchor = isTrue(showAnchor) ? headingId(props.$$anchorText ?? (typeof text === "string" ? text : childrenText(text))) : undefined;
   return createElement(
     `h${n}`,
-    { className: "gfui-Heading", "data-level": n, ...layout.attributes, style: merge(layout.style, clamp(maxLines)) },
-    content(value, children),
+    {
+      ref,
+      id: anchor,
+      className: "gfui-Heading",
+      "data-level": n,
+      ...overflow.attributes,
+      ...layout.attributes,
+      style: mergeStyles(layout.style, overflow.style),
+    },
+    text,
+    anchor === undefined
+      ? null
+      : createElement("a", { className: "gfui-Heading-anchor", href: `#${anchor}`, onClick: scrollToHeading, "aria-label": "Link to this heading", key: "anchor" }, "#"),
   );
+}
+
+/**
+ * A heading anchor's click scrolls to the heading. Following `#id` would be a
+ * route change under hash routing, so the browser's default is prevented.
+ */
+function scrollToHeading(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  event.currentTarget.parentElement?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 const shortcut = (n: number) => {

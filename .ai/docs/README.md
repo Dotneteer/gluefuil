@@ -15,6 +15,7 @@ on this repository. Plans (what we intend to build) live in
 | [ssg.md](ssg.md) | Static generation and takeover: the prerender, `mountApp`, the server view, what matches and what doesn't. |
 | [routing.md](routing.md) | Routing: `Pages`, `Page`, `Link`, `navigate`, `$pathname`/`$routeParams`/`$queryParams`, the router, hash and browser modes. |
 | [mantine.md](mantine.md) | `wrapComponent`; the Mantine-based built-ins and their theme mapping; `Text` variants and `Heading`. |
+| [display.md](display.md) | Step 23: Icon (the Lucide registry), Image, Avatar, Badge, ProgressBar, Spinner, ContentSeparator, Card; text overflow; Markdown (the lazy renderer, the HTML allowlist, compiled `@{…}`). |
 | [behaviors.md](behaviors.md) | Behaviors (`label`, `tooltip`, `variant`): the attachment rule, compile-time wrapping, the order, user-defined components. |
 | [theming.md](theming.md) | Theming: the engine (chains, tones, derived tokens, references), the stylesheet, `App` and `Theme`, the tone and theme globals. |
 | [contracts.md](contracts.md) | Component metadata (one format for every component) and the compile-time contract checks: props, types, enums, events, API members, deprecations. |

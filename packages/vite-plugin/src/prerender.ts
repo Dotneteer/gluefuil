@@ -86,10 +86,14 @@ export interface RenderedRoute {
 interface RenderModule {
   renderStatic(app: unknown, options: { breakpoint: BreakpointName; path: string; basename: string }): RenderedRoute;
   resetServerState(): void;
+  takeServerLoads(): Promise<unknown>[];
   registeredRoutes(): readonly string[];
   routingMode(): "hash" | "browser";
   findRoute(pathname: string, patterns: readonly string[]): unknown;
 }
+
+/** Renders of one route at most: each loads the lazy code the previous one found (nested lazy code). */
+const MAX_RENDER_ATTEMPTS = 4;
 
 /** A route pattern without parameters or a wildcard: one file of the prerender. */
 export function isStaticRoute(pattern: string): boolean {
@@ -149,15 +153,22 @@ export async function renderEntry(root: string, options: ResolvedPrerender, tran
       throw new Error(`gfui prerender: ${options.entry} has no default export (a .gui file's root component)`);
     }
     const runtime = (await server.ssrLoadModule("@gluefuil/runtime/server")) as RenderModule;
-    const render = (path: string) => {
-      runtime.resetServerState();
-      return runtime.renderStatic(entry.default, { breakpoint: options.breakpoint, path, basename });
+    // A render that waited for lazy code (Markdown's renderer) is done again once it loaded.
+    const render = async (path: string) => {
+      for (let attempt = 1; ; attempt++) {
+        runtime.resetServerState();
+        const result = runtime.renderStatic(entry.default, { breakpoint: options.breakpoint, path, basename });
+        const loads = runtime.takeServerLoads();
+        if (loads.length === 0) return result;
+        if (attempt === MAX_RENDER_ATTEMPTS) throw new Error(`gfui prerender: ${path} still waits for lazy code after ${attempt} renders`);
+        await Promise.all(loads);
+      }
     };
-    const rendered = new Map<string, RenderedRoute>([["/", render("/")]]);
+    const rendered = new Map<string, RenderedRoute>([["/", await render("/")]]);
     // Pages registered its routes while "/" rendered, and App set the mode.
     const registered = runtime.registeredRoutes();
     const paths = routesToRender(runtime.routingMode(), registered, options.routes, (path) => runtime.findRoute(path.replace(/[?#].*$/, ""), registered) !== undefined);
-    for (const path of paths) rendered.set(path, render(path));
+    for (const path of paths) rendered.set(path, await render(path));
     runtime.resetServerState();
     return rendered;
   } finally {

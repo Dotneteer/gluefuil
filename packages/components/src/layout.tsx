@@ -193,6 +193,12 @@ export interface StackProps extends LayoutProps {
   reverse?: unknown;
   density?: unknown;
   children?: ReactNode;
+  /** Internal (Card): another class next to gfui-Stack. */
+  $$className?: string;
+  /** Internal (Card): more DOM props on the element (data-surface, handlers, a ref). */
+  $$element?: Record<string, unknown>;
+  /** Internal (Card): content before the children, outside the children's count (a title row). */
+  $$before?: ReactNode;
 }
 
 /**
@@ -201,13 +207,13 @@ export interface StackProps extends LayoutProps {
  * gap and the padding follow from the level (styles.ts LAYOUT) unless set.
  */
 export function Stack(props: StackProps) {
-  const { orientation, gap, horizontalAlignment, verticalAlignment, wrapContent, itemWidth, reverse, density, children } = props;
+  const { orientation, gap, horizontalAlignment, verticalAlignment, wrapContent, itemWidth, reverse, density, children, $$className, $$element, $$before } = props;
   const parent = useContext(LayoutContext);
   const horizontal = orientation === "horizontal";
   const wrap = isTrue(wrapContent);
   const level = Math.max(0, parent.single ? parent.level : parent.level + 1);
   const shift = typeof density === "string" && Object.hasOwn(DENSITY_SHIFT, density) ? DENSITY_SHIFT[density]! : parent.shift;
-  const single = childCount(children) === 1;
+  const single = childCount(children) === 1 && ($$before === undefined || $$before === null);
   const scope = useMemo<LayoutContextValue>(
     () => ({ level, single, shift, orientation: horizontal ? "horizontal" : "vertical", wrap }),
     [level, single, shift, horizontal, wrap],
@@ -231,14 +237,16 @@ export function Stack(props: StackProps) {
   }
   return (
     <div
-      className="gfui-Stack"
+      className={$$className ? `gfui-Stack ${$$className}` : "gfui-Stack"}
       data-orientation={horizontal ? "horizontal" : "vertical"}
       data-level={clampLevel(level + shift)}
       data-wrap={wrap ? "" : undefined}
       data-item-width={itemWidthCss === undefined ? undefined : itemWidthCss.endsWith("%") ? "%" : "fixed"}
       {...attributes}
+      {...$$element}
       style={{ ...own, ...style } as CSSProperties}
     >
+      {$$before}
       <LayoutScope value={scope}>{children}</LayoutScope>
     </div>
   );

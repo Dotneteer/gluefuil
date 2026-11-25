@@ -157,24 +157,24 @@ describe("component files and code-behind (step 14)", () => {
 
   test("used components are fetched from components/ next to the entry file, with their code-behind", async () => {
     const files = server({
-      "app/Main.gui": "<App><Counter><Text>{title}</Text></Counter><Badge/></App>",
+      "app/Main.gui": "<App><Counter><Text>{title}</Text></Counter><Ribbon/></App>",
       "app/Main.gui.xs": "var title = 'inside';",
       "app/components/Counter.gui": COUNTER,
       "app/components/Counter.gui.xs": COUNTER_XS,
-      "app/components/Badge.gui": '<Component name="Badge"><Text>badge</Text></Component>',
+      "app/components/Ribbon.gui": '<Component name="Ribbon"><Text>badge</Text></Component>',
     });
     const app = await startApp({ fetch: files.fetch, main: "app/Main.gui" });
     expect(container.textContent).toBe("count: 0insidebadge");
     // Referenced names are visited in sorted order.
-    expect(app.status!.components).toEqual(["app/components/Badge.gui", "app/components/Counter.gui"]);
+    expect(app.status!.components).toEqual(["app/components/Counter.gui", "app/components/Ribbon.gui"]);
     await act(async () => container.querySelector("button")!.click());
     expect(container.querySelector("button")!.textContent).toBe("count: 1");
     // Built-in names are never fetched.
     expect(files.requests.map((r) => r.url).filter((u) => u.includes("components/")).sort()).toEqual([
-      "app/components/Badge.gui",
-      "app/components/Badge.gui.xs",
       "app/components/Counter.gui",
       "app/components/Counter.gui.xs",
+      "app/components/Ribbon.gui",
+      "app/components/Ribbon.gui.xs",
     ]);
   });
 

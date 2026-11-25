@@ -52,10 +52,12 @@ is also the text of the E030 migration error.
 | `NavGroup label`, `icon`, `initiallyExpanded` | A `<details>`: expands in a side nav or a drawer, drops down in a bar (closes on navigation and on a click elsewhere) |
 | `NavPanelCollapseButton aria-label`, `aria-labelCollapsed` | Toggles the collapsed state |
 
-**Icons:** `components/src/icons.tsx` has a small built-in set (`home`,
-`list`, `settings`, `user`, `info`, `star`, `folder`, `chart`, `mail`,
-`search`, `layout`). An unknown name draws nothing. In a collapsed nav, an
-item without an icon shows its label's initial.
+**Icons:** the icon registry (`components/src/icons.tsx`, step 23; see
+[display.md](display.md#icons-iconstsx-icon-namests)): XMLUI's names drawn with
+Lucide, plus the shell's earlier names (`settings`, `chart`, `mail`,
+`layout`, `chevronRight`, …). An unknown literal name is E033 (a warning); an
+unknown name draws nothing. In a collapsed nav, an item without an icon shows
+its label's initial.
 
 ## Who does what
 
@@ -159,7 +161,7 @@ entries).
 | `compiler/src/module/compile-module.ts` | `regions()`, the region check in `node()`, `removedProps` (E030), the collapse-button check at the end |
 | `components/src/metadata.ts` | The six shell components, `regions`/`isRegion`/`removedProps`, `LAYOUT_EQUIVALENTS`, `DRAWER_BREAKPOINTS` |
 | `components/src/shell.tsx` | `Shell`, `shellAttributes`, `needsGeneratedHeader`, `appLogo`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `isActiveRoute`, `NavGroup`, `NavPanelCollapseButton` |
-| `components/src/icons.tsx` | `Icon`, `ICON_NAMES` |
+| `components/src/icons.tsx` | The icon registry and `Glyph`, which the nav items use ([display.md](display.md)) |
 | `components/src/styles.ts` | `SHELL`, `shellDrawer()` |
 | `components/src/theme.tsx` | `App`: the root attributes and `Shell` |
 | `runtime/src/render/shell-state.ts` | `navPanelCollapsed`, `navDrawerOpen`, their setters, `resetShellState` |

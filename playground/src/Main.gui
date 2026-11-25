@@ -35,7 +35,14 @@
     { path: '/app-shell', step: '19A–C', title: 'App shell', description: 'Header, nav, footer: every XMLUI layout, desktop and phone.' },
     { path: '/layout', step: '19D–F', title: 'Layout and spacing', description: 'Stacks, flows and sizes; automatic gaps and paddings.' },
     { path: '/data', step: '20', title: 'Data', description: 'DataSource and APICall against a mock backend; slow and broken networks.' },
-    { path: '/forms', step: '22, 22B', title: 'Forms', description: 'Inputs bound with bindTo, validation, loading and saving, server errors.' }
+    { path: '/forms', step: '22, 22B', title: 'Forms', description: 'Inputs bound with bindTo, validation, loading and saving, server errors.' },
+    { path: '/display', step: '23', title: 'Display', description: 'Icons, images, avatars, badges, progress, cards, links, text overflow, Markdown.' },
+    { path: '/icons', step: '23', title: 'Icons', description: 'Every built-in icon: filter, sizes, fallback, color.' },
+    { path: '/media', step: '23', title: 'Images and avatars', description: 'Image fit, aspect ratio, grayscale, inline; Avatar initials, pictures, sizes.' },
+    { path: '/status', step: '23', title: 'Status indicators', description: 'Badge colorMap, a simulated download, spinner delays, separators.' },
+    { path: '/cards', step: '23', title: 'Cards', description: 'Cards from data, selection, title rows, orientation, nesting, theming.' },
+    { path: '/links', step: '23', title: 'Links and text', description: 'Link kinds, text overflow at three widths, heading anchors, hasOverflow().' },
+    { path: '/markdown', step: '23', title: 'Markdown', description: 'GFM samples, the HTML allowlist, @{…} bindings, a data URL.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -98,6 +105,13 @@
     <Page url="/routing/:item"><VStack><RoutingDetailScenario/><ScenarioSource file="RoutingDetailScenario"/></VStack></Page>
     <Page url="/data"><VStack><DataScenario/><ScenarioSource file="DataScenario"/></VStack></Page>
     <Page url="/forms"><VStack><FormsScenario/><ScenarioSource file="FormsScenario"/></VStack></Page>
+    <Page url="/display"><VStack><DisplayScenario/><ScenarioSource file="DisplayScenario"/></VStack></Page>
+    <Page url="/icons"><VStack><IconsScenario/><ScenarioSource file="IconsScenario"/></VStack></Page>
+    <Page url="/media"><VStack><MediaScenario/><ScenarioSource file="MediaScenario"/></VStack></Page>
+    <Page url="/status"><VStack><StatusScenario/><ScenarioSource file="StatusScenario"/></VStack></Page>
+    <Page url="/cards"><VStack><CardsScenario/><ScenarioSource file="CardsScenario"/></VStack></Page>
+    <Page url="/links"><VStack><LinksTextScenario/><ScenarioSource file="LinksTextScenario"/></VStack></Page>
+    <Page url="/markdown"><VStack><MarkdownScenario/><ScenarioSource file="MarkdownScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

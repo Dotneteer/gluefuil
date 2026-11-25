@@ -97,7 +97,10 @@ button):
 | App content | level 0 | level 0, unless `paddingHorizontal/Vertical-content-App` is set |
 
 - A surface is a stack with a `backgroundColor` or a `border`
-  (`data-surface`).
+  (`data-surface`). **`Card`** (step 23) is a stack that is always a surface
+  (its own background and border from `backgroundColor-Card`, `border-Card`);
+  `gap-Card` and `padding-Card` override the ladder for cards only. Its title
+  row counts against the wrapper rule ([display.md](display.md)).
 - A heading that is not the first child of a vertical stack (or of the App
   content) gets the gap again above it (`margin-block-start`). This is the
   framework's only margin.

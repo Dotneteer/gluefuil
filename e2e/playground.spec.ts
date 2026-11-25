@@ -10,6 +10,11 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
+  // Step 23: Markdown's renderer is a chunk loaded only when a Markdown renders (the Display scenario has one).
+  const markdownChunk: string[] = [];
+  page.on("request", (request) => {
+    if (/markdown-render/.test(request.url())) markdownChunk.push(request.url());
+  });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("gfui playground");
   // Every button on the dashboard opens a scenario (the header's buttons are not the dashboard's).
@@ -37,8 +42,17 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Layout and spacing",
     "Data",
     "Forms",
+    "Display",
+    "Icons",
+    "Images and avatars",
+    "Status indicators",
+    "Cards",
+    "Links and text",
+    "Markdown",
   ]);
   for (const title of titles) {
+    // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.
+    if (title === "Display") expect(markdownChunk).toEqual([]);
     await main.getByRole("button", { name: title, exact: true }).click();
     // The page title is the first h1 (a scenario may show more, such as the H1 example).
     await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText(title);
@@ -52,6 +66,7 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     await page.getByRole("button", { name: "← Dashboard" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("gfui playground");
   }
+  expect(markdownChunk).toHaveLength(1);
   expect(errors).toEqual([]);
 });
 

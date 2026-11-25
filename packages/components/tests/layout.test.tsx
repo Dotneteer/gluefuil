@@ -48,7 +48,7 @@ describe("levels", () => {
     ["a `when` sibling counts", '<App><VStack><HStack when="{false}"/><HStack/></VStack></App>', ["0v", "1h"]],
     [
       "user components: the root is one level below the stack holding the tags",
-      '<App><VStack><Card/><Card/></VStack></App>\n<Component name="Card"><VStack><HStack/><Text/></VStack></Component>',
+      '<App><VStack><InfoCard/><InfoCard/></VStack></App>\n<Component name="InfoCard"><VStack><HStack/><Text/></VStack></Component>',
       ["0v", "1v", "2h", "1v", "2h"],
     ],
     ["bars: a stack in the header is level 3", "<App><AppHeader><HStack/></AppHeader></App>", ["3h"]],
@@ -97,7 +97,7 @@ describe("stack attributes", () => {
   });
 
   test("a user component's root gets the layout props of its tag; they win over its own", () => {
-    const root = mount('<App><Card width="40%"/></App>\n<Component name="Card"><VStack width="10%" backgroundColor="red"><Text>x</Text></VStack></Component>');
+    const root = mount('<App><InfoCard width="40%"/></App>\n<Component name="InfoCard"><VStack width="10%" backgroundColor="red"><Text>x</Text></VStack></Component>');
     const stack = root.querySelector<HTMLElement>(".gfui-Stack")!;
     expect(stack.style.width).toBe("40%");
     expect(stack.style.backgroundColor).toBe("red");

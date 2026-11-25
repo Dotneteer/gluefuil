@@ -122,7 +122,7 @@ describe("API members through component IDs (C015)", () => {
 
 describe("user-defined components: derived contracts", () => {
   const CARD = `
-    <Component name="Card" method.reset="1">
+    <Component name="InfoCard" method.reset="1">
       <Stack>
         <Text>{$props.title} {$props?.subtitle}</Text>
         <Button onClick="emitEvent('picked', 1); hasEventHandler('closed')"/>
@@ -150,10 +150,10 @@ describe("user-defined components: derived contracts", () => {
   });
 
   test.each<[markup: string, expected: Found[]]>([
-    [`${CARD}<App><Card title="t" subtitle="s" onPicked="1" onClosed="1"/></App>`, []],
-    [`${CARD}<App><Card titel="t"/></App>`, [["E020", "titel"]]],
-    [`${CARD}<App><Card onPick="1"/></App>`, [["E004", "onPick"]]],
-    [`${CARD}<App><Card id="c"/><Button onClick="c.rest()"/></App>`, [["C015", "rest"]]],
+    [`${CARD}<App><InfoCard title="t" subtitle="s" onPicked="1" onClosed="1"/></App>`, []],
+    [`${CARD}<App><InfoCard titel="t"/></App>`, [["E020", "titel"]]],
+    [`${CARD}<App><InfoCard onPick="1"/></App>`, [["E004", "onPick"]]],
+    [`${CARD}<App><InfoCard id="c"/><Button onClick="c.rest()"/></App>`, [["C015", "rest"]]],
     // Open contracts accept anything.
     ['<Component name="Any"><Text>{$props[\'x\']}</Text><Button onClick="emitEvent(name)"/></Component><App><Any whatever="1" onAnything="1"/></App>', [["C001", "name"]]],
   ])("%s", (markup, expected) => {
@@ -161,8 +161,8 @@ describe("user-defined components: derived contracts", () => {
   });
 
   test("messages suggest the derived names", () => {
-    expect(messages(`${CARD}<App><Card titel="t"/></App>`)).toEqual(["'Card' has no prop 'titel'. Did you mean 'title'?"]);
-    expect(messages(`${CARD}<App><Card id="c"/><Button onClick="c.rest()"/></App>`)).toEqual(["'c' (Card) has no member 'rest'. Did you mean 'reset'?"]);
+    expect(messages(`${CARD}<App><InfoCard titel="t"/></App>`)).toEqual(["'InfoCard' has no prop 'titel'. Did you mean 'title'?"]);
+    expect(messages(`${CARD}<App><InfoCard id="c"/><Button onClick="c.rest()"/></App>`)).toEqual(["'c' (InfoCard) has no member 'rest'. Did you mean 'reset'?"]);
   });
 });
 

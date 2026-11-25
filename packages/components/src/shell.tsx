@@ -34,7 +34,7 @@ import {
   type TemplateRenderer,
 } from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
-import { Icon } from "./icons";
+import { Glyph } from "./icons";
 import { BAR_SCOPE, childCount, LayoutScope, pageScope } from "./layout";
 
 /** The shell's settings, decided by the compiler (`$$shell`). */
@@ -310,7 +310,7 @@ export function NavLink({
       aria-current={isActive ? "page" : undefined}
       title={text}
     >
-      {icon ? <Icon name={icon} className="gfui-NavLink-icon" /> : <span className="gfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
+      {icon ? <Glyph name={icon} className="gfui-NavLink-icon" /> : <span className="gfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
       <span className="gfui-NavLink-label">{text ?? children}</span>
     </a>
   );
@@ -336,9 +336,9 @@ export function NavGroup({ label, icon, initiallyExpanded, children }: { label?:
   return (
     <details className="gfui-NavGroup" ref={ref} open={isTrue(initiallyExpanded) || undefined}>
       <summary className="gfui-NavGroup-label" title={text}>
-        {icon ? <Icon name={icon} className="gfui-NavLink-icon" /> : <span className="gfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
+        {icon ? <Glyph name={icon} className="gfui-NavLink-icon" /> : <span className="gfui-NavLink-initial" aria-hidden="true">{initial(text)}</span>}
         <span className="gfui-NavLink-label">{text}</span>
-        <Icon name="chevronDown" className="gfui-NavGroup-chevron" />
+        <Glyph name="chevronDown" className="gfui-NavGroup-chevron" />
       </summary>
       <div className="gfui-NavGroup-items">{children}</div>
     </details>
@@ -350,7 +350,7 @@ export function NavPanelCollapseButton({ "aria-label": label, "aria-labelCollaps
   const name = collapsed ? (typeof labelCollapsed === "string" ? labelCollapsed : "Expand navigation") : typeof label === "string" ? label : "Collapse navigation";
   return (
     <button type="button" className="gfui-NavPanelCollapseButton" aria-label={name} aria-expanded={!collapsed} onClick={() => setNavPanelCollapsed(!collapsed)}>
-      <Icon name={collapsed ? "chevronRight" : "chevronLeft"} />
+      <Glyph name={collapsed ? "chevronRight" : "chevronLeft"} />
     </button>
   );
 }

@@ -8,7 +8,13 @@
 // (--button-bg) are redirected with a fixed `vars` resolver; variables it sets
 // from CSS (--input-bd) are redirected in our stylesheet (styles.ts).
 import { Button as MantineButton, Checkbox as MantineCheckbox, Select as MantineSelect, TextInput } from "@mantine/core";
+import avatarCss from "@mantine/core/styles/Avatar.layer.css?inline";
+import badgeCss from "@mantine/core/styles/Badge.layer.css?inline";
 import burgerCss from "@mantine/core/styles/Burger.layer.css?inline";
+import dividerCss from "@mantine/core/styles/Divider.layer.css?inline";
+import imageCss from "@mantine/core/styles/Image.layer.css?inline";
+import loaderCss from "@mantine/core/styles/Loader.layer.css?inline";
+import progressCss from "@mantine/core/styles/Progress.layer.css?inline";
 import buttonCss from "@mantine/core/styles/Button.layer.css?inline";
 import checkboxCss from "@mantine/core/styles/Checkbox.layer.css?inline";
 import closeButtonCss from "@mantine/core/styles/CloseButton.layer.css?inline";
@@ -56,6 +62,13 @@ export const MANTINE_STYLESHEET = [
   closeButtonCss,
   // The App shell's drawer toggle (shell.tsx).
   burgerCss,
+  // The display components (display.tsx, step 23).
+  avatarCss,
+  badgeCss,
+  dividerCss,
+  imageCss,
+  loaderCss,
+  progressCss,
 ].join("\n");
 
 export const MANTINE_STYLESHEET_HREF = "gfui-mantine";
