@@ -132,6 +132,12 @@ export interface PropMetadata {
   cssKind?: LayoutValueKind;
   /** With `cssKind: "size"`: star sizes (`*`, `2*`) are allowed. */
   star?: boolean;
+  /**
+   * Only the component's: an attached behavior that declares the same prop
+   * doesn't get it (step 26: DateInput's `minValue` is a date, not the
+   * validation's numeric range). Without it, a shared prop goes to both (step 24).
+   */
+  exclusive?: boolean;
 }
 
 export interface EventMetadata {
@@ -339,6 +345,114 @@ const CHOICE_COMPONENTS: Record<string, ComponentMetadata> = {
     },
     themeVars: choiceTheme("AutoComplete"),
     api: CHOICE_API,
+  },
+};
+
+/** Step 26: the date and time inputs (dates.tsx; the Mantine parts are a lazy chunk). */
+const DATE_FORMAT_PROP: PropMetadata = {
+  description: "The date's format, and the value's: MM/dd/yyyy (default), MM-dd-yyyy, yyyy/MM/dd, yyyy-MM-dd, dd/MM/yyyy, dd-MM-yyyy, yyyyMMdd, MMddyyyy.",
+  valueType: "string",
+  availableValues: ["MM/dd/yyyy", "MM-dd-yyyy", "yyyy/MM/dd", "yyyy-MM-dd", "dd/MM/yyyy", "dd-MM-yyyy", "yyyyMMdd", "MMddyyyy"],
+};
+const DATES_COMMON: Record<string, PropMetadata> = {
+  // Their own label (Mantine's), not the label behavior's wrapper: several fields, and a calendar popup.
+  label: { description: "The input's label.", valueType: "string" },
+  ...INPUT_COMMON,
+  ...ADORNMENT_PROPS,
+  clearable: { description: "A button that clears the value.", valueType: "boolean" },
+};
+const CLEAR_PROPS: Record<string, PropMetadata> = {
+  clearToInitialValue: { description: "Clearing goes back to the initial value instead of empty.", valueType: "boolean" },
+  emptyCharacter: { description: "The fields' placeholder character (default -).", valueType: "string" },
+};
+const WEEKDAYS = ["0", "1", "2", "3", "4", "5", "6"];
+const DATES_EVENTS: Record<string, EventMetadata> = {
+  didChange: { description: "The user changed the value; `$param` is the new value." },
+  ...FOCUS_EVENTS,
+};
+
+const DATE_COMPONENTS: Record<string, ComponentMetadata> = {
+  DateInput: {
+    description: "A date typed into day, month and year fields (Mantine MaskedDateInput). The value is a string in dateFormat, or null.",
+    props: {
+      ...DATES_COMMON,
+      ...CLEAR_PROPS,
+      initialValue: { description: "The date when the component mounts (in dateFormat, or YYYY-MM-DD).", valueType: "string" },
+      dateFormat: DATE_FORMAT_PROP,
+      // The component's: dates, not the validation's numeric range.
+      minValue: { description: "The earliest date (in dateFormat); an earlier one is invalid.", valueType: "string", exclusive: true },
+      maxValue: { description: "The latest date (in dateFormat); a later one is invalid.", valueType: "string", exclusive: true },
+      mode: { description: "Accepted for compatibility with DatePicker; only single dates (XMLUI doesn't implement range either).", valueType: "string", availableValues: ["single", "range"] },
+      weekStartsOn: { description: "Accepted for compatibility with DatePicker; no effect.", valueType: "string", availableValues: WEEKDAYS },
+      showWeekNumber: { description: "Accepted for compatibility with DatePicker; no effect.", valueType: "boolean" },
+      inline: { description: "Accepted for compatibility with DatePicker; no effect.", valueType: "boolean" },
+      disabledDates: { description: "Accepted for compatibility with DatePicker; no effect.", valueType: "any" },
+    },
+    events: DATES_EVENTS,
+    themeVars: textInputTheme("DateInput"),
+    api: {
+      value: { description: "The date in dateFormat, or null (reactive)." },
+      setValue: { description: "Sets the date (in dateFormat, or YYYY-MM-DD)." },
+      focus: { description: "Moves the focus to the first field." },
+      isoValue: { description: "The date as YYYY-MM-DD, or null." },
+    },
+  },
+  TimeInput: {
+    description: "A time typed into hour, minute (and second) fields, with AM/PM in 12-hour mode (Mantine TimePicker). The value is HH:mm[:ss] or hh:mm[:ss] am, or null.",
+    props: {
+      ...DATES_COMMON,
+      ...CLEAR_PROPS,
+      initialValue: { description: "The time when the component mounts (HH:mm[:ss], or hh:mm am).", valueType: "string" },
+      hour24: { description: "24-hour fields (default true); false: 12-hour with AM/PM.", valueType: "boolean" },
+      seconds: { description: "A seconds field.", valueType: "boolean" },
+      minTime: { description: "The earliest time (HH:mm[:ss]); an earlier one is clamped on blur (invalidTime fires).", valueType: "string" },
+      maxTime: { description: "The latest time (HH:mm[:ss]); a later one is clamped on blur (invalidTime fires).", valueType: "string" },
+    },
+    events: {
+      ...DATES_EVENTS,
+      invalidTime: { description: "A typed time is outside minTime/maxTime; `$param` is it." },
+    },
+    themeVars: textInputTheme("TimeInput"),
+    api: {
+      value: { description: "The time, or null (reactive)." },
+      setValue: { description: "Sets the time." },
+      focus: { description: "Moves the focus to the hour field." },
+      isoValue: { description: "The time as 24-hour HH:mm:ss, or null." },
+    },
+  },
+  DatePicker: {
+    description: "Picks a date, or a range, in a calendar: inline, or in a popup under typed date fields (Mantine DatePicker). The value is a string in dateFormat, or { from, to }.",
+    props: {
+      ...DATES_COMMON,
+      initialValue: { description: "The date (in dateFormat, or YYYY-MM-DD), or { from, to } in range mode.", valueType: "any" },
+      placeholder: { description: "Accepted for compatibility; the fields show their empty characters.", valueType: "string" },
+      mode: { description: "single (default) or range.", valueType: "string", availableValues: ["single", "range"] },
+      dateFormat: DATE_FORMAT_PROP,
+      inline: { description: "The calendar is part of the layout, not a popup.", valueType: "boolean" },
+      startDate: { description: "The earliest date the calendar offers (in dateFormat, or YYYY-MM-DD).", valueType: "string" },
+      endDate: { description: "The latest date the calendar offers.", valueType: "string" },
+      disabledDates: { description: "Days that can't be picked: dates, { from, to }, { before }, { after }, { before, after }, { dayOfWeek }, true, or an array of them.", valueType: "any" },
+      weekStartsOn: { description: "The first day of the week: 0 (Sunday, default) … 6.", valueType: "string", availableValues: WEEKDAYS },
+      showWeekNumber: { description: "Week numbers in the calendar.", valueType: "boolean" },
+      showWeekNumbers: { description: "The same as showWeekNumber.", valueType: "boolean" },
+      numOfMonths: { description: "Months shown side by side (default 1; 2 for a range in a popup).", valueType: "integer" },
+      locale: { description: "The calendar's language (BCP 47, default en-US).", valueType: "string" },
+      timeZone: { description: "Accepted for compatibility; values are calendar dates.", valueType: "string" },
+      showPresets: { description: "Range presets (last 7 days, last 30 days, this month, last month) beside the calendar.", valueType: "boolean" },
+      presets: { description: "The range presets: keys (last7Days, thisMonth, …, a comma-separated string or an array), { value, label }, or { label, from, to }. Turns them on.", valueType: "any" },
+    },
+    events: DATES_EVENTS,
+    themeVars: {
+      ...textInputTheme("DatePicker"),
+      "backgroundColor-menu-DatePicker": "$backgroundColor",
+      "borderColor-menu-DatePicker": "$borderColor",
+    },
+    api: {
+      value: { description: "The date, or { from, to }; undefined when empty (reactive)." },
+      getValue: { description: "The same as value." },
+      setValue: { description: "Sets the date, or { from, to }." },
+      focus: { description: "Moves the focus to the (first) date field." },
+    },
   },
 };
 
@@ -1010,6 +1124,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     },
   },
   ...CHOICE_COMPONENTS,
+  ...DATE_COMPONENTS,
   ...INPUT_COMPONENTS,
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",

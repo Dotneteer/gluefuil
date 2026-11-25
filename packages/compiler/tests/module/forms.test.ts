@@ -28,12 +28,20 @@ describe("diagnostics", () => {
     ["a misspelled behavior event", '<App><TextBox bindTo="a" onValidat="(v) => null"/></App>', [["E004", "onValidat"]]],
     ["Form's own events", '<App><Form onWillSubmit="(d) => false" onSuccess="(r) => r" onSubmitError="(e) => e" onDirtyChanged="(d) => d" onCancel="1" onReset="1"/></App>', []],
     ["dataAfterSubmit values", '<App><Form dataAfterSubmit="drop"/></App>', [["E023", '"drop"']]],
+    ["an exclusive prop (DateInput minValue, a date) isn't the validation's numeric range", '<App><Form><DateInput bindTo="d" minValue="01/01/2026" maxValue="{\'12/31/2026\'}"/></Form></App>', []],
+    ["a shared prop (NumberBox minValue) is still checked as the range's number", '<App><Form><NumberBox bindTo="n" minValue="low"/></Form></App>', [["E022", '"low"']]],
   ])("%s", (_, markup, expected) => {
     expect(problems(markup)).toEqual(expected);
   });
 });
 
 describe("generated code", () => {
+  test("an exclusive prop goes to the component only (step 26)", () => {
+    const out = code('<App><Form><DateInput bindTo="d" minValue="01/01/2026"/></Form></App>');
+    expect(out).toContain("type: $$C_ValidationBehavior, props: null");
+    expect(out).toContain('$$h($$C_DateInput, { "minValue": "01/01/2026" })');
+  });
+
   test("a Form: a container creates the context scope; the Form gets it as contextScope; children use it", () => {
     const out = code('<App><Form><Text>{$data.a}</Text></Form></App>');
     expect(out).toMatch(/const \$\$c = \$\$useContextScope\(\$\$p, \["\$data"\]\);/);

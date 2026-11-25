@@ -39,7 +39,7 @@ describe("a production build (no source maps)", () => {
     output = await buildHello(false);
   }, 60_000);
 
-  test("is one entry chunk with the app's compiled markup, the runtime and the components, plus Markdown's lazy renderer", () => {
+  test("is one entry chunk with the app's compiled markup, the runtime and the components, plus lazy chunks: Markdown's renderer, the date inputs", () => {
     const entries = chunks(output).filter((chunk) => chunk.isEntry);
     expect(entries).toHaveLength(1);
     const ids = relativeIds(entries[0]!);
@@ -49,10 +49,19 @@ describe("a production build (no source maps)", () => {
     // Step 23: the Markdown parser and renderer are a chunk of their own, loaded on demand.
     expect(ids).not.toContain("packages/components/src/markdown-render.tsx");
     expect(ids.some((id) => id.includes("micromark") || id.includes("mdast-util"))).toBe(false);
-    // Besides it, only the bundler's small shared runtime (rolldown-runtime) is a chunk of its own.
-    const lazy = chunks(output).filter((chunk) => !chunk.isEntry && chunk.moduleIds.some((id) => !id.includes("rolldown")));
-    expect(lazy).toHaveLength(1);
-    expect(relativeIds(lazy[0]!)).toContain("packages/components/src/markdown-render.tsx");
+    // Lazy: the chunks only dynamic imports reach (step 23: Markdown; step 26: the date and time inputs,
+    // with @mantine/dates and dayjs). Modules the entry shares with them are a chunk the entry imports
+    // statically: eager. The bundler's small runtime (rolldown-runtime) is a chunk of its own too.
+    const eager = new Set(entries[0]!.imports);
+    const lazy = chunks(output).filter((chunk) => !chunk.isEntry && !eager.has(chunk.fileName) && chunk.moduleIds.some((id) => !id.includes("rolldown")));
+    expect(lazy).toHaveLength(2);
+    expect(lazy.map((chunk) => ["markdown-render.tsx", "dates-native.tsx"].find((file) => relativeIds(chunk).includes(`packages/components/src/${file}`))).sort()).toEqual([
+      "dates-native.tsx",
+      "markdown-render.tsx",
+    ]);
+    const eagerIds = chunks(output).filter((chunk) => chunk.isEntry || eager.has(chunk.fileName)).flatMap(relativeIds);
+    // Only their stylesheet is eager (MANTINE_STYLESHEET: the prerender inlines it).
+    expect(eagerIds.filter((id) => (id.includes("@mantine/dates") || id.includes("dayjs")) && !id.includes(".css"))).toEqual([]);
   });
 
   test("contains no compiler module", () => {

@@ -484,6 +484,10 @@ step 22B (inserted) is submission and server errors.
 
 ## Phase F: Components, in batches
 
+**Step 26 (date and time) ✅.** Plan and findings:
+[poc-26-dates.md](poc-26-dates.md). `@mantine/dates` in a lazy chunk;
+XMLUI's string values (the user's choices).
+
 **Step 25 (choice) ✅.** Plan and findings:
 [poc-25-choice.md](poc-25-choice.md). Option children compile to data; Select
 and AutoComplete are one component on Mantine's Combobox (the user's choices).
@@ -506,7 +510,7 @@ E2E tests for interaction-heavy ones.
 | 23 ✅ | Text and display: `Text`, `Heading`, `Link`, `Icon`, `Image`, `Avatar`, `Badge`, `ProgressBar`, `Spinner`, `ContentSeparator`, `Card`, `Markdown` | `Link` navigation, `Markdown` rendering |
 | 24 ✅ | Inputs: `TextBox`, `PasswordInput`, `TextArea`, `NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker` | Keyboard input, form binding |
 | 25 ✅ | Choice: `Select`, `AutoComplete`, `Option` | Search, multi-select, keyboard |
-| 26 | Date and time: `DateInput`, `DatePicker`, `TimeInput` | Calendar interaction, locale |
+| 26 ✅ | Date and time: `DateInput`, `DatePicker`, `TimeInput` | Calendar interaction, locale |
 | 27 | Overlays and menus: `ModalDialog` (declarative and imperative), `Drawer`, `DropdownMenu`, `SubMenuItem`, `ContextMenu`, `Tooltip`, `toast()`, `confirm()` | Focus trap, Escape, outside click |
 | 28 | Structure: `Tabs`, `ExpandableItem`, `Stepper`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar` | Resizing, sticky, overflow |
 | 29 | **Virtualized `List`** (also decides the virtualizer: `virtua` vs TanStack Virtual) | Scrolling, bottom anchoring, dynamic heights, grouping, selection |

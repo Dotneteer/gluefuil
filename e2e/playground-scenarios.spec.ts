@@ -1146,3 +1146,137 @@ test("AutoComplete: keywords, Enter on the only match, clearing; several values 
   );
   expect(marks).toEqual(['Owner" *"', 'Reviewers" *"', "Component"]);
 });
+
+/** The text fields of a date or time input, by its label (Mantine's own label). */
+const dateFields = (page: Page, label: string) =>
+  page.locator(".mantine-InputWrapper-root", { has: page.locator(`label:text-is("${label}")`) }).first().locator("input:not([type=hidden])");
+
+test("Date and time inputs: typing moves through the fields; formats; limits; clearing; 12-hour time; invalidTime; the API", async ({ page }) => {
+  await open(page, "/date-time");
+  await expect(text(page, /^Born: 05\/25\/1990 \(iso 1990-05-25\)/)).toBeVisible();
+
+  // Typing fills a field and moves to the next one.
+  const born = dateFields(page, "Born (MM/dd/yyyy)");
+  await born.first().click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("12312001");
+  await expect(text(page, /^Born: 12\/31\/2001 \(iso 2001-12-31\)/)).toBeVisible();
+  await expect(text(page, "Last change: born: 12/31/2001")).toBeVisible();
+
+  // Another format: the fields' order and separator.
+  const start = dateFields(page, "Start (dd-MM-yyyy, clearable)");
+  await start.first().click();
+  await page.keyboard.type("03022026");
+  await expect(text(page, /; start: 03-02-2026;/)).toBeVisible();
+  await page.locator(".gfui-DateInput", { has: page.locator('label:text-is("Start (dd-MM-yyyy, clearable)")') }).locator("button").click();
+  await expect(text(page, /; start: none;/)).toBeVisible();
+  // clearToInitialValue: back to the initial value.
+  await dateFields(page, "ISO (yyyy-MM-dd)").nth(2).fill("20");
+  await expect(text(page, /; ISO: 2026-01-20$/)).toBeVisible();
+  await page.locator(".gfui-DateInput", { has: page.locator('label:text-is("ISO (yyyy-MM-dd)")') }).locator("button").click();
+  await expect(text(page, /; ISO: 2026-01-15$/)).toBeVisible();
+
+  // Limits: a date outside 2026 is invalid, with no value.
+  const limited = dateFields(page, "In 2026 only (minValue, maxValue)");
+  await limited.first().click();
+  await page.keyboard.type("05052025");
+  await expect(text(page, "In 2026: none")).toBeVisible();
+  await expect(page.locator(".gfui-DateInput .mantine-Input-input[data-error]")).toHaveCount(1);
+  await limited.nth(2).fill("2026");
+  await expect(text(page, "In 2026: 05/05/2026")).toBeVisible();
+  await expect(page.locator(".gfui-DateInput .mantine-Input-input[data-error]")).toHaveCount(0);
+  // The empty character, the read-only input.
+  await expect(dateFields(page, "With adornments").first()).toHaveAttribute("placeholder", "__");
+  // Read-only: Mantine's fields ignore typing (without the attribute).
+  const readOnly = dateFields(page, "Read-only").first();
+  await readOnly.click();
+  await page.keyboard.type("01");
+  await expect(readOnly).toHaveValue("12");
+
+  // TimeInput: 24-hour and 12-hour values, isoValue().
+  await expect(text(page, /^Alarm: 07:30; meeting: 02:15:00 pm \(iso 14:15:00\)/)).toBeVisible();
+  const meeting = dateFields(page, "Meeting (12-hour, seconds)");
+  await meeting.first().click();
+  await page.keyboard.type("091500");
+  await page.locator(".gfui-TimeInput", { has: page.locator('label:text-is("Meeting (12-hour, seconds)")') }).locator("select").selectOption({ label: "AM" });
+  await expect(text(page, /meeting: 09:15:00 am \(iso 09:15:00\)/)).toBeVisible();
+  // minTime/maxTime: invalidTime fires; the time is clamped when the focus leaves.
+  const office = dateFields(page, "Office hours (09:00–17:00)");
+  await office.first().click();
+  await page.keyboard.type("1830");
+  await expect(text(page, "Last invalid time: 18:30")).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(text(page, /; office: 17:00$/)).toBeVisible();
+
+  // The API: setValue (no didChange), focus.
+  await button(page, "Born: 1 Jan 2000").click();
+  await button(page, "Alarm: 06:45").click();
+  await expect(text(page, /^Born: 01\/01\/2000 \(iso 2000-01-01\)/)).toBeVisible();
+  await expect(text(page, /^Alarm: 06:45;/)).toBeVisible();
+  await expect(text(page, "Last change: born: 12/31/2001")).toBeVisible();
+  await button(page, "Clear both").click();
+  await expect(text(page, /^Born: none \(iso none\)/)).toBeVisible();
+  await button(page, "Focus the alarm").click();
+  await expect(dateFields(page, "Alarm (24-hour)").first()).toBeFocused();
+});
+
+test("DatePicker: typed fields and the popup; a range in two clicks and presets; inline with limits, disabled days, locale; a Form", async ({ page }) => {
+  await open(page, "/date-picker");
+  await expect(text(page, "Due: 06/15/2026; trip: none")).toBeVisible();
+
+  // The popup: the toggle opens the calendar on the value's month; a day picks and closes it.
+  const toggle = page.getByRole("button", { name: "Open the calendar" }).first();
+  await toggle.click();
+  const popup = page.locator(".gfui-DatePicker-dropdown");
+  await expect(popup.getByRole("button", { name: "June 20, 2026" })).toBeVisible();
+  await popup.getByRole("button", { name: "June 20, 2026" }).click();
+  await expect(text(page, "Due: 06/20/2026; trip: none")).toBeVisible();
+  await expect(popup.getByRole("button", { name: "June 21, 2026" })).toBeHidden();
+  // Typing into the fields works too.
+  await dateFields(page, "Due date").nth(1).fill("25");
+  await expect(text(page, "Due: 06/25/2026; trip: none")).toBeVisible();
+
+  // A range: the value changes when both ends are set; presets.
+  await page.getByRole("button", { name: "Open the calendar" }).nth(1).click();
+  const presets = page.locator(".mantine-DatePicker-presetButton");
+  await expect(presets).toHaveText(["Last 7 days", "Last 30 days", "This month", "Last month"]);
+  const first = page.locator(".gfui-DatePicker-dropdown .mantine-DatePicker-day:not([data-outside]):not([disabled])").first();
+  const firstLabel = (await first.getAttribute("aria-label"))!;
+  await first.click();
+  await expect(text(page, "Due: 06/25/2026; trip: none")).toBeVisible();
+  await page.locator(".gfui-DatePicker-dropdown .mantine-DatePicker-day:not([data-outside]):not([disabled])").nth(2).click();
+  await expect(text(page, /^Due: 06\/25\/2026; trip: \d\d\/\d\d\/\d{4} to \d\d\/\d\d\/\d{4}$/)).toBeVisible();
+  expect(firstLabel).toMatch(/, \d{4}$/);
+  await page.getByRole("button", { name: "Open the calendar" }).nth(1).click();
+  await presets.filter({ hasText: "Last 7 days" }).click();
+  const range = (await text(page, /^Due: .* trip: /).textContent())!.match(/trip: (\S+) to (\S+)/)!;
+  const days = (Date.parse(range[2]!) - Date.parse(range[1]!)) / 86_400_000;
+  expect(days).toBe(6);
+
+  // Inline: limits to June, disabled weekends and 19 June, Monday first; a click picks.
+  const workday = page.locator(".gfui-DatePicker", { hasText: "A workday in June 2026" });
+  await expect(workday.locator(".mantine-DatePicker-weekday").first()).toHaveText("Mon");
+  await expect(workday.getByRole("button", { name: "June 19, 2026" })).toBeDisabled();
+  await expect(workday.getByRole("button", { name: "June 20, 2026" })).toBeDisabled();
+  await expect(workday.locator(".mantine-DatePicker-calendarHeaderControl[data-direction=next]")).toBeDisabled();
+  await expect(text(page, "Workday: 06/10/2026")).toBeVisible();
+  await workday.getByRole("button", { name: "June 17, 2026" }).click();
+  await expect(text(page, "Workday: 06/17/2026")).toBeVisible();
+  // The locale and week numbers.
+  const german = page.locator(".gfui-DatePicker", { hasText: "Week numbers, German" });
+  await expect(german.getByText("März 2026")).toBeVisible();
+  // The first header cell is the week numbers' (#).
+  await expect(german.locator(".mantine-DatePicker-weekday").nth(1)).toHaveText("Mo");
+  await expect(german.locator(".mantine-DatePicker-weekNumber").first()).toHaveText("9");
+
+  // The Form: required, typed values, the range's { from, to }.
+  await button(page, "Save").click();
+  await expect(text(page, "Enter the arrival date")).toBeVisible();
+  await dateFields(page, "Arrival").first().click();
+  await page.keyboard.type("07012026");
+  await dateFields(page, "Check-in").first().fill("16");
+  await button(page, "Save").click();
+  const saved = page.locator(".gfui-Card", { hasText: "Saved" }).locator(".gfui-Text");
+  await expect(saved).toBeVisible();
+  expect(JSON.parse((await saved.textContent())!)).toEqual({ arrival: "07/01/2026", checkIn: "16:00", nights: { from: "07/01/2026", to: "07/05/2026" } });
+});

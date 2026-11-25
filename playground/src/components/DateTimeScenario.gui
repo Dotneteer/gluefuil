@@ -1,0 +1,39 @@
+<Component name="DateTimeScenario">
+  <VStack var.log="" var.invalid="">
+    <ScenarioHeader title="Date and time inputs" description="Step 26: DateInput (day, month and year fields in a dateFormat) and TimeInput (hours, minutes, seconds, 12-hour mode); XMLUI's string values and isoValue()."/>
+
+    <H3>DateInput</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <DateInput id="born" label="Born (MM/dd/yyyy)" initialValue="05/25/1990" onDidChange="(v) => log = 'born: ' + v"/>
+      <DateInput id="start" label="Start (dd-MM-yyyy, clearable)" dateFormat="dd-MM-yyyy" clearable="true"/>
+      <DateInput id="iso" label="ISO (yyyy-MM-dd)" dateFormat="yyyy-MM-dd" initialValue="2026-01-15" clearable="true" clearToInitialValue="true"/>
+    </HStack>
+    <Text>Born: {born.value ?? 'none'} (iso {born.isoValue() ?? 'none'}); start: {start.value ?? 'none'}; ISO: {iso.value ?? 'none'}</Text>
+    <HStack wrapContent="true" itemWidth="33%">
+      <DateInput id="limited" label="In 2026 only (minValue, maxValue)" minValue="01/01/2026" maxValue="12/31/2026"/>
+      <DateInput label="With adornments" startIcon="date" endText="UTC" emptyCharacter="_"/>
+      <DateInput label="Read-only" readOnly="true" initialValue="12/24/2025"/>
+    </HStack>
+    <Text>In 2026: {limited.value ?? 'none'}</Text>
+    <Text variant="secondary">Type a date outside 2026 in the second row: it is invalid (a red border) and the value stays empty. The ISO input's clear button goes back to its initial value.</Text>
+
+    <H3>TimeInput</H3>
+    <HStack wrapContent="true" itemWidth="33%">
+      <TimeInput id="alarm" label="Alarm (24-hour)" initialValue="07:30" onDidChange="(v) => log = 'alarm: ' + v"/>
+      <TimeInput id="meeting" label="Meeting (12-hour, seconds)" hour24="false" seconds="true" initialValue="02:15:00 pm" clearable="true"/>
+      <TimeInput id="office" label="Office hours (09:00–17:00)" minTime="09:00" maxTime="17:00" onInvalidTime="(t) => invalid = t"/>
+    </HStack>
+    <Text>Alarm: {alarm.value ?? 'none'}; meeting: {meeting.value ?? 'none'} (iso {meeting.isoValue() ?? 'none'}); office: {office.value ?? 'none'}</Text>
+    <Text>Last invalid time: {invalid || 'none'}</Text>
+    <Text variant="secondary">A time outside the office hours fires invalidTime and is clamped when the field loses the focus.</Text>
+
+    <H3>The API</H3>
+    <HStack wrapContent="true">
+      <Button label="Born: 1 Jan 2000" onClick="born.setValue('01/01/2000')"/>
+      <Button label="Alarm: 06:45" onClick="alarm.setValue('06:45')"/>
+      <Button label="Clear both" onClick="born.setValue(null); alarm.setValue(null)"/>
+      <Button label="Focus the alarm" onClick="alarm.focus()"/>
+    </HStack>
+    <Text>Last change: {log || 'none'}</Text>
+  </VStack>
+</Component>
