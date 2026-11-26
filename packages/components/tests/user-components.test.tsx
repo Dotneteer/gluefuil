@@ -213,12 +213,12 @@ test("named slots with slot props: $item flows back into the caller's template",
 });
 
 test("a component uses another; recursion through the shared table", () => {
-  show(`<App><Tree depth="{3}"/></App>`, {
-    Tree: `
-      <Component name="Tree">
+  show(`<App><Branch depth="{3}"/></App>`, {
+    Branch: `
+      <Component name="Branch">
         <Stack>
           <Leaf label="{'depth ' + $props.depth}"/>
-          <Tree when="{$props.depth > 1}" depth="{$props.depth - 1}"/>
+          <Branch when="{$props.depth > 1}" depth="{$props.depth - 1}"/>
         </Stack>
       </Component>`,
     Leaf: `<Component name="Leaf"><Text>{$props.label}</Text></Component>`,

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@gluefuil/runtime": "0.0.0",
+    "@headless-tree/core": "1.8.1",
     "@mantine/core": "9.8.2",
     "@mantine/dates": "9.8.2",
     "@mantine/hooks": "9.8.2",

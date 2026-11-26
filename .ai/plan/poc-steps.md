@@ -484,6 +484,13 @@ step 22B (inserted) is submission and server errors.
 
 ## Phase F: Components, in batches
 
+**Step 31 (Tree, TileGrid, Items) ✅.** Plan and findings:
+[poc-31-tree-tilegrid.md](poc-31-tree-tilegrid.md). The Tree on headless-tree
+(its state controlled by the component) and the shared virtualizer, a working
+copy of the data that a new value replaces, all of XMLUI's API; the TileGrid as
+rows of tiles (measured against TanStack's lanes), prerendered as a CSS grid;
+Items keyed by id (the user's choices). `Bound` now computes each binding apart.
+
 **Step 30 (Table and Column) ✅.** Plan and findings:
 [poc-30-table.md](poc-30-table.md). Our own column model, Columns compiled to
 data, a grid of divs with table roles (measured against a native `<table>`),
@@ -538,7 +545,7 @@ E2E tests for interaction-heavy ones.
 | 28 ✅ | Structure: `Tabs`, `ExpandableItem`, `Stepper`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar` | Resizing, sticky, overflow |
 | 29 ✅ | **Virtualized `List`** (also decides the virtualizer: TanStack Virtual) | Scrolling, bottom anchoring, dynamic heights, grouping, selection |
 | 30 ✅ | **`Table` + `Column`** (our own column model; `Value`, `Pagination`) | Sorting, selection, resizing, pinning, pagination, editable cells |
-| 31 | `Tree`, `TileGrid`, `Items` (`Pagination` moved to step 30) | Virtualized scrolling |
+| 31 ✅ | `Tree`, `TileGrid`, `Items` (`Pagination` moved to step 30) | Virtualized scrolling |
 | 32 | Remaining: `FileInput`, `FileUploadDropZone`, `QRCode`, `IFrame`, `MediaPlayer`, `TableOfContents`, `Bookmark`, `SkipLink`, `LiveRegion`, non-visual components | File drop, accessibility |
 
 ---

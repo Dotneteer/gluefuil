@@ -203,5 +203,14 @@
       <Column bindTo="name" header="Name" width="2*"/>
       <Column bindTo="total" header="Total" type="decimal(2)"/>
     </Table>
+
+    <!-- Step 31: a Tree (its prerendered rows are the rows it shows once virtual) and a TileGrid
+         (its prerendered CSS grid becomes rows of tiles once it knows its width: ssg.spec.ts
+         measures that the tiles don't move). -->
+    <H2>Step 31 · Tree and TileGrid</H2>
+    <Tree height="160px" defaultExpanded="all" selectedValue="3" data="{[{ id: 1, name: 'Folder' }, { id: 2, name: 'Sub folder', parentId: 1 }, { id: 3, name: 'A file', parentId: 2 }, { id: 4, name: 'Other' }]}"/>
+    <TileGrid height="200px" itemWidth="100px" itemHeight="60px" data="{Array.from({ length: 12 }, (_, i) => ({ id: i, name: 'Tile ' + i }))}">
+      <Text>{$item.name}</Text>
+    </TileGrid>
   </Stack>
 </App>

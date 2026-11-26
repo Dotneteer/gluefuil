@@ -8,7 +8,7 @@
 > after the inserted steps 19A–19C (the App shell), 19D–19F (the layout
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
-> steps 29 and 30 (2026-11-26).
+> steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26).
 
 ## State
 
@@ -23,12 +23,17 @@
   111 files, 260 E2E tests. Our own column model, Columns compiled to data, a
   grid of divs (measured against a native table in `.tmp/vproto/`), the 45
   typed values with `Value`, `Pagination`.
-- **Next: step 31 (`Tree`, `TileGrid`, `Items`)**, not started (`Pagination`
-  moved to step 30). Start by writing `plan/poc-31-<topic>.md` and asking the
-  user. Reuse `useVirtualRows` (`virtual.ts`), `useRowSelection`
-  (`row-selection.ts`) and `selection.ts`; XMLUI's Tree and TileGrid are on
-  virtua (`xmlui/src/components/Tree/TreeReact.tsx`, `TileGrid/`).
-- **`master` holds steps 0–30, merged; it is the only branch.** `origin/master`
+- **Step 31 (`Tree`, `TileGrid`, `Items`) is done and merged into master.** Plan and findings:
+  [`plan/poc-31-tree-tilegrid.md`](plan/poc-31-tree-tilegrid.md); reference:
+  [`docs/tree.md`](docs/tree.md). `npm run check`: 3,244 unit tests in 113
+  files, 274 E2E tests. The Tree is on `@headless-tree/core` (the user's
+  choice over our own model; measured: a rebuild per change, about 2 µs a
+  visible row); the TileGrid is rows of tiles on `useVirtualRows` (measured
+  against TanStack's lanes in `.tmp/vproto/tiles.html`). `Bound` now computes
+  each binding apart (a runtime change: a literal keeps its identity when
+  another prop changes).
+- **Next: step 32** (the remaining components, `poc-steps.md`), not started.
+- **`master` holds steps 0–31, merged.** `origin/master`
   (as last fetched) is at the rename after step 22B; the later merges are not
   pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
@@ -238,6 +243,11 @@
   29's Select race (1 in 30), which passed alone every time. Don't use
   `--repeat-each` on the standalone project: its tests edit served files and
   must run one at a time.
+- **headless-tree in tests (step 31):** its keys track pressed keys from
+  `keydown` to `keyup`; a jsdom test must send both (`press` in
+  `tree.test.tsx`), or the next key is read as a chord.
+- **Built-in names grow:** a user component named like a new built-in is
+  E016 (step 31's `Tree` clashed with a test's component).
 - **Mantine overlays in jsdom (step 27):** no CSS transitions, so content
   mounts a moment after opening and may stay `display: none`. Use
   `findBy*` with `hidden: true`; prove visibility, focus and placement in
@@ -253,6 +263,7 @@
 
 ## Candidates for what comes next (the user decides)
 
+- **Step 31's open items** (`poc-31-tree-tilegrid.md`).
 - **Step 31: `Tree`, `TileGrid`, `Items`** (on the shared virtualizer).
 - **Step 30's open items** (`poc-30-table.md`).
 - **Step 29's open items** (`poc-29-list.md`): paging with DataSource's

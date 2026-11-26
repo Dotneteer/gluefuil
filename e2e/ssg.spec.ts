@@ -15,9 +15,13 @@ async function watchTakeover(page: Page) {
     document.addEventListener("readystatechange", () => {
       if (document.readyState !== "interactive") return;
       const root = document.getElementById("root")!;
-      w.ssg.nodes = [...root.querySelectorAll("*")];
+      // Step 31: a TileGrid's prerender is a CSS grid that becomes rows of tiles once it has a width
+      // (its nodes are replaced, by design); its own test measures that the tiles don't move.
+      const ownNodes = (node: Node) => !(node instanceof Element ? node : node.parentElement)?.closest(".gfui-TileGrid");
+      w.ssg.nodes = [...root.querySelectorAll("*")].filter(ownNodes);
       new MutationObserver((records) => {
         for (const record of records) {
+          if (!ownNodes(record.target)) continue;
           if (record.type === "characterData") w.ssg.changes.push(`text: ${record.target.textContent}`);
           for (const node of record.addedNodes) w.ssg.changes.push(`+ ${node.textContent}`);
           for (const node of record.removedNodes) w.ssg.changes.push(`- ${node.textContent}`);
@@ -84,6 +88,12 @@ test("at the prerendered breakpoint (xs), takeover changes nothing; then the app
   const table = page.getByRole("table");
   await expect(table.locator(".gfui-Table-body[data-virtual]")).toBeAttached();
   await expect(table.getByRole("row", { selected: true })).toContainText("Grace");
+  // Step 31: the Tree went virtual on its prerendered rows; the TileGrid became rows of tiles.
+  const tree = page.getByRole("tree");
+  await expect(tree.locator(".gfui-Tree-content[data-virtual]")).toBeAttached();
+  await expect(tree.getByRole("treeitem")).toHaveText(["Folder", "Sub folder", "A file", "Other"]);
+  await expect(tree.getByRole("treeitem", { selected: true })).toHaveText("A file");
+  await expect(page.locator(".gfui-TileGrid-row").first()).toBeAttached();
 
   await page.getByRole("button", { name: "Increment", exact: true }).click();
   await expect(page.getByText(/^Count: \d+$/)).toHaveText("Count: 1");
@@ -131,4 +141,28 @@ test("at desktop width, only the responsive text switches after takeover", async
   expect((await takeover.changes()).sort()).toEqual(["+ Layout: wide", "- Layout: compact"]);
   // Exactly one prerendered node (the compact Text's span) left the document.
   expect((await takeover.replaced()).gone).toBe(1);
+});
+
+test("the TileGrid's takeover: the prerendered tiles are where the virtual rows put them", async ({ browser, baseURL }) => {
+  const positions = async (javaScriptEnabled: boolean) => {
+    const context = await browser.newContext({ javaScriptEnabled, baseURL: baseURL!, viewport: { width: 375, height: 800 } });
+    const page = await context.newPage();
+    await page.goto("/");
+    if (javaScriptEnabled) await expect(page.locator(".gfui-TileGrid-row").first()).toBeAttached();
+    const grid = page.locator(".gfui-TileGrid");
+    await grid.scrollIntoViewIfNeeded();
+    const result = await grid.evaluate((g) => {
+      const box = g.getBoundingClientRect();
+      return [...g.querySelectorAll<HTMLElement>("[data-tile]")].slice(0, 6).map((t) => {
+        const r = t.getBoundingClientRect();
+        return [Number(t.dataset.tile), Math.round(r.left - box.left), Math.round(r.top - box.top), Math.round(r.width)];
+      });
+    });
+    await context.close();
+    return result;
+  };
+  const before = await positions(false);
+  const after = await positions(true);
+  expect(before).toHaveLength(6);
+  expect(after).toEqual(before);
 });

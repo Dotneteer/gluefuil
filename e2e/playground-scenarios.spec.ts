@@ -1406,3 +1406,30 @@ test("Editable and paged tables: a checkbox cell saves through the variable", as
   await page.getByRole("row").filter({ hasText: "Search" }).getByRole("checkbox", { name: "Reviewed" }).check();
   await expect(text(page, "Last change: reviewed of Search: true")).toBeVisible();
 });
+
+test("Trees: the selection follows a variable and its path opens; Level 1 closes the rest", async ({ page }) => {
+  await open(page, "/trees");
+  const tree = page.getByRole("tree").first();
+  await expect(tree.getByRole("treeitem", { name: "Q1 report.pdf" })).toHaveAttribute("aria-selected", "true");
+  await button(page, "Select Invoice 001").click();
+  await expect(tree.getByRole("treeitem", { name: "Invoice 001.pdf" })).toHaveAttribute("aria-selected", "true");
+  await expect(text(page, "Selected: inv1")).toBeVisible();
+  await button(page, "Level 1").click();
+  await expect(tree.getByRole("treeitem")).toHaveText(["My files(3)", "Documents(2)", "Projects(1)", "System (not selectable)"]);
+});
+
+test("Lazy trees: a folder loads its children when opened", async ({ page }) => {
+  await open(page, "/lazy-trees");
+  const tree = page.getByRole("tree").first();
+  await tree.getByRole("treeitem", { name: "Projects", exact: true }).locator(".gfui-Tree-gutter").click();
+  await expect(tree.getByRole("treeitem", { name: "Projects item 2 (load 1)" })).toBeVisible();
+  await expect(text(page, "Loads: 1")).toBeVisible();
+});
+
+test("Tile grids: a click selects a tile and the small grid shows the same selection", async ({ page }) => {
+  await open(page, "/tile-grids");
+  const grids = page.getByRole("grid", { name: "Tile grid" });
+  await grids.first().getByRole("gridcell").filter({ hasText: "Photo 4" }).first().click();
+  await expect(text(page, "Selected: 1 (p4)")).toBeVisible();
+  await expect(grids.nth(1).getByRole("gridcell").filter({ hasText: "Photo 4" })).toHaveAttribute("aria-selected", "true");
+});

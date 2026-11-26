@@ -9,6 +9,8 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { scheduleMicrotask } from "../errors";
 import { useComputed } from "../reactivity/react";
+import { isServerView } from "../reactivity/server-view";
+import { computed, type ReadonlySignal } from "../reactivity/signals";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 import { variable } from "../reactivity/variable";
 import { assertBindingValue } from "../script/binding-value";
@@ -53,11 +55,20 @@ export interface BoundProps {
  * bindings. It re-renders only when one of those values changes.
  */
 export function Bound({ type, props, bindings, handlers, policies, timeouts, id, templates, lifecycle, results, scope, children }: BoundProps) {
-  const values = useComputed(() => {
-    const result: Record<string, unknown> = {};
-    for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
+  // One computed per binding (step 31): a binding runs again only when what it reads changes, so an
+  // unchanged value keeps its identity when another prop changes (a literal `data="{[…]}"` is not
+  // a new array each time). The server view evaluates them directly: nothing it computes is cached.
+  const cells = useMemo(() => {
+    const result: Record<string, ReadonlySignal<unknown>> = {};
+    for (const name in bindings) result[name] = computed(() => assertBindingValue(bindings[name]!(scope)));
     return result;
   }, [bindings, scope]);
+  const values = useComputed(() => {
+    const result: Record<string, unknown> = {};
+    if (isServerView()) for (const name in bindings) result[name] = assertBindingValue(bindings[name]!(scope));
+    else for (const name in cells) result[name] = cells[name]!.get();
+    return result;
+  }, [cells, bindings, scope]);
   const { handlerProps, templateProps, registerApi } = useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }, results === true);
   const extra = registerApi ? { registerApi } : undefined;
   return createElement(type, { ...props, ...values, ...handlerProps, ...templateProps, ...extra }, children);

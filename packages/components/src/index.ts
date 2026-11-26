@@ -14,7 +14,9 @@ export { Avatar, Badge, Card, ContentSeparator, Image, initials, ProgressBar, Sp
 export { bindingText, Markdown, preloadMarkdown, removeIndents } from "./markdown";
 export { ALLOWED_TAGS, decodeHtmlEntities, isSafeUrl, tokenizeHtml, type HtmlToken } from "./markdown-html";
 export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
-export { Items } from "./items";
+export { Items, itemKeys, itemsOf, orderedValues } from "./items";
+export { Tree, type TreeProps } from "./tree";
+export { columnCount, STATIC_TILES, TileGrid, type TileGridProps } from "./tilegrid";
 export { Column, Table, type TableProps } from "./table";
 export { clampWidth, columnMinimum, columnTrack, discoverFields, inferColumnType, nextSort, pageCount, pageSlice, parseColumnInference, parseWidth, sampleRows, sizingMode, sortRows, tableColumns, type ColumnEntry, type SortDirection, type SortState, type TableColumn } from "./table-model";
 export { renderValue, Value, type ValueProps } from "./value";
@@ -23,7 +25,7 @@ export { Pager, Pagination, pageSizeOptions, visiblePages, type PaginationProps 
 export { useRowSelection } from "./row-selection";
 export { DEFAULT_KEY_BINDINGS, keepsAnEdge, List, matchesKeyBinding, STATIC_ROWS, type ListProps } from "./list";
 export { duplicateKeys, itemKey, listModel, orderFields, orderItems, valueAt, type ListGroup, type ListModel, type ListModelInput, type ListRow, type OrderByField } from "./list-model";
-export { EMPTY_SELECTION, keyTarget, pickRow, selectAllRows, selectKeys, type Modifiers, type SelectionOptions, type SelectionState } from "./selection";
+export { EMPTY_SELECTION, gridKeyTarget, keyTarget, pickRow, selectAllRows, selectKeys, type Modifiers, type SelectionOptions, type SelectionState } from "./selection";
 export { LabelBehavior, VariantBehavior, variantVariable } from "./behaviors";
 export {
   ContextMenu,

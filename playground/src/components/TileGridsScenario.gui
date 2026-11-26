@@ -1,0 +1,46 @@
+<!-- Step 31: TileGrid with 10,000 tiles: the column count follows the width (and the place is kept), selection by mouse, keys and checkboxes, syncWithVar across two grids, actions. -->
+<Component name="TileGridsScenario">
+  <VStack
+    var.photos="{Array.from({ length: 10000 }, (_, i) => ({ id: 'p' + i, title: 'Photo ' + i, hue: (i * 47) % 360 }))}"
+    var.width="{860}"
+    var.stretch="{false}"
+    var.picked="{{ selectedIds: [] }}"
+    var.log="">
+    <ScenarioHeader title="Tile grids" description="10,000 tiles, only the rows in view mounted. Narrow the grid: the column count follows and the first tile stays in view. Click, Shift and Ctrl/Cmd click, the arrow keys, Space and the checkboxes select; the selection is shared with the small grid through a variable. Ctrl/Cmd+A, Delete and a double click report here."/>
+
+    <Card title="10,000 tiles">
+      <HStack wrapContent="true">
+        <Button label="Narrow" onClick="width = 420"/>
+        <Button label="Wide" onClick="width = 860"/>
+        <Button label="{stretch ? 'Fixed width' : 'Stretch'}" onClick="stretch = !stretch"/>
+        <Button label="Select p5000" onClick="photosGrid.selectId('p5000')"/>
+        <Button label="Clear" onClick="photosGrid.clearSelection()"/>
+      </HStack>
+      <Text>Selected: {picked.selectedIds.length} ({picked.selectedIds.slice(0, 5).join(', ')})</Text>
+      <Text>Log: {log}</Text>
+      <TileGrid
+        id="photosGrid"
+        width="{width}px"
+        height="420px"
+        data="{photos}"
+        itemWidth="120px"
+        itemHeight="100px"
+        stretchItems="{stretch}"
+        itemsSelectable="true"
+        syncWithVar="picked"
+        onItemDoubleClick="(item, index) => log = 'opened ' + item.title + ' at ' + index"
+        onSelectAllAction="(items, ids) => log = 'all ' + ids.length + ' selected'"
+        onDeleteAction="(item, items) => log = 'delete ' + items.length + ' (focused ' + (item?.title ?? 'none') + ')'">
+        <VStack height="100%" verticalAlignment="end" backgroundColor="hsl({$item.hue} 60% {$selected ? 75 : 88}%)" paddingHorizontal="$space-2" paddingVertical="$space-1">
+          <Text variant="strong">{$item.title}</Text>
+        </VStack>
+      </TileGrid>
+    </Card>
+
+    <Card title="The same selection (syncWithVar)">
+      <TileGrid data="{photos.slice(0, 12)}" itemWidth="90px" itemHeight="60px" itemsSelectable="true" syncWithVar="picked" checkboxPosition="bottomEnd">
+        <Text paddingHorizontal="$space-2">{$item.title}</Text>
+      </TileGrid>
+    </Card>
+  </VStack>
+</Component>

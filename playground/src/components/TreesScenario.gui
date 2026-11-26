@@ -1,0 +1,83 @@
+<!-- Step 31: Tree with flat and nested data, mapped fields, a template, selection bound to a variable, keys and actions, the API, edits, and 50,000 nodes. -->
+<Component name="TreesScenario">
+  <VStack
+    var.files="{[
+      { id: 'root', name: 'My files', icon: 'folder', parentId: null },
+      { id: 'docs', name: 'Documents', icon: 'folder', parentId: 'root' },
+      { id: 'reports', name: 'Reports', icon: 'folder', parentId: 'docs' },
+      { id: 'q1', name: 'Q1 report.pdf', icon: 'doc', parentId: 'reports' },
+      { id: 'q2', name: 'Q2 report.pdf', icon: 'doc', parentId: 'reports' },
+      { id: 'invoices', name: 'Invoices', icon: 'folder', parentId: 'docs' },
+      { id: 'inv1', name: 'Invoice 001.pdf', icon: 'doc', parentId: 'invoices' },
+      { id: 'code', name: 'Projects', icon: 'folder', parentId: 'root' },
+      { id: 'web', name: 'Web app', icon: 'code', parentId: 'code' },
+      { id: 'locked', name: 'System (not selectable)', icon: 'folder', parentId: 'root', selectable: false }
+    ]}"
+    var.current="q1"
+    var.log=""
+    var.added="{0}"
+    var.big="{Array.from({ length: 50000 }, (_, i) => ({ id: i, name: 'Node ' + i, parentId: i < 10 ? null : Math.floor((i - 10) / 6) }))}">
+    <ScenarioHeader title="Trees" description="A file tree from flat data: the selection follows a variable and its path opens; arrow keys move, Right and Left open and close, Enter and Space select, Delete reports the focused node. The API expands, scrolls and edits the tree's own copy of the data. Below, nested data with mapped fields, and 50,000 nodes."/>
+
+    <Card title="Files">
+      <HStack wrapContent="true">
+        <Button label="Expand all" onClick="files1.expandAll()"/>
+        <Button label="Collapse all" onClick="files1.collapseAll()"/>
+        <Button label="Level 1" onClick="files1.expandToLevel(1)"/>
+        <Button label="Select Invoice 001" onClick="current = 'inv1'"/>
+        <Button label="Add a file here" onClick="added++; files1.appendNode(current, { id: 'new' + added, name: 'New file ' + added + '.txt', icon: 'doc' }); files1.expandNode(current)"/>
+        <Button label="Rename" onClick="files1.replaceNode(current, { name: files1.getNodeById(current).name + '!' })"/>
+        <Button label="Remove" onClick="files1.removeNode(current); current = null"/>
+      </HStack>
+      <Text>Selected: {current ?? 'nothing'}</Text>
+      <Text>Log: {log}</Text>
+      <Tree
+        id="files1"
+        height="300px"
+        data="{files}"
+        defaultExpanded="first-level"
+        selectedValue="{current}"
+        onSelectionDidChange="e => current = e.newNode?.id ?? null"
+        onNodeDidExpand="n => log = 'opened ' + n.name"
+        onNodeDidCollapse="n => log = 'closed ' + n.name"
+        onDeleteAction="n => log = 'Delete on ' + n.name">
+        <property name="itemTemplate">
+          <HStack verticalAlignment="center">
+            <Icon name="{$item.icon}"/>
+            <Text variant="{$item.hasChildren ? 'strong' : undefined}">{$item.name}</Text>
+            <Text variant="secondary" when="{$item.hasChildren}">({$item.children.length})</Text>
+          </HStack>
+        </property>
+      </Tree>
+    </Card>
+
+    <Card title="Nested data, mapped fields">
+      <Text variant="secondary">dataFormat="hierarchy" with idField="code", nameField="title", childrenField="parts"; animateExpand turns the chevron; a row click toggles.</Text>
+      <Tree
+        dataFormat="hierarchy"
+        idField="code"
+        nameField="title"
+        childrenField="parts"
+        animateExpand="true"
+        itemClickExpands="true"
+        defaultExpanded="{['wheel']}"
+        data="{[
+          { code: 'car', title: 'Car', parts: [
+            { code: 'engine', title: 'Engine', parts: [{ code: 'piston', title: 'Piston' }, { code: 'valve', title: 'Valve' }] },
+            { code: 'chassis', title: 'Chassis', parts: [{ code: 'wheel', title: 'Wheel', parts: [{ code: 'tyre', title: 'Tyre' }, { code: 'rim', title: 'Rim' }] }] }
+          ] },
+          { code: 'bike', title: 'Bike', parts: [{ code: 'frame', title: 'Frame' }] }
+        ]}"/>
+    </Card>
+
+    <Card title="50,000 nodes">
+      <Text variant="secondary">Only the rows in view are mounted. Expand all opens every node; scroll to a deep one.</Text>
+      <HStack wrapContent="true">
+        <Button label="Expand all (big)" onClick="bigTree.expandAll()"/>
+        <Button label="Collapse all (big)" onClick="bigTree.collapseAll()"/>
+        <Button label="Show node 49999" onClick="bigTree.scrollIntoView(49999); bigTree.selectNode(49999)"/>
+      </HStack>
+      <Tree id="bigTree" height="360px" data="{big}"/>
+    </Card>
+  </VStack>
+</Component>
