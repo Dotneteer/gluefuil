@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 30 (Table and Column).
+> **Last updated:** step 31 (Tree, TileGrid, Items).
 
 ## What this repository is
 
@@ -148,6 +148,18 @@ Current state:
   through the variable, paging, copying cells as tab-separated rows, columns
   inferred from the data. The 45 typed values (`Value`), and `Pagination`
   ([table.md](table.md)).
+- **Tree, TileGrid and Items (step 31):** `Tree` on headless-tree
+  (`@headless-tree/core`, its state held by the component: the visible items,
+  their ARIA metadata, focus and the navigation keys) and the shared
+  virtualizer: flat or nested data with mapped fields, expansion, single
+  selection that follows `selectedValue`, lazy loading (`loadChildren`, a
+  spinner delay, `autoLoadAfter`), a saved state, edits in a working copy that
+  a new `data` replaces (`reset` or `preserve-state`), the focused row kept
+  mounted. `TileGrid`: rows of fixed-size tiles from the measured width (the
+  place kept when it changes), selection and 2-D keys, a CSS-grid prerender.
+  `Items` takes an object's values and keys its instances by id
+  ([tree.md](tree.md)). `Bound` computes each binding apart, so an unchanged
+  value keeps its identity when another prop changes ([modules.md](modules.md)).
 - **Overlays and menus (step 27):** `ModalDialog` (opened by `open(...params)`
   with `$param` inside, or by `when`; a dirty guard; a Form inside closes it),
   `Drawer`, `DropdownMenu` with `MenuItem`, `SubMenuItem` and `MenuSeparator`
@@ -191,6 +203,7 @@ Current state:
 | [inputs.md](inputs.md) | `components/src/inputs.tsx`, `layout-wrap.tsx`; `wrapComponent`'s `readOnly` and API context; props shared by a component and a behavior |
 | [structure.md](structure.md) | `components/src/structure.tsx`; `childrenAsHeaders` (E038), `perChildContextVars` in the compiler; `usePerChildScope` |
 | [table.md](table.md) | `components/src/table.tsx`, `table-model.ts`, `value-types.ts`, `value.tsx`, `pagination.tsx`, `row-selection.ts`; `childrenAsColumns` (E040) in the compiler |
+| [tree.md](tree.md) | `components/src/tree.tsx`, `tree-model.ts`, `tilegrid.tsx`; `gridKeyTarget` in `selection.ts`; the `pinned` row in `virtual.ts` |
 | [list.md](list.md) | `components/src/list.tsx`, `list-model.ts`, `selection.ts`, `virtual.ts`; `PropMetadata.variableName` (E039) in the compiler |
 | [overlays.md](overlays.md) | `components/src/overlays.tsx`, `overlay-context.tsx`; `runtime/src/render/overlay-state.ts`, `pointer.ts`; E037, `$$whenOpen`, `EventMetadata.args` |
 | [display.md](display.md) | `components/src/display.tsx`, `icons.tsx`, `icon-names.ts`, `markdown*.ts(x)`, the text overflow of `text.tsx`, `Link`; `compiler/src/script/markdown-bindings.ts`; `runtime/src/render/lazy.ts` |
@@ -249,7 +262,9 @@ Current state:
 │       ├── src/behaviors.tsx  LabelBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
 │       ├── src/data.tsx     DataSource, APICall, DataUrl
 │       ├── src/forms.tsx    Form, FormBindingBehavior, ValidationBehavior (the store is runtime/src/forms/)
-│       ├── src/items.tsx    Items (templates with $item; a URL in data loads it)
+│       ├── src/items.tsx    Items (templates with $item; a URL in data loads it; an object's values; keyed by id)
+│       ├── src/tree.tsx     Tree on headless-tree and the shared virtualizer (+ tree-model.ts: the data index, edits, tree state)
+│       ├── src/tilegrid.tsx TileGrid: rows of tiles on the shared virtualizer
 │       ├── src/list.tsx     List, virtualized (+ list-model.ts: the rows; selection.ts, row-selection.ts: row selection; virtual.ts: the rows on TanStack Virtual; the last three shared with Table)
 │       ├── src/table.tsx    Table, Column (+ table-model.ts: columns, widths, sorting, paging)
 │       ├── src/value.tsx    Value (+ value-types.ts: the 45 typed values, shared with Column type)
@@ -262,7 +277,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 48 scenarios (steps 2–30), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 51 scenarios (steps 2–31), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -293,7 +308,7 @@ version `0.0.0`.
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
 | `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **Forms:** `extractServerProblem`, `ServerProblem`, `ServerFieldError`, `FormStore`, `FormField`, `FieldOptions`, `DEFAULT_FIELD_OPTIONS`, `ValidationSummary`, `validateRules`, `customResults`, `highestSeverity`, `isEmptyValue`, `parseRegex`, `PATTERNS`, `FieldRules`, `RuleResult`, `Severity`, `isShown`, `INITIAL_FLAGS`, `InteractionFlags`, `ValidationMode`, `parseFieldPath`, `getAt`, `setAt`, `deleteAt`, `FormProvider`, `useFormStore`, `FieldBindingProvider`, `useFieldBinding`, `FieldBinding`; `createContextScope`, `useContextScope`, `provideContext`, `usePerChildScope`, `ChildContextValues`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. **Overlays (step 27):** `toast`, `confirm`, `toasts`, `confirmQueue`, `removeToast`, `answerConfirm`, `resetOverlayState`, `TOAST_POSITIONS`, their types; `pointerData`, `isPointerLike`, `PointerData`. Also `createElement`, `Fragment`. |
-| `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, the inputs, `Select`, `AutoComplete`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `Pages`, `Page`, `Link`, the behavior components, the structure components (`Tabs`, `TabItem`, `ExpandableItem`, `Stepper`, `Step`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar`, `splitterSize`, `splitterSizeAfterDrag`, `fittingCount`), the overlays (`ModalDialog`, `Drawer`, `DropdownMenu`, `MenuItem`, `SubMenuItem`, `MenuSeparator`, `ContextMenu`, `Tooltip`, `parseTooltipOptions`), `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
+| `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, the inputs, `Select`, `AutoComplete`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `itemKeys`, `itemsOf`, `orderedValues`, `Tree`, `TileGrid`, `columnCount`, `STATIC_TILES`, `gridKeyTarget`, `Pages`, `Page`, `Link`, the behavior components, the structure components (`Tabs`, `TabItem`, `ExpandableItem`, `Stepper`, `Step`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar`, `splitterSize`, `splitterSizeAfterDrag`, `fittingCount`), the overlays (`ModalDialog`, `Drawer`, `DropdownMenu`, `MenuItem`, `SubMenuItem`, `MenuSeparator`, `ContextMenu`, `Tooltip`, `parseTooltipOptions`), `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
 | `packages/components/src/metadata.ts` | `componentMetadata` (every built-in, with `themeVars` defaults; props with value types and enums, events, API, templates; App's `regions` and `removedProps`), `LAYOUT_EQUIVALENTS`, `DRAWER_BREAKPOINTS`, `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
 ### Compiler source layout
@@ -353,7 +368,7 @@ delivery (imported by no package):
 |---------|-----------|-----------------|
 | compiler | relative files; `@gluefuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
-| components | runtime, React, Mantine (`@mantine/core`, `@mantine/dates`, `@mantine/notifications`), `lucide-react`, `@tanstack/react-virtual` (step 29), the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
+| components | runtime, React, Mantine (`@mantine/core`, `@mantine/dates`, `@mantine/notifications`), `lucide-react`, `@tanstack/react-virtual` (step 29), `@headless-tree/core` (step 31), the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 | standalone | compiler, runtime, components, React | (no package imports it) |
 | vite-plugin | compiler, `@gluefuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
@@ -486,6 +501,7 @@ Conventions:
 | `packages/components/tests/dates.test.tsx` | Step 26: the formats, matchers, presets and times; the three date inputs through markup, in a Form, prerendered (see [dates.md](dates.md#tests)) |
 | `packages/compiler/tests/module/choice.test.ts`, `packages/components/tests/choice.test.tsx` | Step 25: Option children compiled to data; Select and AutoComplete through markup, in a Form, prerendered (see [choice.md](choice.md#tests)) |
 | `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
+| `packages/components/tests/tree-model.test.ts`, `tree.test.tsx` | Step 31: the tree model, edits, tree state and the grid keys as tables; Tree, TileGrid and Items in jsdom (see [tree.md](tree.md#tests)) |
 | `packages/compiler/tests/module/table.test.ts`, `packages/components/tests/table-model.test.ts`, `table.test.tsx` | Step 30: E040 and the Column entries; typed values, inference, widths, sorting and paging tables; Table, Value and Pagination in jsdom (see [table.md](table.md#tests)) |
 | `packages/compiler/tests/module/list.test.ts`, `packages/components/tests/list-model.test.ts`, `list.test.tsx` | Step 29: E039 and `syncWithVar`'s code; the row model, selection and key-binding tables; the List in jsdom (see [list.md](list.md#tests)) |
 | `packages/compiler/tests/module/structure.test.ts`, `packages/components/tests/structure.test.tsx` | Step 28: headers as data, E038, `$overflow` scopes, the splitter aliases; the structure components in jsdom (see [structure.md](structure.md#tests)) |
@@ -509,7 +525,7 @@ Conventions:
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
 
-Count after step 29: 3,010 unit tests in 108 files, 247 E2E tests. After step 28: 2,926 unit tests in 105 files, 235 E2E tests. After step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
+Count after step 31: 3,244 unit tests in 113 files, 274 E2E tests. After step 30: 3,145 unit tests in 111 files, 260 E2E tests. After step 29: 3,010 unit tests in 108 files, 247 E2E tests. After step 28: 2,926 unit tests in 105 files, 235 E2E tests. After step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
 are current; the breakdowns in parentheses were last counted after steps
 19A–19C and are updated only where steps 21–22B changed them.
 
@@ -581,7 +597,8 @@ are current; the breakdowns in parentheses were last counted after steps
     placement, in the overlay scenarios), `structure.spec.ts` (step 28:
     splitter drags, sticky elements, overflow, measured) and `list.spec.ts`
     (step 29: virtualized scrolling, anchoring, selection) and
-    `table.spec.ts` (step 30: sorting, resizing, pinning, copying, editing, paging);
+    `table.spec.ts` (step 30: sorting, resizing, pinning, copying, editing, paging) and
+    `tree.spec.ts` (step 31: Tree and TileGrid, measured);
   - `playground-build` (5181): `app-shell-prerender.spec.ts`, against the
     playground's prerendered production build (`.tmp/playground-dist`);
   - `data-worker` (5182) and `data-server` (5183): `data.spec.ts` against
@@ -625,6 +642,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/data.spec.ts` | Data binding against the mock backend in both hosts: real requests, deduplication, slow network, out-of-order answers, retries, offline, hang and cancel, a rename with invalidation, validation errors, a slow double click (see [data.md](data.md#tests)) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select (step 25's), Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
+| `e2e/tree.spec.ts` | Step 31 in the playground: a Tree of 50,000 nodes (expand all, fast scrolling, a toggle's time, `scrollIntoView`), keys with the focused row kept mounted, lazy loading, a saved state, preserve-state; a TileGrid of 10,000 tiles (columns from the width, the place kept when narrowing, 2-D keys, a shared selection) (see [tree.md](tree.md#tests)) |
 | `e2e/table.spec.ts` | Step 30 in the playground: 10,000 rows, sorting, resizing and pinning (measured), selection, copying as tab-separated rows, types and inference, editable cells, row details, paging, Pagination (see [table.md](table.md#tests)) |
 | `e2e/list.spec.ts` | Step 29 in the playground: 10,000 rows (few mounted, no blank viewport while scrolling fast, exact `scrollToIndex`), a page-scrolled List, the chat feed (follow, stop, prepend), groups, selection by mouse and keys, actions, a context menu (see [list.md](list.md#tests)) |
 | `e2e/structure.spec.ts` | Step 28 in the playground: tabs by keyboard, splitter drags and limits (measured), keys, hidden panes, resize modes; ScrollViewer styles and fades; sticky sections and boxes; ResponsiveBar overflow |
@@ -632,7 +650,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
 | `e2e/user-components.spec.ts` | The XMLUI user-defined-components examples (component files, code-behind, an inline component; `$props`, events, methods, slots), in dev and in the prerendered build |
 | `e2e/globals.spec.ts` | Globals (step 21B) in the hello app: a component file writes them, Main and another component read them, a local variable shadows one; dev and prerendered build |
-| `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled (prerendered Markdown included); takeover at the prerendered breakpoint changes no DOM node; with Markdown's chunk held back, the takeover still changes none and the Markdown is live afterwards; at desktop width only the responsive text switches; the app is live afterwards |
+| `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled (prerendered Markdown included); takeover at the prerendered breakpoint changes no DOM node (a TileGrid's subtree aside: its tiles are checked to stay in place); with Markdown's chunk held back, the takeover still changes none and the Markdown is live afterwards; at desktop width only the responsive text switches; the app is live afterwards |
 | `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.gui` fetched |
 | `e2e/standalone.spec.ts` | Standalone mode against the built `gfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files) |
 | `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |

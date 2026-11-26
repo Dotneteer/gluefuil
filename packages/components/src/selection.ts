@@ -108,3 +108,36 @@ export function selectKeys(state: SelectionState, rows: readonly string[], keys:
   if (!options.multi) return { ...state, selected: [wanted[wanted.length - 1]!] };
   return { ...state, selected: unique([...state.selected, ...wanted]) };
 }
+
+/**
+ * Step 31 (TileGrid): where a key moves the focus in a grid of `cols` columns,
+ * or undefined for other keys (XMLUI computeNextFocusIndex, TileGridReact.tsx
+ * 38–80). The first key with nothing focused lands on the first tile; Up and
+ * Down stay put at an edge; Home and End go to the row's ends (with Ctrl/Cmd:
+ * the grid's); PageUp and PageDown move by the rows in view.
+ */
+export function gridKeyTarget(key: string, focused: number, count: number, cols: number, pageRows: number, ctrl: boolean): number | undefined {
+  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(key)) return undefined;
+  if (count === 0) return undefined;
+  if (focused < 0) return 0;
+  const c = Math.max(1, cols);
+  const rowStart = Math.floor(focused / c) * c;
+  switch (key) {
+    case "ArrowLeft":
+      return Math.max(0, focused - 1);
+    case "ArrowRight":
+      return Math.min(count - 1, focused + 1);
+    case "ArrowUp":
+      return focused - c < 0 ? focused : focused - c;
+    case "ArrowDown":
+      return focused + c >= count ? focused : focused + c;
+    case "Home":
+      return ctrl ? 0 : rowStart;
+    case "End":
+      return ctrl ? count - 1 : Math.min(count - 1, rowStart + c - 1);
+    case "PageUp":
+      return Math.max(0, focused - Math.max(1, pageRows) * c);
+    default:
+      return Math.min(count - 1, focused + Math.max(1, pageRows) * c);
+  }
+}

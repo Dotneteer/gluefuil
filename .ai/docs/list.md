@@ -6,7 +6,7 @@
 > virtualizer comparison and the XMLUI comparison:
 > [`../plan/poc-29-list.md`](../plan/poc-29-list.md).
 >
-> **Last updated:** step 30 (the virtualizer setup and the selection state moved into `virtual.ts` and `row-selection.ts`, shared with Table).
+> **Last updated:** step 31 (`useVirtualRows` serves Tree and TileGrid too, with a `pinned` row; `gridKeyTarget` in `selection.ts`; see [tree.md](tree.md)).
 
 ## In markup
 
@@ -160,9 +160,9 @@ not declared.
 |------|----------|
 | `components/src/list.tsx` | `List`, `matchesKeyBinding`, `keepsAnEdge`, `DEFAULT_KEY_BINDINGS`, `STATIC_ROWS` |
 | `components/src/list-model.ts` | `listModel`, `orderItems`, `valueAt`, `itemKey`, `duplicateKeys` (React-free) |
-| `components/src/selection.ts` | `pickRow`, `keyTarget`, `selectAllRows`, `selectKeys` (React-free; for Table too) |
-| `components/src/virtual.ts` | `useVirtualRows` (step 30: the attach, the offset and `scrollPaddingStart`, anchoring, the render cache, user scrolls; List and Table), `scrollContainer`, `offsetIn`, `scrollObservers` (element or window), `RenderCache`, `userScrollTracker`, `keepsAnEdge`, `STATIC_ROWS` |
-| `components/src/row-selection.ts` | `useRowSelection` (step 30: the selection state, `syncWithVar`, `selectionDidChange`; List and Table) |
+| `components/src/selection.ts` | `pickRow`, `keyTarget`, `selectAllRows`, `selectKeys` (React-free; for Table and TileGrid too); `gridKeyTarget` (step 31, TileGrid) |
+| `components/src/virtual.ts` | `useVirtualRows` (step 30: the attach, the offset and `scrollPaddingStart`, anchoring, the render cache, user scrolls; List and Table; step 31: Tree and TileGrid, and `pinned`, a row kept mounted wherever the view is), `scrollContainer`, `offsetIn`, `scrollObservers` (element or window), `RenderCache`, `userScrollTracker`, `keepsAnEdge`, `STATIC_ROWS` |
+| `components/src/row-selection.ts` | `useRowSelection` (step 30: the selection state, `syncWithVar`, `selectionDidChange`; List, Table and step 31's TileGrid) |
 | `components/src/metadata.ts` | `List`; `PropMetadata.variableName` |
 | `components/src/styles.ts` | `LIST` |
 | `compiler/src/module/compile-module.ts` | `variableNameProp` (E039) |

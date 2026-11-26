@@ -62,7 +62,10 @@
     { path: '/grouped-lists', step: '29', title: 'Grouped and selectable lists', description: 'Groups that fold; selection by mouse, keys and checkboxes; syncWithVar; actions.' },
     { path: '/tables', step: '30', title: 'Tables', description: '10,000 rows: sorting, selection, pinned and resizable columns, copying cells.' },
     { path: '/table-types', step: '30', title: 'Table columns and types', description: 'Columns inferred from the data; every Column type; the Value component.' },
-    { path: '/editable-tables', step: '30', title: 'Editable and paged tables', description: 'Switches, checkboxes and colors in cells; row details; paging; Pagination.' }
+    { path: '/editable-tables', step: '30', title: 'Editable and paged tables', description: 'Switches, checkboxes and colors in cells; row details; paging; Pagination.' },
+    { path: '/trees', step: '31', title: 'Trees', description: 'Flat and nested data, selection bound to a variable, keys, the API and edits, 50,000 nodes.' },
+    { path: '/lazy-trees', step: '31', title: 'Lazy trees', description: 'Children loaded on expand, reloading, a saved state; new data in reset and preserve-state modes.' },
+    { path: '/tile-grids', step: '31', title: 'Tile grids', description: '10,000 tiles: columns follow the width, selection by mouse and keys, syncWithVar.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -152,6 +155,9 @@
     <Page url="/tables"><VStack><TablesScenario/><ScenarioSource file="TablesScenario"/></VStack></Page>
     <Page url="/table-types"><VStack><TableTypesScenario/><ScenarioSource file="TableTypesScenario"/></VStack></Page>
     <Page url="/editable-tables"><VStack><EditableTablesScenario/><ScenarioSource file="EditableTablesScenario"/></VStack></Page>
+    <Page url="/trees"><VStack><TreesScenario/><ScenarioSource file="TreesScenario"/></VStack></Page>
+    <Page url="/lazy-trees"><VStack><LazyTreesScenario/><ScenarioSource file="LazyTreesScenario"/></VStack></Page>
+    <Page url="/tile-grids"><VStack><TileGridsScenario/><ScenarioSource file="TileGridsScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

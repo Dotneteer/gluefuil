@@ -164,6 +164,8 @@ export interface VirtualRowsOptions {
   bottom?: boolean;
   /** A user scroll (wheel, touch, keys, the scrollbar), with the state at that moment. */
   onUserScroll?: () => void;
+  /** A row kept mounted wherever the view is (step 31: the Tree's focused row, its one tab stop). */
+  pinned?: string;
 }
 
 export interface VirtualRows {
@@ -246,7 +248,15 @@ export function useVirtualRows(options: VirtualRowsOptions): VirtualRows {
   const getItemKey = useCallback((index: number) => keys[index] ?? index, [keys]);
   const estimate = options.estimate;
   const estimateSize = useCallback(() => estimate, [estimate]);
-  const rangeExtractor = useCallback((range: Range) => cache.current.extract(range, (i) => keys[i], indexOf), [keys, indexOf]);
+  const pinned = options.pinned;
+  const rangeExtractor = useCallback(
+    (range: Range) => {
+      const indexes = cache.current.extract(range, (i) => keys[i], indexOf);
+      const at = pinned === undefined ? undefined : indexOf.get(pinned);
+      return at === undefined || indexes.includes(at) ? indexes : [...indexes, at].sort((a, b) => a - b);
+    },
+    [keys, indexOf, pinned],
+  );
   const virtualizer = useVirtualizer<Element, HTMLElement>({
     count: keys.length,
     getScrollElement: () => target as Element | null,

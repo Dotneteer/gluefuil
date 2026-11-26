@@ -885,6 +885,77 @@ const LIST = `
 }
 `;
 
+/* Tree (step 31, tree.tsx): a wrapper (fades) around the scroll box (role tree); rows placed
+   absolutely when virtual, as List's. Indentation: a gutter per level. */
+const TREE = `
+.gfui-Tree { position: relative; min-width: 0; color: var(--gfui-textColor-Tree); display: flex; flex-direction: column; }
+.gfui-Tree[data-scroll="own"] { min-height: 0; }
+.gfui-Tree-scroll { position: relative; min-width: 0; outline: none; }
+.gfui-Tree[data-scroll="own"] > .gfui-Tree-scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-anchor: none; }
+.gfui-Tree-content { position: relative; width: 100%; }
+.gfui-Tree-content[data-virtual] > .gfui-Tree-row { position: absolute; top: 0; left: 0; width: 100%; }
+.gfui-Tree-row {
+  display: flex; align-items: center; min-height: var(--gfui-Tree-row-height, 32px); box-sizing: border-box;
+  border-radius: var(--gfui-borderRadius-Tree-row); outline: none; cursor: pointer; user-select: none;
+}
+.gfui-Tree-row:hover { background-color: var(--gfui-backgroundColor-Tree-row--hover); color: var(--gfui-textColor-Tree--hover); }
+.gfui-Tree-row[data-selected] { background-color: var(--gfui-backgroundColor-Tree-row--selected); color: var(--gfui-textColor-Tree--selected); }
+.gfui-Tree-row:focus-visible {
+  outline: var(--gfui-outlineWidth-Tree--focus) var(--gfui-outlineStyle-Tree--focus) var(--gfui-outlineColor-Tree--focus);
+  outline-offset: var(--gfui-outlineOffset-Tree--focus);
+}
+.gfui-Tree-gutter {
+  flex-shrink: 0; display: flex; align-items: center; align-self: stretch;
+  padding-inline-start: calc(var(--gfui-Tree-depth, 0) * var(--gfui-width-indent-Tree));
+}
+.gfui-Tree-toggle { display: inline-flex; align-items: center; justify-content: center; width: var(--gfui-space-6); height: 100%; }
+.gfui-Tree-toggle[data-hidden] { visibility: hidden; }
+.gfui-Tree-toggle .gfui-Spinner { --loader-size: var(--gfui-space-4); }
+.gfui-Tree-icon { display: inline-flex; transition: transform 0.15s ease; }
+.gfui-Tree-label { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; }
+.gfui-Tree-default { display: inline-flex; align-items: center; gap: var(--gfui-space-1); min-width: 0; }
+.gfui-Tree-scroll[data-scroll-style] { scrollbar-width: thin; }
+.gfui-Tree-scroll[data-scroll-style="whenMouseOver"]:not(:hover),
+.gfui-Tree-scroll[data-scroll-style="whenScrolling"]:not([data-scrolling]) { scrollbar-color: transparent transparent; }
+.gfui-Tree::before, .gfui-Tree::after {
+  content: ""; position: absolute; left: 0; right: 0; height: var(--gfui-space-6); z-index: 1;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s ease;
+}
+.gfui-Tree::before { top: 0; background: linear-gradient(var(--gfui-backgroundColor), transparent); }
+.gfui-Tree::after { bottom: 0; background: linear-gradient(transparent, var(--gfui-backgroundColor)); }
+.gfui-Tree[data-fade-top]::before, .gfui-Tree[data-fade-bottom]::after { opacity: 1; }
+`;
+
+/* TileGrid (step 31, tilegrid.tsx): rows of fixed-size tiles placed absolutely when virtual;
+   the static window (server render) is a CSS grid that needs no width. */
+const TILEGRID = `
+.gfui-TileGrid { position: relative; min-width: 0; outline: none; }
+.gfui-TileGrid[data-scroll="own"] { min-height: 0; overflow-y: auto; overflow-anchor: none; }
+.gfui-TileGrid-content-box { position: relative; width: 100%; }
+.gfui-TileGrid-content-box[data-virtual] > .gfui-TileGrid-row { position: absolute; top: 0; left: 0; }
+.gfui-TileGrid-row { display: flex; gap: var(--gfui-TileGrid-gap); }
+.gfui-TileGrid-static { display: grid; gap: var(--gfui-TileGrid-gap); }
+.gfui-TileGrid-tile {
+  position: relative; box-sizing: border-box; flex-shrink: 0; overflow: hidden; min-width: 0;
+  background-color: var(--gfui-backgroundColor-item-TileGrid); border-radius: var(--gfui-borderRadius-item-TileGrid);
+}
+.gfui-TileGrid-tile[data-selectable] { cursor: pointer; }
+.gfui-TileGrid-tile:hover { background-color: var(--gfui-backgroundColor-item-TileGrid--hover); }
+.gfui-TileGrid-tile[data-selected] { background-color: var(--gfui-backgroundColor-item-TileGrid--selected); }
+.gfui-TileGrid-tile[data-selected]:hover { background-color: var(--gfui-backgroundColor-item-TileGrid--selected--hover); }
+.gfui-TileGrid:focus-visible .gfui-TileGrid-tile[data-focused] {
+  outline: var(--gfui-outlineWidth-item-TileGrid--focus) var(--gfui-outlineStyle-item-TileGrid--focus) var(--gfui-outlineColor-item-TileGrid--focus);
+  outline-offset: var(--gfui-outlineOffset-item-TileGrid--focus);
+}
+.gfui-TileGrid-content { width: 100%; height: 100%; user-select: var(--gfui-TileGrid-userSelect); }
+.gfui-TileGrid-check { position: absolute; z-index: 1; }
+.gfui-TileGrid-check[data-position^="top"] { top: var(--gfui-offsetVertical-checkbox-TileGrid); }
+.gfui-TileGrid-check[data-position^="bottom"] { bottom: var(--gfui-offsetVertical-checkbox-TileGrid); }
+.gfui-TileGrid-check[data-position$="Start"] { inset-inline-start: var(--gfui-offsetHorizontal-checkbox-TileGrid); }
+.gfui-TileGrid-check[data-position$="End"] { inset-inline-end: var(--gfui-offsetHorizontal-checkbox-TileGrid); }
+.gfui-TileGrid-loading { display: flex; justify-content: center; padding: var(--gfui-space-4) 0; }
+`;
+
 /* Table (step 30, table.tsx): a grid of divs with table roles; every row is a grid with the
    same template (star widths are fr). Rows are placed absolutely when virtual (as List's). */
 const TABLE = `
@@ -998,6 +1069,8 @@ ${OVERLAYS}
 ${STRUCTURE}
 ${LIST}
 ${TABLE}
+${TREE}
+${TILEGRID}
 ${VALUE}
 ${PAGINATION}
 .gfui-App,

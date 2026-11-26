@@ -36,6 +36,31 @@ describe("Bound", () => {
     expect(renders).toBe(2);
   });
 
+  test("a binding runs again only when what it reads changes: another binding's change keeps its value (step 31)", () => {
+    const sel = signal(1);
+    const scope = createScope({ sel: { signal: sel } });
+    const seen: unknown[] = [];
+    let runs = 0;
+    function Tree({ data, selected }: { data?: unknown; selected?: unknown }) {
+      seen.push(data);
+      return <span data-testid="tree">{String(selected)}</span>;
+    }
+    // A literal reads nothing: one array for the element's lifetime (the Tree resets on a new one).
+    const bindings = {
+      data: () => {
+        runs++;
+        return [{ id: 1 }];
+      },
+      selected: (s: object) => (s as { sel: number }).sel,
+    };
+    render(<Bound type={Tree} bindings={bindings} scope={scope} />);
+    act(() => sel.set(2));
+    expect(screen.getByTestId("tree").textContent).toBe("2");
+    expect(seen).toHaveLength(2);
+    expect(seen[1]).toBe(seen[0]);
+    expect(runs).toBe(1);
+  });
+
   test("passes children through", () => {
     function Wrap({ children }: { children?: React.ReactNode }) {
       return <div data-testid="wrap">{children}</div>;

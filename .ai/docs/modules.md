@@ -41,7 +41,7 @@ use file offsets.
 
 | Export | What it does |
 |--------|--------------|
-| `Bound` | Renders `type` with constant `props`, the current values of `bindings` (evaluated against `scope` in one `useComputed`), and `handlers`: one `HandlerSlot` per handler, with its `policies`/`timeouts`, disposed on unmount (see [async-handlers.md](async-handlers.md)). Re-renders only when a value changes. |
+| `Bound` | Renders `type` with constant `props`, the current values of `bindings` (one computed per binding, against `scope`, so a binding runs again only when what it reads changes and an unchanged value keeps its identity when another prop changes, step 31; the server view evaluates them directly), and `handlers`: one `HandlerSlot` per handler, with its `policies`/`timeouts`, disposed on unmount (see [async-handlers.md](async-handlers.md)). Re-renders only when a value changes. |
 | `createAppScope()` | The root scope: app globals |
 | `useScope(parent, definitions)` | A container's scope: creates its variables (`{ init }` binding or `{ value }` constant) once per instance |
 | `TextNode` | Text content with bindings: `null`/`undefined` render nothing, other values as text |
@@ -190,7 +190,7 @@ uses it.
 |------|--------|
 | `compiler/tests/module/variables-handlers.test.ts` | Containers, `<variable>`/`<global>`, nesting, handlers and `<event>`, E004–E008, handler and binding diagnostics in markup |
 | `compiler/tests/module/compile-module.test.ts` | Module shape (both formats); elements, attributes, constants and bindings; text and whitespace rules; every E code; binding and syntax diagnostics in file positions; extra metadata |
-| `runtime/tests/render/elements.test.tsx` | `Bound` (props, re-rendering only on change, children, the promise check); `TextNode`; `loadModule` |
+| `runtime/tests/render/elements.test.tsx` | `Bound` (props, re-rendering only on change, a binding's value kept when another changes, children, the promise check); `TextNode`; `loadModule` |
 | `components/tests/async-handlers.test.tsx` | Async handlers from markup (see [async-handlers.md](async-handlers.md#tests)) |
 | `components/tests/variables-handlers.test.tsx` | Clicks in jsdom: counter, source/mirror, order independence, shadowing, `<variable>`/`<global>`/`<event>`, deep writes, `push`, paths, alias mutation throws, lone arrow and `$param`, batching, per-instance state |
 | `components/tests/first-app.test.tsx` | Markup → `compileModule` → `loadModule` → DOM, for the first app and a table of constructs |

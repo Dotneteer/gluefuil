@@ -77,7 +77,10 @@
     paint, never during render).
 - **Per-item state survives data changes.** Scope objects are stable, so
   variables inside an instance keep their values when the data changes.
-  Instances are keyed by index.
+  `Items` keys its instances by the item's `$id`, `id` or `key` (XMLUI's
+  fields), else by position; a repeated id falls back to the position
+  (step 31). State stays with its item through inserts and moves; a new
+  identity remounts.
 - **Nesting:** inner templates see outer context variables through the
   scope chain; an inner `$item` shadows the outer one.
 - **IDs inside templates** belong to the template instance (one ID scope per
@@ -87,10 +90,10 @@
 
 | Part | Details |
 |------|---------|
-| Props | `data` (array), `reverse` |
+| Props | `data` (an array, an object's values with integer keys first as XMLUI's `orderedKeys`, or a URL), `reverse` |
 | Template | `itemTemplate` (or children) |
 | Context | `$item`, `$itemIndex`, `$isFirst`, `$isLast` |
-| Output | No wrapper element: one template instance per item |
+| Output | No wrapper element: one template instance per item, keyed by its id (`itemKeys`) |
 
 ## Files
 
@@ -108,5 +111,6 @@
 |------|--------|
 | `runtime/tests/render/visibility-templates.test.tsx` | The `visibility.md` resolution table, breakpoints, the resize signal, `When` (a hidden child never runs, responsive), template instances (reactive context, no recreation), lifecycle (order, StrictMode, `When` transitions) |
 | `compiler/tests/module/conditionals-templates.test.ts` | `when` emission, constants, responsive rules, enclosing-scope evaluation, templates (children, `<property>`, fragments, containers inside), context-variable diagnostics, E013–E015, lifecycle |
+| `components/tests/tree.test.tsx` (Items) | Step 31: an object's values in `orderedKeys` order; an instance stays with its id through an insert, a new id remounts |
 | `components/tests/conditionals-templates.test.tsx` | jsdom: toggling with `onMount`/`onUnmount`, hidden state is discarded, responsive `when-*`, `Items` context variables, `reverse`, `<property>` templates, data changes with per-item state, nested `Items` |
 | `e2e/conditionals-templates.spec.ts` | Chromium: responsive `when` at three viewport sizes; `Items` add and remove |

@@ -1,0 +1,64 @@
+<!-- Step 31: Tree lazy loading (loadChildren, loadingState, spinnerDelay, markNodeUnloaded, autoLoadAfter), saving and restoring the tree state, and new data in reset and preserve-state modes. -->
+<Component name="LazyTreesScenario">
+  <VStack
+    var.loads="{0}"
+    var.saved="{null}"
+    var.items="{[
+      { id: 1, name: 'Root', parentId: null },
+      { id: 2, name: 'Child A', parentId: 1 },
+      { id: 3, name: 'Child B', parentId: 1 }
+    ]}"
+    var.next="{4}">
+    <ScenarioHeader title="Lazy trees" description="Folders load their children when first opened (half a second, a spinner after 200 ms); Reload marks one unloaded; Live data loads again after being closed for 3 seconds. Save and restore the view state. New data starts the left tree over and keeps the right tree's state."/>
+
+    <Card title="Loading on expand">
+      <Text>Loads: {loads}</Text>
+      <HStack>
+        <Button label="Reload Projects" onClick="lazy.markNodeUnloaded('projects')"/>
+        <Button label="Save state" onClick="saved = lazy.getTreeState()"/>
+        <Button label="Restore state" enabled="{saved !== null}" onClick="lazy.setTreeState(saved)"/>
+        <Button label="Collapse all" onClick="lazy.collapseAll()"/>
+      </HStack>
+      <Tree
+        id="lazy"
+        height="260px"
+        spinnerDelay="200"
+        data="{[
+          { id: 'projects', name: 'Projects', dynamic: true },
+          { id: 'live', name: 'Live data', dynamic: true, autoLoadAfter: 3000 },
+          { id: 'static', name: 'Static folder' },
+          { id: 'kid', name: 'A static child', parentId: 'static' }
+        ]}"
+        onLoadChildren="node => {
+          loads++;
+          delay(500);
+          return [1, 2, 3].map(n => ({ id: node.id + '-' + loads + '-' + n, name: node.name + ' item ' + n + ' (load ' + loads + ')', dynamic: n === 3 }));
+        }">
+        <property name="itemTemplate">
+          <HStack verticalAlignment="center">
+            <Text>{$item.name}</Text>
+            <Badge when="{$item.loadingState === 'loading'}" value="loading"/>
+          </HStack>
+        </property>
+      </Tree>
+    </Card>
+
+    <Card title="New data: reset and preserve-state">
+      <Text variant="secondary">Open Root in both, select a child, then add an item.</Text>
+      <HStack>
+        <Button label="Add an item" onClick="items = [...items, { id: next, name: 'Inserted ' + next, parentId: 1 }]; next++"/>
+        <Button label="Add, keeping the left tree" onClick="resetTree.preserveStateOnNextDataRefresh({ operation: 'insert' }); items = [...items, { id: next, name: 'Inserted ' + next, parentId: 1 }]; next++"/>
+      </HStack>
+      <HStack>
+        <VStack width="*">
+          <Text variant="strong">reset</Text>
+          <Tree id="resetTree" data="{items}"/>
+        </VStack>
+        <VStack width="*">
+          <Text variant="strong">preserve-state</Text>
+          <Tree id="keptTree" data="{items}" dataRefreshMode="preserve-state"/>
+        </VStack>
+      </HStack>
+    </Card>
+  </VStack>
+</Component>

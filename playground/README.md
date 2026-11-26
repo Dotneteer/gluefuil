@@ -16,7 +16,7 @@ the nav is a drawer, opened from the header.
 
 ## The scenarios
 
-One or more per concept of proof-of-concept steps 2–28
+One or more per concept of proof-of-concept steps 2–31
 (`.ai/plan/poc-steps.md`):
 
 | Step | Scenario | Shows |
@@ -63,6 +63,9 @@ One or more per concept of proof-of-concept steps 2–28
 | 28 | Tabs and steppers | Tabs from TabItems and an Items (a project added at runtime), an ID inside a tab read outside, the API; vertical tabs with a header template and `keepMounted`; accordion tabs; ExpandableItems (switch, disabled, the API); a nonLinear Stepper with completed and error states and its API; a vertical Stepper |
 | 28 | Splitters and scrolling | An HSplitter with limits (`120px`, `-120px`), `onResize`, a pane hidden by `when`; a VSplitter with `preservePrimary` and a floating bar; a swapped Splitter; the four ScrollViewer styles; StickySections in a ScrollViewer with a header; a StickyBox at the bottom of the page |
 | 28 | Responsive bars | A toolbar whose width a slider sets: buttons move into the menu and say so through `$overflow`; `hasOverflow`; a vertical bar |
+| 31 | Trees | A file tree from flat data: the selection follows a variable and opens its path, keys and a Delete action, the API (expand all, a level, edits in the tree's own copy); nested data with mapped fields and a turning chevron; 50,000 nodes with expand all and `scrollIntoView` |
+| 31 | Lazy trees | Folders that load their children on expand (a spinner after 200 ms), Reload (`markNodeUnloaded`), Live data that loads again after 3 seconds closed; save and restore the view state; new data in `reset` and `preserve-state` trees, and `preserveStateOnNextDataRefresh` |
+| 31 | Tile grids | 10,000 tiles: Narrow and Wide change the column count and keep the first tile in view, Stretch; selection by click, Shift and Ctrl/Cmd click, arrows, Space and checkboxes, shared with a small grid through `syncWithVar`; Ctrl/Cmd+A, Delete and a double click reported |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the
