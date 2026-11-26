@@ -29,4 +29,19 @@ export {
   TooltipBehavior,
   type TooltipOptions,
 } from "./overlays";
+export {
+  ExpandableItem,
+  fittingCount,
+  ResponsiveBar,
+  ScrollViewer,
+  Splitter,
+  splitterSize,
+  splitterSizeAfterDrag,
+  Step,
+  Stepper,
+  StickyBox,
+  StickySection,
+  TabItem,
+  Tabs,
+} from "./structure";
 export { Form, FormBindingBehavior, ValidationBehavior, type FormProps } from "./forms";

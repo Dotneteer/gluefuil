@@ -140,7 +140,7 @@ export {
   type RoutingMode,
 } from "./render/router";
 export { GlobalScope, useGlobalScope } from "./render/global-scope";
-export { createContextScope, provideContext, useContextScope } from "./render/context-scope";
+export { ChildContextValues, createContextScope, provideContext, useContextScope, usePerChildScope } from "./render/context-scope";
 export { DEFAULT_FIELD_OPTIONS, FormField, FormStore, type FieldOptions, type ValidationSummary } from "./forms/store";
 export { customResults, highestSeverity, isEmptyValue, parseRegex, PATTERNS, validateRules, type FieldRules, type RuleResult, type Severity } from "./forms/rules";
 export { extractServerProblem, type ServerFieldError, type ServerProblem } from "./forms/server-errors";

@@ -296,6 +296,8 @@ export type DropdownMenuProps = LayoutProps & {
   triggerTemplate?: TemplateRenderer;
   onWillOpen?: Handler;
   registerApi?: RegisterApi;
+  /** Internal (ResponsiveBar, step 28): the trigger's accessible name when it shows only an icon. */
+  "aria-label"?: string;
   children?: ReactNode;
 };
 
@@ -331,6 +333,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
       disabled={disabled}
       leftSection={iconStart ? glyph : undefined}
       rightSection={iconStart ? undefined : glyph}
+      aria-label={props["aria-label"]}
       {...layout.attributes}
       style={layout.style}
     >

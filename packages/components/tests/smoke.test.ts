@@ -8,10 +8,13 @@ test("components package loads", () => {
 
 test("every component has metadata, and the metadata entry point loads on its own", () => {
   expect(Object.keys(componentMetadata).sort()).toEqual([
-    "APICall", "App", "AppHeader", "AutoComplete", "Avatar", "Badge", "Button", "CHStack", "CVStack", "Card", "Checkbox", "ColorPicker", "ContentSeparator", "ContextMenu", "DataSource", "DateInput", "DatePicker",
-    "Drawer", "DropdownMenu", "FlowLayout", "Footer", "Form", "H1", "H2", "H3", "H4", "H5", "H6", "HStack", "Heading", "Icon", "Image", "Items", "Link", "Markdown", "MenuItem", "MenuSeparator", "ModalDialog", "NavGroup",
-    "NavLink", "NavPanel", "NavPanelCollapseButton", "NumberBox", "Option", "Page", "Pages", "PasswordInput", "ProgressBar", "RadioGroup", "Select",
-    "Slider", "SpaceFiller", "Spinner", "Stack", "SubMenuItem", "Switch", "Text", "TextArea", "TextBox", "Theme", "TimeInput", "Tooltip", "VStack",
+    "APICall", "App", "AppHeader", "AutoComplete", "Avatar", "Badge", "Button", "CHStack", "CVStack", "Card", "Checkbox", "ColorPicker",
+    "ContentSeparator", "ContextMenu", "DataSource", "DateInput", "DatePicker", "Drawer", "DropdownMenu", "ExpandableItem", "FlowLayout", "Footer",
+    "Form", "H1", "H2", "H3", "H4", "H5", "H6", "HSplitter", "HStack", "Heading", "Icon", "Image", "Items", "Link", "Markdown", "MenuItem",
+    "MenuSeparator", "ModalDialog", "NavGroup", "NavLink", "NavPanel", "NavPanelCollapseButton", "NumberBox", "Option", "Page", "Pages",
+    "PasswordInput", "ProgressBar", "RadioGroup", "ResponsiveBar", "ScrollViewer", "Select", "Slider", "SpaceFiller", "Spinner", "Splitter", "Stack",
+    "Step", "Stepper", "StickyBox", "StickySection", "SubMenuItem", "Switch", "TabItem", "Tabs", "Text", "TextArea", "TextBox", "Theme", "TimeInput",
+    "Tooltip", "VSplitter", "VStack",
   ]);
   for (const [name, metadata] of Object.entries(componentMetadata)) {
     // Aliases render another component (HStack → Stack); removed ones exist only for their migration error.

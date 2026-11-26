@@ -137,6 +137,7 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["deferredValue", "$$deferred"],
   ["optionItems", "$$optionItems"],
   ["OptionContent", "$$OptionContent"],
+  ["usePerChildScope", "$$usePerChildScope"],
 ];
 
 /** Attribute forms that later steps implement; reported instead of ignored. */
@@ -219,6 +220,11 @@ class ModuleCompiler {
   private readonly frames: Set<string>[] = [];
   /** Context variables of the enclosing templates (readable, not writable). */
   private readonly contextFrames: Set<string>[] = [];
+  /**
+   * Step 28: the header key of each TabItem/Step element (`childrenAsHeaders`), set
+   * when its Tabs/Stepper compiles its headers, read when the item compiles in place.
+   */
+  private readonly headerKeys = new Map<ElementNode, { key: string; inItems: boolean }>();
   /** The component IDs of the file (collected before compiling: their order doesn't matter). */
   /** The file's (or the component body's) IDs, each with its component's name. */
   private readonly ids = new Map<string, string>();
@@ -1112,6 +1118,10 @@ class ModuleCompiler {
     }
     const bindings: [string, string][] = [];
     const handlers: [string, string][] = [];
+    // Step 28: a TabItem/Step's key, the same as in its parent's compiled headers.
+    const headerKey = isUser ? undefined : this.headerKeys.get(node);
+    if (headerKey && !headerKey.inItems) constants.push(["$$key", jsString(headerKey.key)]);
+    else if (headerKey) bindings.push(["$$key", this.itemKey(headerKey.key)]);
     // Behaviors (step 18): decided from the attributes the element sets; their
     // props go to them, not to the component.
     const behaviors = attachedBehaviors(metadata, new Set(node.attributes.map((a) => a.name.full)));
@@ -1239,6 +1249,10 @@ class ModuleCompiler {
     // Children as the template (Items): unless the template is also given as a <property>.
     const childrenTemplate = metadata.childrenTemplate;
     const meaningful = content.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
+    if (!isUser && metadata.childrenAsHeaders) {
+      // Step 28: the headers are data; the children still compile in place (below).
+      bindings.push(["$$headers", this.hoistRaw("$$o", `($$s) => [${this.headerParts(content, "$$s", name, metadata.childrenAsHeaders.item).join(", ")}]`)]);
+    }
     if (!isUser && metadata.childrenAsOptions) {
       // Step 25: the children are data, one reactive options array.
       const data = node.attributes.find((a) => a.name.full === "data");
@@ -1255,6 +1269,23 @@ class ModuleCompiler {
     } else if (metadata.rawText) {
       const interpolate = node.attributes.find((a) => a.name.full === "interpolateBindings")?.value?.value !== "false";
       this.rawText(name, content, bindings, children, interpolate);
+    } else if (!isUser && metadata.perChildContextVars) {
+      // Step 28: each element child in a context scope of its own (ResponsiveBar's $overflow).
+      const vars = metadata.perChildContextVars;
+      for (const child of content) {
+        if (child.kind !== "element") {
+          const compiled = this.child(child, scopeVar);
+          if (compiled !== undefined) children.push(compiled);
+          continue;
+        }
+        this.contextFrames.push(new Set(vars));
+        const body = this.child(child, "$$c");
+        this.contextFrames.pop();
+        if (body === undefined) continue;
+        const container = `$$K${this.counter++}`;
+        this.hoisted.push(`function ${container}({ $$p }) {\n  const $$c = $$usePerChildScope($$p, ${JSON.stringify(vars)});\n  return ${body};\n}`);
+        children.push(`$$h(${container}, { $$p: ${scopeVar} })`);
+      }
     } else if (!isUser) {
       for (const child of content) {
         const compiled = this.child(child, scopeVar);
@@ -1751,6 +1782,93 @@ class ModuleCompiler {
       pieces.push("constant" in value ? value.constant : `(${value.binding})(${sv})`);
     }
     return `String(${pieces.join(" + ")}).trim()`;
+  }
+
+  /**
+   * Step 28: the headers of a Tabs/Stepper (`childrenAsHeaders`): each `item`
+   * element is `{ $$key, …its props, id }`, an `Items` spreads its items' headers
+   * (in an item scope, `$$optionItems`). The keys are the child's position (and
+   * `$itemIndex` inside an Items); the items record them for their in-place compile.
+   * Binding diagnostics are left to that compile (they would be reported twice).
+   */
+  private headerParts(content: ContentNode[], sv: string, component: string, item: string): string[] {
+    const before = this.diagnostics.length;
+    const parts: string[] = [];
+    let position = 0;
+    for (const child of content) {
+      if (child.kind === "comment" || (child.kind === "text" && child.value.trim() === "")) continue;
+      if (child.kind !== "element") {
+        this.report(child.kind === "script" ? { start: child.start, end: child.contentSpan.start } : child, "E038", component, item, "text");
+        continue;
+      }
+      const name = child.name.full;
+      const key = String(position++);
+      if (name === item) {
+        this.headerKeys.set(child, { key, inItems: false });
+        const entry = this.headerEntry(child, sv, item, jsString(key));
+        parts.push(this.optionWhen(child, sv, component, `[${entry}]`, entry));
+      } else if (name === "Items") {
+        parts.push(this.optionWhen(child, sv, component, this.headerItems(child, sv, component, item, key)));
+      } else this.report(child.name, "E038", component, item, `<${name}>`);
+    }
+    // Keep the structural problems (E002, E038); the item's own compile reports the rest.
+    const added = this.diagnostics.splice(before);
+    this.diagnostics.push(...added.filter((d) => d.code === "E002" || d.code === "E038"));
+    return parts.filter((part) => part !== "");
+  }
+
+  /** `<Items data>` of TabItems/Steps: their headers for each item, keyed `position:$itemIndex`. */
+  private headerItems(node: ElementNode, sv: string, component: string, item: string, key: string): string {
+    let data = "undefined";
+    for (const attribute of node.attributes) {
+      if (attribute.name.full !== "data" || !attribute.value) continue;
+      const value = this.value(this.segments(attribute as ValuedAttribute));
+      data = "constant" in value ? value.constant : `(${value.binding})(${sv})`;
+    }
+    const inner = `$$s${this.counter++}`;
+    this.contextFrames.push(new Set(this.metadataOf("Items")!.templates!.itemTemplate!.contextVars));
+    const parts: string[] = [];
+    for (const child of node.children) {
+      if (child.kind === "comment" || (child.kind === "text" && child.value.trim() === "")) continue;
+      if (child.kind === "element" && child.name.full === "property") continue;
+      if (child.kind !== "element" || child.name.full !== item) {
+        this.report(child.kind === "element" ? child.name : child, "E038", component, item, child.kind === "element" ? `<${child.name.full}>` : "text");
+        continue;
+      }
+      this.headerKeys.set(child, { key, inItems: true });
+      const entry = this.headerEntry(child, inner, item, `(${this.itemKey(key)})(${inner})`);
+      parts.push(this.optionWhen(child, inner, component, `[${entry}]`, entry));
+    }
+    this.contextFrames.pop();
+    return `$$optionItems(${sv}, ${data}, (${inner}) => [${parts.filter((p) => p !== "").join(", ")}])`;
+  }
+
+  /** The binding of an item's key inside an Items: `"position:" + $itemIndex`. */
+  private itemKey(key: string): string {
+    const parsed = parseInterpolation(`{${JSON.stringify(`${key}:`)} + $itemIndex}`);
+    const value = this.value(parsed.segments);
+    return "constant" in value ? `() => ${value.constant}` : value.binding;
+  }
+
+  /** One header: `$$key`, the item's props and `id`; its headerTemplate with the scope to render it in. */
+  private headerEntry(node: ElementNode, sv: string, item: string, key: string): string {
+    const metadata = this.metadataOf(item)!;
+    const fields: [string, string][] = [["$$key", key]];
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name !== "id" && !Object.hasOwn(metadata.props, name)) continue;
+      if (!attribute.value) {
+        fields.push([name, '"true"']);
+        continue;
+      }
+      const value = this.propValue(attribute as ValuedAttribute, metadata.props[name]);
+      fields.push([name, "constant" in value ? value.constant : `(${value.binding})(${sv})`]);
+    }
+    const template = node.children.find((c): c is ElementNode => c.kind === "element" && c.name.full === "property" && c.attributes.some((a) => a.name.full === "name" && a.value?.value === "headerTemplate"));
+    if (template && metadata.templates?.headerTemplate) {
+      fields.push(["$$headerTemplate", this.template(template.children, metadata.templates.headerTemplate.contextVars)], ["$$scope", sv]);
+    }
+    return `{ ${fields.map(([k, code]) => `${jsString(k)}: ${code}`).join(", ")} }`;
   }
 
   /** `<Items data>` inside a Select: its Options for each item, in an item scope. */

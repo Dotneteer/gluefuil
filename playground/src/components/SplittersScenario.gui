@@ -1,0 +1,59 @@
+<!-- Step 28: Splitter, ScrollViewer, StickyBox, StickySection. -->
+<Component name="SplittersScenario">
+  <VStack var.size="(not resized yet)" var.showSecond="{true}">
+    <ScenarioHeader title="Splitters and scrolling" description="Splitters dragged by the mouse or the arrow keys, with limits, resize modes, a floating bar and a hidden pane; ScrollViewer styles with fades; sticky sections and a sticky box."/>
+
+    <Card title="HSplitter">
+      <HSplitter height="200px" initialPrimarySize="30%" minPrimarySize="120px" maxPrimarySize="-120px" onResize="(px) => size = px + 'px'">
+        <Card title="Primary" height="100%"><Text>At least 120px, at most the width minus 120px.</Text></Card>
+        <Card title="Secondary" height="100%" when="{showSecond}"><Text>Drag the bar, or focus it and use the arrow keys.</Text></Card>
+      </HSplitter>
+      <HStack>
+        <Text>Primary size: {size}</Text>
+        <Button label="{showSecond ? 'Hide the second pane' : 'Show the second pane'}" onClick="showSecond = !showSecond"/>
+      </HStack>
+    </Card>
+
+    <Card title="VSplitter, preservePrimary, floating, swapped">
+      <HStack height="220px">
+        <VSplitter width="*" initialPrimarySize="80px" resizeMode="preservePrimary" floating="true">
+          <Card title="Top: 80px" height="100%"/>
+          <Card title="Bottom" height="100%"/>
+        </VSplitter>
+        <Splitter width="*" orientation="horizontal" swapped="true">
+          <Card title="Primary (right)" height="100%"/>
+          <Card title="Secondary (left)" height="100%"/>
+        </Splitter>
+      </HStack>
+    </Card>
+
+    <Card title="ScrollViewer">
+      <HStack height="180px">
+        <Items data="{['normal', 'overlay', 'whenMouseOver', 'whenScrolling']}">
+          <VStack width="*" height="100%">
+            <Text variant="strong">{$item}</Text>
+            <ScrollViewer scrollStyle="{$item}">
+              <Items data="{Array.from({ length: 20 }, (_, i) => i + 1)}"><Text>Line {$item}</Text></Items>
+            </ScrollViewer>
+          </VStack>
+        </Items>
+      </HStack>
+    </Card>
+
+    <Card title="StickySection in a ScrollViewer">
+      <VStack height="220px">
+        <ScrollViewer scrollStyle="overlay">
+          <property name="headerTemplate"><Text variant="secondary">A header that stays put</Text></property>
+          <Items data="{['A', 'B', 'C']}">
+            <StickySection><H3>Section {$item}</H3></StickySection>
+            <Items data="{Array.from({ length: 8 }, (_, i) => i + 1)}"><Text>Item {$item}</Text></Items>
+          </Items>
+        </ScrollViewer>
+      </VStack>
+    </Card>
+
+    <StickyBox to="bottom">
+      <HStack><Text variant="strong">A StickyBox at the bottom of the page.</Text></HStack>
+    </StickyBox>
+  </VStack>
+</Component>
