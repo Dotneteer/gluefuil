@@ -46,6 +46,8 @@ import notificationCss from "@mantine/core/styles/Notification.layer.css?inline"
 import overlayCss from "@mantine/core/styles/Overlay.layer.css?inline";
 import paperCss from "@mantine/core/styles/Paper.layer.css?inline";
 import tooltipCss from "@mantine/core/styles/Tooltip.layer.css?inline";
+import tabsCss from "@mantine/core/styles/Tabs.layer.css?inline";
+import accordionCss from "@mantine/core/styles/Accordion.layer.css?inline";
 import notificationsCss from "@mantine/notifications/styles.layer.css?inline";
 import { pointerData, wrapComponent } from "@gluefuil/runtime";
 import { enabledToDisabled } from "./inputs";
@@ -100,6 +102,9 @@ export const MANTINE_STYLESHEET = [
   tooltipCss,
   notificationCss,
   notificationsCss,
+  // Structure (structure.tsx, step 28).
+  tabsCss,
+  accordionCss,
 ].join("\n");
 
 export const MANTINE_STYLESHEET_HREF = "gfui-mantine";

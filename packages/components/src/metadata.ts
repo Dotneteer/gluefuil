@@ -93,6 +93,21 @@ export interface ComponentMetadata {
    */
   alias?: { component: string; props: Record<string, string> };
   /**
+   * Step 28: the children's headers are data (Tabs: TabItem, Stepper: Step). The
+   * `item` children (also inside an `Items`) compile to one reactive array, the
+   * hidden binding `$$headers`, of `{ $$key, …fields }` (`fields`: the item's
+   * props and `id`; its `headerTemplate` as `$$headerTemplate` with `$$scope`).
+   * The children still compile in place, each item with the same `$$key`, so
+   * their content keeps file-scoped IDs. Other children are E038.
+   */
+  childrenAsHeaders?: { item: string };
+  /**
+   * Step 28: context variables each direct child gets in its own scope
+   * (ResponsiveBar's `$overflow`); the component sets them per child
+   * (`ChildContextValues`). IDs stay file-scoped.
+   */
+  perChildContextVars?: readonly string[];
+  /**
    * The element opens when it mounts if it has `when` (step 27: a ModalDialog with
    * `when` is open while the condition holds). The compiler passes `$$whenOpen`.
    */
@@ -869,6 +884,216 @@ const DISPLAY_COMPONENTS: Record<string, ComponentMetadata> = {
 
 
 
+
+// --- Structure (step 28; .ai/plan/poc-28-structure.md) ------------------------------
+
+const ORIENTATIONS = ["horizontal", "vertical"];
+
+const SPLITTER_PROPS: Record<string, PropMetadata> = {
+  initialPrimarySize: { description: "The primary pane's first size: px or % (default 50%).", valueType: "string" },
+  minPrimarySize: { description: "The primary pane's smallest size: px or % (default 0%); negative counts from the end.", valueType: "string" },
+  maxPrimarySize: { description: "The primary pane's largest size: px or % (default 100%); negative counts from the end (-200px).", valueType: "string" },
+  resizeMode: {
+    description: "When the splitter itself resizes: keep the ratio (default), the primary pane's size, or the secondary pane's.",
+    valueType: "string",
+    availableValues: ["preserveRatio", "preservePrimary", "preserveSecondary"],
+  },
+  swapped: { description: "The secondary pane first.", valueType: "boolean" },
+  floating: { description: "The bar shows only while hovered or dragged.", valueType: "boolean" },
+};
+
+const SPLITTER_BASE: Omit<ComponentMetadata, "description"> = {
+  props: {
+    orientation: { description: "vertical (default): the panes on top of each other; horizontal: side by side.", valueType: "string", availableValues: ORIENTATIONS },
+    ...SPLITTER_PROPS,
+  },
+  events: { resize: { description: "A drag ended: (primarySize), the primary pane's size in px." } },
+  templates: { splitterTemplate: { description: "The bar's content, as markup.", contextVars: [] } },
+  themeVars: {
+    "backgroundColor-resizer-Splitter": "$color-surface-200",
+    "backgroundColor-resizer-Splitter--hover": "$color-primary-300",
+    "thickness-resizer-Splitter": "6px",
+  },
+};
+
+function splitterAlias(orientation: "horizontal" | "vertical"): ComponentMetadata {
+  return {
+    description: `A Splitter with its panes ${orientation === "horizontal" ? "side by side" : "on top of each other"}.`,
+    props: SPLITTER_PROPS,
+    events: SPLITTER_BASE.events,
+    templates: SPLITTER_BASE.templates,
+    alias: { component: "Splitter", props: { orientation } },
+  };
+}
+
+const STRUCTURE_COMPONENTS: Record<string, ComponentMetadata> = {
+  Tabs: {
+    description: "Tab headers over panels: TabItem children (also from Items); the active one's content shows.",
+    props: {
+      activeTab: { description: "The active tab's index (default 0); a later change selects that tab.", valueType: "integer" },
+      orientation: { description: "horizontal (default): headers above; vertical: beside.", valueType: "string", availableValues: ORIENTATIONS },
+      tabAlignment: { description: "Horizontal headers: start (default), end, center, stretch.", valueType: "string", availableValues: ["start", "end", "center", "stretch"] },
+      distributeEvenly: { description: "The headers share the width evenly (tabAlignment stretch).", valueType: "boolean" },
+      accordionView: { description: "Stacked headers, one open, as an accordion (orientation is ignored).", valueType: "boolean" },
+      keepMounted: { description: "Every panel stays mounted (hidden when inactive), keeping its state (default false).", valueType: "boolean" },
+      gap: { description: "The space between the headers and the panel (a CSS size).", valueType: "string", cssKind: "spacing" },
+    },
+    events: {
+      didChange: { description: "Another tab became active: (index, id, label)." },
+      contextMenu: { description: "Right-clicked. A function handler receives the pointer.", args: "pointer" },
+    },
+    templates: { headerTemplate: { description: "Every header, as markup: $header is { id, index, label, isActive }.", contextVars: ["$header"] } },
+    childrenAsHeaders: { item: "TabItem" },
+    api: {
+      next: { description: "Activates the next tab." },
+      prev: { description: "Activates the previous tab." },
+      setActiveTabIndex: { description: "Activates the tab at this index." },
+      setActiveTabById: { description: "Activates the tab with this id." },
+      activeTabIndex: { description: "The active tab's index (reactive)." },
+    },
+    themeVars: {
+      "borderColor-Tabs": "$borderColor",
+      "textColor-Tabs": "$textColor-secondary",
+      "textColor-Tabs--active": "$color-primary-600",
+      "borderColor-Tabs--active": "$color-primary-500",
+      "backgroundColor-Tabs--hover": "$color-surface-50",
+    },
+  },
+  TabItem: {
+    description: "A tab of a Tabs: its header (label, or headerTemplate) and its content.",
+    props: { label: { description: "The header's text.", valueType: "string" } },
+    events: {
+      activated: { description: "The tab became active.", args: "none" },
+      deactivated: { description: "Another tab became active.", args: "none" },
+    },
+    templates: { headerTemplate: { description: "This tab's header, as markup: $header is { id, index, label, isActive }.", contextVars: ["$header"] } },
+    parents: ["Tabs"],
+    layoutProps: false,
+  },
+  ExpandableItem: {
+    description: "A summary that shows or hides its content when clicked (as <details>).",
+    props: {
+      summary: { description: "The always visible summary: text (or a <property> template).", valueType: "string" },
+      initiallyExpanded: { description: "Open at first (default false).", valueType: "boolean" },
+      enabled: { description: "false: it can't be toggled.", valueType: "boolean" },
+      iconExpanded: { description: 'The icon while open (default "chevrondown").', valueType: "string", knownValues: ICON_NAMES },
+      iconCollapsed: { description: 'The icon while closed (default "chevronright").', valueType: "string", knownValues: ICON_NAMES },
+      iconPosition: { description: "start, or end (default).", valueType: "string", availableValues: ["start", "end"] },
+      withSwitch: { description: "A switch instead of the icon.", valueType: "boolean" },
+      fullWidthSummary: { description: "The summary spans the full width (the icon at the far end).", valueType: "boolean" },
+      contentWidth: { description: "The content's width (default 100%).", valueType: "string", cssKind: "size" },
+    },
+    events: { expandedChange: { description: "Opened or closed: (isExpanded)." } },
+    templates: { summary: { description: "The summary, as markup.", contextVars: [] } },
+    api: {
+      expand: { description: "Opens it." },
+      collapse: { description: "Closes it." },
+      toggle: { description: "Opens or closes it." },
+      isExpanded: { description: "Whether it is open (reactive)." },
+    },
+    themeVars: {
+      "textColor-summary-ExpandableItem": "$textColor",
+      "gap-ExpandableItem": "$space-2",
+    },
+  },
+  Stepper: {
+    description: "The steps of a workflow: Step children (also from Items); the active one's content shows.",
+    props: {
+      activeStep: { description: "The active step's index (default 0); a later change selects that step.", valueType: "integer" },
+      orientation: { description: "horizontal (default) or vertical (each step's content under its header).", valueType: "string", availableValues: ORIENTATIONS },
+      nonLinear: { description: "Any step's header can be clicked (default: only by the API).", valueType: "boolean" },
+      stackedLabel: { description: "The labels under the step icons (horizontal).", valueType: "boolean" },
+    },
+    events: { didChange: { description: "Another step became active: (index)." } },
+    childrenAsHeaders: { item: "Step" },
+    api: {
+      next: { description: "The next step." },
+      prev: { description: "The previous step." },
+      reset: { description: "Back to the first step." },
+      setActiveStep: { description: "Activates the step at this index." },
+      activeStep: { description: "The active step's index (reactive)." },
+    },
+    themeVars: {
+      "color-Stepper--active": "$color-primary-500",
+      "color-Stepper--completed": "$color-success",
+      "color-Stepper--error": "$color-danger",
+    },
+  },
+  Step: {
+    description: "A step of a Stepper: its header (label, description, icon, state) and its content.",
+    props: {
+      label: { description: "The step's label.", valueType: "string" },
+      description: { description: "Text under the label.", valueType: "string" },
+      icon: { description: "An icon instead of the step's number.", valueType: "string", knownValues: ICON_NAMES },
+      completed: { description: "Shown as completed (a check mark).", valueType: "boolean" },
+      error: { description: "Shown in the error state (wins over completed).", valueType: "boolean" },
+    },
+    events: { activated: { description: "The step became active.", args: "none" } },
+    parents: ["Stepper"],
+    layoutProps: false,
+  },
+  Splitter: { description: "Two panes (the first two visible children) with a draggable bar between them.", ...SPLITTER_BASE },
+  HSplitter: splitterAlias("horizontal"),
+  VSplitter: splitterAlias("vertical"),
+  ScrollViewer: {
+    description: "Fills its parent and scrolls its content, with styled scrollbars and fades; a header and a footer stay put.",
+    props: {
+      scrollStyle: {
+        description: "normal (the browser's), overlay (always shown), whenMouseOver, whenScrolling.",
+        valueType: "string",
+        availableValues: ["normal", "overlay", "whenMouseOver", "whenScrolling"],
+      },
+      showScrollerFade: { description: "Fades at the edges where there is more to scroll (not with normal; default true).", valueType: "boolean" },
+    },
+    templates: {
+      headerTemplate: { description: "Above the scrolling content.", contextVars: [] },
+      footerTemplate: { description: "Below the scrolling content.", contextVars: [] },
+    },
+    api: {
+      scrollToTop: { description: "Scrolls to the top." },
+      scrollToBottom: { description: "Scrolls to the bottom." },
+    },
+    themeVars: {
+      "size-scrollbar-ScrollViewer": "8px",
+      "backgroundColor-thumb-ScrollViewer": "$color-surface-400",
+      "height-fade-ScrollViewer": "24px",
+    },
+  },
+  StickyBox: {
+    description: "Sticks to the top (under a sticky AppHeader) or the bottom of its scroll container while it scrolls.",
+    props: { to: { description: "top (default) or bottom.", valueType: "string", availableValues: ["top", "bottom"] } },
+    themeVars: { "backgroundColor-StickyBox": "$backgroundColor" },
+  },
+  StickySection: {
+    description: "Stays at the top or bottom edge of its scroll container while it scrolls; a later section covers an earlier one.",
+    props: { stickTo: { description: "top (default) or bottom.", valueType: "string", availableValues: ["top", "bottom"] } },
+    themeVars: { "backgroundColor-StickySection": "$backgroundColor" },
+  },
+  ResponsiveBar: {
+    description: "A row (or column) of children; those that don't fit move into a dropdown menu. Each child sees $overflow.",
+    props: {
+      orientation: { description: "horizontal (default) or vertical.", valueType: "string", availableValues: ORIENTATIONS },
+      reverse: { description: "Children from the end; the menu at the start.", valueType: "boolean" },
+      gap: { description: "The space between the children (a CSS size; default 0).", valueType: "string", cssKind: "spacing" },
+      overflowIcon: { description: 'The menu button\'s icon (default "dotmenuhorizontal"; XMLUI\'s is a themed ellipsis).', valueType: "string", knownValues: ICON_NAMES },
+      dropdownText: { description: 'The menu button\'s accessible label (default "More options").', valueType: "string" },
+      dropdownAlignment: { description: "The menu's alignment to its button: start, end, center (default end; start when reversed).", valueType: "string", availableValues: ["start", "end", "center"] },
+    },
+    events: {
+      click: { description: "Clicked. A function handler receives the pointer.", args: "pointer" },
+      willOpen: { description: "Before the menu opens: false keeps it closed.", args: "none" },
+    },
+    eventResults: true,
+    templates: { triggerTemplate: { description: "The menu's button, as markup.", contextVars: [] } },
+    perChildContextVars: ["$overflow"],
+    api: {
+      open: { description: "Opens the menu." },
+      close: { description: "Closes the menu." },
+      hasOverflow: { description: "Whether some children are in the menu (reactive)." },
+    },
+  },
+};
+
 // --- Overlays and menus (step 27; .ai/plan/poc-27-overlays.md) -------------------------
 
 const MENUS = ["DropdownMenu", "ContextMenu", "SubMenuItem"];
@@ -1340,6 +1565,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   ...DATE_COMPONENTS,
   ...INPUT_COMPONENTS,
   ...OVERLAY_COMPONENTS,
+  ...STRUCTURE_COMPONENTS,
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",
     props: {

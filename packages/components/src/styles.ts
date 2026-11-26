@@ -555,6 +555,172 @@ const DISPLAY = `
 `;
 
 
+
+/**
+ * Structure (step 28, structure.tsx): Tabs, ExpandableItem, Stepper, Splitter,
+ * ScrollViewer, StickyBox, StickySection, ResponsiveBar.
+ */
+const STRUCTURE = `
+.gfui-Tabs { display: flex; flex-direction: column; min-width: 0; }
+.gfui-Tabs[data-orientation="vertical"] { flex-direction: row; }
+.gfui-Tabs-list { --tab-border-color: var(--gfui-borderColor-Tabs); }
+.gfui-Tabs-tab {
+  color: var(--gfui-textColor-Tabs);
+  font-family: var(--gfui-fontFamily);
+  font-size: inherit;
+}
+.gfui-Tabs-tab:hover { background-color: var(--gfui-backgroundColor-Tabs--hover); }
+.gfui-Tabs-tab[data-active] {
+  color: var(--gfui-textColor-Tabs--active);
+  border-color: var(--gfui-borderColor-Tabs--active);
+}
+.gfui-Tabs-panel { padding-top: var(--gfui-gap-Tabs, var(--gfui-space-level2)); }
+.gfui-Tabs[data-orientation="vertical"] > .gfui-Tabs-panel { padding-top: 0; padding-left: var(--gfui-gap-Tabs, var(--gfui-space-level2)); flex: 1 1 0; min-width: 0; }
+.gfui-Tabs[data-accordion] .gfui-Tabs-panel { padding-top: 0; }
+.gfui-Tabs[data-accordion] .gfui-Tabs-tab[data-active] { color: var(--gfui-textColor-Tabs--active); }
+.gfui-ExpandableItem { display: flex; flex-direction: column; min-width: 0; }
+.gfui-ExpandableItem-summary { display: flex; align-items: center; gap: var(--gfui-gap-ExpandableItem); color: var(--gfui-textColor-summary-ExpandableItem); }
+.gfui-ExpandableItem-summary[data-full-width] > .gfui-ExpandableItem-toggle { flex: 1 1 auto; justify-content: space-between; }
+.gfui-ExpandableItem-summary[data-full-width] > .gfui-ExpandableItem-label { flex: 1 1 auto; }
+.gfui-ExpandableItem-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gfui-gap-ExpandableItem);
+  padding: var(--gfui-space-1) 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+.gfui-ExpandableItem-toggle:disabled { cursor: default; opacity: 0.6; }
+.gfui-ExpandableItem-icon { flex-shrink: 0; width: 1.1em; height: 1.1em; }
+.gfui-ExpandableItem-content > * { padding-top: var(--gfui-gap-ExpandableItem); }
+.gfui-Stepper { display: flex; flex-direction: column; gap: var(--gfui-space-level2); min-width: 0; font-family: var(--gfui-fontFamily); }
+.gfui-Stepper-headers { display: flex; list-style: none; margin: 0; padding: 0; gap: var(--gfui-space-3); }
+.gfui-Stepper[data-orientation="horizontal"] > .gfui-Stepper-headers { flex-wrap: wrap; align-items: flex-start; }
+.gfui-Stepper[data-orientation="vertical"] > .gfui-Stepper-headers { flex-direction: column; }
+.gfui-Stepper[data-orientation="horizontal"] .gfui-Stepper-step { flex: 1 1 0; min-width: 0; }
+.gfui-Stepper[data-orientation="horizontal"] .gfui-Stepper-step + .gfui-Stepper-step > .gfui-Step-header::before {
+  content: "";
+  flex: 0 0 var(--gfui-space-4);
+  height: 2px;
+  align-self: center;
+  background-color: var(--gfui-borderColor);
+}
+.gfui-Step-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gfui-space-2);
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--gfui-textColor);
+  text-align: start;
+}
+button.gfui-Step-header { cursor: pointer; }
+.gfui-Stepper[data-stacked-label] .gfui-Step-header { flex-direction: column; }
+.gfui-Stepper[data-stacked-label] .gfui-Stepper-step + .gfui-Stepper-step > .gfui-Step-header::before { display: none; }
+.gfui-Step-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2em;
+  height: 2em;
+  border-radius: 50%;
+  border: 2px solid var(--gfui-borderColor);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.gfui-Step-indicator > svg { width: 1.1em; height: 1.1em; }
+.gfui-Step-header[data-state="active"] > .gfui-Step-indicator { border-color: var(--gfui-color-Stepper--active); color: var(--gfui-color-Stepper--active); }
+.gfui-Step-header[data-state="completed"] > .gfui-Step-indicator { border-color: var(--gfui-color-Stepper--completed); background-color: var(--gfui-color-Stepper--completed); color: #ffffff; }
+.gfui-Step-header[data-state="error"] > .gfui-Step-indicator { border-color: var(--gfui-color-Stepper--error); color: var(--gfui-color-Stepper--error); }
+.gfui-Step-header[data-state="error"] .gfui-Step-label { color: var(--gfui-color-Stepper--error); }
+.gfui-Step-labels { display: flex; flex-direction: column; min-width: 0; }
+.gfui-Step-label { font-weight: 600; }
+.gfui-Step-description { color: var(--gfui-textColor-secondary); font-size: 0.9em; }
+.gfui-Stepper[data-orientation="vertical"] .gfui-Step-content { padding: var(--gfui-space-2) 0 var(--gfui-space-2) calc(1em + var(--gfui-space-2)); }
+.gfui-Splitter { display: flex; min-width: 0; min-height: 0; overflow: hidden; }
+.gfui-Splitter[data-orientation="horizontal"] { flex-direction: row; }
+.gfui-Splitter[data-orientation="vertical"] { flex-direction: column; }
+.gfui-Splitter[data-orientation="horizontal"][data-swapped] { flex-direction: row-reverse; }
+.gfui-Splitter[data-orientation="vertical"][data-swapped] { flex-direction: column-reverse; }
+.gfui-Splitter-pane { display: flex; flex-direction: column; overflow: auto; min-width: 0; min-height: 0; }
+.gfui-Splitter-pane[data-pane="secondary"] { flex: 1 1 0; }
+.gfui-Splitter-pane > * { flex: 1 1 auto; }
+/* One visible child (the other hidden by when): no bar, it fills the splitter. */
+.gfui-Splitter-pane:empty { display: none; }
+.gfui-Splitter:has(> .gfui-Splitter-pane:empty) > .gfui-Splitter-resizer { display: none; }
+/* !important: the primary pane's size and limits are inline styles. */
+.gfui-Splitter:has(> .gfui-Splitter-pane:empty) > .gfui-Splitter-pane { flex: 1 1 0 !important; max-width: none !important; max-height: none !important; min-width: 0 !important; min-height: 0 !important; }
+.gfui-Splitter-resizer {
+  flex: 0 0 var(--gfui-thickness-resizer-Splitter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--gfui-backgroundColor-resizer-Splitter);
+  touch-action: none;
+}
+.gfui-Splitter[data-orientation="horizontal"] > .gfui-Splitter-resizer { cursor: col-resize; }
+.gfui-Splitter[data-orientation="vertical"] > .gfui-Splitter-resizer { cursor: row-resize; }
+.gfui-Splitter-resizer:hover,
+.gfui-Splitter-resizer:focus-visible,
+.gfui-Splitter[data-dragging] > .gfui-Splitter-resizer { background-color: var(--gfui-backgroundColor-resizer-Splitter--hover); outline: none; }
+.gfui-Splitter[data-floating]:not([data-dragging]) > .gfui-Splitter-resizer:not(:hover):not(:focus-visible) { background-color: transparent; }
+.gfui-Splitter[data-dragging] { user-select: none; }
+.gfui-ScrollViewer { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; min-width: 0; --gfui-shell-top: 0px; }
+.gfui-ScrollViewer-body { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.gfui-ScrollViewer-area { flex: 1 1 0; min-height: 0; }
+/* normal: the browser's scrollbar (the other styles: Mantine's ScrollArea viewport). */
+.gfui-ScrollViewer-body > .gfui-ScrollViewer-viewport { flex: 1 1 0; min-height: 0; overflow: auto; }
+.gfui-ScrollViewer-area { --scrollarea-scrollbar-size: var(--gfui-size-scrollbar-ScrollViewer); }
+.gfui-ScrollViewer-thumb { background-color: var(--gfui-backgroundColor-thumb-ScrollViewer); }
+.gfui-ScrollViewer-body::before,
+.gfui-ScrollViewer-body::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--gfui-height-fade-ScrollViewer);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms;
+  z-index: 1;
+}
+.gfui-ScrollViewer-body::before { top: 0; background: linear-gradient(var(--gfui-backgroundColor), transparent); }
+.gfui-ScrollViewer-body::after { bottom: 0; background: linear-gradient(transparent, var(--gfui-backgroundColor)); }
+.gfui-ScrollViewer-body[data-fade-top]::before,
+.gfui-ScrollViewer-body[data-fade-bottom]::after { opacity: 1; }
+.gfui-StickyBox,
+.gfui-StickySection { position: sticky; z-index: 3; }
+.gfui-StickyBox { background-color: var(--gfui-backgroundColor-StickyBox); }
+.gfui-StickySection { background-color: var(--gfui-backgroundColor-StickySection); }
+.gfui-StickyBox[data-to="top"],
+.gfui-StickySection[data-to="top"] { top: 0; }
+/* The page scrolls: under a sticky AppHeader (a ScrollViewer sets the offset back to 0). */
+:where(.gfui-App[data-scroll="page"]) .gfui-StickyBox[data-to="top"],
+:where(.gfui-App[data-scroll="page"]) .gfui-StickySection[data-to="top"] { top: var(--gfui-shell-top, 0px); }
+.gfui-StickyBox[data-to="bottom"],
+.gfui-StickySection[data-to="bottom"] { bottom: 0; }
+.gfui-ResponsiveBar {
+  display: flex;
+  align-items: center;
+  gap: var(--gfui-gap-ResponsiveBar);
+  overflow: hidden;
+  min-width: 0;
+}
+.gfui-ResponsiveBar[data-orientation="vertical"] { flex-direction: column; align-items: stretch; min-height: 0; }
+.gfui-ResponsiveBar[data-reverse][data-orientation="horizontal"] { flex-direction: row-reverse; }
+.gfui-ResponsiveBar[data-reverse][data-orientation="vertical"] { flex-direction: column-reverse; }
+.gfui-ResponsiveBar-item,
+.gfui-ResponsiveBar-overflow { flex-shrink: 0; display: flex; }
+.gfui-ResponsiveBar-menuItem { display: flex; padding: var(--gfui-space-1); }
+`;
+
 /**
  * Overlays and menus (step 27, overlays.tsx): the overlay layer, ModalDialog,
  * Drawer, the menus, Tooltip, the toasts and confirm(). Mantine's own rules are
@@ -689,6 +855,7 @@ ${LAYOUT}
 ${TEXT_OVERFLOW}
 ${DISPLAY}
 ${OVERLAYS}
+${STRUCTURE}
 .gfui-App,
 .gfui-Theme {
   /* Mantine's global variables, redirected to the gfui theme. */

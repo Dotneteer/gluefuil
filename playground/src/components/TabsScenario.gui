@@ -1,0 +1,64 @@
+<!-- Step 28: Tabs, ExpandableItem, Stepper. -->
+<Component name="TabsScenario">
+  <VStack var.log="" var.projects="{['Apollo', 'Gemini']}" var.planChosen="{false}">
+    <ScenarioHeader title="Tabs and steppers" description="Tabs from TabItems and Items, headers prerendered; IDs inside a tab used outside; vertical and accordion tabs; expandable items; a stepper with states, the API and a vertical one."/>
+
+    <Card title="Tabs">
+      <Tabs id="tabs" onDidChange="(i, id, label) => log = 'tab ' + i + ' (' + label + ')'">
+        <TabItem label="Account"><TextBox id="accountName" label="Name" initialValue="Ada"/></TabItem>
+        <TabItem label="Settings"><Checkbox label="Notifications"/></TabItem>
+        <Items data="{projects}"><TabItem label="{$item}"><Text>The {$item} project.</Text></TabItem></Items>
+      </Tabs>
+      <HStack wrapContent="true">
+        <Button label="Previous tab" onClick="tabs.prev()"/>
+        <Button label="Next tab" onClick="tabs.next()"/>
+        <Button label="Add a project" onClick="projects.push('Project ' + (projects.length + 1))"/>
+      </HStack>
+      <Text>Name from the first tab: {accountName.value}; active tab: {tabs.activeTabIndex}</Text>
+    </Card>
+
+    <Card title="Vertical, with header templates">
+      <Tabs orientation="vertical" keepMounted="true">
+        <property name="headerTemplate"><HStack><Icon name="{$header.isActive ? 'chevronright' : 'star'}"/><Text>{$header.label}</Text></HStack></property>
+        <TabItem label="Inbox"><Stack var.n="{0}"><Button label="Count: {n}" onClick="n++"/><Text variant="secondary">keepMounted: the count survives switching tabs.</Text></Stack></TabItem>
+        <TabItem label="Archive"><Text>Archived items.</Text></TabItem>
+      </Tabs>
+    </Card>
+
+    <Card title="Accordion view">
+      <Tabs accordionView="true">
+        <TabItem label="Shipping"><Text>Ships in two days.</Text></TabItem>
+        <TabItem label="Returns"><Text>Returns within 30 days.</Text></TabItem>
+      </Tabs>
+    </Card>
+
+    <Card title="ExpandableItem">
+      <ExpandableItem id="faq" summary="What is gluefuil?" onExpandedChange="(open) => log = 'faq ' + (open ? 'opened' : 'closed')">
+        <Text>A re-invention of XMLUI.</Text>
+      </ExpandableItem>
+      <ExpandableItem summary="With a switch" withSwitch="true"><Text>Switched on.</Text></ExpandableItem>
+      <ExpandableItem summary="Disabled" enabled="false"><Text>Never shown.</Text></ExpandableItem>
+      <Button label="Toggle the first" onClick="faq.toggle()"/>
+    </Card>
+
+    <Card title="Stepper">
+      <Stepper id="wizard" nonLinear="true" onDidChange="(i) => log = 'step ' + i">
+        <Step label="Account" description="Who you are" completed="{accountName.value !== ''}"><Text>Fill in your account.</Text></Step>
+        <Step label="Plan" description="Pick one" completed="{planChosen}" error="{!planChosen &amp;&amp; wizard.activeStep > 1}"><Button label="Choose the plan" onClick="planChosen = true"/></Step>
+        <Step label="Done" icon="checkmark"><Text>All set.</Text></Step>
+      </Stepper>
+      <HStack>
+        <Button label="Back" onClick="wizard.prev()"/>
+        <Button label="Continue" onClick="wizard.next()"/>
+        <Button label="Start over" onClick="wizard.reset(); planChosen = false"/>
+      </HStack>
+      <Stepper orientation="vertical" activeStep="1">
+        <Step label="Ordered"><Text>We got it.</Text></Step>
+        <Step label="Packed"><Text>In a box, under its header.</Text></Step>
+        <Step label="Shipped"/>
+      </Stepper>
+    </Card>
+
+    <Text>log: {log}</Text>
+  </VStack>
+</Component>

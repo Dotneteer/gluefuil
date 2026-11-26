@@ -16,7 +16,7 @@ the nav is a drawer, opened from the header.
 
 ## The scenarios
 
-One or more per concept of proof-of-concept steps 2–27
+One or more per concept of proof-of-concept steps 2–28
 (`.ai/plan/poc-steps.md`):
 
 | Step | Scenario | Shows |
@@ -60,6 +60,9 @@ One or more per concept of proof-of-concept steps 2–27
 | 27 | Dialogs and drawers | ModalDialog opened by `open(...params)` (a Form with `$param` that closes it) and by `when`; the unsaved-changes question with custom labels; `willClose` and `closeOnClickAway="false"`; drawers from the left, right (no backdrop) and bottom |
 | 27 | Menus and tooltips | A DropdownMenu with icons, a submenu, a separator and a disabled item; `willOpen`; end alignment, an active item, `to`; a custom trigger; a context menu on file cards (`openAt(ev, …)`, `$context`, the pointer's position, delete); tooltips: the default delay, `tooltipOptions` (string and object), Markdown, a template, flipping at the right edge |
 | 27 | Toasts and confirm | `toast()` and its kinds, a position and duration, a loading toast replaced and removed by its id; `confirm()` positional, with options, twice in a row; an APICall that asks first and reports with toasts, and one that fails |
+| 28 | Tabs and steppers | Tabs from TabItems and an Items (a project added at runtime), an ID inside a tab read outside, the API; vertical tabs with a header template and `keepMounted`; accordion tabs; ExpandableItems (switch, disabled, the API); a nonLinear Stepper with completed and error states and its API; a vertical Stepper |
+| 28 | Splitters and scrolling | An HSplitter with limits (`120px`, `-120px`), `onResize`, a pane hidden by `when`; a VSplitter with `preservePrimary` and a floating bar; a swapped Splitter; the four ScrollViewer styles; StickySections in a ScrollViewer with a header; a StickyBox at the bottom of the page |
+| 28 | Responsive bars | A toolbar whose width a slider sets: buttons move into the menu and say so through `$overflow`; `hasOverflow`; a vertical bar |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the

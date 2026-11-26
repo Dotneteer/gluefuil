@@ -21,7 +21,7 @@ shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
 19 with a reduced scope); the inserted 19D–19F (the layout system) are done too.
 Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals),
 22 (client-side forms), 22B (form submission and server errors), 23 (text
-and display components), 24 (inputs), 25 (choice inputs), 26 (date and time inputs) and 27 (overlays and menus) are done. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+and display components), 24 (inputs), 25 (choice inputs), 26 (date and time inputs), 27 (overlays and menus) and 28 (structure) are done; step 29 (the virtualized `List`) is next. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).
@@ -114,6 +114,7 @@ here as one line each, with a link to the plan that justified them:
 - **Select and AutoComplete: `Option` children compile to data** (one reactive options array, so the prerender shows the selection; XMLUI registers Options in effects), **on Mantine's Combobox primitives**; `data`/`valueField`/`labelField` replace step 16's `options`. See [.ai/plan/poc-25-choice.md](.ai/plan/poc-25-choice.md).
 - **Dates: `@mantine/dates` (with `dayjs`) in a lazy chunk; XMLUI's string values** (a date in `dateFormat` or `{ from, to }`, `HH:mm`; `isoValue()`). See [.ai/plan/poc-26-dates.md](.ai/plan/poc-26-dates.md).
 - **Overlays: Mantine's Modal, Drawer, Menu and Tooltip, toasts on `@mantine/notifications`;** pointer handlers (`click`, `contextMenu`) receive a frozen pointer snapshot, never the DOM event, and handlers of events without arguments declare no `$param` (`EventMetadata.args`), so a dialog's shows through. See [.ai/plan/poc-27-overlays.md](.ai/plan/poc-27-overlays.md).
+- **Tab and step headers are compiled to data** (`childrenAsHeaders`, as step 25's Options) while the TabItem/Step content compiles in place with file-scoped IDs; our own Splitter; `$overflow` in a scope per child. See [.ai/plan/poc-28-structure.md](.ai/plan/poc-28-structure.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

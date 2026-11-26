@@ -7,10 +7,20 @@
 > **Written:** after proof-of-concept steps 0–19 (2026-11-23); updated
 > after the inserted steps 19A–19C (the App shell), 19D–19F (the layout
 > system), step 20 (data binding and the mock backend), and step 23 (text and
-> display components; 2026-11-25).
+> display components; 2026-11-25), and after steps 24–28 (2026-11-26).
 
 ## State
 
+- **Next: step 29 (the virtualized `List`)**, not started. Its first
+  decision is the virtualizer (`virtua` vs TanStack Virtual); see
+  `plan/poc-steps.md` step 29. Start by writing `plan/poc-29-list.md` and
+  asking the user.
+- **`master` is the only branch;** every step's branch is deleted after its
+  merge.
+- **Step 28 (structure) is done and merged into master.** Plan and findings:
+  [`plan/poc-28-structure.md`](plan/poc-28-structure.md); reference:
+  [`docs/structure.md`](docs/structure.md). `npm run check`: 2,926 unit tests
+  in 105 files, 235 E2E tests.
 - **Step 27 (overlays and menus) is done and merged into master.** Plan and findings:
   [`plan/poc-27-overlays.md`](plan/poc-27-overlays.md); reference:
   [`docs/overlays.md`](docs/overlays.md). `npm run check`: 2,882 unit tests
@@ -208,8 +218,9 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 28: structure** (`Tabs`, `ExpandableItem`, `Stepper`, `Splitter`,
-  `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar`).
+- **Step 29: the virtualized `List`** (also decides the virtualizer:
+  `virtua` vs TanStack Virtual).
+- **Step 28's open items** (`poc-28-structure.md`).
 - **Step 27's open items** (`poc-27-overlays.md`).
 - **Step 26's open items** (`poc-26-dates.md`).
 - **Step 25's open items** (`poc-25-choice.md`).

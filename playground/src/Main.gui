@@ -53,7 +53,10 @@
     { path: '/date-picker', step: '26', title: 'DatePicker', description: 'A calendar inline or in a popup, ranges and presets, disabled dates; dates in a Form.' },
     { path: '/dialogs', step: '27', title: 'Dialogs and drawers', description: 'ModalDialog by open() or when, $param, a Form inside, unsaved changes, willClose; Drawer.' },
     { path: '/menus', step: '27', title: 'Menus and tooltips', description: 'DropdownMenu with a submenu, a context menu at the pointer, tooltips with options.' },
-    { path: '/notifications', step: '27', title: 'Toasts and confirm', description: 'toast() and its kinds, confirm(), an APICall that asks first and reports.' }
+    { path: '/notifications', step: '27', title: 'Toasts and confirm', description: 'toast() and its kinds, confirm(), an APICall that asks first and reports.' },
+    { path: '/tabs', step: '28', title: 'Tabs and steppers', description: 'Tabs from TabItems and Items, vertical and accordion; ExpandableItem; Stepper with states.' },
+    { path: '/splitters', step: '28', title: 'Splitters and scrolling', description: 'Splitters with limits and resize modes; ScrollViewer styles; sticky sections and boxes.' },
+    { path: '/responsive-bar', step: '28', title: 'Responsive bars', description: 'Children that do not fit move into a menu; $overflow; a vertical bar.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -134,6 +137,9 @@
     <Page url="/dialogs"><VStack><DialogsScenario/><ScenarioSource file="DialogsScenario"/></VStack></Page>
     <Page url="/menus"><VStack><MenusScenario/><ScenarioSource file="MenusScenario"/></VStack></Page>
     <Page url="/notifications"><VStack><NotificationsScenario/><ScenarioSource file="NotificationsScenario"/></VStack></Page>
+    <Page url="/tabs"><VStack><TabsScenario/><ScenarioSource file="TabsScenario"/></VStack></Page>
+    <Page url="/splitters"><VStack><SplittersScenario/><ScenarioSource file="SplittersScenario"/></VStack></Page>
+    <Page url="/responsive-bar"><VStack><ResponsiveBarScenario/><ScenarioSource file="ResponsiveBarScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

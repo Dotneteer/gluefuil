@@ -60,6 +60,9 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Dialogs and drawers",
     "Menus and tooltips",
     "Toasts and confirm",
+    "Tabs and steppers",
+    "Splitters and scrolling",
+    "Responsive bars",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.

@@ -4,7 +4,7 @@
 // component as `contextScope`; the component fills it while it renders
 // (`provideContext`), before its children render. IDs inside stay file-scoped.
 
-import { useState } from "react";
+import { createContext, useContext, useLayoutEffect, useState } from "react";
 import { signal, type Signal } from "../reactivity/signals";
 import { createScope, type ScopeEntry } from "../reactivity/scope";
 
@@ -68,4 +68,28 @@ export function provideContext(scope: unknown, getters: Record<string, () => unk
       slots.version.set(slots.version.peek() + 1);
     });
   }
+}
+
+// --- Per-child context variables (step 28: ResponsiveBar's `$overflow`) ------------------
+
+/** What a component tells one of its children (`perChildContextVars`): the values by name. */
+export const ChildContextValues = createContext<Readonly<Record<string, unknown>> | undefined>(undefined);
+
+/**
+ * The context scope of one child of a `perChildContextVars` component: each name
+ * reads a signal that follows the nearest `ChildContextValues`. The signals change
+ * in a layout effect, never while a component renders.
+ */
+export function usePerChildScope(parent: object, names: readonly string[]): object {
+  const values = useContext(ChildContextValues);
+  const [state] = useState(() => {
+    const signals = Object.fromEntries(names.map((name) => [name, signal<unknown>(values?.[name])]));
+    const scope = createContextScope(parent, names);
+    provideContext(scope, Object.fromEntries(names.map((name) => [name, () => signals[name]!.get()])));
+    return { scope, signals };
+  });
+  useLayoutEffect(() => {
+    for (const name of names) state.signals[name]!.set(values?.[name]);
+  });
+  return state.scope;
 }

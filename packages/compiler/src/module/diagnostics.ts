@@ -56,6 +56,8 @@ export const ModuleDiagnostics = {
   E035: (component: string, what: string) => `'${component}' takes Option and Items (of Option) children only; ${what} can't be inside it`,
   /** Step 27: a component that belongs inside certain others (MenuItem in a menu) is elsewhere. */
   E037: (component: string, parents: string) => `'<${component}>' must be inside ${parents}`,
+  /** Step 28: a child of a Tabs/Stepper that is not its item (TabItem, Step) or an Items of them. */
+  E038: (component: string, item: string, what: string) => `'${component}' takes ${item} and Items (of ${item}) children only; ${what} can't be inside it`,
   /** Both `data` and Option children. */
   E036: (component: string) => `'${component}' has both 'data' and Option children; use one of them`,
 } as const;

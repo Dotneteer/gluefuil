@@ -1329,3 +1329,40 @@ test("Toasts and confirm: a success toast; confirm() both ways; an APICall that 
   await expect(page.getByRole("dialog", { name: "Add a person" })).toBeHidden();
   await expect(page.locator(".gfui-Toast", { hasText: "Adding Zoe" })).toHaveCount(0);
 });
+
+// Step 28: the structure scenarios. e2e/structure.spec.ts covers them in depth (dragging, sticking, overflow).
+test("Tabs and steppers: tabs and their API, accordion tabs, expandable items, a stepper with states", async ({ page }) => {
+  await open(page, "/tabs");
+  await button(page, "Next tab").click();
+  await expect(page.getByRole("tab", { name: "Settings", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(text(page, "log: tab 1 (Settings)")).toBeVisible();
+  await page.getByRole("button", { name: "Returns", exact: true }).click();
+  await expect(page.getByText("Returns within 30 days.", { exact: true })).toBeVisible();
+  await button(page, "Toggle the first").click();
+  await expect(page.getByText("A re-invention of XMLUI.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "What is gluefuil?" })).toHaveAttribute("aria-expanded", "true");
+  await button(page, "Continue").click();
+  await button(page, "Continue").click();
+  await expect(page.locator(".gfui-Step-header", { hasText: "Plan" }).first()).toHaveAttribute("data-state", "error");
+  await button(page, "Start over").click();
+  await expect(page.locator(".gfui-Step-header", { hasText: "Account" }).first()).toHaveAttribute("data-state", "completed");
+});
+
+test("Splitters and scrolling: the bar by keyboard reports its size; scroll styles; a hidden pane", async ({ page }) => {
+  await open(page, "/splitters");
+  await page.getByRole("separator").first().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(text(page, /^Primary size: \d+px$/)).toBeVisible();
+  await button(page, "Hide the second pane").click();
+  await expect(button(page, "Show the second pane")).toBeVisible();
+  await expect(page.locator(".gfui-ScrollViewer .mantine-ScrollArea-root")).toHaveCount(4);
+});
+
+test("Responsive bars: a narrow toolbar puts the rest into its menu", async ({ page }) => {
+  await open(page, "/responsive-bar");
+  await page.getByRole("slider").focus();
+  await page.keyboard.press("Home");
+  await expect(text(page, "Overflow: true")).toBeVisible();
+  await page.locator(".gfui-ResponsiveBar").first().getByRole("button", { name: "More options" }).click();
+  await expect(page.getByRole("button", { name: "Help (in the menu)" })).toBeVisible();
+});
