@@ -17,15 +17,15 @@ function show(markup: string) {
 const text = (pattern: RegExp) => screen.getByText(pattern).textContent;
 const click = (element: Element) => act(async () => fireEvent.click(element));
 
-test("Button: Mantine's button; click reaches the handler (no DOM event); enabled=false disables it", async () => {
+test("Button: Mantine's button; click reaches the handler (a pointer snapshot, no DOM event); enabled=false disables it", async () => {
   show(`
     <App var.got="none">
-      <Button label="Go" onClick="got = String($params.length)"/>
+      <Button label="Go" onClick="(...a) => got = String(a.length) + ':' + Object.keys(a[0]).join('|')"/>
       <Button label="Off" enabled="false"/>
       <Text>got: {got}</Text>
     </App>`);
   await click(screen.getByRole("button", { name: "Go" }));
-  expect(text(/^got:/)).toBe("got: 0");
+  expect(text(/^got:/)).toBe("got: 1:clientX|clientY|button|shiftKey|ctrlKey|altKey|metaKey");
   expect(screen.getByRole("button", { name: "Off" }).hasAttribute("disabled")).toBe(true);
 });
 

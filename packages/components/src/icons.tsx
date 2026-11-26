@@ -130,6 +130,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { pointerData } from "@gluefuil/runtime";
 import { createElement, type ComponentType, type CSSProperties, type KeyboardEvent, type SVGProps } from "react";
 import { layoutCss } from "./layout-metadata";
 import { useLayout, type LayoutProps } from "./layout";
@@ -318,7 +319,7 @@ export function iconSize(size: unknown): string | undefined {
   return layoutCss(size);
 }
 
-type IconProps = LayoutProps & { name?: unknown; fallback?: unknown; size?: unknown; onClick?: () => unknown };
+type IconProps = LayoutProps & { name?: unknown; fallback?: unknown; size?: unknown; onClick?: (ev?: unknown) => unknown };
 
 /**
  * `Icon`: a registered icon by `name`, else by `fallback`, else nothing.
@@ -344,12 +345,12 @@ export function Icon(props: IconProps) {
           role: "button",
           tabIndex: 0,
           "data-clickable": "",
-          // No DOM event reaches script (the sandbox invariant).
-          onClick: () => void onClick(),
+          // Script gets the pointer snapshot, never the DOM event (the sandbox invariant).
+          onClick: (event: unknown) => void onClick(pointerData(event)),
           onKeyDown: (event: KeyboardEvent<SVGSVGElement>) => {
             if (event.key !== "Enter" && event.key !== " ") return;
             event.preventDefault();
-            void onClick();
+            void onClick(pointerData(event));
           },
         }
       : {}),

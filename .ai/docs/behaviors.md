@@ -5,7 +5,7 @@
 > Design and XMLUI comparison:
 > [`../plan/poc-18-behaviors.md`](../plan/poc-18-behaviors.md).
 >
-> **Last updated:** step 22 (the form behaviors, behavior events, `requiresValueApi`).
+> **Last updated:** step 27 (the tooltip behavior on Mantine's Tooltip, `tooltipOptions`, `tooltipMarkdown`). Earlier: step 22 (the form behaviors, behavior events, `requiresValueApi`).
 
 ## Using them
 
@@ -19,7 +19,7 @@
 | Behavior | Props | Attaches when | Renders |
 |----------|-------|---------------|---------|
 | `label` | `label`, `labelPosition` (`top` \| `start`) | `label` is set and the component doesn't declare `label` (`Button` does) | `<label class="gfui-Label" data-position>` with `.gfui-Label-text` and the component: an input inside gets the label as its accessible name |
-| `tooltip` | `tooltip` | `tooltip` is set | `<span class="gfui-TooltipAnchor">` around the component; on hover or focus, `<span role="tooltip">` linked by `aria-describedby` |
+| `tooltip` | `tooltip`, `tooltipMarkdown`, `tooltipOptions` | `tooltip` or `tooltipMarkdown` is set | `<span class="gfui-TooltipAnchor">` around the component; since step 27 the Tooltip component's Mantine tooltip on it: shown on hover or focus after `delayDuration` (700 ms), in the overlay layer, linked by `aria-describedby` ([overlays.md](overlays.md)) |
 | `variant` | `variant` | `variant` is set and the component has `themeVars` | `<div class="gfui-Variant" style="display: contents">` setting each component variable to `var(--gfui-<name>-<variant>, <default>)` |
 | `formBinding` (step 22) | `bindTo`, `noSubmit` | `bindTo` is set and the component has a `value` and `setValue` API | `<span class="gfui-Field">`: the input bound to the enclosing Form's data, then its validation messages ([forms.md](forms.md)) |
 | `validation` (step 22) | the rules (`required`, `minLength`, …), `validationMode`, …; event `onValidate` | the same | Nothing: it gives the rules to `formBinding` by context |
@@ -94,9 +94,10 @@ unknown prop.
 |------|----------|
 | `components/src/behaviors-metadata.ts` | `BehaviorMetadata`, `BEHAVIORS` (React-free) |
 | `components/src/metadata.ts` | `attachedBehaviors`, `isKnownThemeVariable`; `nonVisual`; behavior theme defaults in `componentThemeDefaults` |
-| `components/src/behaviors.tsx` | `LabelBehavior`, `TooltipBehavior`, `VariantBehavior`, `variantVariable` |
+| `components/src/behaviors.tsx` | `LabelBehavior`, `VariantBehavior`, `variantVariable` |
+| `components/src/overlays.tsx` | `TooltipBehavior` (step 27: the Tooltip component's view), `parseTooltipOptions` |
 | `components/src/forms.tsx` | `FormBindingBehavior`, `ValidationBehavior` (and `Form`) |
-| `components/src/styles.ts` | `.gfui-Label*`, `.gfui-TooltipAnchor`, `.gfui-Tooltip` |
+| `components/src/styles.ts` | `.gfui-Label*`; `.gfui-TooltipAnchor`, `.gfui-Tooltip` (in `OVERLAYS`) |
 | `compiler/src/module/compile-module.ts` | `behaviorAttribute`, `withBehaviors` (in `element`) |
 
 ## Tests
@@ -104,5 +105,5 @@ unknown prop.
 | File | Covers |
 |------|--------|
 | `compiler/tests/module/behaviors.test.ts` | Attachment and skips (declared prop, non-visual, missing trigger, `variant` without theme variables), the order, type checks, the generated code, `when` and `id` placement, UDCs, variant theme variable names |
-| `components/tests/behaviors.test.tsx` | The label gives the accessible name; the tooltip on hover, focus and leave with `aria-describedby` and bound text; the variant's variables; a UDC tag; the DOM order |
+| `components/tests/behaviors.test.tsx` | The label gives the accessible name; the tooltip (in the overlay layer, `aria-describedby`, bound text, `tooltipOptions`, `tooltipMarkdown`, the Tooltip component); the variant's variables; a UDC tag; the DOM order |
 | `e2e/behaviors.spec.ts` (dev and build) | A tooltip on hover; a labeled input found by its label; a variant Button's color from its Theme, and the fallback |

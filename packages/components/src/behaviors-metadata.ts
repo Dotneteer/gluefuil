@@ -20,7 +20,7 @@ export interface BehaviorMetadata {
   /** Attaches only to components with a `value` and a `setValue` API (step 22: the form behaviors). */
   requiresValueApi?: boolean;
   /** Events handled on the element (`onValidate`), given to the behavior's component. */
-  events?: Record<string, { description: string }>;
+  events?: Record<string, { description: string; args?: "none" | "pointer" }>;
   /** Its event handlers return the handler's result (`validate`). */
   eventResults?: boolean;
   /** Theme variables of its own rendering, with defaults. */
@@ -103,9 +103,15 @@ export const BEHAVIORS: readonly BehaviorMetadata[] = [
   {
     name: "tooltip",
     component: "TooltipBehavior",
-    triggerProps: ["tooltip"],
+    triggerProps: ["tooltip", "tooltipMarkdown"],
     props: {
       tooltip: { description: "Text shown while the pointer is over the component or it has the focus.", valueType: "string" },
+      tooltipMarkdown: { description: "The tooltip's content as Markdown (instead of tooltip).", valueType: "string" },
+      tooltipOptions: {
+        description:
+          "The Tooltip component's options: an object ({ side: 'bottom', showArrow: true }) or a string (\"left; delayDuration: 800; !showArrow\"): a side or align value alone, a boolean name (! for false), name: number.",
+        valueType: "any",
+      },
     },
     themeVars: {
       "backgroundColor-Tooltip": "$color-surface-900",

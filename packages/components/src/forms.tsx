@@ -21,11 +21,14 @@ import {
   type ValidationMode,
   FormStore as Store,
   DEFAULT_FIELD_OPTIONS,
+  confirm,
+  toast,
   watch as watchSignal,
 } from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isDataUrl, useDataUrlState } from "./data";
 import { Button, SubmitButton } from "./mantine";
+import { useDialogHost, type DialogHost } from "./overlay-context";
 
 type Handler = ((...args: unknown[]) => unknown) | undefined;
 
@@ -39,6 +42,10 @@ export interface FormProps {
   cancelLabel?: unknown;
   hideButtonRow?: unknown;
   dataAfterSubmit?: unknown;
+  keepModalOpenOnSubmit?: unknown;
+  inProgressNotificationMessage?: unknown;
+  completedNotificationMessage?: unknown;
+  errorNotificationMessage?: unknown;
   buttonRowTemplate?: TemplateRenderer;
   onWillSubmit?: Handler;
   onSubmit?: Handler;
@@ -108,7 +115,20 @@ export function Form(props: FormProps) {
     return watchSignal(store.dirty, check);
   }, [store]);
 
-  const submit = useSubmit(store, latest, caller, dataUrl);
+  // In a ModalDialog (step 27): the form's dirty state is the dialog's; Cancel and a
+  // successful submit close it (XMLUI FormReact.tsx 560, 837–840).
+  const dialog = useDialogHost();
+  useEffect(() => {
+    if (!dialog) return undefined;
+    const report = () => dialog.setFormDirty(store, store.dirty.peek());
+    report();
+    const stop = watchSignal(store.dirty, report);
+    return () => {
+      stop();
+      dialog.removeForm(store);
+    };
+  }, [dialog, store]);
+  const submit = useSubmit(store, latest, caller, dataUrl, dialog);
 
   const api = useMemo(
     () => ({
@@ -153,7 +173,7 @@ export function Form(props: FormProps) {
     >
       <ErrorSummary store={store} />
       <FormProvider store={store}>{props.children}</FormProvider>
-      {isTrue(props.hideButtonRow) ? null : <ButtonRow store={store} props={props} />}
+      {isTrue(props.hideButtonRow) ? null : <ButtonRow store={store} props={props} dialog={dialog} />}
     </form>
   );
 }
@@ -172,7 +192,7 @@ function ErrorSummary({ store }: { store: FormStore }) {
   );
 }
 
-function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
+function ButtonRow({ store, props, dialog }: { store: FormStore; props: FormProps; dialog: DialogHost | null }) {
   const { submitting, enabled, data } = useComputed(
     () => ({ submitting: store.submitting.get(), enabled: store.enabledProp.get() && !store.loading.get(), data: props.buttonRowTemplate ? store.data.get() : undefined }),
     [store, props.buttonRowTemplate],
@@ -181,7 +201,15 @@ function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
   const saveLabel = submitting ? (props.saveInProgressLabel ?? "Saving...") : (props.saveLabel ?? "Save");
   return (
     <div className="gfui-Form-buttons">
-      <Button label={props.cancelLabel ?? "Cancel"} enabled={enabled && !submitting} onClick={() => void props.onCancel?.()} />
+      <Button
+        label={props.cancelLabel ?? "Cancel"}
+        enabled={enabled && !submitting}
+        onClick={async () => {
+          await props.onCancel?.();
+          // In a ModalDialog: Cancel closes it (asking first when it is dirty).
+          await dialog?.requestClose();
+        }}
+      />
       <SubmitButton label={saveLabel} enabled={enabled && !submitting} />
     </div>
   );
@@ -195,7 +223,7 @@ function ButtonRow({ store, props }: { store: FormStore; props: FormProps }) {
  * through the data layer (step 22B). A failed request's validation errors land
  * on the inputs; a cancelled one ends quietly.
  */
-function useSubmit(store: FormStore, latest: { current: FormProps }, caller: ApiCaller, dataUrl: string | undefined) {
+function useSubmit(store: FormStore, latest: { current: FormProps }, caller: ApiCaller, dataUrl: string | undefined, dialog: DialogHost | null) {
   return useMemo(
     () => async (): Promise<void> => {
       if (store.submitting.peek() || !store.enabled.peek()) return;
@@ -208,14 +236,35 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
         store.firstInvalid()?.focusTarget?.();
         return;
       }
+      // Warnings don't block, but are confirmed first (step 27; XMLUI FormReact.tsx 700, 1152–1180).
+      const warnings = Object.values(result.warnings).flat();
+      if (warnings.length > 0) {
+        const proceed = await confirm({
+          title: "Are you sure want to move forward?",
+          message: `The following warnings were found during validation. Please make sure you are willing to move forward despite these issues.\n\n${warnings.map((w) => `• ${w}`).join("\n")}`,
+          actionLabel: "Yes, proceed",
+          cancelLabel: "No",
+          actionThemeColor: "primary",
+        });
+        if (!proceed) return;
+      }
       const props = latest.current;
       let payload = store.getData();
+      // The notification messages (step 27): a loading toast, replaced by the outcome's.
+      const progressMessage = notificationText(props.inProgressNotificationMessage);
+      let toastId: string | undefined;
+      const settleToast = (kind: "success" | "error", message: string | undefined) => {
+        if (message !== undefined) toast[kind](message, toastId === undefined ? undefined : { id: toastId });
+        else if (toastId !== undefined) toast.remove(toastId);
+        toastId = undefined;
+      };
       store.submitting.set(true);
       try {
         const answer = await props.onWillSubmit?.(payload, store.getAllData());
         if (answer === false) return;
         if (isPlainObject(answer)) payload = answer;
         let response: unknown;
+        if (progressMessage !== undefined) toastId = toast.loading(progressMessage);
         const url = typeof props.submitUrl === "string" && props.submitUrl !== "" ? props.submitUrl : dataUrl;
         if (props.onSubmit) response = await props.onSubmit(payload);
         else if (url !== undefined) {
@@ -229,12 +278,16 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
           );
           if (cancelled) {
             store.cancelled.set(true);
+            if (toastId !== undefined) toast.remove(toastId);
             return;
           }
         }
         store.markClean();
         store.submitting.set(false);
+        settleToast("success", notificationText(props.completedNotificationMessage));
         await props.onSuccess?.(response);
+        // In a ModalDialog: a successful submit closes it (the form is clean now).
+        if (dialog && !isTrue(props.keepModalOpenOnSubmit)) void dialog.requestClose();
         const after = props.dataAfterSubmit;
         if (after === "reset" || after === "clear") {
           if (after === "reset") store.reset();
@@ -244,6 +297,7 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
       } catch (error) {
         const problem = store.applySubmitError(error);
         store.submitting.set(false);
+        settleToast("error", notificationText(props.errorNotificationMessage));
         // After the inputs re-render enabled (a disabled input can't take the focus).
         const target = store.firstServerInvalid() ?? store.firstInvalid();
         setTimeout(() => target?.focusTarget?.(), 0);
@@ -254,9 +308,11 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
         store.submitting.set(false);
       }
     },
-    [store, latest, caller, dataUrl],
+    [store, latest, caller, dataUrl, dialog],
   );
 }
+
+const notificationText = (value: unknown): string | undefined => (value === undefined || value === null || value === "" ? undefined : String(value));
 
 // --- The behaviors ---------------------------------------------------------------
 

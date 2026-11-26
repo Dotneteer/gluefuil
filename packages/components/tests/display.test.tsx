@@ -51,15 +51,16 @@ describe("Icon", () => {
     expect(one(`<Icon name="home" size="${size}"/>`, ".gfui-Icon")!.style.getPropertyValue("--gfui-icon-size")).toBe(css);
   });
 
-  test("clickable: a button for the mouse and the keyboard; the handler gets no arguments", () => {
-    const container = mount('<App var.args="{[]}"><Icon name="plus" onClick="(...a) => args = [...args, a.length]"/><Text>{args.join(",")}</Text></App>');
+  test("clickable: a button for the mouse and the keyboard; the handler gets the pointer snapshot (step 27)", () => {
+    const container = mount('<App var.args="{[]}"><Icon name="plus" onClick="(...a) => args = [...args, a.length + \':\' + a[0].button]"/><Text>{args.join(",")}</Text></App>');
     const icon = container.querySelector(".gfui-Icon")!;
     expect(icon.getAttribute("role")).toBe("button");
     expect(icon.getAttribute("tabindex")).toBe("0");
-    fireEvent.click(icon);
+    fireEvent.click(icon, { clientX: 5, clientY: 6, detail: 1 });
     fireEvent.keyDown(icon, { key: "Enter" });
     fireEvent.keyDown(icon, { key: "x" });
-    expect(screen.getByText("0,0")).toBeTruthy();
+    // A mouse click (button 0) and Enter (a keyboard activation: -1).
+    expect(screen.getByText("1:0,1:-1")).toBeTruthy();
   });
 
   test("registerIcon adds a name every icon prop can use", () => {
@@ -348,10 +349,12 @@ describe("Text and Heading APIs; Heading anchors", () => {
     expect(window.location.hash).not.toBe("#getting-started-now");
   });
 
-  test("contextMenu replaces the browser's menu; the handler gets no arguments", () => {
-    const container = mount('<App var.n="{-1}"><Text onContextMenu="(...a) => n = a.length">t</Text><H4>{n}</H4></App>');
-    const event = fireEvent.contextMenu(container.querySelector(".gfui-Text")!);
+  test("contextMenu replaces the browser's menu; the handler gets a frozen pointer snapshot, not the DOM event (step 27)", () => {
+    const container = mount(
+      '<App var.n="{-1}"><Text onContextMenu="(...a) => n = a.length + \':\' + a[0].clientX + \':\' + a[0].clientY + \':\' + a[0].button + \':\' + Object.isFrozen(a[0]) + \':\' + (a[0].target === undefined)">t</Text><H4>{n}</H4></App>',
+    );
+    const event = fireEvent.contextMenu(container.querySelector(".gfui-Text")!, { clientX: 30, clientY: 40, button: 2 });
     expect(event).toBe(false);
-    expect(container.querySelector("h4")!.textContent).toBe("0");
+    expect(container.querySelector("h4")!.textContent).toBe("1:30:40:2:true:true");
   });
 });

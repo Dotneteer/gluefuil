@@ -76,6 +76,24 @@ export {
 } from "./render/visibility";
 export { OptionContent, optionItems, TemplateInstance, templateRenderer, type TemplateFunction, type TemplateRenderer } from "./render/templates";
 export { loadModule, type ModuleImports, type ModuleSourceMap } from "./render/module";
+export { isPointerLike, pointerData, type PointerData } from "./render/pointer";
+export {
+  answerConfirm,
+  confirm,
+  confirmQueue,
+  removeToast,
+  resetOverlayState,
+  toast,
+  toasts,
+  TOAST_POSITIONS,
+  type ConfirmRequest,
+  type ConfirmThemeColor,
+  type Toast,
+  type ToastFunction,
+  type ToastKind,
+  type ToastOptions,
+  type ToastPosition,
+} from "./render/overlay-state";
 export {
   activeThemeId,
   activeThemeTone,

@@ -4,6 +4,8 @@ import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setNa
 import { MantineProvider } from "@mantine/core";
 import { useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
+import { OverlayLayer, OverlayLayerProvider } from "./overlay-context";
+import { AppOverlays } from "./overlays";
 import { componentMetadata, componentThemeDefaults } from "./metadata";
 import { appLogo, needsGeneratedHeader, Shell, shellAttributes, type ShellConfig } from "./shell";
 import { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
@@ -76,6 +78,7 @@ export function App({
   const { tone, style } = useActiveTheme();
   const shell: ShellConfig = $$shell ?? { scroll: typeof scroll === "string" ? scroll : "page" };
   const root = useRef<HTMLDivElement>(null);
+  const overlays = useRef<HTMLDivElement>(null);
   const collapsed = useSignal(navPanelCollapsed);
   const drawerOpen = useSignal(navDrawerOpen);
   // A generated header (shell.tsx) shows on wide screens only when the nav lives in it.
@@ -93,9 +96,15 @@ export function App({
       </style>
       {/* Mantine's variables and global classes come from MANTINE_STYLESHEET: no <style> elements of its own. */}
       <MantineProvider forceColorScheme={tone} withCssVariables={false} withGlobalClasses={false}>
-        <Shell config={shell} header={$$header} nav={$$nav} footer={$$footer} logo={appLogo(tone, logo, logoLight, logoDark, logoTemplate)} root={root}>
-          {children}
-        </Shell>
+        <OverlayLayerProvider layer={overlays}>
+          <Shell config={shell} header={$$header} nav={$$nav} footer={$$footer} logo={appLogo(tone, logo, logoLight, logoDark, logoTemplate)} root={root}>
+            {children}
+          </Shell>
+          {/* Dialogs, menus and tooltips portal here; toasts and confirm() render here (step 27). */}
+          <OverlayLayer layer={overlays}>
+            <AppOverlays />
+          </OverlayLayer>
+        </OverlayLayerProvider>
       </MantineProvider>
     </div>
   );
@@ -108,6 +117,7 @@ export function App({
  */
 export function Theme({ themeId, tone, children, ...overrides }: { themeId?: unknown; tone?: unknown; children?: ReactNode } & Record<string, unknown>) {
   const active = useActiveTheme();
+  const overlays = useRef<HTMLDivElement>(null);
   const ownTheme = typeof themeId === "string" ? themeId : undefined;
   const ownTone = typeof tone === "string" ? asTone(tone) : undefined;
   const values = Object.fromEntries(Object.entries(overrides).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]));
@@ -128,7 +138,9 @@ export function Theme({ themeId, tone, children, ...overrides }: { themeId?: unk
   );
   return (
     <div className="gfui-Theme" data-tone={ownTone} data-mantine-color-scheme={ownTone} style={{ display: "contents", ...(style as CSSProperties) }}>
-      {children}
+      {/* Overlays opened inside a Theme portal into its own layer, so its variables apply (step 27). */}
+      <OverlayLayerProvider layer={overlays}>{children}</OverlayLayerProvider>
+      <OverlayLayer layer={overlays} />
     </div>
   );
 }

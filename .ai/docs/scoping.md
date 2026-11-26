@@ -12,7 +12,7 @@ A name in a binding or handler resolves to the first match:
 
 | # | Kind | Declared by | Writable in handlers |
 |---|------|-------------|----------------------|
-| 1 | Local | Parameters, `let`/`const`, functions, catch and `for` heads; handler locals `$param`, `$params`, `$cancel` | Yes (plain JavaScript) |
+| 1 | Local | Parameters, `let`/`const`, functions, catch and `for` heads; handler locals `$param`, `$params` (not for events without arguments for statements: `EventMetadata.args`, step 27), `$cancel` | Yes (plain JavaScript) |
 | 2 | Variable | `var.x` / `<variable>` / `global.x` / `<global>` on the element or an ancestor; the innermost declaration wins | Yes (through scope setters and path helpers) |
 | 2a | Context variable | A template the code is inside (`$item`, `$itemIndex`, …: from the component's metadata). They start with `$`, which variable names can't, so the two never collide. | No (C012) |
 | 3 | Component ID | `id="x"` **anywhere in the file** | No (C012); use API methods |

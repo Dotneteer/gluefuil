@@ -54,6 +54,8 @@ export const ModuleDiagnostics = {
   E034: (component: string, element: string) => `'${component}' takes text only; '<${element}>' can't be inside it (wrap HTML in <![CDATA[ … ]]>)`,
   /** A child of a component whose children are options (Select) that is not an Option or an Items of Options. */
   E035: (component: string, what: string) => `'${component}' takes Option and Items (of Option) children only; ${what} can't be inside it`,
+  /** Step 27: a component that belongs inside certain others (MenuItem in a menu) is elsewhere. */
+  E037: (component: string, parents: string) => `'<${component}>' must be inside ${parents}`,
   /** Both `data` and Option children. */
   E036: (component: string) => `'${component}' has both 'data' and Option children; use one of them`,
 } as const;

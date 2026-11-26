@@ -110,6 +110,11 @@ export function compileInterpolation(segments: InterpolationSegment[], options: 
 export interface CompileHandlerOptions extends CompileOptions {
   /** The scope names a handler may write (variables). */
   variables: ReadonlySet<string>;
+  /**
+   * Statements declare `$param` and `$params` (default true). False for an
+   * event without arguments for statements (EventMetadata.args, step 27).
+   */
+  params?: boolean;
 }
 
 /**
@@ -119,7 +124,7 @@ export interface CompileHandlerOptions extends CompileOptions {
  */
 export function compileHandler(program: Program, options: CompileHandlerOptions): CompileResult {
   const emitter = new Emitter(options.scope, { mode: "handler", variables: options.variables, markers: options.markers, members: options.members, contractSeverity: options.contractSeverity });
-  const fn = emitter.handlerFunction(program);
+  const fn = emitter.handlerFunction(program, options.params ?? true);
   const code = `($$s) => ${fn}`;
   return { code, dependencies: [], constant: false, diagnostics: emitter.diagnostics };
 }

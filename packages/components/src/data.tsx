@@ -4,6 +4,9 @@
 // the events. Neither renders anything.
 import {
   ApiCaller,
+  confirm,
+  currentInvocation,
+  toast,
   Loader,
   resolveDeferred,
   useComponentApi,
@@ -169,12 +172,20 @@ export interface APICallProps {
   retries?: unknown;
   retryDelay?: unknown;
   timeoutMs?: unknown;
+  confirmTitle?: unknown;
+  confirmMessage?: unknown;
+  confirmButtonLabel?: unknown;
+  inProgressNotificationMessage?: unknown;
+  completedNotificationMessage?: unknown;
+  errorNotificationMessage?: unknown;
   onBeforeRequest?: Handler;
   onSuccess?: Handler;
   onError?: Handler;
   onCancel?: Handler;
   registerApi?: RegisterApi;
 }
+
+const messageText = (value: unknown): string | undefined => (value === undefined || value === null || value === "" ? undefined : String(value));
 
 export function APICall(props: APICallProps) {
   const [caller] = useState(() => new ApiCaller());
@@ -186,11 +197,31 @@ export function APICall(props: APICallProps) {
   }, [caller]);
   const api = useMemo(() => {
     const state = () => caller.state.get();
-    const execute = (...params: unknown[]) => {
+    const execute = async (...params: unknown[]) => {
+      // The calling handler, read before the first await (its cancellation aborts the request).
+      const invocation = currentInvocation();
       const p = latest.current;
       const context = (args: readonly unknown[]) => ({ $param: args[0], $params: [...args] });
+      const base = context(params);
+      // Step 27: confirmTitle/confirmMessage ask first (confirm()); a "no" skips the call.
+      const confirmTitle = messageText(resolveDeferred(p.confirmTitle, base));
+      const confirmMessage = messageText(resolveDeferred(p.confirmMessage, base));
+      if (confirmTitle !== undefined || confirmMessage !== undefined) {
+        const ok = await confirm({ title: confirmTitle, message: confirmMessage, actionLabel: messageText(resolveDeferred(p.confirmButtonLabel, base)) });
+        if (!ok) return undefined;
+      }
+      // The notification messages: a loading toast while the request runs, replaced by the outcome's.
+      let toastId: string | undefined;
+      const settle = (kind: "success" | "error", message: string | undefined) => {
+        if (message !== undefined) toast[kind](message, toastId === undefined ? undefined : { id: toastId });
+        else if (toastId !== undefined) toast.remove(toastId);
+        toastId = undefined;
+      };
+      const errorMessage = (error: DataError) => messageText(resolveDeferred(p.errorNotificationMessage, { ...base, $error: error }));
       const spec = (args: readonly unknown[]): RequestSpec => {
         const ctx = context(args);
+        const progress = messageText(resolveDeferred(p.inProgressNotificationMessage, ctx));
+        if (progress !== undefined && toastId === undefined) toastId = toast.loading(progress);
         const method = resolveDeferred(p.method, ctx);
         return {
           url: String(resolveDeferred(p.url, ctx) ?? ""),
@@ -202,22 +233,43 @@ export function APICall(props: APICallProps) {
         };
       };
       const invalidates = resolveDeferred(p.invalidates, context(params));
+      const handlesError = p.onError !== undefined || p.errorNotificationMessage !== undefined;
       const events: ApiCallEvents = {
         ...(p.onBeforeRequest ? { beforeRequest: (...args: unknown[]) => p.onBeforeRequest!(...args) } : {}),
-        ...(p.onSuccess ? { success: (result: unknown) => p.onSuccess!(result) } : {}),
-        ...(p.onError ? { error: (error: DataError) => p.onError!(error) } : {}),
-        ...(p.onCancel ? { cancel: (reason: string) => p.onCancel!(reason) } : {}),
-      };
-      return caller.execute(
-        params,
-        spec,
-        {
-          retries: asNumber(p.retries, 0),
-          retryDelay: asNumber(p.retryDelay, 500),
-          ...(invalidates !== undefined && invalidates !== null && invalidates !== "" ? { invalidates: invalidates as string | string[] } : {}),
+        success: (result: unknown) => {
+          settle("success", messageText(resolveDeferred(p.completedNotificationMessage, { ...base, $result: result })));
+          return p.onSuccess?.(result);
         },
-        events,
-      );
+        // An errorNotificationMessage handles the error, as an error handler does.
+        ...(handlesError
+          ? {
+              error: (error: DataError) => {
+                settle("error", errorMessage(error));
+                return p.onError?.(error);
+              },
+            }
+          : {}),
+        cancel: (reason: string) => {
+          settle("success", undefined);
+          return p.onCancel?.(reason);
+        },
+      };
+      try {
+        return await caller.execute(
+          params,
+          spec,
+          {
+            retries: asNumber(p.retries, 0),
+            retryDelay: asNumber(p.retryDelay, 500),
+            ...(invalidates !== undefined && invalidates !== null && invalidates !== "" ? { invalidates: invalidates as string | string[] } : {}),
+          },
+          events,
+          invocation,
+        );
+      } finally {
+        // An unhandled failure (it rejects): the loading toast goes.
+        if (toastId !== undefined) toast.remove(toastId);
+      }
     };
     return {
       execute,

@@ -50,7 +50,10 @@
     { path: '/select', step: '25', title: 'Select', description: 'Option children or data; search, several values, groups, templates, keys, the API.' },
     { path: '/autocomplete', step: '25', title: 'AutoComplete', description: 'Type to filter, several values, new ones; both pickers in a Form.' },
     { path: '/date-time', step: '26', title: 'Date and time inputs', description: 'DateInput in each dateFormat, limits; TimeInput in 24- and 12-hour mode; isoValue().' },
-    { path: '/date-picker', step: '26', title: 'DatePicker', description: 'A calendar inline or in a popup, ranges and presets, disabled dates; dates in a Form.' }
+    { path: '/date-picker', step: '26', title: 'DatePicker', description: 'A calendar inline or in a popup, ranges and presets, disabled dates; dates in a Form.' },
+    { path: '/dialogs', step: '27', title: 'Dialogs and drawers', description: 'ModalDialog by open() or when, $param, a Form inside, unsaved changes, willClose; Drawer.' },
+    { path: '/menus', step: '27', title: 'Menus and tooltips', description: 'DropdownMenu with a submenu, a context menu at the pointer, tooltips with options.' },
+    { path: '/notifications', step: '27', title: 'Toasts and confirm', description: 'toast() and its kinds, confirm(), an APICall that asks first and reports.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -128,6 +131,9 @@
     <Page url="/autocomplete"><VStack><AutoCompleteScenario/><ScenarioSource file="AutoCompleteScenario"/></VStack></Page>
     <Page url="/date-time"><VStack><DateTimeScenario/><ScenarioSource file="DateTimeScenario"/></VStack></Page>
     <Page url="/date-picker"><VStack><DatePickerScenario/><ScenarioSource file="DatePickerScenario"/></VStack></Page>
+    <Page url="/dialogs"><VStack><DialogsScenario/><ScenarioSource file="DialogsScenario"/></VStack></Page>
+    <Page url="/menus"><VStack><MenusScenario/><ScenarioSource file="MenusScenario"/></VStack></Page>
+    <Page url="/notifications"><VStack><NotificationsScenario/><ScenarioSource file="NotificationsScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

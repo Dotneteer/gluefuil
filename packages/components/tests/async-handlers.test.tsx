@@ -1,7 +1,7 @@
 // Step 7 end to end in jsdom: async handlers written in markup, with real clicks.
 import { compileModule } from "@gluefuil/compiler";
 import { isBatching, loadModule, setErrorReporter } from "@gluefuil/runtime";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import * as components from "../src/index";
 
@@ -51,8 +51,8 @@ test("explicit await works the same as implicit await", async () => {
       <Text>n: {n}</Text>
     </App>`);
   click("Go");
-  await settle(30);
-  expect(text("n")).toBe("n: 2");
+  // Two 5 ms delays: waited for, not timed (a loaded machine can overrun a fixed window).
+  await waitFor(() => expect(text("n")).toBe("n: 2"));
 });
 
 test("a handler that never finishes does not freeze the UI", async () => {

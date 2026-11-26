@@ -3,7 +3,7 @@
 // cancellation tied to the calling handler, and invalidation. React-free; the
 // APICall component (components) gives it the request and the events.
 import { signal, type ReadonlySignal } from "../reactivity/signals";
-import { currentInvocation } from "../render/handlers";
+import { currentInvocation, type Invocation } from "../render/handlers";
 import { invalidate } from "./client";
 import { isDataError, type DataError } from "./errors";
 import { RequestCancelledError, sendRequest, type RequestSpec } from "./http";
@@ -67,17 +67,20 @@ export class ApiCaller {
    * One call: `beforeRequest`, the request (`spec` is computed with the
    * parameters), `success` or `error`, the invalidation. Resolves to the
    * result; to undefined when skipped, cancelled, or failed with an `error`
-   * handler; rejects with the error when there is none.
+   * handler; rejects with the error when there is none. `invocation`: the
+   * calling handler, when the caller awaited something first (step 27: APICall's
+   * confirmation); by default the one running now.
    */
   async execute(
     params: readonly unknown[],
     spec: (params: readonly unknown[]) => RequestSpec,
     options: ApiCallOptions,
     events: ApiCallEvents,
+    invocation: Invocation | undefined = currentInvocation(),
   ): Promise<unknown> {
     if (this.disposed) return undefined;
     // The handler calling execute(): its cancellation (supersede, timeout, unmount) aborts the request.
-    const caller = currentInvocation();
+    const caller = invocation;
     if (events.beforeRequest && (await events.beforeRequest(...params)) === false) return undefined;
     const request = spec(params);
     const call = ++this.started;

@@ -770,8 +770,11 @@ export class Emitter {
    *   - a lone reference (`save`, `api.save`): calls it with the event arguments;
    *   - statements: `async (...$params) => { const $param = $params[0]; … }`.
    * `$cancel` is a local in all of them. Calls are awaited implicitly.
+   * `params: false` (an event without arguments for statements, step 27): the
+   * statements declare no `$param`/`$params`, so an enclosing context variable of
+   * that name (a ModalDialog's) stays visible; the arguments are `$$args`.
    */
-  handlerFunction(program: A.Program): string {
+  handlerFunction(program: A.Program, params = true): string {
     const body = program.body;
     const only = body.length === 1 && body[0]!.type === "ExpressionStatement" ? body[0].expression : undefined;
     const lone = only?.type === "ChainExpression" ? only.expression : only;
@@ -788,17 +791,20 @@ export class Emitter {
       const call: A.CallExpression = {
         type: "CallExpression",
         callee: lone,
-        arguments: [{ type: "SpreadElement", argument: { type: "Identifier", name: "$params", ...at }, ...at }],
+        arguments: [{ type: "SpreadElement", argument: { type: "Identifier", name: params ? "$params" : "$$args", ...at }, ...at }],
         optional: false,
         ...at,
       };
       statements = [{ type: "ExpressionStatement", expression: call, ...at }];
     }
-    return this.withScope(["$param", "$params", "$cancel"], () =>
+    const locals = params ? ["$param", "$params", "$cancel"] : ["$$args", "$cancel"];
+    return this.withScope(locals, () =>
       this.withFunction(true, () => {
         this.hoist(statements);
         const inner = statements.map((s) => this.statement(s)).join(" ");
-        return `($$x) => async (...$params) => ${this.asyncBody(inner, `const $param = $params[0]; ${cancel}`)}`;
+        return params
+          ? `($$x) => async (...$params) => ${this.asyncBody(inner, `const $param = $params[0]; ${cancel}`)}`
+          : `($$x) => async (...$$args) => ${this.asyncBody(inner, cancel)}`;
       }),
     );
   }

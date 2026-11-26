@@ -4,7 +4,7 @@
 // from theme variables only (styles.ts DISPLAY); Mantine's own variables are
 // overridden there by unlayered rules.
 import { Avatar as MantineAvatar, Badge as MantineBadge, Divider, Image as MantineImage, Loader, Progress } from "@mantine/core";
-import { useComponentApi, type RegisterApi } from "@gluefuil/runtime";
+import { pointerData, useComponentApi, type RegisterApi } from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { layoutCss } from "./layout-metadata";
 import { Stack, useLayout, type LayoutProps } from "./layout";
@@ -23,12 +23,12 @@ function toNumber(value: unknown): number | undefined {
 
 /**
  * The handlers of a clickable element: a click and Enter or Space (it gets
- * `role="button"` and a tab stop). No DOM event reaches script (the sandbox
- * invariant).
+ * `role="button"` and a tab stop). Script gets the pointer snapshot, never the
+ * DOM event (the sandbox invariant; step 27).
  */
 function clickable(onClick: unknown): Record<string, unknown> {
   if (typeof onClick !== "function") return {};
-  const run = () => void (onClick as () => unknown)();
+  const run = (event: unknown) => void (onClick as (ev: unknown) => unknown)(pointerData(event));
   return {
     role: "button",
     tabIndex: 0,
@@ -37,7 +37,7 @@ function clickable(onClick: unknown): Record<string, unknown> {
     onKeyDown: (event: KeyboardEvent) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
-      run();
+      run(event);
     },
   };
 }
@@ -54,7 +54,7 @@ type ImageProps = LayoutProps & {
   lazyLoad?: unknown;
   inline?: unknown;
   grayscale?: unknown;
-  onClick?: () => unknown;
+  onClick?: (ev?: unknown) => unknown;
 };
 
 /** `Image`: nothing without `src`. `fit`: contain (default) or cover. */
@@ -98,7 +98,7 @@ export function initials(name: unknown): string | undefined {
 
 export const AVATAR_SIZES = ["xs", "sm", "md", "lg", "xl"] as const;
 
-type AvatarProps = LayoutProps & { name?: unknown; url?: unknown; size?: unknown; onClick?: () => unknown; onContextMenu?: () => unknown };
+type AvatarProps = LayoutProps & { name?: unknown; url?: unknown; size?: unknown; onClick?: (ev?: unknown) => unknown; onContextMenu?: (ev?: unknown) => unknown };
 
 /**
  * `Avatar`: the image at `url`; the initials of `name` without one, or when it
@@ -151,7 +151,7 @@ function badgeColors(colorMap: unknown, key: string | undefined): CSSProperties 
   return style as CSSProperties;
 }
 
-type BadgeProps = LayoutProps & { value?: unknown; variant?: unknown; colorMap?: unknown; onContextMenu?: () => unknown; children?: ReactNode };
+type BadgeProps = LayoutProps & { value?: unknown; variant?: unknown; colorMap?: unknown; onContextMenu?: (ev?: unknown) => unknown; children?: ReactNode };
 
 /** `Badge`: `value` or the children; `variant` badge (default) or pill; `colorMap` colors it by its value. */
 export function Badge(props: BadgeProps) {
@@ -254,9 +254,9 @@ type CardProps = LayoutProps & {
   horizontalAlignment?: unknown;
   verticalAlignment?: unknown;
   registerApi?: RegisterApi;
-  onClick?: () => unknown;
-  onDoubleClick?: () => unknown;
-  onContextMenu?: () => unknown;
+  onClick?: (ev?: unknown) => unknown;
+  onDoubleClick?: (ev?: unknown) => unknown;
+  onContextMenu?: (ev?: unknown) => unknown;
   children?: ReactNode;
 };
 
@@ -306,13 +306,13 @@ export function Card(props: CardProps) {
     // The second click of a double click is not a click (XMLUI CardReact.tsx 138–142).
     element.onClick = (event: MouseEvent) => {
       if (event.detail >= 2) return;
-      void onClick();
+      void onClick(pointerData(event));
     };
   }
   if (typeof onDoubleClick === "function") {
     element.onDoubleClick = (event: MouseEvent) => {
       event.preventDefault();
-      void onDoubleClick();
+      void onDoubleClick(pointerData(event));
     };
   }
   const stackProps: Record<string, unknown> = { ...props };

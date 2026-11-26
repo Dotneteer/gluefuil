@@ -35,10 +35,11 @@ function ladderMismatches(page: Page, base: number, phone: boolean) {
       const problems: string[] = [];
       let measured = 0;
       const close = (a: number, b: number) => Math.abs(a - b) < 0.6;
-      // Children as laid out: through display:contents wrappers (Theme).
+      // Children as laid out: through display:contents wrappers (Theme), without
+      // out-of-flow ones (a Theme's overlay layer, step 27: fixed, no gap).
       const items = (parent: Element): HTMLElement[] =>
         [...parent.children].flatMap((child) =>
-          getComputedStyle(child).display === "contents" ? items(child) : getComputedStyle(child).display === "none" ? [] : [child as HTMLElement],
+          getComputedStyle(child).display === "contents" ? items(child) : getComputedStyle(child).display === "none" || getComputedStyle(child).position === "fixed" ? [] : [child as HTMLElement],
         );
       for (const stack of document.querySelectorAll<HTMLElement>(".gfui-AppContent .gfui-Stack")) {
         const level = Number(stack.dataset.level);

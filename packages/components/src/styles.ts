@@ -554,12 +554,141 @@ const DISPLAY = `
 }
 `;
 
+
+/**
+ * Overlays and menus (step 27, overlays.tsx): the overlay layer, ModalDialog,
+ * Drawer, the menus, Tooltip, the toasts and confirm(). Mantine's own rules are
+ * in @layer mantine; these (unlayered) redirect them to gfui theme variables.
+ */
+const OVERLAYS = `
+.gfui-Overlays {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 200;
+}
+.gfui-ModalDialog-overlay { background: var(--gfui-backgroundColor-overlay-ModalDialog); }
+.gfui-ModalDialog-content {
+  background-color: var(--gfui-backgroundColor-ModalDialog);
+  color: var(--gfui-textColor-ModalDialog);
+  border-radius: var(--gfui-borderRadius-ModalDialog);
+  box-shadow: var(--gfui-boxShadow-ModalDialog);
+  min-width: var(--gfui-minWidth-ModalDialog);
+  max-width: var(--gfui-maxWidth-ModalDialog);
+  font-family: var(--gfui-fontFamily);
+}
+.gfui-ModalDialog-content[data-full-screen] { min-width: 0; max-width: none; border-radius: 0; }
+.gfui-ModalDialog-header,
+.gfui-Drawer-header {
+  background-color: inherit;
+  color: inherit;
+  min-height: 0;
+  gap: var(--gfui-space-2);
+}
+.gfui-ModalDialog-header { padding: var(--gfui-padding-ModalDialog, var(--gfui-space-level1)); padding-bottom: 0; }
+.gfui-ModalDialog-title {
+  font-size: var(--gfui-fontSize-title-ModalDialog);
+  font-weight: var(--gfui-fontWeight-title-ModalDialog);
+  color: var(--gfui-textColor-title-ModalDialog);
+  line-height: 1.3;
+}
+/* The content: a surface of the spacing ladder at level 1 (overlays.tsx Body). */
+.gfui-ModalDialog-stack[data-surface] { padding: var(--gfui-padding-ModalDialog, var(--gfui-pad)); }
+.gfui-ModalDialog-stack { --gfui-gap: var(--gfui-gap-ModalDialog, var(--gfui-step)); }
+.gfui-Drawer-overlay { background: var(--gfui-backgroundColor-backdrop-Drawer); }
+.gfui-Drawer-content {
+  background-color: var(--gfui-backgroundColor-Drawer);
+  color: var(--gfui-textColor);
+  box-shadow: var(--gfui-boxShadow-Drawer);
+  font-family: var(--gfui-fontFamily);
+}
+.gfui-Drawer-header { padding: var(--gfui-padding-Drawer, var(--gfui-space-level1)); padding-bottom: 0; }
+.gfui-Drawer-stack[data-surface] { padding: var(--gfui-padding-Drawer, var(--gfui-pad)); }
+.gfui-Drawer-stack { --gfui-gap: var(--gfui-gap-Drawer, var(--gfui-step)); }
+.gfui-DropdownMenu {
+  box-sizing: border-box;
+  background-color: var(--gfui-backgroundColor-DropdownMenu);
+  border: 1px solid var(--gfui-borderColor-DropdownMenu);
+  border-radius: var(--gfui-borderRadius-DropdownMenu);
+  box-shadow: var(--gfui-boxShadow-DropdownMenu);
+  min-width: var(--gfui-minWidth-DropdownMenu);
+  font-family: var(--gfui-fontFamily);
+}
+.gfui-DropdownMenu-trigger { display: inline-flex; }
+.gfui-MenuItem {
+  --menu-item-color: var(--gfui-color-MenuItem);
+  --menu-item-hover: var(--gfui-backgroundColor-MenuItem--hover);
+  background-color: var(--gfui-backgroundColor-MenuItem);
+  font-size: var(--gfui-fontSize-MenuItem);
+  padding: var(--gfui-paddingVertical-MenuItem) var(--gfui-paddingHorizontal-MenuItem);
+  gap: var(--gfui-gap-MenuItem);
+}
+.gfui-MenuItem:where(:hover, :focus, [data-menu-active]):where(:not(:disabled, [data-disabled])) { color: var(--gfui-color-MenuItem--hover); }
+.gfui-MenuItem[data-active] {
+  background-color: var(--gfui-backgroundColor-MenuItem--active);
+  --menu-item-color: var(--gfui-color-MenuItem--active);
+}
+.gfui-MenuItem:where([data-disabled], :disabled) { --menu-item-color: var(--gfui-color-MenuItem--disabled); }
+.gfui-MenuItem-icon { margin: 0; }
+.gfui-MenuSeparator { border-color: var(--gfui-borderColor); }
+.gfui-TooltipAnchor {
+  position: relative;
+  display: inline-flex;
+}
+.gfui-Tooltip {
+  background-color: var(--gfui-backgroundColor-Tooltip);
+  color: var(--gfui-textColor-Tooltip);
+  border-radius: var(--gfui-borderRadius-Tooltip);
+  padding: var(--gfui-padding-Tooltip);
+  font-size: var(--gfui-fontSize-Tooltip);
+  font-family: var(--gfui-fontFamily);
+  max-width: 320px;
+}
+.gfui-Tooltip-arrow { background-color: var(--gfui-backgroundColor-Tooltip); }
+.gfui-Toast {
+  --notification-color: var(--gfui-color-primary-500);
+  background-color: var(--gfui-backgroundColor);
+  color: var(--gfui-textColor);
+  border: 1px solid var(--gfui-borderColor);
+  font-family: var(--gfui-fontFamily);
+}
+.gfui-Toast[data-kind="success"] { --notification-color: var(--gfui-color-success-500); }
+.gfui-Toast[data-kind="error"] { --notification-color: var(--gfui-color-danger-500); }
+.gfui-Toast .mantine-Notification-description { color: inherit; }
+.gfui-Confirm-message { white-space: pre-line; }
+.gfui-Confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--gfui-space-2);
+}
+.gfui-Confirm-cancel {
+  --gfui-backgroundColor-Button: transparent;
+  --gfui-backgroundColor-Button--hover: var(--gfui-color-surface-100);
+  --gfui-textColor-Button: var(--gfui-textColor);
+  --gfui-borderColor-Button: var(--gfui-borderColor);
+}
+.gfui-Confirm-buttons[data-action-color="attention"] > .gfui-Confirm-action {
+  --gfui-backgroundColor-Button: var(--gfui-color-danger-600);
+  --gfui-backgroundColor-Button--hover: var(--gfui-color-danger-700);
+  --gfui-borderColor-Button: var(--gfui-color-danger-700);
+}
+.gfui-Confirm-buttons[data-action-color="secondary"] > .gfui-Confirm-action {
+  --gfui-backgroundColor-Button: var(--gfui-color-secondary-500);
+  --gfui-backgroundColor-Button--hover: var(--gfui-color-secondary-600);
+  --gfui-borderColor-Button: var(--gfui-color-secondary-600);
+}
+`;
+
 export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
 ${LAYOUT}
 ${TEXT_OVERFLOW}
 ${DISPLAY}
+${OVERLAYS}
 .gfui-App,
 .gfui-Theme {
   /* Mantine's global variables, redirected to the gfui theme. */
@@ -806,23 +935,5 @@ ${["Select", "AutoComplete"].map((name) => `.gfui-${name}-dropdown {
 .gfui-Field[data-required] > * > .gfui-Label-text::after {
   content: " *";
   color: var(--gfui-textColor-ValidationMessage-error);
-}
-.gfui-TooltipAnchor {
-  position: relative;
-  display: inline-flex;
-}
-.gfui-Tooltip {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--gfui-backgroundColor-Tooltip);
-  color: var(--gfui-textColor-Tooltip);
-  border-radius: var(--gfui-borderRadius-Tooltip);
-  padding: var(--gfui-padding-Tooltip);
-  font-size: var(--gfui-fontSize-Tooltip);
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 1000;
 }
 `.trim();

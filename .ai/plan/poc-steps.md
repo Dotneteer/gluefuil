@@ -484,6 +484,12 @@ step 22B (inserted) is submission and server errors.
 
 ## Phase F: Components, in batches
 
+**Step 27 (overlays and menus) ✅.** Plan and findings:
+[poc-27-overlays.md](poc-27-overlays.md). Mantine's Modal, Drawer, Menu,
+Tooltip and `@mantine/notifications`; pointer handlers get a frozen snapshot,
+and argument-free events declare no `$param` (the user's choices); the items
+earlier steps deferred here (Form in a dialog, warnings, notifications).
+
 **Step 26 (date and time) ✅.** Plan and findings:
 [poc-26-dates.md](poc-26-dates.md). `@mantine/dates` in a lazy chunk;
 XMLUI's string values (the user's choices).
@@ -511,7 +517,7 @@ E2E tests for interaction-heavy ones.
 | 24 ✅ | Inputs: `TextBox`, `PasswordInput`, `TextArea`, `NumberBox`, `Checkbox`, `Switch`, `RadioGroup`, `Slider`, `ColorPicker` | Keyboard input, form binding |
 | 25 ✅ | Choice: `Select`, `AutoComplete`, `Option` | Search, multi-select, keyboard |
 | 26 ✅ | Date and time: `DateInput`, `DatePicker`, `TimeInput` | Calendar interaction, locale |
-| 27 | Overlays and menus: `ModalDialog` (declarative and imperative), `Drawer`, `DropdownMenu`, `SubMenuItem`, `ContextMenu`, `Tooltip`, `toast()`, `confirm()` | Focus trap, Escape, outside click |
+| 27 ✅ | Overlays and menus: `ModalDialog` (declarative and imperative), `Drawer`, `DropdownMenu`, `SubMenuItem`, `ContextMenu`, `Tooltip`, `toast()`, `confirm()` | Focus trap, Escape, outside click |
 | 28 | Structure: `Tabs`, `ExpandableItem`, `Stepper`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar` | Resizing, sticky, overflow |
 | 29 | **Virtualized `List`** (also decides the virtualizer: `virtua` vs TanStack Virtual) | Scrolling, bottom anchoring, dynamic heights, grouping, selection |
 | 30 | **`Table` + `Column`** (TanStack Table v9) | Sorting, selection, resizing, pinning, pagination, editable cells |

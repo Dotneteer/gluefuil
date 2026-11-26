@@ -29,6 +29,7 @@ import {
   themeVariableNames,
   type BehaviorMetadata,
   type ComponentMetadata,
+  type EventMetadata,
   type PropMetadata,
 } from "@gluefuil/components/metadata";
 import { compileExpression, compileFunction, compileHandler, compileInterpolation } from "../codegen/compile";
@@ -330,6 +331,7 @@ class ModuleCompiler {
     this.diagnostics.push(...parsed.diagnostics);
     const { definitions, app } = this.topLevel(parsed.document.children, parsed.document);
     this.registerComponents(definitions, analyzeDocument(parsed.document).components);
+    this.checkParents(parsed.document.children, undefined);
     if (this.options.codeBehind !== undefined) {
       this.codeBehind = this.parseCodeBehind(this.options.codeBehind);
       this.codeBehindTarget = app ?? (definitions.length === 1 ? definitions[0] : undefined);
@@ -401,6 +403,30 @@ class ModuleCompiler {
    * The top level: `<Component>` definitions, and at most one app element.
    * A file with no app element must be exactly one `<Component>` (a component file).
    */
+  /**
+   * Components that belong inside others (`parents`, step 27: a MenuItem in a menu): the
+   * nearest enclosing component decides. `Items` and `<property>` templates in between
+   * are transparent; a `<Component>` root or a user component (its slot content) can't be
+   * checked here, so it passes.
+   */
+  private checkParents(nodes: readonly ContentNode[], enclosing: string | undefined): void {
+    for (const node of nodes) {
+      if (node.kind !== "element") continue;
+      const name = node.name.full;
+      const metadata = node.name.prefix === undefined ? this.components[name] : undefined;
+      const parents = metadata?.parents;
+      if (parents && enclosing !== undefined && !parents.includes(enclosing)) {
+        const list = parents.map((p) => `<${p}>`);
+        this.report(node.name, "E037", name, list.length > 1 ? `${list.slice(0, -1).join(", ")} or ${list[list.length - 1]}` : list[0]!);
+      }
+      // What the children see as their enclosing component.
+      let next = enclosing;
+      if (name === "Component" || this.userComponents.has(name)) next = undefined;
+      else if (metadata && name !== "Items") next = name;
+      this.checkParents(node.children, next);
+    }
+  }
+
   private topLevel(nodes: ContentNode[], document: { start: number; end: number }): { definitions: ElementNode[]; app?: ElementNode } {
     const definitions: ElementNode[] = [];
     let app: ElementNode | undefined;
@@ -1077,6 +1103,10 @@ class ModuleCompiler {
 
     const constants: [string, string][] = [];
     if (contextVars && contextVars.length > 0) constants.push(["contextScope", scopeVar]);
+    // Mounted by its `when` (step 27: a ModalDialog): open as it mounts.
+    if (!isUser && metadata.openedByWhen && node.attributes.some((a) => a.name.full === "when" || a.name.full.startsWith("when-"))) {
+      constants.push(["$$whenOpen", "true"]);
+    }
     for (const [prop, value] of Object.entries(alias?.props ?? {})) {
       if (!node.attributes.some((a) => a.name.full === prop)) constants.push([prop, jsString(value)]);
     }
@@ -1108,12 +1138,12 @@ class ModuleCompiler {
         if (owner) {
           if (!attribute.value) continue;
           const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
-          behaviorValues.get(owner)!.handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets })]);
+          behaviorValues.get(owner)!.handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets }, owner.events?.[event])]);
           continue;
         }
         if (!this.checkEvent(metadata, name, event, attribute.name) || !attribute.value) continue;
         const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
-        handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets })]);
+        handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets }, metadata.events?.[event])]);
         continue;
       }
       const unsupported = unsupportedAttribute(attributeName);
@@ -1476,10 +1506,12 @@ class ModuleCompiler {
   }
 
   /** Compiles handler source (statements); returns the handler factory code. */
-  private handler(source: string, position: { offsets?: number[]; offset?: number }): string {
+  private handler(source: string, position: { offsets?: number[]; offset?: number }, event?: EventMetadata): string {
     const parsed = parseStatements(source, position);
     this.diagnostics.push(...parsed.diagnostics);
-    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: this.markers, ...this.contractOptions() });
+    // An event without arguments for statements (step 27): no `$param`, so an enclosing one stays visible.
+    const params = event?.args === undefined;
+    const result = compileHandler(parsed.program, { scope: this.visibleNames(), variables: this.visibleVariables(), markers: this.markers, params, ...this.contractOptions() });
     this.diagnostics.push(...result.diagnostics);
     return result.code;
   }
@@ -1493,7 +1525,7 @@ class ModuleCompiler {
       return undefined;
     }
     if (!this.checkEvent(metadata, component, event, nameAttribute!.value!)) return undefined;
-    const handler = this.tagHandler(tag);
+    const handler = this.tagHandler(tag, metadata.events?.[event]);
     return handler === undefined ? undefined : [`on${event[0]!.toUpperCase()}${event.slice(1)}`, handler];
   }
 
@@ -1510,19 +1542,19 @@ class ModuleCompiler {
   }
 
   /** The handler in a code tag's content (`<event>`, `<method>`): text or CDATA, not whitespace-collapsed. */
-  private tagHandler(tag: ElementNode): string | undefined {
+  private tagHandler(tag: ElementNode, event?: EventMetadata): string | undefined {
     const content = tag.children.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
     if (content.length > 1 || content.some((c) => c.kind === "element" || c.kind === "script")) {
       this.report(tag.name, "E002", `Components inside <${tag.name.full}>`);
       return undefined;
     }
     const text = content[0];
-    if (!text) return this.handler("", { offset: tag.end });
-    if (text.kind === "cdata") return this.handler(text.value, { offset: text.start + "<![CDATA[".length });
+    if (!text) return this.handler("", { offset: tag.end }, event);
+    if (text.kind === "cdata") return this.handler(text.value, { offset: text.start + "<![CDATA[".length }, event);
     if (text.kind !== "text") return undefined;
     // Handler code is not whitespace-collapsed (XMLUI exempts <event>).
     const decoded = decodeEntitiesWithOffsets(text.raw, text.start);
-    return this.handler(decoded.value, { offsets: decoded.offsets });
+    return this.handler(decoded.value, { offsets: decoded.offsets }, event);
   }
 
   /**

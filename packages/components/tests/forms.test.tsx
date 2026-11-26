@@ -1,7 +1,7 @@
 // Step 22 in jsdom: Form, and inputs bound with the formBinding and validation
 // behaviors (no FormItem). See .ai/plan/poc-22-forms.md.
 import { compileModule } from "@gluefuil/compiler";
-import { loadModule, setErrorReporter } from "@gluefuil/runtime";
+import { confirmQueue, loadModule, resetOverlayState, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -16,6 +16,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   restore();
+  resetOverlayState();
 });
 
 function show(markup: string) {
@@ -35,6 +36,11 @@ const type = (label: string, value: string) => act(async () => fireEvent.change(
 const focus = (label: string) => act(async () => fireEvent.focus(input(label)));
 const blur = (label: string) => act(async () => fireEvent.blur(input(label)));
 const click = (name: string) => act(async () => fireEvent.click(screen.getByRole("button", { name })));
+// The confirm() dialog (step 27): Mantine mounts its content a moment after it opens.
+const clickInDialog = async (name: string) => {
+  const button = await screen.findByRole("button", { name, hidden: true });
+  await act(async () => fireEvent.click(button));
+};
 const messages = () => [...document.querySelectorAll(".gfui-ValidationMessage")].map((e) => `${e.getAttribute("data-severity")}: ${e.textContent}`);
 const text = (prefix: string) => [...document.querySelectorAll(".gfui-Text")].find((e) => e.textContent?.startsWith(prefix))?.textContent;
 
@@ -115,7 +121,7 @@ test("a submit attempt shows every result, moves the focus to the first invalid 
   expect(messages()).toEqual([]);
 });
 
-test("a warning shows but doesn't block; onSubmit gets the data, success its result; the form is clean afterwards", async () => {
+test("a warning shows but doesn't block (step 27: after a confirmation; No stops the submit); onSubmit gets the data, success its result; the form is clean afterwards", async () => {
   show(`
     <App var.log="">
       <Form id="form" data="{ { name: '' } }"
@@ -129,6 +135,16 @@ test("a warning shows but doesn't block; onSubmit gets the data, success its res
   await type("Name", "Annabel");
   expect(text("dirty:")).toBe("dirty: true");
   await click("Save");
+  await settle();
+  // The confirmation lists the warning; No keeps the form as it is.
+  expect(confirmQueue.get()[0]?.message).toMatch(/following warnings[\s\S]*• /);
+  expect(confirmQueue.get()[0]?.title).toBe("Are you sure want to move forward?");
+  await clickInDialog("No");
+  await settle();
+  expect(text("log:")).toBe("log: ");
+  await click("Save");
+  await settle();
+  await clickInDialog("Yes, proceed");
   await settle();
   expect(text("log:")).toBe('log: submit {"name":"Annabel"};success 42;');
   expect(text("dirty:")).toBe("dirty: false");

@@ -1,0 +1,62 @@
+<!-- Step 27: DropdownMenu, MenuItem, SubMenuItem, MenuSeparator, ContextMenu, Tooltip. -->
+<Component name="MenusScenario">
+  <VStack var.log="" var.openCount="{0}" var.files="{['Main.gui', 'Theme.gui', 'Notes.md']}">
+    <ScenarioHeader title="Menus and tooltips" description="A DropdownMenu with icons, a submenu and a disabled item; willOpen; a context menu at the pointer with $context; tooltips with options, Markdown and a template."/>
+
+    <Card title="DropdownMenu">
+      <HStack>
+        <DropdownMenu label="Actions" onWillOpen="openCount++">
+          <MenuItem icon="pencil" onClick="log = 'edit'">Edit</MenuItem>
+          <MenuItem icon="copy" onClick="log = 'duplicate'">Duplicate</MenuItem>
+          <SubMenuItem label="Export" icon="download">
+            <MenuItem onClick="log = 'export csv'">CSV</MenuItem>
+            <MenuItem onClick="log = 'export json'">JSON</MenuItem>
+          </SubMenuItem>
+          <MenuSeparator/>
+          <MenuItem icon="trash" enabled="false">Delete (disabled)</MenuItem>
+        </DropdownMenu>
+        <DropdownMenu label="End-aligned" alignment="end">
+          <MenuItem active="true">Current page</MenuItem>
+          <MenuItem to="/select">Go to Select</MenuItem>
+        </DropdownMenu>
+        <DropdownMenu>
+          <property name="triggerTemplate"><Button label="Custom trigger"/></property>
+          <MenuItem onClick="log = 'custom'">From a custom trigger</MenuItem>
+        </DropdownMenu>
+      </HStack>
+      <Text>opened {openCount} times</Text>
+    </Card>
+
+    <Card title="ContextMenu">
+      <Text variant="secondary">Right-click a file (or press the menu key on it): the menu opens at the pointer and its items see the file as $context.</Text>
+      <Items data="{files}">
+        <Card title="{$item}" onContextMenu="ev => fileMenu.openAt(ev, { file: $item, at: ev.clientX + ', ' + ev.clientY })"/>
+      </Items>
+    </Card>
+    <ContextMenu id="fileMenu" menuWidth="220px">
+      <MenuItem icon="pencil" onClick="log = 'rename ' + $context.file">Rename {$context.file}</MenuItem>
+      <MenuItem onClick="log = 'opened at ' + $context.at">Where was I clicked?</MenuItem>
+      <MenuSeparator/>
+      <MenuItem icon="trash" onClick="files = files.filter(f => f !== $context.file)">Delete</MenuItem>
+    </ContextMenu>
+
+    <Card title="Tooltips">
+      <HStack wrapContent="true">
+        <Button label="Default (700 ms)" tooltip="A plain tooltip"/>
+        <Button label="Right, fast" tooltip="On the right" tooltipOptions="right; delayDuration: 0; showArrow"/>
+        <Button label="Bottom start" tooltip="Aligned to the start" tooltipOptions="{{ side: 'bottom', align: 'start', delayDuration: 0 }}"/>
+        <Button label="Markdown" tooltipMarkdown="**Bold** and `code`" tooltipOptions="delayDuration: 0"/>
+        <Tooltip side="bottom" delayDuration="0">
+          <property name="tooltipTemplate"><HStack><Icon name="info"/><Text variant="strong">A templated tooltip</Text></HStack></property>
+          <Badge value="Templated"/>
+        </Tooltip>
+      </HStack>
+      <HStack>
+        <SpaceFiller/>
+        <Button label="At the right edge" tooltip="No room on the right: this tooltip flips to the left" tooltipOptions="right; delayDuration: 0"/>
+      </HStack>
+    </Card>
+
+    <Text>log: {log}</Text>
+  </VStack>
+</Component>

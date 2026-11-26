@@ -43,7 +43,7 @@ test("Save with errors: every message shows, the focus moves to the first invali
   await expect(text(page, "Result:")).toHaveText("Result:");
 });
 
-test("keyboard only: fill in, Enter submits; the button says Saving... meanwhile; a warning doesn't block; clean afterwards", async ({ page }) => {
+test("keyboard only: fill in, Enter submits; a warning is confirmed first (step 27); the button says Saving... meanwhile; clean afterwards", async ({ page }) => {
   await page.getByLabel("Name", { exact: true }).focus();
   await page.keyboard.type("Ann");
   await page.keyboard.press("Tab");
@@ -56,6 +56,11 @@ test("keyboard only: fill in, Enter submits; the button says Saving... meanwhile
   await page.getByLabel("I agree to the terms").check();
   await expect(text(page, "Dirty:")).toHaveText("Dirty: true");
   await page.getByLabel("Name", { exact: true }).press("Enter");
+  // The warning is confirmed first; the focus starts on "Yes, proceed", so Enter goes on.
+  const question = page.getByRole("dialog", { name: "Are you sure want to move forward?" });
+  await expect(question.getByText("• Input should be up to 10 characters")).toBeVisible();
+  await expect(question.getByRole("button", { name: "Yes, proceed" })).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(signup(page).getByRole("button", { name: "Saving..." })).toBeDisabled();
   await expect(page.getByLabel("Name", { exact: true })).toBeDisabled();
   await expect(text(page, "Result:")).toHaveText('Result: {"name":"Ann","email":"ann@example.com","address":{"city":"Llanfairpwllgwyngyll"},"role":"user","agree":true} ok');

@@ -38,7 +38,16 @@ import inputCss from "@mantine/core/styles/Input.layer.css?inline";
 import popoverCss from "@mantine/core/styles/Popover.layer.css?inline";
 import scrollAreaCss from "@mantine/core/styles/ScrollArea.layer.css?inline";
 import unstyledButtonCss from "@mantine/core/styles/UnstyledButton.layer.css?inline";
-import { wrapComponent } from "@gluefuil/runtime";
+import drawerCss from "@mantine/core/styles/Drawer.layer.css?inline";
+import menuCss from "@mantine/core/styles/Menu.layer.css?inline";
+import modalCss from "@mantine/core/styles/Modal.layer.css?inline";
+import modalBaseCss from "@mantine/core/styles/ModalBase.layer.css?inline";
+import notificationCss from "@mantine/core/styles/Notification.layer.css?inline";
+import overlayCss from "@mantine/core/styles/Overlay.layer.css?inline";
+import paperCss from "@mantine/core/styles/Paper.layer.css?inline";
+import tooltipCss from "@mantine/core/styles/Tooltip.layer.css?inline";
+import notificationsCss from "@mantine/notifications/styles.layer.css?inline";
+import { pointerData, wrapComponent } from "@gluefuil/runtime";
 import { enabledToDisabled } from "./inputs";
 import { withLayout } from "./layout-wrap";
 import { componentMetadata } from "./metadata";
@@ -81,26 +90,41 @@ export const MANTINE_STYLESHEET = [
   colorInputCss,
   colorPickerCss,
   colorSwatchCss,
+  // Overlays and menus (overlays.tsx, step 27).
+  paperCss,
+  overlayCss,
+  modalBaseCss,
+  modalCss,
+  drawerCss,
+  menuCss,
+  tooltipCss,
+  notificationCss,
+  notificationsCss,
 ].join("\n");
 
 export const MANTINE_STYLESHEET_HREF = "gfui-mantine";
 
 
+/** Mantine Button's variables, redirected to the Button theme variables (also the DropdownMenu trigger's). */
+export const buttonVars = () => ({
+  root: {
+    "--button-bg": "var(--gfui-backgroundColor-Button)",
+    "--button-hover": "var(--gfui-backgroundColor-Button--hover)",
+    "--button-color": "var(--gfui-textColor-Button)",
+    "--button-bd": "1px solid var(--gfui-borderColor-Button)",
+    "--button-radius": "var(--gfui-borderRadius-Button)",
+  },
+});
+
 const buttonConfig = (type: "button" | "submit") => ({
   props: componentMetadata.Button!.props,
   rename: { label: (label: unknown) => (label === undefined || label === null ? {} : { children: String(label) }), enabled: enabledToDisabled },
+  // The pointer snapshot, never the DOM event (step 27).
+  events: { click: { prop: "onClick", args: (event: never) => [pointerData(event)] } },
   fixed: {
     type,
     className: "gfui-Button",
-    vars: () => ({
-      root: {
-        "--button-bg": "var(--gfui-backgroundColor-Button)",
-        "--button-hover": "var(--gfui-backgroundColor-Button--hover)",
-        "--button-color": "var(--gfui-textColor-Button)",
-        "--button-bd": "1px solid var(--gfui-borderColor-Button)",
-        "--button-radius": "var(--gfui-borderRadius-Button)",
-      },
-    }),
+    vars: buttonVars,
   },
 });
 
