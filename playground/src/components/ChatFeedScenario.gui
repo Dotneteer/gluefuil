@@ -1,0 +1,21 @@
+<!-- Step 29: List scrollAnchor="bottom": starts at the end, follows new and growing messages, keeps its place when older ones are prepended. -->
+<Component name="ChatFeedScenario">
+  <VStack
+    var.messages="{Array.from({ length: 30 }, (_, i) => ({ id: 'm' + (100 + i), text: 'Message ' + (100 + i) + (i % 4 === 0 ? '\n\nwith a **second** paragraph' : '') }))}"
+    var.next="{130}"
+    var.older="{99}">
+    <ScenarioHeader title="Chat feed" description="A List anchored to the bottom: it starts at the newest message and follows new ones while you are at the end. Scroll up and it stays where you are; older messages loaded above don't move what you see."/>
+    <HStack wrapContent="true">
+      <Button label="Send" onClick="messages = [...messages, { id: 'm' + next, text: 'Message ' + next }]; next++"/>
+      <Button label="Stream into the last" onClick="messages = [...messages.slice(0, -1), { ...messages[messages.length - 1], text: messages[messages.length - 1].text + ' and more words arriving' }]"/>
+      <Button label="Load 10 older" onClick="messages = [...Array.from({ length: 10 }, (_, i) => ({ id: 'm' + (older - 9 + i), text: 'Older message ' + (older - 9 + i) })), ...messages]; older -= 10"/>
+      <Button label="Jump to latest" onClick="feed.scrollToBottom()"/>
+    </HStack>
+    <Text>Messages: {messages.length}</Text>
+    <List id="feed" scrollAnchor="bottom" height="320px" data="{messages}">
+      <VStack paddingVertical="$space-1" paddingHorizontal="$space-3">
+        <Markdown>@{$item.text}</Markdown>
+      </VStack>
+    </List>
+  </VStack>
+</Component>

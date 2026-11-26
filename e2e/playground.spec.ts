@@ -63,6 +63,9 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Tabs and steppers",
     "Splitters and scrolling",
     "Responsive bars",
+    "Long lists",
+    "Chat feed",
+    "Grouped and selectable lists",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.

@@ -189,5 +189,12 @@
       <Badge value="new"/>
       <ProgressBar value="0.5"/>
     </Card>
+
+    <!-- Step 29: a List. Its prerendered rows (the static window) are the rows it shows once
+         virtual: the takeover replaces none (ssg.spec.ts). -->
+    <H2>Step 29 · List</H2>
+    <List height="200px" rowsSelectable="true" initiallySelected="{[2]}" data="{[{ id: 1, name: 'First row' }, { id: 2, name: 'Second row' }, { id: 3, name: 'Third row' }]}">
+      <Text>{$item.name}</Text>
+    </List>
   </Stack>
 </App>

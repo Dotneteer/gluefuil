@@ -177,6 +177,14 @@ describe("DataSource", () => {
     expect(await screen.findByText("Grace;")).toBeTruthy();
     expect(screen.getByText("Ada;")).toBeTruthy();
   });
+
+  test("List data=\"/api/users\" (step 29): a spinner while it loads, then the rows", async () => {
+    mount(`<App><List data="/api/users" loadingDelay="0"><Text>{$item.name}:{$item.role}</Text></List></App>`);
+    expect(screen.getByRole("status", { name: "Loading" })).toBeTruthy();
+    expect(await screen.findByText("Grace:editor")).toBeTruthy();
+    expect([...document.querySelectorAll(".gfui-List-row")].map((r) => r.textContent)).toEqual(["Ada:admin", "Alan:editor", "Grace:editor"]);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
 });
 
 describe("APICall", () => {

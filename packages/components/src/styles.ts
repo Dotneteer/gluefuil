@@ -484,8 +484,10 @@ const DISPLAY = `
   align-items: center;
   gap: var(--gfui-gap-avatar-Card);
   min-width: 0;
-  flex-basis: 100%;
 }
+/* Only across a horizontal card: in a vertical one, a basis of 100% is the card's height,
+   and the other children (Stacks have min-height 0) were squeezed (found in step 29). */
+.gfui-Card[data-orientation="horizontal"] > .gfui-Card-header { flex-basis: 100%; }
 .gfui-Card-titles {
   display: flex;
   flex-direction: column;
@@ -848,6 +850,41 @@ const OVERLAYS = `
 }
 `;
 
+/* List (step 29, list.tsx). Rows are flush, as XMLUI's; with borderCollapse,
+   bordered row content joins into one block (data-first/data-last, since
+   virtualized rows are not in DOM order). */
+const LIST = `
+.gfui-List { position: relative; min-width: 0; background-color: var(--gfui-backgroundColor-List); outline: none; }
+.gfui-List[data-scroll="own"] { min-height: 0; overflow-y: auto; overflow-anchor: none; display: flex; flex-direction: column; }
+.gfui-List-content { position: relative; flex-shrink: 0; width: 100%; }
+.gfui-List[data-scroll="own"][data-anchor="bottom"] > .gfui-List-content { margin-top: auto; }
+.gfui-List-content[data-virtual] > .gfui-List-row { position: absolute; top: 0; left: 0; width: 100%; }
+.gfui-List-row { display: flex; align-items: center; min-width: 0; }
+.gfui-List-cell { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.gfui-List-row[data-selectable] { cursor: pointer; }
+.gfui-List-row[data-selectable]:hover { background-color: var(--gfui-backgroundColor-row-List--hover); }
+.gfui-List-row[data-selected] { background-color: var(--gfui-backgroundColor-selected-List); }
+.gfui-List-row[data-selected]:hover { background-color: var(--gfui-backgroundColor-selected-List--hover); }
+.gfui-List:focus-visible .gfui-List-row[data-focused] { outline: 2px solid var(--gfui-outlineColor-row-List--focus); outline-offset: -2px; }
+.gfui-List-check { flex-shrink: 0; display: flex; align-items: center; padding: 0 var(--gfui-space-2); }
+.gfui-List-check[data-overlay] { position: absolute; padding: 0; z-index: 1; }
+.gfui-List-row:has(> .gfui-List-check[data-overlay]) { position: relative; }
+.gfui-List-content[data-virtual] > .gfui-List-row:has(> .gfui-List-check[data-overlay]) { position: absolute; }
+.gfui-List-check[data-anchor$="-left"] { left: var(--gfui-List-check-x); }
+.gfui-List-check[data-anchor$="-right"] { right: var(--gfui-List-check-x); }
+.gfui-List-check[data-anchor^="top-"] { top: var(--gfui-List-check-y); }
+.gfui-List-check[data-anchor^="bottom-"] { bottom: var(--gfui-List-check-y); }
+.gfui-List-check[data-anchor^="center-"] { top: 50%; transform: translateY(-50%); }
+.gfui-List-empty { text-align: center; padding: var(--gfui-space-4) 0; color: var(--gfui-textColor-secondary); }
+.gfui-List-loading { display: flex; justify-content: center; padding: var(--gfui-space-2) 0; }
+.gfui-List[data-border-collapse]:not([data-grouped]) .gfui-List-row:not([data-last]) > .gfui-List-cell > * {
+  border-bottom-width: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+}
+.gfui-List[data-border-collapse]:not([data-grouped]) .gfui-List-row:not([data-first]) > .gfui-List-cell > * {
+  border-top-left-radius: 0; border-top-right-radius: 0;
+}
+`;
+
 export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
@@ -856,6 +893,7 @@ ${TEXT_OVERFLOW}
 ${DISPLAY}
 ${OVERLAYS}
 ${STRUCTURE}
+${LIST}
 .gfui-App,
 .gfui-Theme {
   /* Mantine's global variables, redirected to the gfui theme. */

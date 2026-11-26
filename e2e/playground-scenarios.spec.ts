@@ -1366,3 +1366,25 @@ test("Responsive bars: a narrow toolbar puts the rest into its menu", async ({ p
   await page.locator(".gfui-ResponsiveBar").first().getByRole("button", { name: "More options" }).click();
   await expect(page.getByRole("button", { name: "Help (in the menu)" })).toBeVisible();
 });
+
+test("Long lists: Row 5000 jumps there and reports the visible rows", async ({ page }) => {
+  await open(page, "/long-lists");
+  await button(page, "Row 5000").click();
+  await expect(text(page, /^Visible rows: 5000–\d+$/)).toBeVisible();
+  await expect(page.locator(".gfui-List-row").getByText("Row 5000", { exact: true })).toBeInViewport();
+});
+
+test("Chat feed: a sent message shows at the bottom", async ({ page }) => {
+  await open(page, "/chat-feed");
+  await expect(page.getByText("Message 129", { exact: true })).toBeInViewport();
+  await button(page, "Send").click();
+  await expect(page.getByText("Message 130", { exact: true })).toBeInViewport();
+});
+
+test("Grouped and selectable lists: a group folds; a clicked row is selected", async ({ page }) => {
+  await open(page, "/grouped-lists");
+  await button(page, "Fold Design").click();
+  await expect(page.getByText("Margaret (Designer)")).toHaveCount(0);
+  await page.getByRole("option").filter({ hasText: "Grace" }).click();
+  await expect(text(page, "Selected ids: 2")).toBeVisible();
+});

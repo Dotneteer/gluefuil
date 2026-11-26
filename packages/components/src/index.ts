@@ -15,6 +15,9 @@ export { bindingText, Markdown, preloadMarkdown, removeIndents } from "./markdow
 export { ALLOWED_TAGS, decodeHtmlEntities, isSafeUrl, tokenizeHtml, type HtmlToken } from "./markdown-html";
 export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
 export { Items } from "./items";
+export { DEFAULT_KEY_BINDINGS, keepsAnEdge, List, matchesKeyBinding, STATIC_ROWS, type ListProps } from "./list";
+export { duplicateKeys, itemKey, listModel, orderFields, orderItems, valueAt, type ListGroup, type ListModel, type ListModelInput, type ListRow, type OrderByField } from "./list-model";
+export { EMPTY_SELECTION, keyTarget, pickRow, selectAllRows, selectKeys, type Modifiers, type SelectionOptions, type SelectionState } from "./selection";
 export { LabelBehavior, VariantBehavior, variantVariable } from "./behaviors";
 export {
   ContextMenu,

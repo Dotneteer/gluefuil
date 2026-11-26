@@ -15,7 +15,7 @@ function code(markup: string, options?: CompileModuleOptions): string {
 const diagnostics = (markup: string, options?: CompileModuleOptions) =>
   compile(markup, options).diagnostics.map((d) => [d.code, markup.slice(d.start, d.end)]);
 
-const LIST = { name: "List", slots: { $$slot: ["$item"], rowTemplate: ["$index", "$item"] }, methods: ["reset"], module: "./components/List.gui" };
+const LIST = { name: "Roster", slots: { $$slot: ["$item"], rowTemplate: ["$index", "$item"] }, methods: ["reset"], module: "./components/Roster.gui" };
 
 describe("analyzeModule", () => {
   test("an app file: inline definitions with their slots and methods; every referenced component", () => {
@@ -73,7 +73,7 @@ describe("file forms", () => {
     ["no name", "<Component><Text/></Component><App/>", {}, [["E016", "Component"]]],
     ["a built-in's name", '<Component name="Button"><Text/></Component><App/>', {}, [["E016", '"Button"']]],
     ["defined twice", '<Component name="A"><Text/></Component><Component name="A"><Text/></Component><App/>', {}, [["E016", '"A"']]],
-    ["inline and in a file", '<Component name="List"><Text/></Component><App/>', { userComponents: { List: LIST } }, [["E016", '"List"']]],
+    ["inline and in a file", '<Component name="Roster"><Text/></Component><App/>', { userComponents: { Roster: LIST } }, [["E016", '"Roster"']]],
     ["nested <Component>", '<App><Component name="A"><Text/></Component></App>', {}, [["E016", "Component"]]],
     ["unknown <Component> attribute", '<Component name="A" width="1"><Text/></Component><App/>', {}, [["E016", "width"]]],
     ["a global in a component", '<Component name="A" global.g="1"><Text/></Component><App/>', {}, [["E006", "global.g"]]],
@@ -84,47 +84,47 @@ describe("file forms", () => {
 
 describe("other files' components", () => {
   test("esm: imported from their module", () => {
-    const out = code("<App><List/></App>", { userComponents: { List: LIST } });
-    expect(out).toContain('import $$U_List from "./components/List.gui";');
-    expect(out).toContain("$$h($$BoundUser, { type: $$U_List,");
+    const out = code("<App><Roster/></App>", { userComponents: { Roster: LIST } });
+    expect(out).toContain('import $$U_Roster from "./components/Roster.gui";');
+    expect(out).toContain("$$h($$BoundUser, { type: $$U_Roster,");
   });
 
   test("function format: looked up in $$imports.components at render time", () => {
-    const out = code("<App><List/></App>", { format: "function", userComponents: { List: { ...LIST, module: undefined } } });
-    expect(out).toContain('$$h($$BoundUser, { type: $$imports.components["List"],');
+    const out = code("<App><Roster/></App>", { format: "function", userComponents: { Roster: { ...LIST, module: undefined } } });
+    expect(out).toContain('$$h($$BoundUser, { type: $$imports.components["Roster"],');
     expect(out).not.toContain("import ");
   });
 
   test("esm without a module is an error at the use", () => {
-    expect(diagnostics("<App><List/></App>", { userComponents: { List: { ...LIST, module: undefined } } })).toEqual([["E016", "List"]]);
+    expect(diagnostics("<App><Roster/></App>", { userComponents: { Roster: { ...LIST, module: undefined } } })).toEqual([["E016", "Roster"]]);
   });
 
   test("unknown names are still E001", () => {
-    expect(diagnostics("<App><Lisst/></App>", { userComponents: { List: LIST } })).toEqual([["E001", "Lisst"]]);
+    expect(diagnostics("<App><Rostr/></App>", { userComponents: { Roster: LIST } })).toEqual([["E001", "Rostr"]]);
   });
 });
 
 describe("using a component", () => {
   test.each<[label: string, markup: string]>([
-    ["any event", '<App var.n="{0}"><List onWhatever="n++" onOther="(a, b) => n = a + b"/></App>'],
-    ["a policy for any event", '<App><List onSaved="x => x" handlerPolicy:onSaved="queue"/></App>'],
-    ["children: the default slot, with its slot props", "<App><List><Text>{$item}</Text></List></App>"],
-    ["a named slot with its slot props", '<App><List><property name="rowTemplate"><Text>{$index}: {$item}</Text></property></List></App>'],
-    ["methods through its id", '<App><List id="list"/><Button onClick="list.reset()"/></App>'],
-    ["lifecycle and when on the element", '<App var.n="{0}"><List when="{n > 0}" onMount="n++"/></App>'],
+    ["any event", '<App var.n="{0}"><Roster onWhatever="n++" onOther="(a, b) => n = a + b"/></App>'],
+    ["a policy for any event", '<App><Roster onSaved="x => x" handlerPolicy:onSaved="queue"/></App>'],
+    ["children: the default slot, with its slot props", "<App><Roster><Text>{$item}</Text></Roster></App>"],
+    ["a named slot with its slot props", '<App><Roster><property name="rowTemplate"><Text>{$index}: {$item}</Text></property></Roster></App>'],
+    ["methods through its id", '<App><Roster id="list"/><Button onClick="list.reset()"/></App>'],
+    ["lifecycle and when on the element", '<App var.n="{0}"><Roster when="{n > 0}" onMount="n++"/></App>'],
   ])("%s", (_, markup) => {
-    expect(diagnostics(markup, { userComponents: { List: LIST } })).toEqual([]);
+    expect(diagnostics(markup, { userComponents: { Roster: LIST } })).toEqual([]);
   });
 
   const LEAF = { name: "Leaf", slots: {}, methods: [], module: "./Leaf.gui" };
   test.each<[label: string, markup: string, expected: [string, string][]]>([
     ["children without a default slot", "<App><Leaf><Text/></Leaf></App>", [["E018", "<Text/>"]]],
-    ["an unknown slot", '<App><List><property name="nope"><Text/></property></List></App>', [["E013", '"nope"']]],
-    ["the reserved default-slot name", '<App><List><property name="$$slot"><Text/></property></List></App>', [["E013", '"$$slot"']]],
-    ["a slot prop outside its slot", "<App><List/><Text>{$index}</Text></App>", [["C014", "$index"]]],
-    ["the default slot's props in a named slot", '<App><Leaf/><List><property name="rowTemplate"><Text/></property></List></App>', []],
+    ["an unknown slot", '<App><Roster><property name="nope"><Text/></property></Roster></App>', [["E013", '"nope"']]],
+    ["the reserved default-slot name", '<App><Roster><property name="$$slot"><Text/></property></Roster></App>', [["E013", '"$$slot"']]],
+    ["a slot prop outside its slot", "<App><Roster/><Text>{$index}</Text></App>", [["C014", "$index"]]],
+    ["the default slot's props in a named slot", '<App><Leaf/><Roster><property name="rowTemplate"><Text/></property></Roster></App>', []],
   ])("%s", (_, markup, expected) => {
-    expect(diagnostics(markup, { userComponents: { List: LIST, Leaf: LEAF } })).toEqual(expected);
+    expect(diagnostics(markup, { userComponents: { Roster: LIST, Leaf: LEAF } })).toEqual(expected);
   });
 });
 

@@ -75,6 +75,11 @@ test("at the prerendered breakpoint (xs), takeover changes nothing; then the app
   const { gone, of } = await takeover.replaced();
   expect(of).toBeGreaterThan(40);
   expect(gone).toBe(0);
+  // Step 29: the List went virtual (rows placed at measured offsets) on the prerendered row nodes.
+  const list = page.locator(".gfui-List");
+  await expect(list.locator(".gfui-List-content[data-virtual]")).toBeAttached();
+  await expect(list.getByRole("option")).toHaveText(["First row", "Second row", "Third row"]);
+  await expect(list.getByRole("option", { selected: true })).toHaveText("Second row");
 
   await page.getByRole("button", { name: "Increment", exact: true }).click();
   await expect(page.getByText(/^Count: \d+$/)).toHaveText("Count: 1");

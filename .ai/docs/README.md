@@ -16,6 +16,7 @@ on this repository. Plans (what we intend to build) live in
 | [routing.md](routing.md) | Routing: `Pages`, `Page`, `Link`, `navigate`, `$pathname`/`$routeParams`/`$queryParams`, the router, hash and browser modes. |
 | [mantine.md](mantine.md) | `wrapComponent`; the Mantine-based built-ins and their theme mapping; `Text` variants and `Heading`. |
 | [dates.md](dates.md) | Step 26: DateInput, TimeInput, DatePicker on @mantine/dates in a lazy chunk; XMLUI's string values, formats, matchers, presets; `exclusive` props. |
+| [list.md](list.md) | Step 29: the virtualized List (TanStack Virtual), its row model, row selection (shared with Table), `syncWithVar` (E039). |
 | [structure.md](structure.md) | Step 28: Tabs, ExpandableItem, Stepper, Splitter, ScrollViewer, StickyBox, StickySection, ResponsiveBar; headers compiled to data (E038), `$overflow` per child. |
 | [overlays.md](overlays.md) | Step 27: ModalDialog, Drawer, the menus, ContextMenu, Tooltip, `toast()` and `confirm()`; the overlay layer; pointer snapshots and which handlers declare `$param`; E037. |
 | [choice.md](choice.md) | Step 25: Select and AutoComplete; Option children compiled to data (`childrenAsOptions`, E035–E036); the Combobox component, search, several values, groups, templates. |

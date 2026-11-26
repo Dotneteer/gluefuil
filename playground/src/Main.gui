@@ -56,7 +56,10 @@
     { path: '/notifications', step: '27', title: 'Toasts and confirm', description: 'toast() and its kinds, confirm(), an APICall that asks first and reports.' },
     { path: '/tabs', step: '28', title: 'Tabs and steppers', description: 'Tabs from TabItems and Items, vertical and accordion; ExpandableItem; Stepper with states.' },
     { path: '/splitters', step: '28', title: 'Splitters and scrolling', description: 'Splitters with limits and resize modes; ScrollViewer styles; sticky sections and boxes.' },
-    { path: '/responsive-bar', step: '28', title: 'Responsive bars', description: 'Children that do not fit move into a menu; $overflow; a vertical bar.' }
+    { path: '/responsive-bar', step: '28', title: 'Responsive bars', description: 'Children that do not fit move into a menu; $overflow; a vertical bar.' },
+    { path: '/long-lists', step: '29', title: 'Long lists', description: 'A virtualized List of 10,000 rows of different heights; its own scroll box and the page.' },
+    { path: '/chat-feed', step: '29', title: 'Chat feed', description: 'A List anchored to the bottom: follows new messages, keeps its place when older ones load.' },
+    { path: '/grouped-lists', step: '29', title: 'Grouped and selectable lists', description: 'Groups that fold; selection by mouse, keys and checkboxes; syncWithVar; actions.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -140,6 +143,9 @@
     <Page url="/tabs"><VStack><TabsScenario/><ScenarioSource file="TabsScenario"/></VStack></Page>
     <Page url="/splitters"><VStack><SplittersScenario/><ScenarioSource file="SplittersScenario"/></VStack></Page>
     <Page url="/responsive-bar"><VStack><ResponsiveBarScenario/><ScenarioSource file="ResponsiveBarScenario"/></VStack></Page>
+    <Page url="/long-lists"><VStack><LongListsScenario/><ScenarioSource file="LongListsScenario"/></VStack></Page>
+    <Page url="/chat-feed"><VStack><ChatFeedScenario/><ScenarioSource file="ChatFeedScenario"/></VStack></Page>
+    <Page url="/grouped-lists"><VStack><GroupedListsScenario/><ScenarioSource file="GroupedListsScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

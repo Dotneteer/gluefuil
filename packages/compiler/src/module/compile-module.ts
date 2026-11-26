@@ -1198,6 +1198,15 @@ class ModuleCompiler {
       if (prop?.deprecationMessage !== undefined) {
         this.reportDeprecated(attribute.name, `The prop '${attributeName}' of '${name}'`, prop.deprecationMessage);
       }
+      if (prop?.variableName) {
+        // Step 29 (List syncWithVar): the value and a setter of a variable named by a literal.
+        const named = this.variableNameProp(attribute, attributeName, name);
+        if (named) {
+          bindings.push([attributeName, named.binding]);
+          handlers.push([`$$set${attributeName[0]!.toUpperCase()}${attributeName.slice(1)}`, named.setter]);
+        }
+        continue;
+      }
       if (!attribute.value) {
         // A key-only attribute means "true" (XMLUI transform.ts desugarKeyOnlyAttrs).
         if (prop) this.checkPropLiteral(prop, attributeName, "true", attribute.name);
@@ -1489,6 +1498,24 @@ class ModuleCompiler {
     } finally {
       if (prop?.deferred) this.contextFrames.pop();
     }
+  }
+
+  /**
+   * A prop that names a variable (`variableName`, step 29: List `syncWithVar="sel"`):
+   * the literal must be a variable visible here (E039). Returns the binding of its
+   * value and the handler that assigns `$param` to it.
+   */
+  private variableNameProp(attribute: AttributeNode, propName: string, component: string): { binding: string; setter: string } | undefined {
+    const text = attribute.value?.value.trim() ?? "";
+    const variables = this.visibleVariables();
+    if (!VARIABLE_NAME.test(text) || !variables.has(text)) {
+      this.report(attribute.value?.inner ?? attribute.name, "E039", propName, component, text, didYouMean(text, variables));
+      return undefined;
+    }
+    const value = compileInterpolation(parseInterpolation(`{${text}}`).segments, { scope: this.visibleNames(), markers: false });
+    this.diagnostics.push(...value.diagnostics);
+    const setter = this.handler(`${text} = $param`, { offset: attribute.value!.inner.start });
+    return { binding: value.code, setter };
   }
 
   /** A loader's `when` (`whenIsProp`): only `when` itself, as a prop; responsive variants are not supported. */
