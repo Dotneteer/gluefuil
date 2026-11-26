@@ -196,5 +196,12 @@
     <List height="200px" rowsSelectable="true" initiallySelected="{[2]}" data="{[{ id: 1, name: 'First row' }, { id: 2, name: 'Second row' }, { id: 3, name: 'Third row' }]}">
       <Text>{$item.name}</Text>
     </List>
+
+    <!-- Step 30: a Table. Its prerendered header and rows are what it shows once virtual. -->
+    <H2>Step 30 · Table</H2>
+    <Table height="220px" rowsSelectable="true" initiallySelected="{[2]}" data="{[{ id: 1, name: 'Ada', total: 12.5 }, { id: 2, name: 'Grace', total: 7 }]}">
+      <Column bindTo="name" header="Name" width="2*"/>
+      <Column bindTo="total" header="Total" type="decimal(2)"/>
+    </Table>
   </Stack>
 </App>

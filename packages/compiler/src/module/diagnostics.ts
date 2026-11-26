@@ -60,6 +60,8 @@ export const ModuleDiagnostics = {
   E038: (component: string, item: string, what: string) => `'${component}' takes ${item} and Items (of ${item}) children only; ${what} can't be inside it`,
   /** Step 29: a prop that names a variable (`syncWithVar`) names none visible here. */
   E039: (prop: string, component: string, value: string, hint: string) => `'${prop}' of '${component}' must name a variable visible here; '${value}' is not one.${hint}`,
+  /** Step 30: a child of a Table that is not a Column or an Items of Columns. */
+  E040: (component: string, item: string, what: string) => `'${component}' takes ${item} and Items (of ${item}) children only; ${what} can't be inside it`,
   /** Both `data` and Option children. */
   E036: (component: string) => `'${component}' has both 'data' and Option children; use one of them`,
 } as const;

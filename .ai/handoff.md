@@ -8,7 +8,7 @@
 > after the inserted steps 19A–19C (the App shell), 19D–19F (the layout
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
-> step 29 (2026-11-26).
+> steps 29 and 30 (2026-11-26).
 
 ## State
 
@@ -17,9 +17,20 @@
   [`docs/list.md`](docs/list.md). `npm run check`: 3,010 unit tests in
   108 files, 247 E2E tests. The virtualizer is TanStack Virtual (measured
   against virtua with a prototype in `.tmp/vproto/`, ignored by git).
-- **Next: step 30 (`Table` + `Column`, TanStack Table v9).** Reuse
-  `components/src/selection.ts` (XMLUI's selection rules, shared with List)
-  and `virtual.ts` (the scroll container, the render cache, user scrolls).
+- **Step 30 (Table and Column) is done and merged into master.** Plan and findings:
+  [`plan/poc-30-table.md`](plan/poc-30-table.md); reference:
+  [`docs/table.md`](docs/table.md). `npm run check`: 3,145 unit tests in
+  111 files, 260 E2E tests. Our own column model, Columns compiled to data, a
+  grid of divs (measured against a native table in `.tmp/vproto/`), the 45
+  typed values with `Value`, `Pagination`.
+- **Next: step 31 (`Tree`, `TileGrid`, `Items`)**, not started (`Pagination`
+  moved to step 30). Start by writing `plan/poc-31-<topic>.md` and asking the
+  user. Reuse `useVirtualRows` (`virtual.ts`), `useRowSelection`
+  (`row-selection.ts`) and `selection.ts`; XMLUI's Tree and TileGrid are on
+  virtua (`xmlui/src/components/Tree/TreeReact.tsx`, `TileGrid/`).
+- **`master` holds steps 0–30, merged; it is the only branch.** `origin/master`
+  (as last fetched) is at the rename after step 22B; the later merges are not
+  pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
   [`plan/poc-28-structure.md`](plan/poc-28-structure.md); reference:
   [`docs/structure.md`](docs/structure.md). `npm run check`: 2,926 unit tests
@@ -101,6 +112,16 @@
 - **Tests:** `e2e/playground.spec.ts` (smoke) and
   `e2e/playground-scenarios.spec.ts` (one interaction test per scenario).
 - **Adding a scenario:** see `playground/README.md`. Add its test too.
+
+### How decisions are made now (steps 29–30)
+
+- **The user asks for measurements, not opinions:** for a library or
+  rendering choice, build a throwaway prototype in `.tmp/vproto/` (ignored by
+  git; Vite build plus Playwright scripts there) and put a table of results in
+  the plan's *Options considered*. Then ask with `AskUserQuestion`, the
+  recommended option first.
+- **Record the answers** under *Decisions* in the plan, and an architectural
+  one as a line in `AGENTS.md` *Decisions*.
 
 ## How the user works (keep doing this)
 
@@ -232,8 +253,8 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 30: `Table` + `Column`** (TanStack Table v9, on step 29's
-  virtualizer and selection).
+- **Step 31: `Tree`, `TileGrid`, `Items`** (on the shared virtualizer).
+- **Step 30's open items** (`poc-30-table.md`).
 - **Step 29's open items** (`poc-29-list.md`): paging with DataSource's
   `nextPageSelector`, the data-refresh modes, the checkbox theme variables.
 - **Step 28's open items** (`poc-28-structure.md`).

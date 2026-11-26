@@ -15,7 +15,6 @@
 //     offset in a content box as tall as all rows.
 import { pointerData, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
 import { Checkbox } from "@mantine/core";
-import { useVirtualizer, type Range } from "@tanstack/react-virtual";
 import {
   useCallback,
   useEffect,
@@ -33,13 +32,13 @@ import { Spinner } from "./display";
 import { layoutCss } from "./layout-metadata";
 import { LayoutScope, useLayout, useMultipleScope, type LayoutProps } from "./layout";
 import { duplicateKeys, listModel, type ListGroup, type ListRow } from "./list-model";
-import { EMPTY_SELECTION, keyTarget, pickRow, selectAllRows, selectKeys, type SelectionState } from "./selection";
-import { isWindow, offsetIn, RenderCache, scrollContainer, scrollObservers, userScrollTracker, type ScrollTarget } from "./virtual";
+import { keyTarget, pickRow, selectAllRows, selectKeys, type SelectionState } from "./selection";
+import { useRowSelection } from "./row-selection";
+import { useVirtualRows } from "./virtual";
+export { keepsAnEdge, STATIC_ROWS } from "./virtual";
 
 type Handler = ((...args: unknown[]) => unknown) | undefined;
 
-/** Rows in the static window (the server render; XMLUI's virtua `ssrCount` plays this part). */
-export const STATIC_ROWS = 20;
 /** The size of a row not measured yet. */
 const ESTIMATE = 48;
 
@@ -157,12 +156,6 @@ function hasOwnHeight(props: ListProps): boolean {
   return set("height") || set("maxHeight");
 }
 
-/** The new rows keep the old first or last row at their edge: added or removed rows, not a sort or new data. */
-export function keepsAnEdge(old: readonly { key: string }[], rows: readonly { key: string }[]): boolean {
-  if (old.length === 0 || rows.length === 0) return true;
-  return old[0]!.key === rows[0]!.key || old[old.length - 1]!.key === rows[rows.length - 1]!.key;
-}
-
 /** A row's context for the keyboard actions (XMLUI ListRowContext). */
 interface RowContext {
   item: unknown;
@@ -242,148 +235,45 @@ function ListView(props: ListProps) {
     return map;
   }, [rows, expanded, props.groupsInitiallyExpanded]);
 
-  // --- Selection ----------------------------------------------------------------------
-  const syncIds = (() => {
-    const ids = (props.syncWithVar as { selectedIds?: unknown } | undefined)?.selectedIds;
-    return Array.isArray(ids) ? ids.map(String) : undefined;
-  })();
-  const [selection, setSelection] = useState<SelectionState>(() => {
-    const initial = syncIds ?? (Array.isArray(props.initiallySelected) ? props.initiallySelected.map(String) : []);
-    return initial.length > 0 ? { ...EMPTY_SELECTION, selected: initial } : EMPTY_SELECTION;
+  // --- Selection (row-selection.ts, shared with Table) ---------------------------------------
+  const { selection, setSelection, options, unselectable, selectedKeys, selectedSet, selectedItems } = useRowSelection({
+    multi,
+    walk,
+    itemByKey,
+    unselectable: [props.rowUnselectablePredicate],
+    initiallySelected: props.initiallySelected,
+    syncWithVar: props.syncWithVar,
+    setSyncWithVar: props.$$setSyncWithVar,
+    onSelectionDidChange: props.onSelectionDidChange,
   });
-  const predicate = props.rowUnselectablePredicate;
-  const unselectable = useCallback(
-    (index: number) => {
-      if (typeof predicate !== "function") return false;
-      const key = walk[index];
-      return key !== undefined && Boolean((predicate as (item: unknown) => unknown)(itemByKey.get(key)));
-    },
-    [predicate, walk, itemByKey],
-  );
-  const options = useMemo(() => ({ multi, unselectable }), [multi, unselectable]);
-  const selectedKeys = useMemo(() => selection.selected.filter((k) => itemByKey.has(k)), [selection.selected, itemByKey]);
-  const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
-  const selectedItems = useMemo(() => selectedKeys.map((k) => itemByKey.get(k)), [selectedKeys, itemByKey]);
-  const update = useCallback((next: (state: SelectionState) => SelectionState) => {
-    setSelection((state) => next(state));
-  }, []);
+  const update = useCallback((next: (state: SelectionState) => SelectionState) => setSelection((state) => next(state)), [setSelection]);
 
-  // syncWithVar: our changes go to the variable; its changes from elsewhere come back.
-  const written = useRef<string | undefined>(undefined);
-  const syncSignature = syncIds?.join("\u0000");
-  useEffect(() => {
-    if (syncIds === undefined || syncSignature === written.current) return;
-    setSelection((state) => (state.selected.join("\u0000") === syncSignature ? state : { ...state, selected: syncIds }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncSignature]);
-  const firstSelection = useRef(true);
-  useEffect(() => {
-    if (firstSelection.current) {
-      firstSelection.current = false;
-      return;
-    }
-    const p = latest.current;
-    if (p.$$setSyncWithVar) {
-      written.current = selection.selected.join("\u0000");
-      const old = p.syncWithVar !== null && typeof p.syncWithVar === "object" ? p.syncWithVar : {};
-      void p.$$setSyncWithVar({ ...old, selectedIds: [...selection.selected] });
-    }
-    void p.onSelectionDidChange?.(selection.selected.filter((k) => itemByKey.has(k)).map((k) => itemByKey.get(k)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection.selected]);
-
-  // --- Where it scrolls, and the virtualizer -------------------------------------------
+  // --- Where it scrolls, and the virtualizer (virtual.ts, shared with Table) ----------------
   const root = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
-  const [target, setTarget] = useState<ScrollTarget | null>(null);
-  // Attached once the List has a layout box (not in jsdom, nor while hidden: then it stays static).
-  useLayoutEffect(() => {
-    const element = root.current!;
-    const attach = () => {
-      if (element.offsetWidth === 0 && element.offsetHeight === 0) return false;
-      setTarget(own ? element : scrollContainer(element));
-      return true;
-    };
-    if (attach() || typeof ResizeObserver === "undefined") return undefined;
-    const observer = new ResizeObserver(() => {
-      if (attach()) observer.disconnect();
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [own]);
-  // Outside scroll: the List's offset in its scroll container (TanStack's scrollMargin). Measured
-  // after each render, and whenever an ancestor up to the container resizes (content above the
-  // List changed: rows of another List measured, an image loaded, text wrapped).
-  const [margin, setMargin] = useState(0);
-  const measureMargin = useCallback(() => {
-    const next = target && target !== root.current && content.current ? offsetIn(content.current, target) : 0;
-    setMargin((old) => (old === next ? old : next));
-  }, [target]);
-  useLayoutEffect(measureMargin);
-  useEffect(() => {
-    if (!target || target === root.current || typeof ResizeObserver === "undefined") return undefined;
-    const observer = new ResizeObserver(() => measureMargin());
-    const stop = isWindow(target) ? document.body : target;
-    for (let node = root.current?.parentElement; node && node !== stop.parentElement; node = node.parentElement) observer.observe(node);
-    return () => observer.disconnect();
-  }, [target, measureMargin]);
-
-  // Anchoring keeps the visible row in place when rows are added or removed before it (XMLUI's
-  // virtua `shift`, ListReact.tsx 684–720). Only when an edge survives: a sort or a new data set
-  // (both edges change) keeps the scroll offset instead (XMLUI #3936). Decided during render, as
-  // TanStack compares the options with the previous render's.
-  const previousRows = useRef(rows);
-  const anchorTo = useRef<"start" | "end">("end");
-  if (previousRows.current !== rows) {
-    anchorTo.current = keepsAnEdge(previousRows.current, rows) ? "end" : "start";
-    previousRows.current = rows;
-  }
-
-  const cacheSize = isFalse(props.renderCache) ? 0 : Math.max(0, Math.floor(number(props.renderCacheSize) ?? 80));
-  const cache = useRef<RenderCache>(null as unknown as RenderCache);
-  cache.current ??= new RenderCache(cacheSize);
-  cache.current.size = cacheSize;
+  const keys = useMemo(() => rows.map((row) => row.key), [rows]);
   const fixed = isTrue(props.fixedItemSize);
   const [fixedSize, setFixedSize] = useState<number | undefined>(undefined);
   const estimate = fixed && fixedSize !== undefined ? fixedSize : ESTIMATE;
   const buffer = number(props.virtualBufferSize);
-  const overscan = buffer !== undefined && buffer > 0 ? Math.max(1, Math.ceil(buffer / estimate)) : 4;
-  const getItemKey = useCallback((index: number) => rows[index]?.key ?? index, [rows]);
-  const estimateSize = useCallback(() => estimate, [estimate]);
-  const rangeExtractor = useCallback((range: Range) => cache.current.extract(range, (i) => rows[i]?.key, rowIndex), [rows, rowIndex]);
-  const virtualizer = useVirtualizer<Element, HTMLDivElement>({
-    count: rows.length,
-    getScrollElement: () => target as Element | null,
-    estimateSize,
-    getItemKey,
-    overscan,
-    scrollMargin: margin,
-    anchorTo: anchorTo.current,
-    followOnAppend: bottom,
-    rangeExtractor,
-    enabled: target !== null,
-    ...(scrollObservers as unknown as Pick<Parameters<typeof useVirtualizer<Element, HTMLDivElement>>[0], "observeElementRect" | "observeElementOffset" | "scrollToFn">),
+  const scrollStateRef = useRef<() => unknown>(() => undefined);
+  const rowsView = useVirtualRows({
+    keys,
+    own,
+    root,
+    content,
+    estimate,
+    overscan: buffer !== undefined && buffer > 0 ? Math.max(1, Math.ceil(buffer / estimate)) : 4,
+    cacheSize: isFalse(props.renderCache) ? 0 : Math.max(0, Math.floor(number(props.renderCacheSize) ?? 80)),
+    bottom,
+    onUserScroll: () => void latest.current.onScroll?.(scrollStateRef.current()),
   });
-  const virtual = target !== null && (virtualizer.scrollRect?.height ?? 0) > 0 && rows.length > 0;
+  const { virtualizer, virtual, margin, visibleRange } = rowsView;
   useEffect(() => {
     if (fixedSize !== undefined) virtualizer.measure();
   }, [fixedSize, virtualizer]);
-  // scrollAnchor="bottom": start at the end once there is a viewport (then followOnAppend and anchorTo keep it there).
-  const atEndOnce = useRef(false);
-  useLayoutEffect(() => {
-    if (!bottom || !virtual || atEndOnce.current) return;
-    atEndOnce.current = true;
-    virtualizer.scrollToEnd();
-  }, [bottom, virtual, virtualizer]);
 
   // --- The visible range ---------------------------------------------------------------
-  const staticRows = bottom ? Math.max(0, rows.length - STATIC_ROWS) : 0;
-  const visibleRange = (): { startIndex: number; endIndex: number } => {
-    if (rows.length === 0) return { startIndex: -1, endIndex: -1 };
-    if (!virtual) return { startIndex: staticRows, endIndex: Math.min(rows.length, staticRows + STATIC_ROWS) - 1 };
-    const range = virtualizer.range;
-    return range ? { startIndex: range.startIndex, endIndex: range.endIndex } : { startIndex: -1, endIndex: -1 };
-  };
   const range = visibleRange();
   const reported = useRef("");
   useEffect(() => {
@@ -394,26 +284,8 @@ function ListView(props: ListProps) {
   });
 
   // --- The scroll event: user scrolls only (XMLUI) ---------------------------------------
-  const scrollState = () => {
-    const total = virtual ? virtualizer.getTotalSize() : (content.current?.offsetHeight ?? 0);
-    const viewportSize = virtualizer.scrollRect?.height ?? 0;
-    const scrollTop = Math.max(0, (virtualizer.scrollOffset ?? 0) - margin);
-    return { scrollTop, scrollHeight: total, viewportSize, atEnd: scrollTop + viewportSize >= total - 1.5, visibleRange: visibleRange(), itemCount: rows.length };
-  };
-  const scrollStateRef = useRef(scrollState);
+  const scrollState = () => ({ ...rowsView.scrollPosition(), visibleRange: visibleRange(), itemCount: rows.length });
   scrollStateRef.current = scrollState;
-  useEffect(() => {
-    if (!target) return undefined;
-    const tracker = userScrollTracker(target);
-    const onScroll = () => {
-      if (tracker.isUser()) void latest.current.onScroll?.(scrollStateRef.current());
-    };
-    target.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      target.removeEventListener("scroll", onScroll);
-      tracker.dispose();
-    };
-  }, [target]);
 
   // --- The API ---------------------------------------------------------------------------
   const live = useRef({ virtualizer, rows, rowIndex, virtual, own, walk, selectedKeys, selectedItems, options });
@@ -438,7 +310,7 @@ function ListView(props: ListProps) {
         if (index !== undefined) scrollToRow(index);
       },
       getItemCount: () => live.current.rows.length,
-      getVisibleRange: () => scrollStateRef.current().visibleRange,
+      getVisibleRange: () => (scrollStateRef.current() as ReturnType<typeof scrollState>).visibleRange,
       clearSelection: () => update((state) => (state.selected.length === 0 ? state : { ...state, selected: [] })),
       getSelectedItems: () => [...live.current.selectedItems],
       getSelectedIds: () => [...live.current.selectedKeys],
@@ -587,7 +459,7 @@ function ListView(props: ListProps) {
       return renderRow(row, v.index, { transform: `translateY(${v.start - margin}px)` }, measure);
     });
   } else {
-    body = rows.slice(staticRows, staticRows + STATIC_ROWS).map((row, i) => renderRow(row, staticRows + i, undefined, undefined));
+    body = rows.slice(rowsView.staticStart, rowsView.staticEnd).map((row, i) => renderRow(row, rowsView.staticStart + i, undefined, undefined));
   }
   function measureFirst(el: HTMLDivElement | null) {
     virtualizer.measureElement(el);

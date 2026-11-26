@@ -885,6 +885,109 @@ const LIST = `
 }
 `;
 
+/* Table (step 30, table.tsx): a grid of divs with table roles; every row is a grid with the
+   same template (star widths are fr). Rows are placed absolutely when virtual (as List's). */
+const TABLE = `
+.gfui-Table-frame { display: flex; flex-direction: column; min-width: 0; }
+.gfui-Table-frame[data-own] { min-height: 0; }
+.gfui-Table {
+  position: relative; min-width: 0; outline: none; overflow-x: auto; overflow-anchor: none;
+  background-color: var(--gfui-backgroundColor-Table); color: var(--gfui-textColor-Table);
+  border-radius: var(--gfui-borderRadius-Table);
+}
+.gfui-Table[data-scroll="own"] { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+.gfui-Table-head { z-index: 3; background-color: var(--gfui-backgroundColor-heading-Table); min-width: max-content; }
+.gfui-Table-head[data-sticky] { position: sticky; top: 0; }
+.gfui-Table[data-scroll="outside"] .gfui-Table-head[data-sticky] { top: var(--gfui-shell-top, 0px); }
+.gfui-Table-body { position: relative; }
+.gfui-Table-body[data-virtual] > .gfui-Table-row { position: absolute; top: 0; left: 0; width: 100%; }
+.gfui-Table-row { display: grid; box-sizing: border-box; width: 100%; --gfui-row-bg: var(--gfui-backgroundColor-row-Table); background-color: var(--gfui-row-bg); color: var(--gfui-textColor-row-Table); font-size: var(--gfui-fontSize-row-Table); font-weight: var(--gfui-fontWeight-row-Table); }
+.gfui-Table-cell {
+  display: flex; align-items: center; min-width: 0; box-sizing: border-box; overflow: hidden; overflow-wrap: anywhere;
+  padding: var(--gfui-padding-cell-Table); border-bottom: 1px solid var(--gfui-borderColor-cell-Table);
+  background-color: inherit;
+}
+.gfui-Table[data-no-bottom-border] .gfui-Table-row[data-last] > .gfui-Table-cell { border-bottom-width: 0; }
+.gfui-Table-cell[data-align="end"] { justify-content: flex-end; text-align: end; }
+.gfui-Table-cell[data-align="center"] { justify-content: center; text-align: center; }
+/* A pinned cell is opaque (content scrolls under it) and shows the row's background over it. */
+.gfui-Table-cell[data-pinned] { z-index: 1; background: linear-gradient(var(--gfui-row-bg), var(--gfui-row-bg)), var(--gfui-backgroundColor-pinnedCell-Table); }
+.gfui-Table-headerRow { --gfui-row-bg: var(--gfui-backgroundColor-heading-Table); }
+.gfui-Table-headerRow > .gfui-Table-cell { background-color: var(--gfui-backgroundColor-heading-Table); }
+.gfui-Table-headerCell {
+  position: relative; color: var(--gfui-textColor-heading-Table); font-weight: var(--gfui-fontWeight-heading-Table);
+  font-size: var(--gfui-fontSize-heading-Table); text-transform: var(--gfui-textTransform-heading-Table);
+  background-color: var(--gfui-backgroundColor-heading-Table); padding: 0;
+}
+.gfui-Table-headerRow > .gfui-Table-cell[data-pinned] { z-index: 2; background: var(--gfui-backgroundColor-heading-Table); }
+.gfui-Table-headerContent, .gfui-Table-sortButton {
+  display: flex; align-items: center; gap: var(--gfui-space-1); width: 100%; min-width: 0; height: 100%; box-sizing: border-box;
+  padding: var(--gfui-padding-cell-Table); font: inherit; color: inherit; text-align: inherit;
+}
+.gfui-Table-sortButton { border: 0; background: none; cursor: pointer; }
+.gfui-Table-sortButton:hover { background-color: var(--gfui-backgroundColor-heading-Table--hover); }
+.gfui-Table-headerCell[data-align="end"] .gfui-Table-sortButton, .gfui-Table-headerCell[data-align="end"] .gfui-Table-headerContent { justify-content: flex-end; }
+.gfui-Table-headerCell[data-align="center"] .gfui-Table-sortButton, .gfui-Table-headerCell[data-align="center"] .gfui-Table-headerContent { justify-content: center; }
+.gfui-Table-headerText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gfui-Table-sort { display: inline-flex; opacity: 0; }
+.gfui-Table-sort[data-visible], .gfui-Table-sortButton:hover .gfui-Table-sort, .gfui-Table-sortButton:focus-visible .gfui-Table-sort { opacity: 1; }
+.gfui-Table-sortIcon { width: 14px; height: 14px; }
+.gfui-Table-resizer { position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 1; }
+.gfui-Table-resizer:hover, .gfui-Table-resizer:focus-visible { background-color: var(--gfui-color-primary-300); outline: none; }
+.gfui-Table-row[data-selectable] { cursor: pointer; }
+/* Row backgrounds by state, as --gfui-row-bg (pinned cells paint it too). Later rules win: striped, variant, hover, selected. */
+.gfui-Table[data-striped] .gfui-Table-row[data-parity="even"] { --gfui-row-bg: var(--gfui-backgroundColor-evenRow-Table); }
+.gfui-Table[data-striped] .gfui-Table-row[data-parity="odd"] { --gfui-row-bg: var(--gfui-backgroundColor-oddRow-Table); }
+.gfui-Table-row[data-variant] { --gfui-row-bg: var(--gfui-row-variant-bg, var(--gfui-backgroundColor-row-Table)); color: var(--gfui-row-variant-text, inherit); }
+.gfui-Table-body > .gfui-Table-row:hover { --gfui-row-bg: var(--gfui-row-variant-bg-hover, var(--gfui-backgroundColor-row-Table--hover)); }
+.gfui-Table-body > .gfui-Table-row[data-selected] { --gfui-row-bg: var(--gfui-backgroundColor-selected-Table); }
+.gfui-Table-body > .gfui-Table-row[data-selected]:hover { --gfui-row-bg: var(--gfui-backgroundColor-selected-Table--hover); }
+.gfui-Table-row[data-disabled] { opacity: 0.5; cursor: default; }
+.gfui-Table:focus-visible .gfui-Table-row[data-focused] { outline: 2px solid var(--gfui-outlineColor-row-Table--focus); outline-offset: -2px; }
+.gfui-Table-cell[data-hover-column]:not([data-pinned]) { background-color: var(--gfui-backgroundColor-column-Table--hover); }
+.gfui-Table-selectCell, .gfui-Table-expandCell { justify-content: center; padding: 0; }
+.gfui-Table-selectCell .gfui-Table-check { opacity: 0; }
+.gfui-Table-row:hover .gfui-Table-check, .gfui-Table-selectCell[data-always] .gfui-Table-check, .gfui-Table-check:focus-within { opacity: 1; }
+.gfui-Table-expandButton { display: inline-flex; border: 0; background: none; padding: var(--gfui-space-0_5); cursor: pointer; color: inherit; }
+.gfui-Table-detailRow > .gfui-Table-detail { grid-column: 1 / -1; display: block; }
+.gfui-Table-color { width: 32px; height: 24px; padding: 0; border: 1px solid var(--gfui-borderColor); border-radius: 4px; background: none; cursor: pointer; }
+.gfui-Table-noData, .gfui-Table-loading { display: flex; justify-content: center; padding: var(--gfui-space-4) 0; color: var(--gfui-textColor-secondary); }
+.gfui-Table-pagination { padding-top: var(--gfui-space-2); }
+`;
+
+/* Value (step 30, value.tsx), also the Table's typed cells. XMLUI Value.module.scss. */
+const VALUE = `
+.gfui-Value { max-width: 100%; min-width: 0; }
+.gfui-Value[data-value-kind="number"] { font-variant-numeric: tabular-nums; }
+.gfui-Value:is([data-value-kind="long-text"], [data-value-kind="address"], [data-value-kind="markdown"]) { display: inline-block; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+.gfui-Value:is([data-value-kind="short-text"], [data-value-kind="id"], [data-value-kind="uuid"]) { display: inline-block; overflow: hidden; text-overflow: ellipsis; }
+.gfui-Value:is([data-value-kind="code"], [data-value-kind="json"]) { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 0.95em; }
+.gfui-Value[data-value-kind="color"] { display: inline-flex; align-items: center; gap: var(--gfui-space-2); }
+.gfui-Value-swatch { width: 0.9em; height: 0.9em; flex: 0 0 auto; border: 1px solid var(--gfui-borderColor-Value); border-radius: 2px; }
+img.gfui-Value { display: block; width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
+img.gfui-Value[data-value-kind="avatar"] { border-radius: 50%; }
+.gfui-Value[data-value-kind="icon"] { display: inline-flex; align-items: center; gap: var(--gfui-space-1); }
+.gfui-Value-icon { width: 1.1em; height: 1.1em; }
+.gfui-Value-iconLabel { font-size: 0.9em; }
+.gfui-Value[data-value-kind="checkbox"] { display: inline-flex; width: 1.1em; height: 1.1em; align-items: center; justify-content: center; border: 1px solid var(--gfui-borderColor-Value); border-radius: 2px; font-size: 0.9em; line-height: 1; }
+.gfui-Value:is([data-value-kind="tag"], [data-value-kind="tags"]) { display: inline-block; }
+`;
+
+/* Pagination (step 30, pagination.tsx): three slots, start, center and end (XMLUI). */
+const PAGINATION = `
+.gfui-Pagination { display: flex; align-items: center; gap: var(--gfui-space-2); min-width: 0; }
+.gfui-Pagination[data-orientation="vertical"] { flex-direction: column; align-items: stretch; }
+.gfui-Pagination-slot { display: flex; align-items: center; gap: var(--gfui-space-3); flex: 1 1 0; min-width: 0; }
+.gfui-Pagination-slot[data-slot="center"] { justify-content: center; }
+.gfui-Pagination-slot[data-slot="end"] { justify-content: flex-end; }
+.gfui-Pagination[data-orientation="vertical"] .gfui-Pagination-slot { flex-direction: column; }
+.gfui-Pagination-buttons { display: flex; align-items: center; gap: var(--gfui-space-1); list-style: none; margin: 0; padding: 0; }
+.gfui-Pagination[data-orientation="vertical"] .gfui-Pagination-buttons { flex-direction: column; }
+.gfui-Pagination-current { display: inline-block; padding: 0 var(--gfui-space-4); font-weight: 600; }
+.gfui-Pagination-size { display: inline-flex; align-items: center; gap: var(--gfui-space-2); white-space: nowrap; }
+.gfui-Pagination-info { color: var(--gfui-textColor-secondary); white-space: nowrap; }
+`;
+
 export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
@@ -894,6 +997,9 @@ ${DISPLAY}
 ${OVERLAYS}
 ${STRUCTURE}
 ${LIST}
+${TABLE}
+${VALUE}
+${PAGINATION}
 .gfui-App,
 .gfui-Theme {
   /* Mantine's global variables, redirected to the gfui theme. */

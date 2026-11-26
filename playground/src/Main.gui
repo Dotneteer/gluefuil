@@ -59,7 +59,10 @@
     { path: '/responsive-bar', step: '28', title: 'Responsive bars', description: 'Children that do not fit move into a menu; $overflow; a vertical bar.' },
     { path: '/long-lists', step: '29', title: 'Long lists', description: 'A virtualized List of 10,000 rows of different heights; its own scroll box and the page.' },
     { path: '/chat-feed', step: '29', title: 'Chat feed', description: 'A List anchored to the bottom: follows new messages, keeps its place when older ones load.' },
-    { path: '/grouped-lists', step: '29', title: 'Grouped and selectable lists', description: 'Groups that fold; selection by mouse, keys and checkboxes; syncWithVar; actions.' }
+    { path: '/grouped-lists', step: '29', title: 'Grouped and selectable lists', description: 'Groups that fold; selection by mouse, keys and checkboxes; syncWithVar; actions.' },
+    { path: '/tables', step: '30', title: 'Tables', description: '10,000 rows: sorting, selection, pinned and resizable columns, copying cells.' },
+    { path: '/table-types', step: '30', title: 'Table columns and types', description: 'Columns inferred from the data; every Column type; the Value component.' },
+    { path: '/editable-tables', step: '30', title: 'Editable and paged tables', description: 'Switches, checkboxes and colors in cells; row details; paging; Pagination.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -146,6 +149,9 @@
     <Page url="/long-lists"><VStack><LongListsScenario/><ScenarioSource file="LongListsScenario"/></VStack></Page>
     <Page url="/chat-feed"><VStack><ChatFeedScenario/><ScenarioSource file="ChatFeedScenario"/></VStack></Page>
     <Page url="/grouped-lists"><VStack><GroupedListsScenario/><ScenarioSource file="GroupedListsScenario"/></VStack></Page>
+    <Page url="/tables"><VStack><TablesScenario/><ScenarioSource file="TablesScenario"/></VStack></Page>
+    <Page url="/table-types"><VStack><TableTypesScenario/><ScenarioSource file="TableTypesScenario"/></VStack></Page>
+    <Page url="/editable-tables"><VStack><EditableTablesScenario/><ScenarioSource file="EditableTablesScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

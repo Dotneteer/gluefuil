@@ -1,0 +1,39 @@
+<!-- Step 30: editable typed cells saved through the variable; willChange; row details; paging; Pagination on its own. -->
+<Component name="EditableTablesScenario">
+  <VStack
+    var.features="{[
+      { id: 1, name: 'Search', enabled: true, reviewed: false, accent: '#3366cc', locked: false },
+      { id: 2, name: 'Export', enabled: false, reviewed: true, accent: '#cc3366', locked: true },
+      { id: 3, name: 'Sharing', enabled: true, reviewed: true, accent: '#33aa66', locked: false }
+    ]}"
+    var.lastChange="(nothing changed yet)"
+    var.page="{0}">
+    <ScenarioHeader title="Editable and paged tables" description="Switches, checkboxes and colors in cells: their didChange assigns the variable (rows are read-only data); willChange keeps the locked row from being turned off. Rows open their details. A paged table, and a Pagination of its own."/>
+    <Card title="Editable cells">
+      <Text>Last change: {lastChange}</Text>
+      <Table data="{features}">
+        <Column bindTo="name" header="Feature"/>
+        <Column bindTo="enabled" header="Enabled" type="switch"
+          onWillChange="(value, row) => !(row.locked &amp;&amp; value === false)"
+          onDidChange="(value, row, index, column) => { features = features.map(f => f.id === row.id ? { ...f, enabled: value } : f); lastChange = column + ' of ' + row.name + ': ' + value }"/>
+        <Column bindTo="reviewed" header="Reviewed" type="checkbox"
+          onDidChange="(value, row) => { features = features.map(f => f.id === row.id ? { ...f, reviewed: value } : f); lastChange = 'reviewed of ' + row.name + ': ' + value }"/>
+        <Column bindTo="accent" header="Accent" type="color"
+          onDidChange="(value, row) => { features = features.map(f => f.id === row.id ? { ...f, accent: value } : f); lastChange = 'accent of ' + row.name + ': ' + value }"/>
+        <property name="rowDetailTemplate">
+          <Text>{$item.name} is {$item.enabled ? 'on' : 'off'}{$item.locked ? ' and locked' : ''}.</Text>
+        </property>
+      </Table>
+    </Card>
+    <Card title="Paged">
+      <Table data="{Array.from({ length: 57 }, (_, i) => ({ id: i + 1, item: 'Item ' + (i + 1) }))}" pageSize="10" pageSizeOptions="{[10, 25]}">
+        <Column bindTo="id" header="#" width="80px" type="integer"/>
+        <Column bindTo="item" header="Item"/>
+      </Table>
+    </Card>
+    <Card title="Pagination">
+      <Text>Page: {page + 1}</Text>
+      <Pagination itemCount="120" pageSize="10" maxVisiblePages="5" pageIndex="{page}" onPageDidChange="i => page = i"/>
+    </Card>
+  </VStack>
+</Component>

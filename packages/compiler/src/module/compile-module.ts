@@ -1262,7 +1262,10 @@ class ModuleCompiler {
       // Step 28: the headers are data; the children still compile in place (below).
       bindings.push(["$$headers", this.hoistRaw("$$o", `($$s) => [${this.headerParts(content, "$$s", name, metadata.childrenAsHeaders.item).join(", ")}]`)]);
     }
-    if (!isUser && metadata.childrenAsOptions) {
+    if (!isUser && metadata.childrenAsColumns) {
+      // Step 30: Column children are data (props, cell template, handlers); nothing compiles in place.
+      if (meaningful.length > 0) bindings.push(["$$columns", this.hoistRaw("$$o", `($$s) => [${this.columnParts(content, "$$s", name, metadata.childrenAsColumns).join(", ")}]`)]);
+    } else if (!isUser && metadata.childrenAsOptions) {
       // Step 25: the children are data, one reactive options array.
       const data = node.attributes.find((a) => a.name.full === "data");
       if (meaningful.length > 0 && data) this.report(data.name, "E036", name);
@@ -1895,6 +1898,104 @@ class ModuleCompiler {
     if (template && metadata.templates?.headerTemplate) {
       fields.push(["$$headerTemplate", this.template(template.children, metadata.templates.headerTemplate.contextVars)], ["$$scope", sv]);
     }
+    return `{ ${fields.map(([k, code]) => `${jsString(k)}: ${code}`).join(", ")} }`;
+  }
+
+  /**
+   * Step 30: the children of a Table (`childrenAsColumns`): each Column is
+   * `{ $$key, …its props, $$cell, $$scope, $$handlers }` (its children are the
+   * cell template; `onWillChange`/`onDidChange` are handler factories the Table
+   * wires), an `Items` spreads its Columns for each item. Other children: E040.
+   */
+  private columnParts(content: ContentNode[], sv: string, component: string, item: string, keyPrefix?: { key: string; inner: string }): string[] {
+    const parts: string[] = [];
+    let position = 0;
+    for (const child of content) {
+      if (child.kind === "comment" || (child.kind === "text" && child.value.trim() === "")) continue;
+      if (child.kind !== "element") {
+        this.report(child.kind === "script" ? { start: child.start, end: child.contentSpan.start } : child, "E040", component, item, "text");
+        continue;
+      }
+      const name = child.name.full;
+      const key = keyPrefix ? keyPrefix.key : String(position++);
+      if (name === item) {
+        const keyCode = keyPrefix ? `(${this.itemKey(key)})(${keyPrefix.inner})` : jsString(key);
+        const entry = this.columnEntry(child, sv, component, item, keyCode);
+        parts.push(this.optionWhen(child, sv, component, `[${entry}]`, entry));
+      } else if (name === "Items" && !keyPrefix) {
+        parts.push(this.optionWhen(child, sv, component, this.columnItems(child, sv, component, item, key)));
+      } else this.report(child.name, "E040", component, item, `<${name}>`);
+    }
+    return parts.filter((part) => part !== "");
+  }
+
+  /** `<Items data>` of Columns: their entries for each item, keyed `position:$itemIndex`. */
+  private columnItems(node: ElementNode, sv: string, component: string, item: string, key: string): string {
+    let data = "undefined";
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name === "when" || name.startsWith("when-")) continue;
+      if (name !== "data") {
+        this.report(attribute.name, "E002", `'${name}' on <Items> inside <${component}>`);
+        continue;
+      }
+      if (!attribute.value) continue;
+      const value = this.value(this.segments(attribute as ValuedAttribute));
+      data = "constant" in value ? value.constant : `(${value.binding})(${sv})`;
+    }
+    const inner = `$$s${this.counter++}`;
+    this.contextFrames.push(new Set(this.metadataOf("Items")!.templates!.itemTemplate!.contextVars));
+    const content = node.children.filter((c) => !(c.kind === "element" && c.name.full === "property"));
+    const parts = this.columnParts(content, inner, component, item, { key, inner });
+    this.contextFrames.pop();
+    return `$$optionItems(${sv}, ${data}, (${inner}) => [${parts.join(", ")}])`;
+  }
+
+  /** One Column: `$$key`, its props, its children as the cell template (`$$cell` with `$$scope`), its handlers. */
+  private columnEntry(node: ElementNode, sv: string, component: string, item: string, key: string): string {
+    const metadata = this.metadataOf(item)!;
+    const fields: [string, string][] = [["$$key", key]];
+    const handlers: [string, string][] = [];
+    for (const attribute of node.attributes) {
+      const name = attribute.name.full;
+      if (name === "when" || name.startsWith("when-")) continue;
+      if (/^on[A-Z]/.test(name) && attribute.name.prefix === undefined) {
+        const event = `${name[2]!.toLowerCase()}${name.slice(3)}`;
+        if (!this.checkEvent(metadata, item, event, attribute.name) || !attribute.value) continue;
+        const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
+        handlers.push([name, this.handler(decoded.value, { offsets: decoded.offsets }, metadata.events?.[event])]);
+        continue;
+      }
+      if (name === "id" || name.startsWith("var.") || name.startsWith("global.") || attribute.name.prefix !== undefined) {
+        this.report(attribute.name, "E002", `'${name}' on <${item}> inside <${component}>`);
+        continue;
+      }
+      if (!Object.hasOwn(metadata.props, name)) {
+        this.reportContract(attribute.name, "E020", name, item, didYouMean(name, Object.keys(metadata.props)));
+        continue;
+      }
+      const prop = metadata.props[name]!;
+      if (!attribute.value) {
+        fields.push([name, '"true"']);
+        continue;
+      }
+      const value = this.propValue(attribute as ValuedAttribute, prop);
+      if ("constant" in value) {
+        this.checkPropLiteral(prop, name, JSON.parse(value.constant) as string, attribute.value);
+        fields.push([name, value.constant]);
+      } else fields.push([name, `(${value.binding})(${sv})`]);
+    }
+    const content: ContentNode[] = [];
+    for (const child of node.children) {
+      if (child.kind === "element" && child.name.full === "event") {
+        const handler = this.eventTag(child, metadata, item);
+        if (handler) handlers.push(handler);
+      } else if (!(child.kind === "element" && child.name.full === "property")) content.push(child);
+    }
+    const meaningful = content.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
+    if (meaningful.length > 0) fields.push(["$$cell", this.template(content, metadata.templates!.cellTemplate!.contextVars)]);
+    if (meaningful.length > 0 || handlers.length > 0) fields.push(["$$scope", sv]);
+    if (handlers.length > 0) fields.push(["$$handlers", `{ ${handlers.map(([k, code]) => `${jsString(k)}: ${code}`).join(", ")} }`]);
     return `{ ${fields.map(([k, code]) => `${jsString(k)}: ${code}`).join(", ")} }`;
   }
 

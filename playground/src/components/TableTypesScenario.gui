@@ -1,0 +1,37 @@
+<!-- Step 30: columns inferred from the data; every Column type; the Value component. -->
+<Component name="TableTypesScenario">
+  <VStack
+    var.people="{[
+      { id: 'c-001', customer: 'Ada Lovelace', email: 'ada@example.com', website: 'https://example.com/ada', joined: '2026-03-14', total: 1234.5, paid: true, tags: ['vip', 'early'], status: 'paid' },
+      { id: 'c-002', customer: 'Grace Hopper', email: 'grace@example.com', website: 'https://example.org/grace', joined: '2026-05-02', total: 87.25, paid: false, tags: ['new'], status: 'open' },
+      { id: 'c-003', customer: 'Linus Torvalds', email: 'linus@example.com', website: 'https://example.net/linus', joined: '2026-07-21', total: 450, paid: true, tags: [], status: 'late' }
+    ]}"
+    var.samples="{[
+      { type: 'text', value: 'Plain text' }, { type: 'short-text', value: 'ABC-123' }, { type: 'long-text(lines:2)', value: 'A longer note that wraps across lines and is clamped to two lines when it does not fit the column, with the whole text in a tooltip.' },
+      { type: 'markdown', value: 'Some **bold** and *italic* text' }, { type: 'code', value: 'npm run check' }, { type: 'json', value: { a: 1, b: [2, 3] } },
+      { type: 'email', value: 'ada@example.com' }, { type: 'phone', value: '+1 555 123 4567' }, { type: 'url(label:domain)', value: 'https://example.com/path' },
+      { type: 'link(label:Open)', value: 'https://example.com' }, { type: 'uuid', value: '550e8400-e29b-41d4-a716-446655440000' }, { type: 'id', value: 'customer-000123456' },
+      { type: 'name', value: 'Grace Hopper' }, { type: 'address', value: '1 Infinite Loop, Cupertino' }, { type: 'color', value: '#3366cc' },
+      { type: 'number(8,3)', value: 1234.56789 }, { type: 'integer', value: 1234.5 }, { type: 'decimal(2)', value: 3 },
+      { type: 'percent', value: 0.125 }, { type: 'currency(EUR)', value: 1234.5 }, { type: 'accounting(USD)', value: -42 },
+      { type: 'scientific', value: 123456 }, { type: 'bytes', value: 1536000 }, { type: 'duration', value: 3725 },
+      { type: 'rating(5)', value: 4 }, { type: 'date(long)', value: '2026-08-06T12:00:00Z' }, { type: 'time', value: '2026-08-06T12:34:00Z' },
+      { type: 'datetime', value: '2026-08-06T12:34:00Z' }, { type: 'relative-time', value: '2020-01-01T00:00:00Z' }, { type: 'timestamp', value: '2026-08-06T00:00:00Z' },
+      { type: 'iso-date', value: '2026-08-06T12:00:00Z' }, { type: 'boolean', value: true }, { type: 'checkbox', value: true },
+      { type: 'switch', value: false }, { type: 'yes-no', value: true }, { type: 'status', value: 'paid' },
+      { type: 'enum', value: 'draft' }, { type: 'tag', value: 'beta' }, { type: 'tags', value: ['a', 'b', 'c'] },
+      { type: 'image', value: 'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%233366cc%22/%3E%3C/svg%3E' }, { type: 'avatar', value: 'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%23cc6633%22/%3E%3C/svg%3E' }, { type: 'icon', value: 'home' },
+      { type: 'object', value: { x: 1 } }, { type: 'array', value: [1, 2] }, { type: 'list', value: ['one', 'two'] }
+    ]}">
+    <ScenarioHeader title="Table columns and types" description="A Table without Column children infers its columns and their types from the data; every Column type of XMLUI (45), shown with the Value component."/>
+    <Card title="Inferred columns">
+      <Table data="{people}"/>
+    </Card>
+    <Card title="Every type (Value)">
+      <Table data="{samples}" idKey="type">
+        <Column bindTo="type" header="Type" width="180px"/>
+        <Column header="Value" width="*"><Value value="{$item.value}" type="{$item.type}" typeOptions="{$item.type === 'enum' ? { draft: 'Draft' } : $item.type === 'status' ? { paid: { label: 'Paid' } } : undefined}"/></Column>
+      </Table>
+    </Card>
+  </VStack>
+</Component>
