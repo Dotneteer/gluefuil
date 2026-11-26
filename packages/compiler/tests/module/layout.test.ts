@@ -122,7 +122,7 @@ describe("a user component's root applies the layout props of its tag", () => {
 
   test("not when the component has several roots, or a root that takes no layout props", () => {
     expect(ok('<App/>\n<Component name="Two"><Text>a</Text><Text>b</Text></Component>')).not.toContain("$$layoutFrom");
-    expect(ok('<App/>\n<Component name="List"><Items data="{[]}"><Text>x</Text></Items></Component>')).not.toContain("$$layoutFrom");
+    expect(ok('<App/>\n<Component name="Roster"><Items data="{[]}"><Text>x</Text></Items></Component>')).not.toContain("$$layoutFrom");
   });
 
   test("only the root: nested elements don't", () => {

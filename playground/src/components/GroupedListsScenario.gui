@@ -1,0 +1,59 @@
+<!-- Step 29: List groups (header, footer, folding), selection (clicks, keys, checkboxes), syncWithVar, keyboard actions, a context menu. -->
+<Component name="GroupedListsScenario">
+  <VStack
+    var.people="{[
+      { id: 1, name: 'Ada', dept: 'Engineering', role: 'Lead' },
+      { id: 2, name: 'Grace', dept: 'Engineering', role: 'Engineer' },
+      { id: 3, name: 'Linus', dept: 'Engineering', role: 'Engineer' },
+      { id: 4, name: 'Margaret', dept: 'Design', role: 'Designer' },
+      { id: 5, name: 'Alan', dept: 'Design', role: 'Contractor' },
+      { id: 6, name: 'Barbara', dept: 'Sales', role: 'Manager' },
+      { id: 7, name: 'Dennis', dept: 'Sales', role: 'Rep' }
+    ]}"
+    var.picked="{{ selectedIds: [] }}"
+    var.log="">
+    <ScenarioHeader title="Grouped and selectable lists" description="Groups with a header that folds and a footer; rows selected by click, Shift and Ctrl/Cmd click, the arrow keys and checkboxes (contractors can't be selected); the selection kept in a variable; Ctrl/Cmd+C on the list; right-click a row."/>
+
+    <Card title="Grouped">
+      <List data="{people}" groupBy="dept" orderBy="{{ field: 'name' }}">
+        <property name="groupHeaderTemplate">
+          <HStack verticalAlignment="center" paddingVertical="$space-1">
+            <Button label="{($group.isExpanded ? 'Fold ' : 'Unfold ') + $group.key}" onClick="$group.toggle()"/>
+            <Badge value="{$group.items.length}"/>
+          </HStack>
+        </property>
+        <property name="groupFooterTemplate">
+          <Text variant="secondary" paddingBottom="$space-2">{$group.items.length} in {$group.key}</Text>
+        </property>
+        <Text paddingVertical="$space-1" paddingLeft="$space-6">{$item.name} ({$item.role})</Text>
+      </List>
+    </Card>
+
+    <Card title="Selectable">
+      <Text>Selected ids: {picked.selectedIds.join(', ') || 'none'}</Text>
+      <Text>Log: {log}</Text>
+      <HStack>
+        <Button label="Select all" onClick="team.selectAll()"/>
+        <Button label="Clear" onClick="team.clearSelection()"/>
+        <Button label="Pick Ada and Linus" onClick="picked = { selectedIds: ['1', '3'] }"/>
+      </HStack>
+      <List
+        id="team"
+        data="{people}"
+        rowsSelectable="true"
+        syncWithVar="picked"
+        rowUnselectablePredicate="{(p) => p.role === 'Contractor'}"
+        onCopyAction="(row, items) => log = 'copied ' + items.map(p => p.name).join(', ')"
+        onContextMenu="(ev, person) => rowMenu.openAt(ev, person)">
+        <HStack paddingVertical="$space-1">
+          <Text>{$item.name}</Text>
+          <SpaceFiller/>
+          <Text variant="secondary">{$item.role}{$isSelected ? ' ✓' : ''}</Text>
+        </HStack>
+      </List>
+      <ContextMenu id="rowMenu">
+        <MenuItem label="Log {$context.name}" onClick="log = 'menu ' + $context.name"/>
+      </ContextMenu>
+    </Card>
+  </VStack>
+</Component>

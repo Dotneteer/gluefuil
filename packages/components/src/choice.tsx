@@ -6,7 +6,7 @@
 // are an array.
 import { CheckIcon, Combobox, InputBase, Pill, PillsInput, useCombobox } from "@mantine/core";
 import { wrapComponent, type WrapConfig } from "@gluefuil/runtime";
-import { Fragment, createElement, useMemo, useState, type ComponentType, type FocusEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { Fragment, createElement, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type FocusEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Glyph } from "./icons";
 import { enabledToDisabled, focusApi, validationStatus, FOCUS_EVENTS } from "./inputs";
 import { withLayout } from "./layout-wrap";
@@ -165,11 +165,28 @@ export function ChoiceNative(props: ChoiceProps) {
   // What the user typed; null while a single searchable input shows the selection's label.
   const [search, setSearch] = useState<string | null>(null);
   const searchText = search ?? "";
+  // How the dropdown was opened: settleOnOpen (below) finishes the opening once the options mount.
+  const openedBy = useRef<string>("unknown");
   const combobox = useCombobox({
     defaultOpened: isTrue(props.initiallyOpen) && !readOnly && !disabled,
-    onDropdownOpen: () => combobox.updateSelectedOptionIndex("active"),
+    onDropdownOpen: (source) => {
+      openedBy.current = source;
+    },
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
+  // Mantine finds the highlighted option in a setTimeout(0) after opening, but its transition mounts
+  // the options in an animation frame. On a busy machine the frame comes later, the index stays at
+  // "none", and the next ArrowDown starts over from the first option (found in step 29: a flaky E2E
+  // test). So the index is set when the options mount: by the keyboard, the active (or first)
+  // option is highlighted; otherwise the keys continue from the current value.
+  const optionsRef = useRef<HTMLDivElement>(null);
+  const settleOnOpen = () => {
+    const items = [...(optionsRef.current?.querySelectorAll("[data-combobox-option]") ?? [])];
+    if (items.length === 0) return;
+    if (openedBy.current === "keyboard") {
+      if (!items.some((item) => item.hasAttribute("data-combobox-selected"))) combobox.selectActiveOption();
+    } else combobox.updateSelectedOptionIndex(items.findIndex((item) => item.hasAttribute("data-combobox-active")));
+  };
 
   const visible = search === null ? options : options.filter((o) => matchesSearch(o, searchText));
   const typed = searchText.trim();
@@ -438,7 +455,8 @@ export function ChoiceNative(props: ChoiceProps) {
     <Combobox store={combobox} onOptionSubmit={submit} withinPortal={false} readOnly={readOnly} classNames={{ dropdown: `gfui-Choice-dropdown gfui-${kind}-dropdown` }}>
       {target}
       <Combobox.Dropdown hidden={readOnly || disabled}>
-        <Combobox.Options style={{ maxHeight: height, overflowY: "auto" }}>
+        <Combobox.Options ref={optionsRef} style={{ maxHeight: height, overflowY: "auto" }}>
+          <OnMount run={settleOnOpen} />
           {inProgress ? <Combobox.Empty>{props.inProgressNotificationMessage === undefined ? "" : String(props.inProgressNotificationMessage)}</Combobox.Empty> : list}
           {!inProgress && empty ? <Combobox.Empty>{emptyNode}</Combobox.Empty> : null}
         </Combobox.Options>
@@ -485,3 +503,10 @@ function choice(kind: "Select" | "AutoComplete", multiProp: string) {
 
 export const Select = choice("Select", "multiSelect");
 export const AutoComplete = choice("AutoComplete", "multi");
+
+/** Runs `run` once, when it mounts (in the commit that mounts its siblings). */
+function OnMount({ run }: { run: () => void }) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(run, []);
+  return null;
+}

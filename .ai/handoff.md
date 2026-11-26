@@ -7,16 +7,19 @@
 > **Written:** after proof-of-concept steps 0–19 (2026-11-23); updated
 > after the inserted steps 19A–19C (the App shell), 19D–19F (the layout
 > system), step 20 (data binding and the mock backend), and step 23 (text and
-> display components; 2026-11-25), and after steps 24–28 (2026-11-26).
+> display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
+> step 29 (2026-11-26).
 
 ## State
 
-- **Next: step 29 (the virtualized `List`)**, not started. Its first
-  decision is the virtualizer (`virtua` vs TanStack Virtual); see
-  `plan/poc-steps.md` step 29. Start by writing `plan/poc-29-list.md` and
-  asking the user.
-- **`master` is the only branch;** every step's branch is deleted after its
-  merge.
+- **Step 29 (the virtualized List) is done and merged into master.** Plan and findings:
+  [`plan/poc-29-list.md`](plan/poc-29-list.md); reference:
+  [`docs/list.md`](docs/list.md). `npm run check`: 3,010 unit tests in
+  108 files, 247 E2E tests. The virtualizer is TanStack Virtual (measured
+  against virtua with a prototype in `.tmp/vproto/`, ignored by git).
+- **Next: step 30 (`Table` + `Column`, TanStack Table v9).** Reuse
+  `components/src/selection.ts` (XMLUI's selection rules, shared with List)
+  and `virtual.ts` (the scroll container, the render cache, user scrolls).
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
   [`plan/poc-28-structure.md`](plan/poc-28-structure.md); reference:
   [`docs/structure.md`](docs/structure.md). `npm run check`: 2,926 unit tests
@@ -203,6 +206,17 @@
   event without arguments for statements is marked `args: "none"` in its
   metadata (else its statement handlers declare a `$param` that hides a
   dialog's).
+- **Virtualized components in jsdom (step 29):** a List stays in its static
+  window (the first 20 rows) until it has a layout box, which jsdom never gives;
+  prove scrolling, measuring and anchoring in `e2e/list.spec.ts`. A List without
+  a height scrolls with the page: in E2E, scroll it into view before looking
+  for rows below the window (they aren't mounted).
+- **Bundle sizes are in KiB** (bytes ÷ 1024), as in every plan's *Size*.
+- **Hunting a flaky E2E test:** run many copies in parallel so they load the
+  machine (`--repeat-each=30 --workers=8 -g "<title>"`). That reproduced step
+  29's Select race (1 in 30), which passed alone every time. Don't use
+  `--repeat-each` on the standalone project: its tests edit served files and
+  must run one at a time.
 - **Mantine overlays in jsdom (step 27):** no CSS transitions, so content
   mounts a moment after opening and may stay `display: none`. Use
   `findBy*` with `hidden: true`; prove visibility, focus and placement in
@@ -218,8 +232,10 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 29: the virtualized `List`** (also decides the virtualizer:
-  `virtua` vs TanStack Virtual).
+- **Step 30: `Table` + `Column`** (TanStack Table v9, on step 29's
+  virtualizer and selection).
+- **Step 29's open items** (`poc-29-list.md`): paging with DataSource's
+  `nextPageSelector`, the data-refresh modes, the checkbox theme variables.
 - **Step 28's open items** (`poc-28-structure.md`).
 - **Step 27's open items** (`poc-27-overlays.md`).
 - **Step 26's open items** (`poc-26-dates.md`).

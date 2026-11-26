@@ -164,6 +164,12 @@ export interface PropMetadata {
    * validation's numeric range). Without it, a shared prop goes to both (step 24).
    */
   exclusive?: boolean;
+  /**
+   * Step 29 (List `syncWithVar`): the literal names a variable visible here (else
+   * E039). The component receives the variable's value, and a hidden handler
+   * `$$set<Prop>` (`$$setSyncWithVar`) that assigns its argument to it.
+   */
+  variableName?: boolean;
 }
 
 export interface EventMetadata {
@@ -1720,6 +1726,93 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     },
     childrenTemplate: "itemTemplate",
     nonVisual: true,
+  },
+  List: {
+    description: "A virtualized list: renders only the rows in view, with groups, ordering, selection and bottom anchoring (step 29).",
+    props: {
+      data: { description: "The items: an array, or a URL to load it from (/api/users).", valueType: "any" },
+      items: { description: "An alias of data (wins over it).", valueType: "any" },
+      idKey: { description: "The item field that identifies a row: unique and never empty (default id).", valueType: "string" },
+      loading: { description: "Shows a spinner (after loadingDelay) while there are no rows.", valueType: "boolean" },
+      loadingDelay: { description: "Milliseconds before the loading spinner shows (default 400).", valueType: "number" },
+      limit: { description: "Shows at most this many items.", valueType: "integer" },
+      orderBy: { description: "Orders the items: { field, direction } (asc, desc) or an array of them.", valueType: "any" },
+      scrollAnchor: { description: "bottom: starts at the end and follows new items while at the end (a chat); top (default).", valueType: "string", availableValues: ["top", "bottom"] },
+      fixedItemSize: { description: "Every row is as tall as the first one (measured once).", valueType: "boolean" },
+      renderCache: { description: "Keeps recently seen rows mounted after they scroll out (default true).", valueType: "boolean" },
+      renderCacheSize: { description: "How many recently seen rows stay mounted (default 80).", valueType: "integer" },
+      virtualBufferSize: { description: "Pixels rendered beyond each end of the viewport (default about four rows).", valueType: "number" },
+      groupBy: { description: "Groups the items by this field, or by what a function of the item returns.", valueType: "any" },
+      availableGroups: { description: "Only these groups are shown, in this order.", valueType: "any" },
+      defaultGroups: { description: "Groups listed first, in this order (shown even when empty with hideEmptyGroups false).", valueType: "any" },
+      hideEmptyGroups: { description: "Groups without items are not shown (default true).", valueType: "boolean" },
+      groupsInitiallyExpanded: { description: "Groups start unfolded (default true).", valueType: "boolean" },
+      borderCollapse: { description: "Bordered rows join into one block: no double borders, rounded only at the ends (default true).", valueType: "boolean" },
+      rowsSelectable: { description: "Rows can be selected: click, Shift and Ctrl/Cmd click, the keys, checkboxes.", valueType: "boolean" },
+      enableMultiRowSelection: { description: "Several rows can be selected (default true).", valueType: "boolean" },
+      initiallySelected: { description: "The ids selected at first.", valueType: "any" },
+      syncWithVar: {
+        description: "The name of a variable holding { selectedIds }: the List reads its selection from it and writes it back.",
+        valueType: "string",
+        variableName: true,
+      },
+      refreshOn: {
+        description: "XMLUI's re-render trigger; ignored here.",
+        valueType: "any",
+        deprecationMessage: "not needed in gfui: each row re-renders when what it reads changes, so 'refreshOn' is ignored",
+      },
+      rowUnselectablePredicate: { description: "A function of the item: true when its row can't be selected.", valueType: "any" },
+      hideSelectionCheckboxes: { description: "No checkboxes; selecting still works by clicks, keys and the API.", valueType: "boolean" },
+      selectionCheckboxPosition: { description: "before (default): a column before the content; overlay: over the content, at selectionCheckboxAnchor.", valueType: "string", availableValues: ["before", "overlay"] },
+      selectionCheckboxAnchor: {
+        description: "Where an overlay checkbox sits (default center-left).",
+        valueType: "string",
+        availableValues: ["top-left", "top-right", "bottom-left", "bottom-right", "center-left", "center-right"],
+      },
+      selectionCheckboxOffsetX: { description: "An overlay checkbox's distance from its anchor's side (default $space-2).", valueType: "string", cssKind: "size" },
+      selectionCheckboxOffsetY: { description: "An overlay checkbox's distance from its anchor's top or bottom (default $space-2).", valueType: "string", cssKind: "size" },
+      selectionCheckboxSize: { description: "The checkbox's size.", valueType: "string", cssKind: "size" },
+      keyBindings: { description: "Shortcuts of the actions: { selectAll, cut, copy, paste, delete } (defaults CmdOrCtrl+A/X/C/V, Delete).", valueType: "any" },
+    },
+    events: {
+      scroll: { description: "The user scrolled: { scrollTop, scrollHeight, viewportSize, atEnd, visibleRange, itemCount }." },
+      visibleRangeDidChange: { description: "The rows in view changed: { startIndex, endIndex } (rows, inclusive)." },
+      selectionDidChange: { description: "The selection changed: the selected items." },
+      rowDoubleClick: { description: "A row was double-clicked: its item." },
+      contextMenu: { description: "A row was right-clicked. A function handler receives the pointer and the row's item.", args: "pointer" },
+      selectAllAction: { description: "The select-all shortcut (all rows are selected first): (row, selectedItems, selectedIds)." },
+      cutAction: { description: "The cut shortcut: (row, selectedItems, selectedIds)." },
+      copyAction: { description: "The copy shortcut: (row, selectedItems, selectedIds)." },
+      pasteAction: { description: "The paste shortcut: (row, selectedItems, selectedIds)." },
+      deleteAction: { description: "The delete shortcut: (row, selectedItems, selectedIds)." },
+    },
+    templates: {
+      itemTemplate: { description: "The markup for one item.", contextVars: ["$item", "$itemIndex", "$isFirst", "$isLast", "$isSelected"] },
+      emptyListTemplate: { description: "Shown when there are no items (default: No data available).", contextVars: [] },
+      groupHeaderTemplate: { description: "A group's header: $group is { id, key, items, isExpanded, toggle() }.", contextVars: ["$group"] },
+      groupFooterTemplate: { description: "After a group's last item: $group as in the header.", contextVars: ["$group"] },
+    },
+    childrenTemplate: "itemTemplate",
+    api: {
+      scrollToTop: { description: "Scrolls to the first row." },
+      scrollToBottom: { description: "Scrolls to the last row." },
+      scrollToIndex: { description: "Scrolls to the row at an index (group headers and footers count)." },
+      scrollToId: { description: "Scrolls to the row of an item id." },
+      getItemCount: { description: "The number of rows." },
+      getVisibleRange: { description: "{ startIndex, endIndex } of the rows in view ({ -1, -1 } when there are none)." },
+      clearSelection: { description: "Selects nothing." },
+      getSelectedItems: { description: "The selected items." },
+      getSelectedIds: { description: "The selected ids." },
+      selectAll: { description: "Selects every selectable row (rowsSelectable, several rows)." },
+      selectId: { description: "Selects an id, or an array of ids." },
+    },
+    themeVars: {
+      "backgroundColor-List": "$backgroundColor",
+      "backgroundColor-selected-List": "$color-primary-100",
+      "backgroundColor-selected-List--hover": "$color-primary-100",
+      "backgroundColor-row-List--hover": "$color-primary-50",
+      "outlineColor-row-List--focus": "$color-primary-500",
+    },
   },
   Pages: {
     description: "Renders the first Page whose url matches the current route (and every other child).",

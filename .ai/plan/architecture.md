@@ -496,20 +496,15 @@ Sources: `website/content/docs/reference/components/List.md`, `Table.md`,
 | AG Grid Community (MIT) | Nearly every Table feature, React cell renderers, and a Theming API built on CSS custom properties. But it's heavy, has its own DOM and accessibility model, renders on the client only, and its row grouping is Enterprise (paid). | Fallback if building the Table UI proves too costly. |
 | react-data-grid (adazzle) | Has been in 7.0 betas for years. | Rejected. |
 
-**Virtualizer (shared by List and Table):** still open, to be decided by a
-prototype.
-
-- `virtua`: what XMLUI uses. Small, with mature reverse scrolling, prepending
-  (`shift`) and dynamic sizes.
-- TanStack Virtual: active, with a performance release in May 2026 and a
-  chat/reverse-scroll guide, and it pairs naturally with TanStack Table.
-- react-virtuoso: the most complete out of the box (grouped lists,
-  `followOutput`), but more opinionated, and its maintenance status is
-  unverified.
-
-The prototype should test the hard cases: `scrollAnchor="bottom"` with
-prepending, dynamic heights, the render cache, iOS Safari, and rendering
-an initial window on the server.
+**Virtualizer (shared by List, Table, Tree and TileGrid): TanStack Virtual**
+(`@tanstack/react-virtual`), decided in step 29 after a prototype measured it
+against virtua: equally correct on prepends, appends, growing rows,
+`scrollToIndex` with unknown heights and the server render; no blank frames
+when scrolling fast (virtua runs a frame behind); anchoring and following the
+bottom built in; the scroll element re-read on every update. virtua is smaller
+(4 vs 11 KB gzipped) and mounts 100,000 rows faster. Table, numbers and
+reasons: [poc-29-list.md](poc-29-list.md) § Options A. react-virtuoso
+(maintained, 21 KB gzipped) was compared for size only.
 
 ## Component implementation map
 
@@ -635,7 +630,7 @@ review, not a decision.
 
 | XMLUI | Suggested implementation | Notes |
 |-------|--------------------------|-------|
-| List | Own, on the shared virtualizer (`virtua` or TanStack Virtual) | See "List and Table" |
+| List | **Step 29:** own, on TanStack Virtual ([poc-29-list.md](poc-29-list.md)) | See "List and Table" |
 | Table, Column | TanStack Table v9 + the virtualizer, rendered with Mantine `Table`, `Checkbox`, `Pagination` | See "List and Table" |
 | Items | Own (plain iteration, no virtualization) | |
 | Tree | Own, on the virtualizer; Mantine `Tree` / `useTree` ⚠ is possibly fine for small, non-virtualized data | Needs virtualization for parity |

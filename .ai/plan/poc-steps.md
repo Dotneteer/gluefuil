@@ -484,6 +484,12 @@ step 22B (inserted) is submission and server errors.
 
 ## Phase F: Components, in batches
 
+**Step 29 (the virtualized List) ✅.** Plan and findings:
+[poc-29-list.md](poc-29-list.md). TanStack Virtual, measured against virtua
+in a prototype; everything but paging and the data-refresh modes;
+`syncWithVar` resolved at compile time; the first window prerendered;
+`availableGroups` filters (the user's choices).
+
 **Step 28 (structure) ✅.** Plan and findings:
 [poc-28-structure.md](poc-28-structure.md). Tab and step headers compiled to
 data with the content in place, our own Splitter, `$overflow` per child,
@@ -524,7 +530,7 @@ E2E tests for interaction-heavy ones.
 | 26 ✅ | Date and time: `DateInput`, `DatePicker`, `TimeInput` | Calendar interaction, locale |
 | 27 ✅ | Overlays and menus: `ModalDialog` (declarative and imperative), `Drawer`, `DropdownMenu`, `SubMenuItem`, `ContextMenu`, `Tooltip`, `toast()`, `confirm()` | Focus trap, Escape, outside click |
 | 28 ✅ | Structure: `Tabs`, `ExpandableItem`, `Stepper`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar` | Resizing, sticky, overflow |
-| 29 | **Virtualized `List`** (also decides the virtualizer: `virtua` vs TanStack Virtual) | Scrolling, bottom anchoring, dynamic heights, grouping, selection |
+| 29 ✅ | **Virtualized `List`** (also decides the virtualizer: TanStack Virtual) | Scrolling, bottom anchoring, dynamic heights, grouping, selection |
 | 30 | **`Table` + `Column`** (TanStack Table v9) | Sorting, selection, resizing, pinning, pagination, editable cells |
 | 31 | `Tree`, `TileGrid`, `Pagination`, `Items` | Virtualized scrolling |
 | 32 | Remaining: `FileInput`, `FileUploadDropZone`, `QRCode`, `IFrame`, `MediaPlayer`, `TableOfContents`, `Bookmark`, `SkipLink`, `LiveRegion`, non-visual components | File drop, accessibility |

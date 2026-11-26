@@ -97,6 +97,12 @@ runs no effects, so the compiler turns the children into data instead:
   disabled options and wrap, Enter picks, Escape closes, Space opens a
   button target. Ours: Backspace in an empty multi input removes the last
   value; AutoComplete's Enter picks the only item when none is highlighted.
+  **The highlight is set when the options mount** (`settleOnOpen`, step 29):
+  Mantine looks for it in a `setTimeout(0)` after opening, but its transition
+  mounts the options in an animation frame. On a busy machine the frame came
+  later, the index stayed at "none", and the next ArrowDown went back to the
+  first option. Now a keyboard open highlights the active (or first) option
+  as the options mount, and any other open continues from the current value.
 - **Its own label** (Mantine's `<label for>`, with the class
   `gfui-Label-text`, so it looks like the label behavior's and gets the
   required mark in a form): the label behavior's `<label>` would wrap the

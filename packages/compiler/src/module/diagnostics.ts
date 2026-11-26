@@ -58,6 +58,8 @@ export const ModuleDiagnostics = {
   E037: (component: string, parents: string) => `'<${component}>' must be inside ${parents}`,
   /** Step 28: a child of a Tabs/Stepper that is not its item (TabItem, Step) or an Items of them. */
   E038: (component: string, item: string, what: string) => `'${component}' takes ${item} and Items (of ${item}) children only; ${what} can't be inside it`,
+  /** Step 29: a prop that names a variable (`syncWithVar`) names none visible here. */
+  E039: (prop: string, component: string, value: string, hint: string) => `'${prop}' of '${component}' must name a variable visible here; '${value}' is not one.${hint}`,
   /** Both `data` and Option children. */
   E036: (component: string) => `'${component}' has both 'data' and Option children; use one of them`,
 } as const;

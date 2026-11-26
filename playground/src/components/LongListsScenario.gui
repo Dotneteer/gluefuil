@@ -1,0 +1,41 @@
+<!-- Step 29: List with 10,000 rows of different heights; its own scroll box and the page's; the scroll API and events. -->
+<Component name="LongListsScenario">
+  <VStack
+    var.rows="{Array.from({ length: 10000 }, (_, i) => ({ id: 'r' + i, n: i, title: 'Row ' + i, body: 'lorem ipsum dolor '.repeat(1 + (i * 7919) % 9) }))}"
+    var.descending="{false}"
+    var.range="(none yet)"
+    var.scrolled="(no user scroll yet)">
+    <ScenarioHeader title="Long lists" description="10,000 rows whose heights differ and are known only once measured: only the rows in view are mounted. The first List scrolls in its own box, the second with the page."/>
+
+    <Card title="Its own scroll box">
+      <HStack wrapContent="true">
+        <Button label="Top" onClick="big.scrollToTop()"/>
+        <Button label="Row 5000" onClick="big.scrollToIndex(5000)"/>
+        <Button label="Id r9000" onClick="big.scrollToId('r9000')"/>
+        <Button label="Bottom" onClick="big.scrollToBottom()"/>
+        <Button label="{descending ? 'Ascending' : 'Descending'}" onClick="descending = !descending"/>
+      </HStack>
+      <Text>Visible rows: {range}</Text>
+      <Text>Scroll: {scrolled}</Text>
+      <List
+        id="big"
+        height="360px"
+        data="{rows}"
+        orderBy="{{ field: 'n', direction: descending ? 'desc' : 'asc' }}"
+        onVisibleRangeDidChange="r => range = r.startIndex + '–' + r.endIndex"
+        onScroll="s => scrolled = 'top ' + Math.round(s.scrollTop) + (s.atEnd ? ', at the end' : '')">
+        <VStack paddingVertical="$space-2" paddingHorizontal="$space-3">
+          <Text variant="strong">{$item.title}</Text>
+          <Text>{$item.body}</Text>
+        </VStack>
+      </List>
+    </Card>
+
+    <Card title="Scrolling with the page">
+      <Text variant="secondary">No height: the page scrolls, and the List renders the rows in the window.</Text>
+      <List data="{rows.slice(0, 2000)}" limit="2000">
+        <Card title="{$item.title}"><Text>{$item.body}</Text></Card>
+      </List>
+    </Card>
+  </VStack>
+</Component>

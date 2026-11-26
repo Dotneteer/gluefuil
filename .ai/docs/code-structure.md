@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 28 (structure).
+> **Last updated:** step 29 (the virtualized List).
 
 ## What this repository is
 
@@ -133,6 +133,13 @@ Current state:
   `ScrollViewer` (Mantine ScrollArea styles, fades), CSS-sticky `StickyBox`
   and `StickySection`, and `ResponsiveBar` (overflow into a menu, `$overflow`
   in a scope per child) ([structure.md](structure.md)).
+- **The virtualized List (step 29):** `List` on TanStack Virtual: only the
+  rows in view are mounted (dynamic heights, a render cache), in its own scroll
+  box or its container's; `scrollAnchor="bottom"` follows new rows and keeps
+  the view when rows are prepended; `orderBy`, `limit`, groups that fold;
+  selection by mouse, keys and checkboxes (`selection.ts`, for Table too),
+  `syncWithVar` (a variable's name, resolved at compile time: E039), keyboard
+  actions; the first window prerendered and taken over ([list.md](list.md)).
 - **Overlays and menus (step 27):** `ModalDialog` (opened by `open(...params)`
   with `$param` inside, or by `when`; a dirty guard; a Form inside closes it),
   `Drawer`, `DropdownMenu` with `MenuItem`, `SubMenuItem` and `MenuSeparator`
@@ -175,6 +182,7 @@ Current state:
 | [choice.md](choice.md) | `components/src/choice.tsx`; the compiler's options (`childrenAsOptions`); runtime `optionItems`, `OptionContent` |
 | [inputs.md](inputs.md) | `components/src/inputs.tsx`, `layout-wrap.tsx`; `wrapComponent`'s `readOnly` and API context; props shared by a component and a behavior |
 | [structure.md](structure.md) | `components/src/structure.tsx`; `childrenAsHeaders` (E038), `perChildContextVars` in the compiler; `usePerChildScope` |
+| [list.md](list.md) | `components/src/list.tsx`, `list-model.ts`, `selection.ts`, `virtual.ts`; `PropMetadata.variableName` (E039) in the compiler |
 | [overlays.md](overlays.md) | `components/src/overlays.tsx`, `overlay-context.tsx`; `runtime/src/render/overlay-state.ts`, `pointer.ts`; E037, `$$whenOpen`, `EventMetadata.args` |
 | [display.md](display.md) | `components/src/display.tsx`, `icons.tsx`, `icon-names.ts`, `markdown*.ts(x)`, the text overflow of `text.tsx`, `Link`; `compiler/src/script/markdown-bindings.ts`; `runtime/src/render/lazy.ts` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
@@ -232,7 +240,8 @@ Current state:
 │       ├── src/behaviors.tsx  LabelBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
 │       ├── src/data.tsx     DataSource, APICall, DataUrl
 │       ├── src/forms.tsx    Form, FormBindingBehavior, ValidationBehavior (the store is runtime/src/forms/)
-│       └── src/items.tsx    Items (templates with $item; a URL in data loads it)
+│       ├── src/items.tsx    Items (templates with $item; a URL in data loads it)
+│       └── src/list.tsx     List, virtualized (+ list-model.ts: the rows; selection.ts: row selection, for Table too; virtual.ts: the TanStack Virtual setup)
 ├── tools/               repository tooling: package-boundary checker, XMLUI corpus test, sandbox drift test, build-output check, static-server.mjs (E2E)
 ├── test-apps/
 │   ├── smoke/           @gluefuil/smoke-app   E2E fixture: packages load, parser runs in the browser
@@ -241,7 +250,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 42 scenarios (steps 2–28), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 45 scenarios (steps 2–29), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -332,7 +341,7 @@ delivery (imported by no package):
 |---------|-----------|-----------------|
 | compiler | relative files; `@gluefuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
-| components | runtime, React, Mantine (`@mantine/core`, `@mantine/dates`, `@mantine/notifications`), `lucide-react`, the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
+| components | runtime, React, Mantine (`@mantine/core`, `@mantine/dates`, `@mantine/notifications`), `lucide-react`, `@tanstack/react-virtual` (step 29), the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 | standalone | compiler, runtime, components, React | (no package imports it) |
 | vite-plugin | compiler, `@gluefuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
@@ -465,6 +474,7 @@ Conventions:
 | `packages/components/tests/dates.test.tsx` | Step 26: the formats, matchers, presets and times; the three date inputs through markup, in a Form, prerendered (see [dates.md](dates.md#tests)) |
 | `packages/compiler/tests/module/choice.test.ts`, `packages/components/tests/choice.test.tsx` | Step 25: Option children compiled to data; Select and AutoComplete through markup, in a Form, prerendered (see [choice.md](choice.md#tests)) |
 | `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
+| `packages/compiler/tests/module/list.test.ts`, `packages/components/tests/list-model.test.ts`, `list.test.tsx` | Step 29: E039 and `syncWithVar`'s code; the row model, selection and key-binding tables; the List in jsdom (see [list.md](list.md#tests)) |
 | `packages/compiler/tests/module/structure.test.ts`, `packages/components/tests/structure.test.tsx` | Step 28: headers as data, E038, `$overflow` scopes, the splitter aliases; the structure components in jsdom (see [structure.md](structure.md#tests)) |
 | `packages/compiler/tests/module/overlays.test.ts`, `packages/runtime/tests/render/pointer.test.ts`, `overlay-state.test.ts`, `packages/components/tests/overlays.test.tsx` | Step 27: E037, `$$whenOpen`, context variables; the pointer snapshot; toasts and confirmations; the overlays in jsdom (see [overlays.md](overlays.md#tests)) |
 | `packages/compiler/tests/module/behaviors.test.ts`, `packages/components/tests/behaviors.test.tsx` | Behaviors: attachment, order, generated code; rendering (see [behaviors.md](behaviors.md#tests)) |
@@ -486,7 +496,7 @@ Conventions:
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
 
-Count after step 28: 2,926 unit tests in 105 files, 235 E2E tests. After step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
+Count after step 29: 3,010 unit tests in 108 files, 247 E2E tests. After step 28: 2,926 unit tests in 105 files, 235 E2E tests. After step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
 are current; the breakdowns in parentheses were last counted after steps
 19A–19C and are updated only where steps 21–22B changed them.
 
@@ -555,8 +565,9 @@ are current; the breakdowns in parentheses were last counted after steps
     (each scenario does what its page says), `app-shell.spec.ts` (the
     layout demos, measured), `layout.spec.ts` (the spacing demo,
     measured), `overlays.spec.ts` (step 27: focus, Escape, outside clicks,
-    placement, in the overlay scenarios) and `structure.spec.ts` (step 28:
-    splitter drags, sticky elements, overflow, measured);
+    placement, in the overlay scenarios), `structure.spec.ts` (step 28:
+    splitter drags, sticky elements, overflow, measured) and `list.spec.ts`
+    (step 29: virtualized scrolling, anchoring, selection);
   - `playground-build` (5181): `app-shell-prerender.spec.ts`, against the
     playground's prerendered production build (`.tmp/playground-dist`);
   - `data-worker` (5182) and `data-server` (5183): `data.spec.ts` against
@@ -600,6 +611,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/data.spec.ts` | Data binding against the mock backend in both hosts: real requests, deduplication, slow network, out-of-order answers, retries, offline, hang and cancel, a rename with invalidation, validation errors, a slow double click (see [data.md](data.md#tests)) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select (step 25's), Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
+| `e2e/list.spec.ts` | Step 29 in the playground: 10,000 rows (few mounted, no blank viewport while scrolling fast, exact `scrollToIndex`), a page-scrolled List, the chat feed (follow, stop, prepend), groups, selection by mouse and keys, actions, a context menu (see [list.md](list.md#tests)) |
 | `e2e/structure.spec.ts` | Step 28 in the playground: tabs by keyboard, splitter drags and limits (measured), keys, hidden panes, resize modes; ScrollViewer styles and fades; sticky sections and boxes; ResponsiveBar overflow |
 | `e2e/overlays.spec.ts` | Step 27 in the playground: dialogs (focus trap and return, Escape only for the topmost, outside clicks, `willClose`, a Form, the tone), drawers, menus by keyboard, a context menu at the pointer, tooltip delay and flipping, toasts, `confirm()`, APICall |
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
