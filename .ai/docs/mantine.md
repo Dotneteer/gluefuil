@@ -73,7 +73,9 @@ Standalone mode can't load them yet.
   - **Every Mantine rule is in `@layer mantine`,** so our unlayered rules
     win.
 - **Popups stay inside the app** (`withinPortal: false`: Select and
-  AutoComplete, ColorPicker), so they inherit the theme scope.
+  AutoComplete, ColorPicker), so they inherit the theme scope. Dialogs, menus
+  and tooltips (step 27) portal into the overlay layer of the App or the
+  nearest Theme, which is inside the theme scope too ([overlays.md](overlays.md)).
 - **Divergences:**
   - `Button` doesn't declare XMLUI's `variant` (solid, outlined, ghost) yet,
     so the step 18 `variant` behavior still applies to it.

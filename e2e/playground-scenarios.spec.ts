@@ -1280,3 +1280,52 @@ test("DatePicker: typed fields and the popup; a range in two clicks and presets;
   await expect(saved).toBeVisible();
   expect(JSON.parse((await saved.textContent())!)).toEqual({ arrival: "07/01/2026", checkIn: "16:00", nights: { from: "07/01/2026", to: "07/05/2026" } });
 });
+
+// Step 27: the overlay scenarios. e2e/overlays.spec.ts covers them in depth (focus, Escape, placement).
+test("Dialogs and drawers: a dialog with $param and a Form, the help dialog by `when`, a drawer", async ({ page }) => {
+  await open(page, "/dialogs");
+  await button(page, "Edit Ann").click();
+  const editor = page.getByRole("dialog", { name: "Edit Ann" });
+  await expect(editor.getByLabel("Age")).toHaveValue("34");
+  await editor.getByRole("button", { name: "Save" }).click();
+  await expect(editor).toBeHidden();
+  await expect(text(page, "log: saved Ann (34), closed")).toBeVisible();
+  await button(page, "Show help").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Help" })).toBeHidden();
+  await button(page, "Bottom drawer").click();
+  await expect(page.getByText("From the bottom edge.", { exact: true })).toBeVisible();
+});
+
+test("Menus and tooltips: an item, a submenu item, a custom trigger; a context menu; a tooltip", async ({ page }) => {
+  await open(page, "/menus");
+  await button(page, "Actions").click();
+  await page.getByRole("menuitem", { name: "Duplicate" }).click();
+  await expect(text(page, "log: duplicate")).toBeVisible();
+  await button(page, "Actions").click();
+  await page.getByRole("menuitem", { name: "Export" }).hover();
+  await page.getByRole("menuitem", { name: "CSV" }).click();
+  await expect(text(page, "log: export csv")).toBeVisible();
+  await button(page, "Custom trigger").click();
+  await page.getByRole("menuitem", { name: "From a custom trigger" }).click();
+  await expect(text(page, "log: custom")).toBeVisible();
+  const card = page.locator(".gfui-Card").filter({ has: page.getByRole("heading", { name: "Notes.md", exact: true }) }).last();
+  await card.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Rename Notes.md" }).click();
+  await expect(text(page, "log: rename Notes.md")).toBeVisible();
+  await button(page, "Markdown").hover();
+  await expect(page.getByRole("tooltip").locator("code")).toHaveText("code");
+});
+
+test("Toasts and confirm: a success toast; confirm() both ways; an APICall that asks first", async ({ page }) => {
+  await open(page, "/notifications");
+  await button(page, "Success").click();
+  await expect(page.locator(".gfui-Toast[data-kind=success]", { hasText: "Saved" })).toBeVisible();
+  await button(page, "Ask (positional)").click();
+  await page.getByRole("dialog", { name: "Delete the file" }).getByRole("button", { name: "Delete" }).click();
+  await expect(text(page, "answer: confirmed")).toBeVisible();
+  await button(page, "Add Zoe").click();
+  await page.getByRole("dialog", { name: "Add a person" }).getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("dialog", { name: "Add a person" })).toBeHidden();
+  await expect(page.locator(".gfui-Toast", { hasText: "Adding Zoe" })).toHaveCount(0);
+});

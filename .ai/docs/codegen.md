@@ -106,12 +106,14 @@ cases:
 | A lone arrow or function expression | That function, made `async` |
 | A lone reference (`save`, `api.save`) | `async (...$params) => { save(...$params) }` |
 | Statements | `async (...$params) => { const $param = $params[0]; … }` |
+| Statements of an event without arguments for them (`EventMetadata.args`: `"none"`, `"pointer"`; step 27) | `async (...$$args) => { … }`: no `$param`/`$params`, so an enclosing context variable of that name (a ModalDialog's) is visible; a lone reference passes `...$$args` |
 
 Every call in the handler body is awaited implicitly when it returns a
 thenable. Nested functions stay synchronous unless they contain `await`.
 
 `$param`, `$params` and `$cancel` are locals (XMLUI `context-variables.md`,
-`managed-react/cooperative-concurrency.md`).
+`managed-react/cooperative-concurrency.md`); `compileHandler`'s `params: false`
+leaves out the first two (step 27, [overlays.md](overlays.md#pointer-events-and-param-decisions-1-and-2)).
 
 **Writes in handler mode:**
 

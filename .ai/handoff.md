@@ -11,6 +11,10 @@
 
 ## State
 
+- **Step 27 (overlays and menus) is done and merged into master.** Plan and findings:
+  [`plan/poc-27-overlays.md`](plan/poc-27-overlays.md); reference:
+  [`docs/overlays.md`](docs/overlays.md). `npm run check`: 2,882 unit tests
+  in 103 files, 220 E2E tests.
 - **Step 26 (date and time inputs) is done and merged into master.** Plan and findings:
   [`plan/poc-26-dates.md`](plan/poc-26-dates.md); reference:
   [`docs/dates.md`](docs/dates.md). `npm run check`: 2,814 unit tests in
@@ -185,7 +189,14 @@
   otherwise the dev server reloads the page mid-test.
 - **The sandbox invariant:** no platform object reaches script.
   `wrapComponent` calls an unconfigured `on*` handler without arguments for
-  this reason.
+  this reason. Pointer events pass `pointerData(event)` (step 27), and an
+  event without arguments for statements is marked `args: "none"` in its
+  metadata (else its statement handlers declare a `$param` that hides a
+  dialog's).
+- **Mantine overlays in jsdom (step 27):** no CSS transitions, so content
+  mounts a moment after opening and may stay `display: none`. Use
+  `findBy*` with `hidden: true`; prove visibility, focus and placement in
+  `e2e/overlays.spec.ts`. Reset with `resetOverlayState()` after each test.
 
 ## Open questions for the user
 
@@ -197,8 +208,9 @@
 
 ## Candidates for what comes next (the user decides)
 
-- **Step 27: overlays and menus** (`ModalDialog`, `Drawer`, `DropdownMenu`,
-  `ContextMenu`, `Tooltip`, `toast()`, `confirm()`).
+- **Step 28: structure** (`Tabs`, `ExpandableItem`, `Stepper`, `Splitter`,
+  `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar`).
+- **Step 27's open items** (`poc-27-overlays.md`).
 - **Step 26's open items** (`poc-26-dates.md`).
 - **Step 25's open items** (`poc-25-choice.md`).
 - **Bundle size:** let unused built-ins drop (step 24 finding).

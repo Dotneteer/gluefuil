@@ -1,0 +1,40 @@
+<!-- Step 27: toast(), confirm(), and APICall's confirmation and notifications. -->
+<Component name="NotificationsScenario">
+  <VStack var.answer="none" var.loadingId="">
+    <ScenarioHeader title="Toasts and confirm" description="toast() and its kinds, positions and ids; confirm() in both forms; an APICall that asks first and reports with toasts."/>
+
+    <Card title="toast()">
+      <HStack wrapContent="true">
+        <Button label="Neutral" onClick="toast('Hello from toast()')"/>
+        <Button label="Success" onClick="toast.success('Saved')"/>
+        <Button label="Error" onClick="toast.error('Something failed')"/>
+        <Button label="Top left, 1 s" onClick="toast('Quick one', { position: 'top-left', duration: 1000 })"/>
+        <Button label="Start loading" onClick="loadingId = toast.loading('Uploading…', { id: 'upload' })"/>
+        <Button label="Finish loading" onClick="toast.success('Uploaded', { id: 'upload' })"/>
+        <Button label="Remove loading" onClick="toast.remove('upload')"/>
+      </HStack>
+    </Card>
+
+    <Card title="confirm()">
+      <HStack wrapContent="true">
+        <Button label="Ask (positional)" onClick="answer = (await confirm('Delete the file', 'This cannot be undone.', 'Delete')) ? 'confirmed' : 'cancelled'"/>
+        <Button label="Ask (options)" onClick="answer = (await confirm({ title: 'Publish', message: 'Publish the page now?', actionLabel: 'Publish', actionThemeColor: 'primary', width: '420px' })) ? 'published' : 'not published'"/>
+        <Button label="Ask twice" onClick="const a = await confirm('First'); const b = await confirm('Second'); answer = a + ' then ' + b"/>
+      </HStack>
+      <Text>answer: {answer}</Text>
+    </Card>
+
+    <Card title="APICall: confirmation and notifications">
+      <Text variant="secondary">Adds a person to the mock backend: it asks first, shows a loading toast, then the outcome. The second one fails.</Text>
+      <APICall id="addPerson" method="post" url="/api/people" body="{{ name: $param, email: $param.toLowerCase() + '@example.com' }}"
+               confirmTitle="Add a person" confirmMessage="Add {$param} to the people?" confirmButtonLabel="Add"
+               inProgressNotificationMessage="Adding {$param}…"
+               completedNotificationMessage="Added {$result.name}"/>
+      <APICall id="missing" url="/api/people/999999" errorNotificationMessage="Couldn't load it: {$error.status}"/>
+      <HStack>
+        <Button label="Add Zoe" onClick="addPerson.execute('Zoe')"/>
+        <Button label="Load a missing person" onClick="missing.execute()"/>
+      </HStack>
+    </Card>
+  </VStack>
+</Component>

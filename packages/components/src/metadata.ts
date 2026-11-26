@@ -92,6 +92,17 @@ export interface ComponentMetadata {
    * markup values win over `props`.
    */
   alias?: { component: string; props: Record<string, string> };
+  /**
+   * The element opens when it mounts if it has `when` (step 27: a ModalDialog with
+   * `when` is open while the condition holds). The compiler passes `$$whenOpen`.
+   */
+  openedByWhen?: boolean;
+  /**
+   * The components this one must be inside (step 27: a MenuItem in a DropdownMenu,
+   * ContextMenu or SubMenuItem). `Items` and templates between them are fine, and
+   * so is the root of a `<Component>` (its use site can't be checked). Else E037.
+   */
+  parents?: readonly string[];
   /** `false`: the layout props (LAYOUT_PROPS: width, padding, …) are not accepted. Non-visual components never accept them. */
   layoutProps?: false;
   /**
@@ -142,6 +153,14 @@ export interface PropMetadata {
 
 export interface EventMetadata {
   description: string;
+  /**
+   * What the handler receives (step 27). Default: arguments, so a statement
+   * handler declares `$param` and `$params`. `"none"`: no arguments; `"pointer"`:
+   * a frozen pointer snapshot (`{ clientX, clientY, button, … }`), which only a
+   * function handler (`ev => …`) names. For both, a statement handler declares
+   * no `$param`/`$params`, so an enclosing one (a ModalDialog's) stays visible.
+   */
+  args?: "none" | "pointer";
   /** Handling it is a warning with this message. */
   deprecationMessage?: string;
 }
@@ -219,8 +238,8 @@ const INPUT_COMMON: Record<string, PropMetadata> = {
 };
 
 const FOCUS_EVENTS: Record<string, EventMetadata> = {
-  gotFocus: { description: "The input got the keyboard focus. No arguments." },
-  lostFocus: { description: "The input lost the keyboard focus. No arguments." },
+  gotFocus: { description: "The input got the keyboard focus. No arguments.", args: "none" },
+  lostFocus: { description: "The input lost the keyboard focus. No arguments.", args: "none" },
 };
 
 /** startText, endText, startIcon, endIcon: adornments inside the input's edges. */
@@ -549,7 +568,7 @@ const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
       ...INPUT_COMMON,
     },
     events: {
-      click: { description: "Clicked. The handler receives no arguments." },
+      click: { description: "Clicked. The handler receives no arguments.", args: "none" },
       didChange: { description: "Checked or unchecked by the user; `$param` is the new state." },
       ...FOCUS_EVENTS,
     },
@@ -571,7 +590,7 @@ const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
       ...INPUT_COMMON,
     },
     events: {
-      click: { description: "Clicked. The handler receives no arguments." },
+      click: { description: "Clicked. The handler receives no arguments.", args: "none" },
       didChange: { description: "Turned on or off by the user; `$param` is the new state." },
       ...FOCUS_EVENTS,
     },
@@ -668,8 +687,13 @@ const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
 };
 
 /** A click handler's description: no DOM event reaches script. */
-const CLICK = { description: "Clicked (or Enter or Space when focused). The handler receives no arguments." };
-const CONTEXT_MENU = { description: "Right-clicked: replaces the browser's menu. The handler receives no arguments." };
+/** A pointer event's description: script receives a frozen snapshot, never the DOM event (step 27). */
+const CLICK: EventMetadata = { description: "Clicked (or Enter or Space when focused). A function handler receives the pointer: (ev) with ev.clientX, ev.clientY.", args: "pointer" };
+const CONTEXT_MENU: EventMetadata = {
+  description: "Right-clicked: replaces the browser's menu. A function handler receives the pointer: (ev) => menu.openAt(ev).",
+  args: "pointer",
+};
+const DOUBLE_CLICK: EventMetadata = { description: "Double-clicked. A function handler receives the pointer.", args: "pointer" };
 
 /** XMLUI's named sizes of Icon (xs 12px, sm 16px, md 24px, lg 32px). */
 const ICON_SIZES = ["xs", "sm", "md", "lg"];
@@ -819,8 +843,8 @@ const DISPLAY_COMPONENTS: Record<string, ComponentMetadata> = {
       verticalAlignment: { description: "start (default), center, end or stretch.", valueType: "string", availableValues: ALIGNMENTS },
     },
     events: {
-      click: { description: "Clicked (the second click of a double click is not one). The handler receives no arguments." },
-      doubleClick: { description: "Double-clicked. The handler receives no arguments." },
+      click: { ...CLICK, description: "Clicked (the second click of a double click is not one). A function handler receives the pointer." },
+      doubleClick: DOUBLE_CLICK,
       contextMenu: CONTEXT_MENU,
     },
     api: {
@@ -843,6 +867,195 @@ const DISPLAY_COMPONENTS: Record<string, ComponentMetadata> = {
   },
 };
 
+
+
+// --- Overlays and menus (step 27; .ai/plan/poc-27-overlays.md) -------------------------
+
+const MENUS = ["DropdownMenu", "ContextMenu", "SubMenuItem"];
+const ICON_POSITIONS = ["start", "end"];
+const TOOLTIP_SIDES = ["top", "right", "bottom", "left"];
+
+/** The Tooltip component's options; the tooltip behavior's `tooltipOptions` takes the same names. */
+export const TOOLTIP_OPTION_PROPS: Record<string, PropMetadata> = {
+  side: { description: "Where the tooltip shows: top (default), right, bottom, left.", valueType: "string", availableValues: TOOLTIP_SIDES },
+  align: { description: "Its alignment along that side: start, center (default), end.", valueType: "string", availableValues: ["start", "center", "end"] },
+  sideOffset: { description: "The distance from the component in pixels (default 4).", valueType: "number" },
+  alignOffset: { description: "A shift along the side in pixels (default 0).", valueType: "number" },
+  showArrow: { description: "Shows an arrow pointing at the component (default false).", valueType: "boolean" },
+  avoidCollisions: { description: "Flips and shifts the tooltip to stay in the viewport (default true).", valueType: "boolean" },
+  delayDuration: { description: "Milliseconds the pointer rests before it shows (default 700).", valueType: "integer" },
+  skipDelayDuration: { description: "Accepted for compatibility (Radix's delay skipping); no effect.", valueType: "integer" },
+  defaultOpen: { description: "Shown when it mounts, until the pointer leaves.", valueType: "boolean" },
+};
+
+const OVERLAY_COMPONENTS: Record<string, ComponentMetadata> = {
+  ModalDialog: {
+    description:
+      "A dialog above the page: opened by open(...params) (the dialog sees $param and $params) or while its `when` holds; focus stays inside; Escape, the close button and a click outside close it.",
+    props: {
+      title: { description: "The title in the dialog's header.", valueType: "string" },
+      closeButtonVisible: { description: "Shows the close button in the header (default true).", valueType: "boolean" },
+      closeOnClickAway: { description: "A click outside the dialog closes it (default true).", valueType: "boolean" },
+      fullScreen: { description: "Covers the whole window (default false).", valueType: "boolean" },
+      skipDirtyConfirmation: { description: "Closes a dirty dialog without asking (default false).", valueType: "boolean" },
+      confirmCloseTitle: { description: 'The title of the question before a dirty dialog closes (default "Unsaved changes").', valueType: "string" },
+      canCloseMessage: { description: "The question before a dirty dialog closes.", valueType: "string" },
+      confirmCloseLabel: { description: 'The button that closes the dirty dialog (default "Close").', valueType: "string" },
+      cancelCloseLabel: { description: 'The button that keeps it open (default "Cancel").', valueType: "string" },
+    },
+    events: {
+      open: { description: "The dialog opened: (...params), the arguments of open()." },
+      close: { description: "The dialog closed (the close button, Escape, a click outside, close(), a Form inside).", args: "none" },
+      willClose: { description: "Before it closes: returning false keeps it open (and skips the dirty question).", args: "none" },
+      dirtyChanged: { description: "The dialog became dirty or clean (setDirty, or a Form inside): (dirty)." },
+    },
+    eventResults: true,
+    templates: { titleTemplate: { description: "The title, as markup.", contextVars: [] } },
+    childContextVars: ["$param", "$params"],
+    openedByWhen: true,
+    api: {
+      open: { description: "Opens the dialog: open(...params); inside, $param is the first, $params all of them." },
+      close: { description: "Closes the dialog (willClose and the dirty question apply)." },
+      setDirty: { description: "Marks the dialog dirty (it asks before closing) or clean." },
+      getDirty: { description: "Whether the dialog is dirty." },
+      isOpen: { description: "Whether the dialog is open (reactive)." },
+    },
+    themeVars: {
+      "backgroundColor-ModalDialog": "$backgroundColor",
+      "backgroundColor-overlay-ModalDialog": "rgba(15, 23, 42, 0.5)",
+      "textColor-ModalDialog": "$textColor",
+      "borderRadius-ModalDialog": "$borderRadius",
+      "fontSize-title-ModalDialog": "1.25em",
+      "fontWeight-title-ModalDialog": "600",
+      "textColor-title-ModalDialog": "$textColor",
+      "minWidth-ModalDialog": "min(100%, 360px)",
+      "maxWidth-ModalDialog": "min(100%, 560px)",
+      "boxShadow-ModalDialog": "0 12px 32px rgba(15, 23, 42, 0.25)",
+    },
+    // Default: the spacing ladder's level 1 (a surface, like a Card on the page).
+    optionalThemeVars: ["padding-ModalDialog", "gap-ModalDialog"],
+  },
+  Drawer: {
+    description: "A panel that slides in from an edge of the window: open() and close(), a backdrop, a header template.",
+    props: {
+      position: { description: "The edge it slides in from: left (default), right, top, bottom.", valueType: "string", availableValues: ["left", "right", "top", "bottom"] },
+      hasBackdrop: { description: "Dims the page behind it (default true).", valueType: "boolean" },
+      closeOnClickAway: { description: "A click on the backdrop closes it (default true).", valueType: "boolean" },
+      closeButtonVisible: { description: "Shows the close button in its header (default true).", valueType: "boolean" },
+      initiallyOpen: { description: "Open when it mounts (default false).", valueType: "boolean" },
+    },
+    events: {
+      open: { description: "The drawer opened.", args: "none" },
+      close: { description: "The drawer closed.", args: "none" },
+    },
+    templates: { headerTemplate: { description: "The header's content, next to the close button.", contextVars: [] } },
+    api: {
+      open: { description: "Opens the drawer." },
+      close: { description: "Closes the drawer." },
+      isOpen: { description: "Whether the drawer is open (reactive)." },
+    },
+    themeVars: {
+      "backgroundColor-Drawer": "$backgroundColor",
+      "backgroundColor-backdrop-Drawer": "rgba(15, 23, 42, 0.5)",
+      "boxShadow-Drawer": "0 12px 32px rgba(15, 23, 42, 0.25)",
+      "width-Drawer": "320px",
+      "height-Drawer": "320px",
+    },
+    optionalThemeVars: ["padding-Drawer", "gap-Drawer"],
+  },
+  DropdownMenu: {
+    description: "A button that opens a menu of MenuItem, SubMenuItem and MenuSeparator children (or any content).",
+    props: {
+      label: { description: "The trigger button's text.", valueType: "string" },
+      alignment: { description: "The menu's edge under the trigger: start (default), end, center.", valueType: "string", availableValues: ["start", "end", "center"] },
+      enabled: { description: "false: the trigger is disabled.", valueType: "boolean" },
+      triggerButtonIcon: { description: 'The trigger\'s icon (default "chevrondown").', valueType: "string", knownValues: ICON_NAMES },
+      triggerButtonIconPosition: { description: "start, or end (default).", valueType: "string", availableValues: ICON_POSITIONS },
+      triggerButtonThemeColor: { description: "Accepted for XMLUI compatibility; waits for Button theme colors.", valueType: "string", availableValues: ["primary", "secondary", "attention"] },
+      triggerButtonVariant: { description: "Accepted for XMLUI compatibility; waits for Button variants.", valueType: "string", availableValues: ["solid", "outlined", "ghost"] },
+    },
+    events: { willOpen: { description: "Before the menu opens: returning false keeps it closed.", args: "none" } },
+    eventResults: true,
+    templates: { triggerTemplate: { description: "A trigger of your own instead of the button (it opens the menu when clicked).", contextVars: [] } },
+    api: {
+      open: { description: "Opens the menu." },
+      close: { description: "Closes the menu." },
+    },
+    themeVars: {
+      "backgroundColor-DropdownMenu": "$backgroundColor",
+      "borderColor-DropdownMenu": "$borderColor",
+      "borderRadius-DropdownMenu": "$borderRadius",
+      "boxShadow-DropdownMenu": "0 8px 24px rgba(15, 23, 42, 0.18)",
+      "minWidth-DropdownMenu": "160px",
+    },
+  },
+  MenuItem: {
+    description: "An item of a DropdownMenu, ContextMenu or SubMenuItem: `label` or the nested content, an icon; a click runs onClick or navigates to `to`, and closes the menu.",
+    props: {
+      label: { description: "The item's text. Nested content is used when it is absent.", valueType: "string" },
+      icon: { description: "An icon by name.", valueType: "string", knownValues: ICON_NAMES },
+      iconPosition: { description: "start (default) or end.", valueType: "string", availableValues: ICON_POSITIONS },
+      active: { description: "Shows the item as the current one.", valueType: "boolean" },
+      enabled: { description: "false: disabled.", valueType: "boolean" },
+      to: { description: "Navigates to this route or URL when clicked.", valueType: "string" },
+    },
+    events: { click: { description: "Clicked (or chosen with the keyboard). A function handler receives the pointer.", args: "pointer" } },
+    parents: MENUS,
+    layoutProps: false,
+    themeVars: {
+      "backgroundColor-MenuItem": "transparent",
+      "backgroundColor-MenuItem--hover": "$color-surface-100",
+      "backgroundColor-MenuItem--active": "$color-primary-50",
+      "color-MenuItem": "$textColor",
+      "color-MenuItem--hover": "$textColor",
+      "color-MenuItem--active": "$color-primary-600",
+      "color-MenuItem--disabled": "$textColor-secondary",
+      "fontSize-MenuItem": "0.95em",
+      "gap-MenuItem": "$space-2",
+      "paddingVertical-MenuItem": "$space-2",
+      "paddingHorizontal-MenuItem": "$space-3",
+    },
+  },
+  SubMenuItem: {
+    description: "An item that opens a nested menu of its children (on hover, a click, or the right arrow key).",
+    props: {
+      label: { description: "The item's text.", valueType: "string" },
+      icon: { description: "An icon by name.", valueType: "string", knownValues: ICON_NAMES },
+      iconPosition: { description: "start (default) or end.", valueType: "string", availableValues: ICON_POSITIONS },
+    },
+    templates: { triggerTemplate: { description: "The item's content, as markup.", contextVars: [] } },
+    parents: MENUS,
+    layoutProps: false,
+  },
+  MenuSeparator: {
+    description: "A line between menu items.",
+    props: {},
+    parents: MENUS,
+    layoutProps: false,
+  },
+  ContextMenu: {
+    description: "A menu without a trigger, opened at the pointer by openAt(ev, context) (usually from onContextMenu); its items see the context as $context.",
+    props: {
+      menuWidth: { description: "The menu's width (a CSS size).", valueType: "string" },
+    },
+    childContextVars: ["$context"],
+    api: {
+      openAt: { description: "Opens the menu at the pointer: openAt(ev, context) with the handler's ev (or { clientX, clientY }); without ev, at the last right click." },
+      close: { description: "Closes the menu." },
+    },
+    layoutProps: false,
+  },
+  Tooltip: {
+    description: "Shows `text`, `markdown` or `tooltipTemplate` while the pointer is over its children (or they have the focus).",
+    props: {
+      text: { description: "The tooltip's text.", valueType: "string" },
+      markdown: { description: "The tooltip's content as Markdown.", valueType: "string" },
+      ...TOOLTIP_OPTION_PROPS,
+    },
+    templates: { tooltipTemplate: { description: "The tooltip's content, as markup.", contextVars: [] } },
+    layoutProps: false,
+  },
+};
 
 /** Breakpoints a NavPanel can move into its drawer below (`drawerBelow`). */
 export const DRAWER_BREAKPOINTS = ["sm", "md", "lg", "xl", "xxl", "never"] as const;
@@ -1113,7 +1326,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       enabled: { description: "false: disabled.", valueType: "boolean" },
     },
     events: {
-      click: { description: "The button was clicked. The handler receives no arguments (no DOM event)." },
+      click: { description: "The button was clicked (or activated by the keyboard). A function handler receives the pointer: (ev) with ev.clientX, ev.clientY.", args: "pointer" },
     },
     themeVars: {
       "backgroundColor-Button": "$color-primary-500",
@@ -1126,6 +1339,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   ...CHOICE_COMPONENTS,
   ...DATE_COMPONENTS,
   ...INPUT_COMPONENTS,
+  ...OVERLAY_COMPONENTS,
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",
     props: {
@@ -1141,14 +1355,18 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       cancelLabel: { description: 'The Cancel button\'s label. Default "Cancel".', valueType: "string" },
       hideButtonRow: { description: "Hide the Save and Cancel buttons.", valueType: "boolean" },
       dataAfterSubmit: { description: "After a successful submit: keep the data, reset it to the baseline, or clear it.", valueType: "string", availableValues: ["keep", "reset", "clear"] },
+      keepModalOpenOnSubmit: { description: "In a ModalDialog: a successful submit leaves the dialog open (by default it closes).", valueType: "boolean" },
+      inProgressNotificationMessage: { description: "A toast while the form is submitting.", valueType: "string" },
+      completedNotificationMessage: { description: "A toast after a successful submit.", valueType: "string" },
+      errorNotificationMessage: { description: "A toast after a failed submit.", valueType: "string" },
     },
     events: {
       willSubmit: { description: "Before submitting, after validation: `(data, allData)`. `false` cancels; an object replaces the submitted data." },
       submit: { description: "Submits: `(data)`. Its result is passed to `success`; a throw is a failed submit." },
       success: { description: "The submit succeeded: `(result)`." },
       submitError: { description: "The submit failed: `(error, problem)`. `problem` is the server's validation problem (`{ fields, detail }`), if it sent one." },
-      cancel: { description: "The Cancel button was clicked. The data stays." },
-      reset: { description: "The form was reset (the `reset()` method, or `dataAfterSubmit`)." },
+      cancel: { description: "The Cancel button was clicked. The data stays.", args: "none" },
+      reset: { description: "The form was reset (the `reset()` method, or `dataAfterSubmit`).", args: "none" },
       dirtyChanged: { description: "The form became dirty or clean: `(dirty)`." },
     },
     eventResults: true,
@@ -1231,6 +1449,16 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       retries: { description: "Retries of retryable failures. Default 0: a write is not repeated unless asked.", valueType: "integer" },
       retryDelay: { description: "The first wait between attempts in ms, doubled each time. Default 500.", valueType: "integer" },
       timeoutMs: { description: "Per attempt, in ms. Default 30000.", valueType: "integer" },
+      confirmTitle: { description: "Asks before the request (confirm()): the question's title; may use $param.", valueType: "string", deferred: ["$param", "$params"] },
+      confirmMessage: { description: "Asks before the request: the question; may use $param. Cancelled: no request, execute() resolves to undefined.", valueType: "string", deferred: ["$param", "$params"] },
+      confirmButtonLabel: { description: 'The button that confirms (default "Yes").', valueType: "string", deferred: ["$param", "$params"] },
+      inProgressNotificationMessage: { description: "A toast while the request runs; may use $param.", valueType: "string", deferred: ["$param", "$params"] },
+      completedNotificationMessage: { description: "A toast after success; may use $result (the response) and $param.", valueType: "string", deferred: ["$result", "$param", "$params"] },
+      errorNotificationMessage: {
+        description: "A toast after a failure; may use $error ({ message, status, body, … }) and $param. It handles the error: execute() resolves to undefined.",
+        valueType: "string",
+        deferred: ["$error", "$param", "$params"],
+      },
     },
     events: {
       beforeRequest: { description: "Before the request, with execute()'s arguments: returning false skips it." },
@@ -1303,7 +1531,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       noIndicator: { description: "No underline or link color: it looks like its content.", valueType: "boolean" },
       ...TEXT_OVERFLOW_PROPS,
     },
-    events: { click: { description: "Clicked, before the navigation. The handler receives no arguments." } },
+    events: { click: { description: "Clicked, before the navigation. The handler receives no arguments.", args: "none" } },
     themeVars: {
       "textColor-Link": "$color-primary-600",
       "textColor-Link--hover": "$color-primary-500",

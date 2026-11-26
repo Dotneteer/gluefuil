@@ -2,7 +2,7 @@
 // Heading.md). Text variants render the semantic element where one exists;
 // all styling comes from theme variables (styles.ts). Step 23 added the text
 // overflow props (shared with Link) and the APIs.
-import { useComponentApi, type RegisterApi } from "@gluefuil/runtime";
+import { pointerData, useComponentApi, type PointerData, type RegisterApi } from "@gluefuil/runtime";
 import { createElement, useMemo, useRef, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { useLayout, type LayoutProps } from "./layout";
 
@@ -106,7 +106,7 @@ function useOverflowApi(registerApi: RegisterApi | undefined, ref: RefObject<HTM
 }
 
 type TextProps = LayoutProps &
-  TextOverflowProps & { value?: unknown; variant?: unknown; registerApi?: RegisterApi; onContextMenu?: () => unknown; children?: ReactNode };
+  TextOverflowProps & { value?: unknown; variant?: unknown; registerApi?: RegisterApi; onContextMenu?: (ev?: unknown) => unknown; children?: ReactNode };
 
 export function Text(props: TextProps) {
   const { value, variant, registerApi, onContextMenu, children } = props;
@@ -130,12 +130,16 @@ export function Text(props: TextProps) {
   );
 }
 
-/** A `contextMenu` handler replaces the browser's menu; it gets no DOM event (the sandbox invariant). */
+/**
+ * A `contextMenu` handler replaces the browser's menu. It gets the pointer
+ * snapshot, never the DOM event (the sandbox invariant; step 27).
+ */
 export function contextMenuHandler(handler: unknown) {
   if (typeof handler !== "function") return undefined;
   return (event: MouseEvent) => {
     event.preventDefault();
-    void (handler as () => unknown)();
+    event.stopPropagation();
+    void (handler as (ev: PointerData) => unknown)(pointerData(event));
   };
 }
 

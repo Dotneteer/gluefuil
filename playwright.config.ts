@@ -39,7 +39,7 @@ export default defineConfig({
     // The same app built under base /app/ (step 21, part 2): the router's basename.
     { name: "routing-base-build", testMatch: /routing-base\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5185" } },
     // The manual-testing playground: every scenario still opens (smoke); the App shell and layout demos.
-    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout|overlays)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
     // Data binding (step 20): the same app and specs against the mock backend in two hosts.
     { name: "data-worker", testMatch: /data\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5182" } },
     // One backend in the dev server for all tests: they run one after another (each resets it).

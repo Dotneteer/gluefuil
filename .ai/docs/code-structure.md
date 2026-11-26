@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 26 (date and time inputs).
+> **Last updated:** step 27 (overlays and menus).
 
 ## What this repository is
 
@@ -126,6 +126,16 @@ Current state:
   `DatePicker` (inline or a popup, ranges, presets) on `@mantine/dates`, in
   a lazy chunk; XMLUI's string values (a date in `dateFormat`, `HH:mm`) and
   `isoValue()` ([dates.md](dates.md)).
+- **Overlays and menus (step 27):** `ModalDialog` (opened by `open(...params)`
+  with `$param` inside, or by `when`; a dirty guard; a Form inside closes it),
+  `Drawer`, `DropdownMenu` with `MenuItem`, `SubMenuItem` and `MenuSeparator`
+  (E037 outside a menu), `ContextMenu` (`openAt(ev, context)`, `$context`),
+  `Tooltip` (the tooltip behavior too, with `tooltipOptions` and
+  `tooltipMarkdown`), and the app globals `toast()` and `confirm()`, on Mantine
+  and `@mantine/notifications`. They portal into an overlay layer of the App
+  or the nearest Theme. Pointer handlers (`click`, `contextMenu`) receive a
+  frozen pointer snapshot, and handlers of argument-free events declare no
+  `$param`, so a dialog's shows through ([overlays.md](overlays.md)).
 - **Display components (step 23):** `Icon` (XMLUI's names, drawn with
   Lucide; `registerIcon`), `Image`, `Avatar`, `Badge`, `ProgressBar`,
   `Spinner`, `ContentSeparator` (Mantine), and `Card` (a Stack that is a
@@ -157,6 +167,7 @@ Current state:
 | [dates.md](dates.md) | `components/src/date-format.ts`, `dates.tsx`, `dates-native.tsx` (lazy); `PropMetadata.exclusive` |
 | [choice.md](choice.md) | `components/src/choice.tsx`; the compiler's options (`childrenAsOptions`); runtime `optionItems`, `OptionContent` |
 | [inputs.md](inputs.md) | `components/src/inputs.tsx`, `layout-wrap.tsx`; `wrapComponent`'s `readOnly` and API context; props shared by a component and a behavior |
+| [overlays.md](overlays.md) | `components/src/overlays.tsx`, `overlay-context.tsx`; `runtime/src/render/overlay-state.ts`, `pointer.ts`; E037, `$$whenOpen`, `EventMetadata.args` |
 | [display.md](display.md) | `components/src/display.tsx`, `icons.tsx`, `icon-names.ts`, `markdown*.ts(x)`, the text overflow of `text.tsx`, `Link`; `compiler/src/script/markdown-bindings.ts`; `runtime/src/render/lazy.ts` |
 | [behaviors.md](behaviors.md) | `components/src/behaviors*.ts(x)`, `attachedBehaviors`, the compiler's `withBehaviors` |
 | [forms.md](forms.md) | `runtime/src/forms/`, `runtime/src/render/context-scope.ts`, the field binding in `wrap.ts`, `components/src/forms.tsx`, `childContextVars` in the compiler, `test-apps/forms` |
@@ -208,7 +219,8 @@ Current state:
 │       ├── src/routing.tsx  Pages, Page, Link (routes and URLs)
 │       ├── src/shell.tsx    the App shell: AppHeader, NavPanel, Footer, NavLink, NavGroup, NavPanelCollapseButton
 │       ├── src/theme.tsx    App, Theme; src/styles.ts the stylesheet; src/theming/ the theme engine (React-free)
-│       ├── src/behaviors.tsx  LabelBehavior, TooltipBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
+│       ├── src/overlays.tsx ModalDialog, Drawer, DropdownMenu, MenuItem, SubMenuItem, MenuSeparator, ContextMenu, Tooltip, TooltipBehavior, the App's toasts and confirm() (+ overlay-context.tsx: the overlay layer, the Escape stack, the dialog host)
+│       ├── src/behaviors.tsx  LabelBehavior, VariantBehavior (+ behaviors-metadata.ts, React-free)
 │       ├── src/data.tsx     DataSource, APICall, DataUrl
 │       ├── src/forms.tsx    Form, FormBindingBehavior, ValidationBehavior (the store is runtime/src/forms/)
 │       └── src/items.tsx    Items (templates with $item; a URL in data loads it)
@@ -220,7 +232,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 36 scenarios (steps 2–26), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 39 scenarios (steps 2–27), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -250,8 +262,8 @@ version `0.0.0`.
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **Forms:** `extractServerProblem`, `ServerProblem`, `ServerFieldError`, `FormStore`, `FormField`, `FieldOptions`, `DEFAULT_FIELD_OPTIONS`, `ValidationSummary`, `validateRules`, `customResults`, `highestSeverity`, `isEmptyValue`, `parseRegex`, `PATTERNS`, `FieldRules`, `RuleResult`, `Severity`, `isShown`, `INITIAL_FLAGS`, `InteractionFlags`, `ValidationMode`, `parseFieldPath`, `getAt`, `setAt`, `deleteAt`, `FormProvider`, `useFormStore`, `FieldBindingProvider`, `useFieldBinding`, `FieldBinding`; `createContextScope`, `useContextScope`, `provideContext`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. Also `createElement`, `Fragment`. |
-| `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, the inputs, `Select`, `AutoComplete`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `Pages`, `Page`, `Link`, the behavior components, `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **Forms:** `extractServerProblem`, `ServerProblem`, `ServerFieldError`, `FormStore`, `FormField`, `FieldOptions`, `DEFAULT_FIELD_OPTIONS`, `ValidationSummary`, `validateRules`, `customResults`, `highestSeverity`, `isEmptyValue`, `parseRegex`, `PATTERNS`, `FieldRules`, `RuleResult`, `Severity`, `isShown`, `INITIAL_FLAGS`, `InteractionFlags`, `ValidationMode`, `parseFieldPath`, `getAt`, `setAt`, `deleteAt`, `FormProvider`, `useFormStore`, `FieldBindingProvider`, `useFieldBinding`, `FieldBinding`; `createContextScope`, `useContextScope`, `provideContext`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`. **Overlays (step 27):** `toast`, `confirm`, `toasts`, `confirmQueue`, `removeToast`, `answerConfirm`, `resetOverlayState`, `TOAST_POSITIONS`, their types; `pointerData`, `isPointerLike`, `PointerData`. Also `createElement`, `Fragment`. |
+| `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, the inputs, `Select`, `AutoComplete`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `Pages`, `Page`, `Link`, the behavior components, the overlays (`ModalDialog`, `Drawer`, `DropdownMenu`, `MenuItem`, `SubMenuItem`, `MenuSeparator`, `ContextMenu`, `Tooltip`, `parseTooltipOptions`), `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
 | `packages/components/src/metadata.ts` | `componentMetadata` (every built-in, with `themeVars` defaults; props with value types and enums, events, API, templates; App's `regions` and `removedProps`), `LAYOUT_EQUIVALENTS`, `DRAWER_BREAKPOINTS`, `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
 ### Compiler source layout
@@ -311,7 +323,7 @@ delivery (imported by no package):
 |---------|-----------|-----------------|
 | compiler | relative files; `@gluefuil/components/metadata` | anything else: React, runtime, components' main entry, Node built-ins (`node:*`), third-party packages |
 | runtime | React, relative files | compiler, components (its *tests* may import the compiler, a devDependency) |
-| components | runtime, React, Mantine, `lucide-react`, the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
+| components | runtime, React, Mantine (`@mantine/core`, `@mantine/dates`, `@mantine/notifications`), `lucide-react`, the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
 | standalone | compiler, runtime, components, React | (no package imports it) |
 | vite-plugin | compiler, `@gluefuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
@@ -444,6 +456,7 @@ Conventions:
 | `packages/components/tests/dates.test.tsx` | Step 26: the formats, matchers, presets and times; the three date inputs through markup, in a Form, prerendered (see [dates.md](dates.md#tests)) |
 | `packages/compiler/tests/module/choice.test.ts`, `packages/components/tests/choice.test.tsx` | Step 25: Option children compiled to data; Select and AutoComplete through markup, in a Form, prerendered (see [choice.md](choice.md#tests)) |
 | `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
+| `packages/compiler/tests/module/overlays.test.ts`, `packages/runtime/tests/render/pointer.test.ts`, `overlay-state.test.ts`, `packages/components/tests/overlays.test.tsx` | Step 27: E037, `$$whenOpen`, context variables; the pointer snapshot; toasts and confirmations; the overlays in jsdom (see [overlays.md](overlays.md#tests)) |
 | `packages/compiler/tests/module/behaviors.test.ts`, `packages/components/tests/behaviors.test.tsx` | Behaviors: attachment, order, generated code; rendering (see [behaviors.md](behaviors.md#tests)) |
 | `packages/components/tests/theming.test.ts`, `theme-components.test.tsx` | The theme engine tables; `App`/`Theme` and the globals (see [theming.md](theming.md#tests)) |
 | `packages/components/tests/user-components.test.tsx` | User-defined components, one test per feature (see [user-components.md](user-components.md#tests)) |
@@ -463,7 +476,7 @@ Conventions:
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
 
-Count after step 22B: 2,550 unit tests in 90 files. The totals per package
+Count after step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
 are current; the breakdowns in parentheses were last counted after steps
 19A–19C and are updated only where steps 21–22B changed them.
 
@@ -530,8 +543,9 @@ are current; the breakdowns in parentheses were last counted after steps
   - `playground` (5180): `playground.spec.ts` (every scenario opens without
     errors and shows its source; the side nav), `playground-scenarios.spec.ts`
     (each scenario does what its page says), `app-shell.spec.ts` (the
-    layout demos, measured) and `layout.spec.ts` (the spacing demo,
-    measured);
+    layout demos, measured), `layout.spec.ts` (the spacing demo,
+    measured) and `overlays.spec.ts` (step 27: focus, Escape, outside clicks,
+    placement, in the overlay scenarios);
   - `playground-build` (5181): `app-shell-prerender.spec.ts`, against the
     playground's prerendered production build (`.tmp/playground-dist`);
   - `data-worker` (5182) and `data-server` (5183): `data.spec.ts` against
@@ -575,6 +589,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/data.spec.ts` | Data binding against the mock backend in both hosts: real requests, deduplication, slow network, out-of-order answers, retries, offline, hang and cancel, a rename with invalidation, validation errors, a slow double click (see [data.md](data.md#tests)) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select (step 25's), Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
+| `e2e/overlays.spec.ts` | Step 27 in the playground: dialogs (focus trap and return, Escape only for the topmost, outside clicks, `willClose`, a Form, the tone), drawers, menus by keyboard, a context menu at the pointer, tooltip delay and flipping, toasts, `confirm()`, APICall |
 | `e2e/theming.spec.ts` | Computed styles follow theme variables, a scoped `Theme`, and the tone switch (dev and build) |
 | `e2e/user-components.spec.ts` | The XMLUI user-defined-components examples (component files, code-behind, an inline component; `$props`, events, methods, slots), in dev and in the prerendered build |
 | `e2e/globals.spec.ts` | Globals (step 21B) in the hello app: a component file writes them, Main and another component read them, a local variable shadows one; dev and prerendered build |

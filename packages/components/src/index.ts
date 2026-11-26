@@ -15,5 +15,18 @@ export { bindingText, Markdown, preloadMarkdown, removeIndents } from "./markdow
 export { ALLOWED_TAGS, decodeHtmlEntities, isSafeUrl, tokenizeHtml, type HtmlToken } from "./markdown-html";
 export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
 export { Items } from "./items";
-export { LabelBehavior, TooltipBehavior, VariantBehavior, variantVariable } from "./behaviors";
+export { LabelBehavior, VariantBehavior, variantVariable } from "./behaviors";
+export {
+  ContextMenu,
+  Drawer,
+  DropdownMenu,
+  MenuItem,
+  MenuSeparator,
+  ModalDialog,
+  parseTooltipOptions,
+  SubMenuItem,
+  Tooltip,
+  TooltipBehavior,
+  type TooltipOptions,
+} from "./overlays";
 export { Form, FormBindingBehavior, ValidationBehavior, type FormProps } from "./forms";

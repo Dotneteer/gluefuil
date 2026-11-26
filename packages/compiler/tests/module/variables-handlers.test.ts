@@ -45,10 +45,21 @@ describe("handlers", () => {
   test("onClick compiles to a hoisted handler object on a Bound element", () => {
     const code = lines('<App var.count="{0}"><Button label="+" onClick="count++"/></App>');
     expect(code).toContain(
-      'const $$e1 = { "onClick": ($$s) => ($$x) => async (...$params) => { const $param = $params[0]; const $cancel = $$x.cancel; ' +
+      'const $$e1 = { "onClick": ($$s) => ($$x) => async (...$$args) => { const $cancel = $$x.cancel; ' +
         "let $$t, $$o = false; try { $$s.count++; } finally { $$o && $$x.close(); } } };",
     );
     expect(code).toContain("const $$empty = Object.freeze({});");
+  });
+
+  test("an event with arguments declares $param and $params (step 27: not a pointer or argument-free event)", () => {
+    const code = lines('<App var.t="{\'\'}"><TextBox onDidChange="t = $param"/></App>');
+    expect(code.some((l) => l.includes('"onDidChange": ($$s) => ($$x) => async (...$params) => { const $param = $params[0];'))).toBe(true);
+  });
+
+  test("a lone reference passes the arguments through, with or without $params (step 27)", () => {
+    const code = lines('<App var.f="{(e) => e}"><Button onClick="f"/><TextBox onDidChange="f"/></App>');
+    expect(code.some((l) => l.includes('"onClick"') && l.includes("(...$$args)") && l.includes("...$$args"))).toBe(true);
+    expect(code.some((l) => l.includes('"onDidChange"') && l.includes("(...$params)") && l.includes("...$params"))).toBe(true);
   });
 
   test("<event name='click'> is the same as onClick; its code is not whitespace-collapsed", () => {

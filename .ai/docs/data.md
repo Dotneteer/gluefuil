@@ -70,7 +70,8 @@
 | **Polling** | `refetchInterval`; no overlap with a running fetch; stops on unmount. |
 | **APICall overlap** | Each `execute()` is its own request. `lastResult` and `lastError` belong to the call *started* last. A double click is the caller's policy (`handlerPolicy`). |
 | **APICall and the calling handler** | `execute()` listens to the handler's `$cancel` (`currentInvocation()`). A superseded, timed-out or unmounted handler aborts its request (reason `supersede`, `timeout`, `unmount`). |
-| **APICall errors** | With `onError`: it is called, and `execute()` resolves `undefined`. Without it, `execute()` rejects, the handler stops, and the error is reported once. |
+| **APICall errors** | With `onError` (or `errorNotificationMessage`, step 27): it is called, and `execute()` resolves `undefined`. Without them, `execute()` rejects, the handler stops, and the error is reported once. |
+| **APICall confirmation and notifications (step 27)** | `confirmTitle`/`confirmMessage` (with `confirmButtonLabel`) ask with `confirm()` before `beforeRequest`; "Cancel" skips the call (`execute()` resolves `undefined`). `inProgressNotificationMessage` shows a loading toast once the request starts; `completedNotificationMessage` (`$result`) and `errorNotificationMessage` (`$error`) replace it; without them it goes. All are `deferred` props with `$param`/`$params`. The calling handler is read before the confirmation's `await` and passed to `ApiCaller.execute` (its `invocation` parameter), so its cancellation still aborts the request. |
 | **Invalidation** | After success: the queries whose path is an `invalidates` path, or lies below it. Without `invalidates`, every query (XMLUI). Active ones refetch. |
 | **Server render** | No fetch. The component API is published in an effect, so `users.inProgress` is undefined on the server and in the first client render, and the takeover is clean. Loading shows after it. |
 
@@ -83,7 +84,7 @@
 | `runtime/src/data/retry.ts` | `shouldRetry`, `retryDelay`, `runWithRetry`, `sleep`, `setRetryJitter` |
 | `runtime/src/data/client.ts` | `@tanstack/query-core`'s client, one per page: `networkMode: "always"` (offline is an error, not a pause), no focus or reconnect refetch, notifications in one signal batch on a microtask. Also `queryKey`, `invalidate`, `pathMatches`, `resetDataState`, `setDataDefaults({ jitter })`. |
 | `runtime/src/data/loader.ts` | `Loader`: a `QueryObserver` bridged into one signal (`LoaderState`), its events, `refetch`, `cancel`. The first state is the optimistic one (`_optimisticResults: "optimistic"`, as React Query does). |
-| `runtime/src/data/api-call.ts` | `ApiCaller`: `execute` (beforeRequest, the request with retries, success, invalidation, error, cancel), `cancel`, `dispose`/`activate` |
+| `runtime/src/data/api-call.ts` | `ApiCaller`: `execute` (beforeRequest, the request with retries, success, invalidation, error, cancel; the calling `invocation`, by default the current one), `cancel`, `dispose`/`activate` |
 | `runtime/src/render/deferred.ts` | `deferredValue(scope, binding)`: a prop evaluated later with context variables; `isDeferred`, `resolveDeferred` |
 | `components/src/data.tsx` | `DataSource`, `APICall`, `DataUrl`, `isDataUrl`: the React shells (`useLoader`, the API getters, the events) |
 | `components/src/items.tsx` | `Items` with a URL in `data` renders through `DataUrl` |

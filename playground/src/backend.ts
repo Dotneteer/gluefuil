@@ -27,6 +27,12 @@ export default defineBackend({
       const q = typeof query.q === "string" ? query.q.toLowerCase() : "";
       return db.people!.list((person) => String(person.name).toLowerCase().includes(q));
     },
+    // The Toasts and confirm scenario (step 27): APICall adds a person.
+    "POST /api/people": ({ db, body }) => {
+      const name = (body as { name?: unknown } | undefined)?.name;
+      if (typeof name !== "string" || name.trim() === "") return status(422, { message: "A name is required", errors: { name: "Required" } });
+      return db.people!.insert({ name, field: "Unknown" });
+    },
     "GET /api/people/:id": ({ db, params }) => db.people!.get(params.id) ?? status(404, { message: `No person ${params.id}` }),
     "PUT /api/people/:id": ({ db, params, body }) => {
       const field = (body as { field?: unknown } | undefined)?.field;

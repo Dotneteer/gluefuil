@@ -177,6 +177,20 @@ DateInput's `minValue`/`maxValue` are its own dates, not the range rule),
   stay file-scoped (`<Form><TextBox id="x"/></Form>` → `x.value` outside).
 - Runtime: `runtime/src/render/context-scope.ts` (`createContextScope`,
   `useContextScope`, `provideContext`).
+- **The element's own attributes** are computed before it renders, so they may
+  read a name before its getter exists (`<ModalDialog title="{$param}">`):
+  such a read depends on a version signal, bumped in a microtask once the
+  getter arrives, and is computed again (step 27).
+
+## In a ModalDialog (step 27)
+
+- The form's dirty state counts as the dialog's (`DialogContext`,
+  [overlays.md](overlays.md)): closing a dialog with unsaved edits asks first.
+- Cancel fires `cancel`, then closes the dialog (asking if dirty). A
+  successful submit closes it unless `keepModalOpenOnSubmit`.
+- `inProgressNotificationMessage`, `completedNotificationMessage`,
+  `errorNotificationMessage`: a loading toast while submitting, replaced by
+  the outcome's (any Form, not only in a dialog).
 
 ## Submit
 
@@ -184,8 +198,8 @@ DateInput's `minValue`/`maxValue` are its own dates, not the range rule),
 2. The previous server results and summary are cleared; every field shows
    its results (`showAll`). `validate()` awaits pending checks. Any error: the
    focus moves to the first invalid input, and it stops there.
-3. Warnings don't block, and nothing asks to confirm them (no modal before
-   step 27).
+3. Warnings don't block, but are confirmed first (step 27, `confirm()`:
+   "Are you sure want to move forward?", the warnings listed; "No" stops).
 4. `submitting` disables the inputs and the buttons; the Save button says
    `saveInProgressLabel`.
 5. `willSubmit`, then `onSubmit`, or the request to the URL.
@@ -260,7 +274,8 @@ DateInput's `minValue`/`maxValue` are its own dates, not the range rule),
 - **`reset` fires only when the form resets** (XMLUI: after every success).
 - **`submitUrl` doesn't generate code;** server errors match nested paths;
   names with no input reach the summary (step 22B).
-- **Warnings are not confirmed** (no modal yet).
+- **The warning confirmation lists the warnings as text** (XMLUI shows its
+  validation summary in the dialog).
 - **`validator`/`validatorParams` are not supported** (they do nothing in
   XMLUI); `pattern` takes the built-in names.
 - **The label wraps only the input;** XMLUI's binding wrapper renders the

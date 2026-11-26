@@ -1,0 +1,68 @@
+<!-- Step 27: ModalDialog (imperative and declarative), a Form in a dialog, the dirty guard, Drawer. -->
+<Component name="DialogsScenario">
+  <VStack var.log="" var.showHelp="{false}" var.allowClose="{false}">
+    <ScenarioHeader title="Dialogs and drawers" description="ModalDialog opened by open(...params) or by when; $param inside; a Form that closes it; the unsaved-changes question; willClose; a Drawer from each edge."/>
+
+    <Card title="Imperative: open(...params)">
+      <Text variant="secondary">Each button passes a person to the same dialog: inside, $param is the first argument and $params all of them.</Text>
+      <HStack>
+        <Button label="Edit Ann" onClick="editor.open({ name: 'Ann', age: 34 }, 'from the first button')"/>
+        <Button label="Edit Bob" onClick="editor.open({ name: 'Bob', age: 27 }, 'from the second button')"/>
+      </HStack>
+    </Card>
+    <ModalDialog id="editor" title="Edit {$param.name}" onOpen="(p) => log = 'opened for ' + p.name" onClose="log = log + ', closed'">
+      <Text>Opened {$params[1]}.</Text>
+      <Form data="{$param}" onSubmit="(d) => log = 'saved ' + d.name + ' (' + d.age + ')'">
+        <TextBox bindTo="name" label="Name" required="true"/>
+        <NumberBox bindTo="age" label="Age" minValue="0"/>
+      </Form>
+    </ModalDialog>
+
+    <Card title="Declarative: when">
+      <Text variant="secondary">The dialog is open while showHelp is true; its close event resets it.</Text>
+      <Button label="Show help" onClick="showHelp = true"/>
+    </Card>
+    <ModalDialog when="{showHelp}" title="Help" onClose="showHelp = false">
+      <Text>This dialog follows a variable. Escape, the close button and a click outside close it.</Text>
+    </ModalDialog>
+
+    <Card title="Unsaved changes">
+      <Text variant="secondary">Type something, then close: the dialog asks first. A dialog with willClose decides by itself.</Text>
+      <HStack>
+        <Button label="Open draft" onClick="draft.open()"/>
+        <Button label="Open guarded" onClick="guarded.open()"/>
+      </HStack>
+    </Card>
+    <ModalDialog id="draft" title="Draft" confirmCloseLabel="Discard" cancelCloseLabel="Keep editing" onDirtyChanged="(d) => log = d ? 'draft is dirty' : 'draft is clean'">
+      <Form data="{{ title: 'Quarterly plan' }}" keepModalOpenOnSubmit="true" onSubmit="log = 'draft saved'">
+        <TextBox bindTo="title" label="Title"/>
+      </Form>
+      <Text>dirty: {draft.getDirty()}</Text>
+    </ModalDialog>
+    <ModalDialog id="guarded" title="Guarded" onWillClose="return allowClose" closeOnClickAway="false">
+      <Text>{allowClose ? 'It can close now.' : 'Closing is blocked.'}</Text>
+      <Button label="{allowClose ? 'Block closing' : 'Allow closing'}" onClick="allowClose = !allowClose"/>
+    </ModalDialog>
+
+    <Card title="Drawer">
+      <HStack>
+        <Button label="Left drawer" onClick="leftDrawer.open()"/>
+        <Button label="Right drawer" onClick="rightDrawer.open()"/>
+        <Button label="Bottom drawer" onClick="bottomDrawer.open()"/>
+      </HStack>
+    </Card>
+    <Drawer id="leftDrawer" onClose="log = 'left drawer closed'">
+      <property name="headerTemplate"><H3>Navigation</H3></property>
+      <Button label="Close drawer" onClick="leftDrawer.close()"/>
+      <Text>Tab stays inside; Escape closes it.</Text>
+    </Drawer>
+    <Drawer id="rightDrawer" position="right" hasBackdrop="false">
+      <property name="headerTemplate"><H3>Filters</H3></property>
+      <Checkbox label="Only active"/>
+      <Text>No backdrop: the page stays usable.</Text>
+    </Drawer>
+    <Drawer id="bottomDrawer" position="bottom"><Text>From the bottom edge.</Text></Drawer>
+
+    <Text>log: {log}</Text>
+  </VStack>
+</Component>

@@ -70,7 +70,11 @@ describe("name resolution and shadowing", () => {
     ['<App var.m="a"><Text value="{[1].map(m => m + 1)}"/></App>', []],
     // Context variables: only the ones that exist here.
     ['<App><Text value="{$item}"/></App>', [["C014", "$item"]]],
-    ['<App var.n="{0}"><Button onClick="n = $param ?? 0; $cancel.aborted"/></App>', []],
+    ['<App var.n="{0}"><TextBox onDidChange="n = $param ?? 0; $cancel.aborted"/></App>', []],
+    // Step 27: a pointer or argument-free event's statements declare no $param (an enclosing one shows through).
+    ['<App var.n="{0}"><Button onClick="n = $param ?? 0; $cancel.aborted"/></App>', [["C014", "$param"]]],
+    ['<App var.n="{0}"><Form onCancel="n = $params.length"/></App>', [["C014", "$params"]]],
+    ['<App var.n="{0}"><Button onClick="(ev) => n = ev.clientX"/></App>', []],
     ['<App><Button onClick="$item"/></App>', [["C014", "$item"]]],
   ])("%s", (markup, expected) => {
     expect(diagnostics(markup)).toEqual(expected);

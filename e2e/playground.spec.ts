@@ -57,6 +57,9 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "AutoComplete",
     "Date and time inputs",
     "DatePicker",
+    "Dialogs and drawers",
+    "Menus and tooltips",
+    "Toasts and confirm",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.

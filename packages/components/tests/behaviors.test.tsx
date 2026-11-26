@@ -1,9 +1,10 @@
 // Step 18 in jsdom: label, tooltip and variant behaviors on compiled markup.
 import { compileModule } from "@gluefuil/compiler";
 import { loadModule } from "@gluefuil/runtime";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import { variantVariable } from "../src/behaviors";
+import { parseTooltipOptions } from "../src/overlays";
 import * as components from "../src/index";
 
 afterEach(cleanup);
@@ -23,22 +24,60 @@ test("label: a <label> around the component gives an input its accessible name",
   expect(screen.getByLabelText("City").closest(".gfui-Label")!.getAttribute("data-position")).toBe("start");
 });
 
-test("tooltip: shown on hover and focus, hidden on leave and blur, linked with aria-describedby; bound text follows", async () => {
-  show('<App var.tip="Saves the file"><Button label="Save" tooltip="{tip}" onClick="tip = \'Saved!\'"/></App>');
-  const anchor = screen.getByRole("button", { name: "Save" }).closest(".gfui-TooltipAnchor")!;
-  expect(screen.queryByRole("tooltip")).toBeNull();
+// Step 27: the tooltip is Mantine's. jsdom runs no CSS transitions, so Mantine keeps it at
+// display: none there: these tests check its content, place and links; showing and hiding
+// (hover, focus, the delay, Escape) are proven in a real browser (e2e/overlays.spec.ts).
+const tooltipOf = () => screen.queryByRole("tooltip", { hidden: true });
+const hover = (text: string) => act(() => fireEvent.mouseEnter(screen.getByText(text).closest(".gfui-TooltipAnchor")!));
+
+test("tooltip: on hover, in the App's overlay layer, linked with aria-describedby; the bound text follows", async () => {
+  show('<App var.tip="Saves the file"><Button label="Save" tooltip="{tip}" tooltipOptions="delayDuration: 0" onClick="tip = \'Saved!\'"/></App>');
+  const button = screen.getByRole("button", { name: "Save" });
+  const anchor = button.closest(".gfui-TooltipAnchor")!;
   act(() => fireEvent.mouseEnter(anchor));
-  const tooltip = screen.getByRole("tooltip");
+  const tooltip = await screen.findByRole("tooltip", { hidden: true });
   expect(tooltip.textContent).toBe("Saves the file");
   expect(anchor.getAttribute("aria-describedby")).toBe(tooltip.id);
-  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
-  expect(screen.getByRole("tooltip").textContent).toBe("Saved!");
-  act(() => fireEvent.mouseLeave(anchor));
-  expect(screen.queryByRole("tooltip")).toBeNull();
-  act(() => fireEvent.focus(screen.getByRole("button", { name: "Save" })));
-  expect(screen.getByRole("tooltip")).toBeTruthy();
-  act(() => fireEvent.blur(screen.getByRole("button", { name: "Save" })));
-  expect(screen.queryByRole("tooltip")).toBeNull();
+  expect(tooltip.closest(".gfui-Overlays")).not.toBeNull();
+  expect(anchor.contains(tooltip)).toBe(false);
+  await act(async () => fireEvent.click(button));
+  await waitFor(() => expect(tooltipOf()!.textContent).toBe("Saved!"));
+});
+
+test("tooltipOptions showArrow: the tooltip has an arrow", async () => {
+  show('<App><Button label="Save" tooltip="t" tooltipOptions="bottom; showArrow; delayDuration: 0"/></App>');
+  hover("Save");
+  const tooltip = await screen.findByRole("tooltip", { hidden: true });
+  expect(tooltip.querySelector(".gfui-Tooltip-arrow")).not.toBeNull();
+});
+
+test.each<[input: unknown, expected: Record<string, unknown>]>([
+  ["left; delayDuration: 800; !showArrow", { side: "left", delayDuration: 800, showArrow: false }],
+  ["bottom; start; showArrow; sideOffset: 28", { side: "bottom", align: "start", showArrow: true, sideOffset: 28 }],
+  [{ side: "right" }, { side: "right" }],
+  [undefined, {}],
+])("parseTooltipOptions(%j)", (input, expected) => {
+  expect(parseTooltipOptions(input)).toEqual(expected);
+});
+
+test("tooltipMarkdown: Markdown content", async () => {
+  show('<App><Button label="Save" tooltipMarkdown="**bold** tip" tooltipOptions="delayDuration: 0"/></App>');
+  hover("Save");
+  await waitFor(() => expect(tooltipOf()!.querySelector("strong")?.textContent).toBe("bold"));
+});
+
+test("the Tooltip component: one tooltip for several children; a template", async () => {
+  show(`
+    <App>
+      <Tooltip text="both" delayDuration="0"><Text>one</Text><Text>two</Text></Tooltip>
+      <Tooltip delayDuration="0"><property name="tooltipTemplate"><Text variant="strong">templated</Text></property><Text>three</Text></Tooltip>
+    </App>`);
+  const anchor = screen.getByText("one").closest(".gfui-TooltipAnchor")!;
+  expect(anchor.contains(screen.getByText("two"))).toBe(true);
+  act(() => fireEvent.mouseEnter(anchor));
+  await waitFor(() => expect(screen.getAllByRole("tooltip", { hidden: true }).some((t) => t.textContent === "both")).toBe(true));
+  hover("three");
+  await waitFor(() => expect(screen.getAllByRole("tooltip", { hidden: true }).some((t) => t.querySelector("strong")?.textContent === "templated")).toBe(true));
 });
 
 test("variant: the component's variables read their variant values, falling back to the defaults", () => {
@@ -57,13 +96,13 @@ test.each([
   expect(variantVariable(name, variant)).toBe(expected);
 });
 
-test("behaviors on a user-defined component tag; the component does not receive the prop", () => {
+test("behaviors on a user-defined component tag; the component does not receive the prop", async () => {
   show(`
     <Component name="InfoCard"><Text>card: {$props.title} {JSON.stringify(Object.keys($props))}</Text></Component>
     <App><InfoCard title="x" tooltip="about the card"/></App>`);
   expect(screen.getByText('card: x ["title"]')).toBeTruthy();
   act(() => fireEvent.mouseEnter(screen.getByText(/^card:/).closest(".gfui-TooltipAnchor")!));
-  expect(screen.getByRole("tooltip").textContent).toBe("about the card");
+  await waitFor(() => expect(tooltipOf()!.textContent).toBe("about the card"), { timeout: 1500 });
 });
 
 test("order: label innermost, then tooltip, then variant outermost", () => {

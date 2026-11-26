@@ -1,6 +1,6 @@
 // The behaviors' components (step 18). The compiler wraps an element in them
-// (attachedBehaviors in ./metadata), innermost first: label, tooltip, variant.
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+// (attachedBehaviors in ./metadata), innermost first: label, tooltip, variant. The tooltip behavior is in overlays.tsx (step 27).
+import { type CSSProperties, type ReactNode } from "react";
 import { componentMetadata } from "./metadata";
 import { resolveRefs, THEME_VAR_PREFIX } from "./theming/engine";
 
@@ -11,30 +11,6 @@ export function LabelBehavior({ label, labelPosition, children }: { label?: unkn
       <span className="gfui-Label-text">{label === undefined || label === null ? "" : String(label)}</span>
       {children}
     </label>
-  );
-}
-
-/** `tooltip`: shown while the pointer is over the component or the focus is inside it. */
-export function TooltipBehavior({ tooltip, children }: { tooltip?: unknown; children?: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  const text = tooltip === undefined || tooltip === null ? "" : String(tooltip);
-  return (
-    <span
-      className="gfui-TooltipAnchor"
-      aria-describedby={open && text ? id : undefined}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
-    >
-      {children}
-      {open && text ? (
-        <span role="tooltip" id={id} className="gfui-Tooltip">
-          {text}
-        </span>
-      ) : null}
-    </span>
   );
 }
 

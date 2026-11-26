@@ -151,13 +151,13 @@ test("a lone arrow handler, and $param", () => {
   renderMarkup(`
     <App var.log="{[]}">
       <Button label="Arrow" onClick="() => log.push('arrow')"/>
-      <Button label="Param" onClick="log.push(typeof $param + ':' + $params.length)"/>
+      <Button label="Param" onClick="(...a) => log.push(typeof a[0] + ':' + a.length + ':' + Object.isFrozen(a[0]))"/>
       <Text>{log.join(',')}</Text>
     </App>`);
   click("Arrow");
   click("Param");
-  // Button passes no arguments (no DOM event reaches script).
-  expect(texts()).toEqual(["arrow,undefined:0"]);
+  // Button passes a frozen pointer snapshot (step 27), never the DOM event.
+  expect(texts()).toEqual(["arrow,object:1:true"]);
 });
 
 test("a handler re-renders each affected component once (batched)", () => {

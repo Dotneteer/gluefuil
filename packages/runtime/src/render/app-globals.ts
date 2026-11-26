@@ -6,6 +6,7 @@ import { createScope, type ScopeEntry } from "../reactivity/scope";
 import { APP_GLOBAL_NAMES } from "./app-global-names";
 import { delay } from "./handlers";
 import { currentLocation, currentRouteParams, navigate } from "./router";
+import { confirm, toast } from "./overlay-state";
 import { navDrawerOpen, navPanelCollapsed, setNavDrawerOpen, setNavPanelCollapsed } from "./shell-state";
 import { activeThemeId, activeThemeTone, setTheme, setThemeTone, toggleThemeTone } from "./theme-state";
 
@@ -24,6 +25,8 @@ const APP_GLOBALS: Record<string, ScopeEntry> = {
   setNavPanelCollapsed: { value: setNavPanelCollapsed },
   navDrawerOpen: { signal: navDrawerOpen },
   setNavDrawerOpen: { value: setNavDrawerOpen },
+  toast: { value: toast },
+  confirm: { value: confirm },
 };
 
 /** The root scope of a compiled module: the app globals. */
