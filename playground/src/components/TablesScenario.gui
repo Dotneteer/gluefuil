@@ -1,0 +1,36 @@
+<!-- Step 30: Table with Columns: sorting, selection, pinned and resizable columns, 10,000 rows virtualized. -->
+<Component name="TablesScenario">
+  <VStack
+    var.orders="{Array.from({ length: 10000 }, (_, i) => ({ id: i + 1, customer: ['Ada', 'Grace', 'Linus', 'Margaret', 'Alan'][i % 5] + ' ' + (i + 1), city: ['Oslo', 'Lima', 'Pune', 'Kyiv'][i % 4], total: Math.round(((i * 7919) % 100000)) / 100, status: ['open', 'paid', 'late'][i % 3], notes: 'lorem ipsum dolor '.repeat(1 + (i * 31) % 6) }))}"
+    var.picked="{{ selectedIds: [] }}"
+    var.sorting="(not sorted by a click yet)"
+    var.range="(none yet)">
+    <ScenarioHeader title="Tables" description="10,000 orders in a Table with a height: only the rows in view are mounted. Click a header to sort (three states); drag a header's edge or focus it and use the arrow keys to resize; the Id and Status columns are pinned while you scroll sideways; select rows with the checkboxes, clicks, Shift and Ctrl/Cmd, or the arrow keys."/>
+    <Text>Sorting: {sorting}</Text>
+    <Text>Rows in view: {range}</Text>
+    <Text>Selected: {picked.selectedIds.length} ({picked.selectedIds.slice(0, 5).join(', ')})</Text>
+    <HStack>
+      <Button label="Row 5000" onClick="ordersTable.scrollToId(5000)"/>
+      <Button label="Clear selection" onClick="ordersTable.clearSelection()"/>
+    </HStack>
+    <Table
+      id="ordersTable"
+      height="420px"
+      data="{orders}"
+      rowsSelectable="true"
+      syncWithVar="picked"
+      striped="true"
+      onSortingDidChange="(by, dir) => sorting = by ? by + ' ' + dir : 'unsorted'"
+      onVisibleRangeDidChange="r => range = r.startIndex + '–' + r.endIndex">
+      <Column bindTo="id" header="Id" width="80px" pinTo="left" type="integer"/>
+      <Column bindTo="customer" header="Customer" width="200px"/>
+      <Column bindTo="city" header="City" width="120px"/>
+      <Column bindTo="notes" header="Notes" width="2*" minWidth="260px"/>
+      <Column bindTo="total" header="Total" width="130px" type="currency(EUR)" defaultSortDirection="descending"/>
+      <Column bindTo="status" header="Status" width="110px" pinTo="right">
+        <Badge value="{$cell}"/>
+      </Column>
+    </Table>
+    <Text variant="secondary">Select cells with the mouse across rows and copy: they paste into a spreadsheet as cells.</Text>
+  </VStack>
+</Component>

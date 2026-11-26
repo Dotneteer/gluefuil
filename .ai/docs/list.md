@@ -6,7 +6,7 @@
 > virtualizer comparison and the XMLUI comparison:
 > [`../plan/poc-29-list.md`](../plan/poc-29-list.md).
 >
-> **Last updated:** step 29.
+> **Last updated:** step 30 (the virtualizer setup and the selection state moved into `virtual.ts` and `row-selection.ts`, shared with Table).
 
 ## In markup
 
@@ -161,7 +161,8 @@ not declared.
 | `components/src/list.tsx` | `List`, `matchesKeyBinding`, `keepsAnEdge`, `DEFAULT_KEY_BINDINGS`, `STATIC_ROWS` |
 | `components/src/list-model.ts` | `listModel`, `orderItems`, `valueAt`, `itemKey`, `duplicateKeys` (React-free) |
 | `components/src/selection.ts` | `pickRow`, `keyTarget`, `selectAllRows`, `selectKeys` (React-free; for Table too) |
-| `components/src/virtual.ts` | `scrollContainer`, `offsetIn`, `scrollObservers` (element or window), `RenderCache`, `userScrollTracker` |
+| `components/src/virtual.ts` | `useVirtualRows` (step 30: the attach, the offset and `scrollPaddingStart`, anchoring, the render cache, user scrolls; List and Table), `scrollContainer`, `offsetIn`, `scrollObservers` (element or window), `RenderCache`, `userScrollTracker`, `keepsAnEdge`, `STATIC_ROWS` |
+| `components/src/row-selection.ts` | `useRowSelection` (step 30: the selection state, `syncWithVar`, `selectionDidChange`; List and Table) |
 | `components/src/metadata.ts` | `List`; `PropMetadata.variableName` |
 | `components/src/styles.ts` | `LIST` |
 | `compiler/src/module/compile-module.ts` | `variableNameProp` (E039) |

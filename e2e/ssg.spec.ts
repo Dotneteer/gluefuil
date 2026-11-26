@@ -80,6 +80,10 @@ test("at the prerendered breakpoint (xs), takeover changes nothing; then the app
   await expect(list.locator(".gfui-List-content[data-virtual]")).toBeAttached();
   await expect(list.getByRole("option")).toHaveText(["First row", "Second row", "Third row"]);
   await expect(list.getByRole("option", { selected: true })).toHaveText("Second row");
+  // Step 30: the Table too, and its star widths were right before takeover (CSS fr).
+  const table = page.getByRole("table");
+  await expect(table.locator(".gfui-Table-body[data-virtual]")).toBeAttached();
+  await expect(table.getByRole("row", { selected: true })).toContainText("Grace");
 
   await page.getByRole("button", { name: "Increment", exact: true }).click();
   await expect(page.getByText(/^Count: \d+$/)).toHaveText("Count: 1");

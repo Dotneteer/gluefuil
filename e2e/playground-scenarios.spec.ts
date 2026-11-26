@@ -1388,3 +1388,21 @@ test("Grouped and selectable lists: a group folds; a clicked row is selected", a
   await page.getByRole("option").filter({ hasText: "Grace" }).click();
   await expect(text(page, "Selected ids: 2")).toBeVisible();
 });
+
+test("Tables: a header click sorts and reports it", async ({ page }) => {
+  await open(page, "/tables");
+  await page.getByRole("columnheader").filter({ hasText: "City" }).getByRole("button").click();
+  await expect(text(page, "Sorting: city ascending")).toBeVisible();
+});
+
+test("Table columns and types: the inferred columns' headers", async ({ page }) => {
+  await open(page, "/table-types");
+  await expect(page.getByRole("columnheader", { name: /^email/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "grace@example.com" })).toBeVisible();
+});
+
+test("Editable and paged tables: a checkbox cell saves through the variable", async ({ page }) => {
+  await open(page, "/editable-tables");
+  await page.getByRole("row").filter({ hasText: "Search" }).getByRole("checkbox", { name: "Reviewed" }).check();
+  await expect(text(page, "Last change: reviewed of Search: true")).toBeVisible();
+});

@@ -66,6 +66,9 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Long lists",
     "Chat feed",
     "Grouped and selectable lists",
+    "Tables",
+    "Table columns and types",
+    "Editable and paged tables",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.

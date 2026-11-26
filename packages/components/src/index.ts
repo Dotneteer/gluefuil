@@ -15,6 +15,12 @@ export { bindingText, Markdown, preloadMarkdown, removeIndents } from "./markdow
 export { ALLOWED_TAGS, decodeHtmlEntities, isSafeUrl, tokenizeHtml, type HtmlToken } from "./markdown-html";
 export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
 export { Items } from "./items";
+export { Column, Table, type TableProps } from "./table";
+export { clampWidth, columnMinimum, columnTrack, discoverFields, inferColumnType, nextSort, pageCount, pageSlice, parseColumnInference, parseWidth, sampleRows, sizingMode, sortRows, tableColumns, type ColumnEntry, type SortDirection, type SortState, type TableColumn } from "./table-model";
+export { renderValue, Value, type ValueProps } from "./value";
+export { END_ALIGNED_TYPES, formatValue, INTERACTIVE_TYPES, normalizeValueType, VALUE_TYPE_NAMES, type NormalizedValueType, type ValueRenderModel, type ValueTypeName } from "./value-types";
+export { Pager, Pagination, pageSizeOptions, visiblePages, type PaginationProps } from "./pagination";
+export { useRowSelection } from "./row-selection";
 export { DEFAULT_KEY_BINDINGS, keepsAnEdge, List, matchesKeyBinding, STATIC_ROWS, type ListProps } from "./list";
 export { duplicateKeys, itemKey, listModel, orderFields, orderItems, valueAt, type ListGroup, type ListModel, type ListModelInput, type ListRow, type OrderByField } from "./list-model";
 export { EMPTY_SELECTION, keyTarget, pickRow, selectAllRows, selectKeys, type Modifiers, type SelectionOptions, type SelectionState } from "./selection";

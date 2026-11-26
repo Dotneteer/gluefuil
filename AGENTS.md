@@ -21,7 +21,7 @@ shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
 19 with a reduced scope); the inserted 19D–19F (the layout system) are done too.
 Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals),
 22 (client-side forms), 22B (form submission and server errors), 23 (text
-and display components), 24 (inputs), 25 (choice inputs), 26 (date and time inputs), 27 (overlays and menus), 28 (structure) and 29 (the virtualized `List`) are done; step 30 (`Table`) is next. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+and display components), 24 (inputs), 25 (choice inputs), 26 (date and time inputs), 27 (overlays and menus), 28 (structure), 29 (the virtualized `List`) and 30 (`Table`, `Value`, `Pagination`) are done; step 31 (`Tree`, `TileGrid`, `Items`) is next. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).
@@ -116,6 +116,7 @@ here as one line each, with a link to the plan that justified them:
 - **Overlays: Mantine's Modal, Drawer, Menu and Tooltip, toasts on `@mantine/notifications`;** pointer handlers (`click`, `contextMenu`) receive a frozen pointer snapshot, never the DOM event, and handlers of events without arguments declare no `$param` (`EventMetadata.args`), so a dialog's shows through. See [.ai/plan/poc-27-overlays.md](.ai/plan/poc-27-overlays.md).
 - **Tab and step headers are compiled to data** (`childrenAsHeaders`, as step 25's Options) while the TabItem/Step content compiles in place with file-scoped IDs; our own Splitter; `$overflow` in a scope per child. See [.ai/plan/poc-28-structure.md](.ai/plan/poc-28-structure.md).
 - **Virtualizer: TanStack Virtual** (`@tanstack/react-virtual`), shared by List, Table, Tree and TileGrid; measured against virtua in a prototype. See [.ai/plan/poc-29-list.md](.ai/plan/poc-29-list.md).
+- **Table: our own column model (no TanStack Table), Column children compiled to data, rendered as a grid of divs with table roles.** See [.ai/plan/poc-30-table.md](.ai/plan/poc-30-table.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

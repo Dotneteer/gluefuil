@@ -490,7 +490,7 @@ Sources: `website/content/docs/reference/components/List.md`, `Table.md`,
 
 | Option | Fit | Verdict |
 |--------|-----|---------|
-| **TanStack Table v9** (headless; stable Aug 2026) + a headless virtualizer, rendered with Mantine primitives (`Table`, `Checkbox`, `Pagination`, …) | Total control over markup, parts and theme variables. XMLUI already proves this combination reaches the full feature set (`@tanstack/react-table` + `virtua` in `xmlui/package.json`). Cost: we build the UI layer. | **Recommended.** |
+| **TanStack Table v9** (headless; stable Aug 2026) + a headless virtualizer, rendered with Mantine primitives (`Table`, `Checkbox`, `Pagination`, …) | Total control over markup, parts and theme variables. XMLUI already proves this combination reaches the full feature set (`@tanstack/react-table` + `virtua` in `xmlui/package.json`). Cost: we build the UI layer. | Recommended here; **step 30 chose our own column model instead** (TanStack Table v9 measured at 13–17 KB gzipped plus its own store, while sorting, star widths, selection and rendering are ours either way: [poc-30-table.md](poc-30-table.md) § A). |
 | mantine-react-table | TanStack Table + TanStack Virtual + Mantine with a huge feature set, but upstream targets Mantine 7 / TanStack Table v8. Mantine 8/9 support exists only in an unofficial fork (`mantine-react-table-open`). | Rejected: maintenance risk. |
 | mantine-datatable | Maintained (9.4, Mantine 9), but no virtualization (open discussion #311). | Rejected: fails virtualization. |
 | AG Grid Community (MIT) | Nearly every Table feature, React cell renderers, and a Theming API built on CSS custom properties. But it's heavy, has its own DOM and accessibility model, renders on the client only, and its row grouping is Enterprise (paid). | Fallback if building the Table UI proves too costly. |
@@ -631,7 +631,7 @@ review, not a decision.
 | XMLUI | Suggested implementation | Notes |
 |-------|--------------------------|-------|
 | List | **Step 29:** own, on TanStack Virtual ([poc-29-list.md](poc-29-list.md)) | See "List and Table" |
-| Table, Column | TanStack Table v9 + the virtualizer, rendered with Mantine `Table`, `Checkbox`, `Pagination` | See "List and Table" |
+| Table, Column | **Step 30:** our own column model on TanStack Virtual, a grid of divs with table roles; Column children compiled to data ([poc-30-table.md](poc-30-table.md)) | See "List and Table" |
 | Items | Own (plain iteration, no virtualization) | |
 | Tree | Own, on the virtualizer; Mantine `Tree` / `useTree` ⚠ is possibly fine for small, non-virtualized data | Needs virtualization for parity |
 | Pagination | Mantine `Pagination` | |
