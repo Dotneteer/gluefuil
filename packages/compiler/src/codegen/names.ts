@@ -46,6 +46,8 @@ export const ALLOWED_GLOBALS: ReadonlySet<string> = new Set([
   "TypeError",
   "URIError",
   "AggregateError",
+  // Step 33: the structured error (runtime src/errors/app-error.ts).
+  "AppError",
   "URL",
   "URLSearchParams",
   "TextEncoder",
@@ -118,6 +120,7 @@ export const CONSTRUCTIBLE: ReadonlySet<string> = new Set([
   "TypeError",
   "URIError",
   "AggregateError",
+  "AppError",
   "Intl.Collator",
   "Intl.DateTimeFormat",
   "Intl.DisplayNames",
@@ -229,4 +232,4 @@ export const RESERVED_PREFIX = "$$";
  * (runtime src/render/app-global-names.ts); tools/sandbox-drift.test.ts
  * keeps them in sync.
  */
-export const APP_GLOBALS: readonly string[] = ["delay", "activeThemeId", "activeThemeTone", "setTheme", "setThemeTone", "toggleThemeTone", "navigate", "$pathname", "$queryParams", "$routeParams", "navPanelCollapsed", "setNavPanelCollapsed", "navDrawerOpen", "setNavDrawerOpen", "toast", "confirm", "Actions"];
+export const APP_GLOBALS: readonly string[] = ["delay", "activeThemeId", "activeThemeTone", "setTheme", "setThemeTone", "toggleThemeTone", "navigate", "$pathname", "$queryParams", "$routeParams", "navPanelCollapsed", "setNavPanelCollapsed", "navDrawerOpen", "setNavDrawerOpen", "toast", "confirm", "Actions", "App"];

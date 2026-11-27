@@ -4,7 +4,7 @@ import { gfui } from "../src/index";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { addRootAttributes, basenameOf, injectPrerendered, injectTitle, isStaticRoute, previewRewrite, resolvePrerender, routeFileName, routesToRender } from "../src/prerender";
+import { addRootAttributes, basenameOf, clientRenderedSections, injectPrerendered, injectTitle, isStaticRoute, previewRewrite, resolvePrerender, routeFileName, routesToRender } from "../src/prerender";
 
 describe("options", () => {
   test.each([
@@ -187,5 +187,16 @@ describe("injectTitle (step 32: PageMetaTitle)", () => {
     ["leaves a page without a head", "<div></div>", "T", "<div></div>"],
   ])("%s", (_, html, title, expected) => {
     expect(injectTitle(html, title)).toBe(expected);
+  });
+});
+
+describe("clientRenderedSections (step 33: a Fallback's child that failed on the server)", () => {
+  test.each<[string, number]>([
+    ["<main><p>ok</p></main>", 0],
+    ["<main><!--$--><p>a lazy part, rendered</p><!--/$--></main>", 0],
+    ["<main><!--$!--><template></template><!--/$--></main>", 1],
+    ["<!--$!--><template></template><!--/$--><!--$!--><template data-msg=\"x\"></template><!--/$-->", 2],
+  ])("%s → %i", (html, count) => {
+    expect(clientRenderedSections(html)).toBe(count);
   });
 });

@@ -243,7 +243,7 @@ export class FormField {
       });
     };
     const failed = (error: unknown) => {
-      reportRuntimeError(error);
+      reportRuntimeError(error, "handler");
       const message = error instanceof Error && error.message ? error.message : String(error);
       finish([{ rule: "custom", valid: false, severity: "error", message: `The check failed: ${message}`, custom: true }]);
     };

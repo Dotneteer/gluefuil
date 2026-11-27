@@ -74,7 +74,10 @@ build:
    not be self-closing. Otherwise the build fails with a message, rather
    than overwriting the author's content.
 
-An exception while rendering fails the build. The prerender adds about
+An exception while rendering fails the build, except inside a `Fallback`
+(step 33): its Suspense boundary leaves that section to the browser
+(`<!--$!-->` in the HTML), and the build prints a warning
+(`clientRenderedSections`; [errors.md](errors.md#boundaries)). The prerender adds about
 0.1 s to the hello app's build.
 
 ## Prerendered routes
@@ -144,7 +147,10 @@ dist/users/1/index.html       /users/1   (prerender: { routes: ["/users/1"] })
   `setServerBreakpoint(…)` and `setServerPath(data-gfui-path ?? "/")`, then
   `hydrateRoot`. Recoverable errors, such as
   a mismatch React repaired by rendering on the client, go to
-  `onRecoverableError`, by default `reportRuntimeError`.
+  `onRecoverableError`, by default `reportDiagnostic` (step 33: a console
+  warning; React recovered). Both roots also get `onCaughtError` (silent: a
+  boundary handled it) and `onUncaughtError` (a render error for the
+  pipeline).
 - **Without it:** `createRoot(container).render(app)`.
 - The app is wrapped in `Ready`, which renders no DOM of its own. As the
   outermost component, its effect runs last and sets `data-gfui-ready`.

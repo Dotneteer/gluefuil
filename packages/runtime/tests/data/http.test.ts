@@ -2,6 +2,7 @@
 // R2–R4, R6, S2, C2, C5 at the unit level): a scripted fetch, fake timers.
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { categoryOfStatus } from "../../src/data/errors";
+import { AppError } from "../../src/errors/app-error";
 import { buildUrl, parseRetryAfter, RequestCancelledError, sendRequest } from "../../src/data/http";
 import { retryDelay, runWithRetry, setRetryJitter, shouldRetry } from "../../src/data/retry";
 
@@ -82,21 +83,26 @@ describe("errors (X1–X3)", () => {
     expect(categoryOfStatus(status)).toBe(category);
     answers.push(json({ message: `Status ${status}`, errors: { name: "Required" } }, status));
     const error = await sendRequest({ url: "/api/x" }).catch((e: unknown) => e);
-    expect(error).toEqual({
+    // Step 33: an AppError with step 20's fields and XMLUI's data.
+    expect(error).toBeInstanceOf(AppError);
+    const body = { message: `Status ${status}`, errors: { name: "Required" } };
+    expect((error as AppError).toJSON()).toEqual({
+      name: "AppError",
       message: `Status ${status}`,
       category,
       code: `http-${status}`,
       status,
       statusText: expect.any(String),
       retryable,
-      body: { message: `Status ${status}`, errors: { name: "Required" } },
+      body,
       method: "GET",
       url: "http://localhost:3000/api/x",
+      data: { statusCode: status, response: body },
     });
-    // Plain and frozen, body included: no platform object reaches script (X6).
+    // Frozen, body and data included: script can't change a shared error (X6).
     expect(Object.isFrozen(error)).toBe(true);
-    expect(Object.isFrozen((error as { body: object }).body)).toBe(true);
-    expect(Object.getPrototypeOf(error)).toBe(Object.prototype);
+    expect(Object.isFrozen((error as AppError).body)).toBe(true);
+    expect(Object.isFrozen((error as AppError).data)).toBe(true);
   });
 
   test("without a message in the body: the status and its text", async () => {
@@ -148,8 +154,8 @@ describe("the retry policy (R2–R4, R6, C2)", () => {
   const options = { retries: 2, retryDelay: 500 };
 
   test("which errors are retried, and how often", () => {
-    const server = { category: "server", code: "http-503", retryable: true, message: "", method: "GET", url: "" };
-    const missing = { ...server, category: "not-found", retryable: false };
+    const server = new AppError({ category: "server", code: "http-503" });
+    const missing = new AppError({ category: "not-found" });
     expect([1, 2, 3].map((failures) => shouldRetry(failures, server, options))).toEqual([true, true, false]);
     expect(shouldRetry(1, missing, options)).toBe(false);
     expect(shouldRetry(1, new Error("bug"), options)).toBe(false);
@@ -157,10 +163,10 @@ describe("the retry policy (R2–R4, R6, C2)", () => {
   });
 
   test("exponential backoff, capped; Retry-After wins, capped at 60 s; jitter ±25%", () => {
-    const error = { category: "server", code: "x", retryable: true, message: "", method: "GET", url: "" };
+    const error = new AppError({ category: "server", code: "x" });
     expect([1, 2, 3, 10].map((retry) => retryDelay(retry, error, options))).toEqual([500, 1000, 2000, 30000]);
-    expect(retryDelay(1, { ...error, retryAfterMs: 2000 }, options)).toBe(2000);
-    expect(retryDelay(1, { ...error, retryAfterMs: 120_000 }, options)).toBe(60_000);
+    expect(retryDelay(1, new AppError({ category: "server", retryAfterMs: 2000 }), options)).toBe(2000);
+    expect(retryDelay(1, new AppError({ category: "server", retryAfterMs: 120_000 }), options)).toBe(60_000);
     setRetryJitter(true);
     expect([0, 1].map((r) => retryDelay(2, error, options, () => r))).toEqual([750, 1250]);
   });

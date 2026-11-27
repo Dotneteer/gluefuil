@@ -1,0 +1,81 @@
+<!-- Step 33: RetryPolicy (attempts, backoff, a circuit breaker), Fallback (a failed DataSource, a component that throws, reset), onError on an element and on the App, AppError in script, App.errors. -->
+<Component name="ErrorsScenario">
+  <VStack
+    var.flakyKey="{0}"
+    var.fails="{2}"
+    var.circuitKey="{0}"
+    var.circuitLog="{[]}"
+    var.reportFails="{false}"
+    var.broken="{false}"
+    var.ownLog="">
+    <ScenarioHeader title="Errors and recovery" description="Every error is an AppError with a code and a category. A RetryPolicy retries the DataSources inside it (and a circuit breaker fails fast); a Fallback shows its errorTemplate when a DataSource inside fails or a child throws; onError on an element handles its own handlers' errors; anything left goes to App onError, App.errors and a toast."/>
+
+    <Card title="Retries">
+      <Text>A RetryPolicy of 4 attempts, exponential backoff from 300 ms, around a DataSource whose server fails a given number of times.</Text>
+      <HStack wrapContent="true">
+        <Button label="Load (fails twice)" onClick="fails = 2; flakyKey = Date.now()"/>
+        <Button label="Load (fails 5 times)" onClick="fails = 5; flakyKey = Date.now()"/>
+      </HStack>
+      <RetryPolicy attempts="4" backoff="exponential" delayMs="300">
+        <DataSource id="flaky" url="/api/errors/flaky" queryParams="{{ fails, key: flakyKey }}" when="{flakyKey > 0}"/>
+      </RetryPolicy>
+      <Text>Retries: {flakyKey === 0 ? 'not loaded' : flaky.inProgress ? 'loading…' : flaky.error ? 'failed: ' + flaky.error.code + ' after ' + flaky.error.attempts + ' attempts (reference ' + flaky.error.correlationId + ')' : 'loaded after ' + flaky.value.attempts + ' attempts'}</Text>
+    </Card>
+
+    <Card title="A circuit breaker">
+      <Text>The service is down. After 3 failed attempts in a row the circuit opens: calls fail at once (circuit-open) for 5 seconds, then one probe goes through.</Text>
+      <RetryPolicy attempts="1" circuitBreaker="{{ failureThreshold: 3, resetMs: 5000 }}">
+        <DataSource id="down" url="/api/errors/down" queryParams="{{ key: circuitKey }}" when="{circuitKey > 0}"
+          onError="(e) => circuitLog = [...circuitLog, e.code].slice(-8)"/>
+      </RetryPolicy>
+      <Button label="Call the service" onClick="circuitKey++"/>
+      <Text>Calls: {circuitLog.join(', ') || 'none'}</Text>
+    </Card>
+
+    <Card title="A section that falls back">
+      <Text>The report loads inside a Fallback. Let the server fail, then reload: the section shows its errorTemplate with the error's category, code and reference; Try again mounts the section again.</Text>
+      <Switch label="The server fails" initialValue="{reportFails}" onDidChange="v => reportFails = v"/>
+      <Fallback id="reportSection">
+        <property name="errorTemplate">
+          <VStack>
+            <Text variant="strong">We hit a snag ({$error.category}, {$error.code})</Text>
+            <Text>{$error.message}</Text>
+            <Text when="{$error.correlationId}">Reference: {$error.correlationId}</Text>
+            <Button label="Try again" onClick="reportSection.reset()"/>
+          </VStack>
+        </property>
+        <DataSource id="report" url="/api/errors/report" queryParams="{{ fail: reportFails }}" retries="0"/>
+        <Text>{report.value ? report.value.title + ': ' + report.value.rows + ' rows' : 'Loading the report…'}</Text>
+      </Fallback>
+    </Card>
+
+    <Card title="A component that throws">
+      <Text>A binding that throws while rendering, inside a Fallback: only this card's content is replaced.</Text>
+      <Switch label="Break it" initialValue="{broken}" onDidChange="v => broken = v"/>
+      <Fallback id="widget">
+        <property name="errorTemplate">
+          <HStack><Text>Render error: {$error.message}</Text><Button label="Reset" onClick="widget.reset()"/></HStack>
+        </property>
+        <Text>{broken ? JSON.parse('{broken') : 'All good'}</Text>
+      </Fallback>
+    </Card>
+
+    <Card title="Handler errors">
+      <Text>Without a handler an error shows a toast (and is announced); onError on the element handles its own; a switch lets App onError keep the toasts quiet.</Text>
+      <HStack wrapContent="true">
+        <Button label="Throw an Error" onClick="throw new Error('Export failed')"/>
+        <Button label="Throw an AppError" onClick="throw new AppError({ code: 'quota', category: 'rate-limit', message: 'Too many exports today' })"/>
+        <Button label="Handled here" onClick="throw new Error('Handled by the button')" onError="(e, source) => ownLog = source + ': ' + e.message"/>
+      </HStack>
+      <Switch label="App onError keeps it quiet" initialValue="{quietErrors}" onDidChange="v => quietErrors = v"/>
+      <Text>Handled: {ownLog || 'nothing yet'}</Text>
+    </Card>
+
+    <Card title="App.errors">
+      <Text>Unhandled errors: {App.errors.length}</Text>
+      <Items data="{App.errors.slice(-5).reverse()}">
+        <Text variant="code">{$item.code} · {$item.category} · {$item.message}</Text>
+      </Items>
+    </Card>
+  </VStack>
+</Component>

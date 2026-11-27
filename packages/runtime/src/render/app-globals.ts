@@ -8,6 +8,7 @@ import { delay } from "./handlers";
 import { currentLocation, currentRouteParams, navigate } from "./router";
 import { confirm, toast } from "./overlay-state";
 import { Actions } from "../data/transfer";
+import { AppGlobal } from "./app-errors";
 import { navDrawerOpen, navPanelCollapsed, setNavDrawerOpen, setNavPanelCollapsed } from "./shell-state";
 import { activeThemeId, activeThemeTone, setTheme, setThemeTone, toggleThemeTone } from "./theme-state";
 
@@ -30,6 +31,8 @@ const APP_GLOBALS: Record<string, ScopeEntry> = {
   // Step 32B: Actions.upload() and Actions.download().
   Actions: { value: Actions },
   confirm: { value: confirm },
+  // Step 33: App.errors, the unhandled errors (render/app-errors.ts).
+  App: { value: AppGlobal },
 };
 
 /** The root scope of a compiled module: the app globals. */

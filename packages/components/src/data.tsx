@@ -21,8 +21,10 @@ import {
   type LoaderState,
   type RegisterApi,
   type RequestSpec,
+  type RetryPolicy,
 } from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLoaderErrorReport, useRetryPolicy } from "./errors";
 
 type Handler = (...args: unknown[]) => unknown;
 
@@ -96,7 +98,7 @@ export interface DataSourceProps {
 }
 
 /** The request of a DataSource or a `data` URL; undefined while the URL can't be built. */
-function requestOf(props: DataSourceProps): RequestSpec | undefined {
+function requestOf(props: DataSourceProps, policy?: RetryPolicy): RequestSpec | undefined {
   if (props.url === undefined || props.url === null || props.url === "") return undefined;
   return {
     url: String(props.url),
@@ -104,17 +106,21 @@ function requestOf(props: DataSourceProps): RequestSpec | undefined {
     queryParams: asRecord(props.queryParams) ?? null,
     headers: asRecord(props.headers) ?? null,
     body: props.body,
-    timeoutMs: asNumber(props.timeoutMs, 30_000),
+    // Step 33: the DataSource's own timeout, else its RetryPolicy's per-attempt one.
+    timeoutMs: asNumber(props.timeoutMs, policy?.spec.timeoutMs ?? 30_000),
   };
 }
 
-function loaderOptions(props: DataSourceProps, select: ((data: unknown) => unknown) | undefined): LoaderOptions {
-  const request = requestOf(props);
+function loaderOptions(props: DataSourceProps, select: ((data: unknown) => unknown) | undefined, policy?: RetryPolicy): LoaderOptions {
+  const request = requestOf(props, policy);
   const isGet = (request?.method ?? "get").toLowerCase() === "get";
+  // Step 33: the DataSource's own retries/retryDelay win over the nearest RetryPolicy.
+  const ownRetry = props.retries !== undefined || props.retryDelay !== undefined;
   return {
     request,
     // `when` (a prop here, not visibility): undefined means fetch; any falsy value, or "false", doesn't.
     enabled: props.when === undefined || (Boolean(props.when) && !isFalse(props.when)),
+    ...(policy && !ownRetry ? { policy } : {}),
     retries: asNumber(props.retries, isGet ? 2 : 0),
     retryDelay: asNumber(props.retryDelay, 500),
     pollIntervalMs: asNumber(props.pollIntervalInSeconds, 0) * 1000,
@@ -125,10 +131,13 @@ function loaderOptions(props: DataSourceProps, select: ((data: unknown) => unkno
 
 export function DataSource(props: DataSourceProps) {
   const select = useMemo(() => selector(props.resultSelector, props.transformResult), [props.resultSelector, props.transformResult]);
-  const loader = useLoader(loaderOptions(props, select));
+  const policy = useRetryPolicy();
+  const loader = useLoader(loaderOptions(props, select, policy));
+  // Step 33: an error its own onError doesn't handle goes to the nearest Fallback, else to App onError.
+  const reportError = useLoaderErrorReport();
   loader.events = {
     ...(props.onLoaded ? { loaded: (data, isRefetch) => props.onLoaded!(data, isRefetch) } : {}),
-    ...(props.onError ? { error: (error: DataError) => props.onError!(error) } : {}),
+    error: props.onError ? (error: DataError) => props.onError!(error) : reportError,
     ...(props.onCancel ? { cancel: (reason) => props.onCancel!(reason) } : {}),
   };
   const api = useMemo(() => {

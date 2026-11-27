@@ -1801,6 +1801,37 @@ const STEP32_COMPONENTS: Record<string, ComponentMetadata> = {
     },
     nonVisual: true,
   },
+  Fallback: {
+    description:
+      "Shows `errorTemplate` instead of its children when a child throws while rendering or a DataSource inside fails without its own onError (step 33). `reset()` shows the children again (a DataSource fetches again). A child that fails in the prerender is rendered on the client.",
+    props: {
+      isLoading: { description: "While true (and no error), `loadingTemplate` is shown instead of the children.", valueType: "boolean" },
+    },
+    templates: {
+      errorTemplate: { description: "Shown after an error; `$error` is the AppError.", contextVars: ["$error"] },
+      loadingTemplate: { description: "Shown while `isLoading`.", contextVars: [] },
+    },
+    api: {
+      reset: { description: "Clears the error and mounts the children again." },
+      error: { description: "The error shown (an AppError), or undefined." },
+    },
+    nonVisual: true,
+  },
+  RetryPolicy: {
+    description:
+      "Retries the requests of the DataSources inside it (step 33): attempts, backoff, jitter, the categories retried, Retry-After, a circuit breaker. A DataSource's own retries, retryDelay and timeoutMs win.",
+    props: {
+      attempts: { description: "Total attempts, the first included (default 3).", valueType: "integer" },
+      backoff: { description: "The delay between attempts: fixed, linear (× the retry number) or exponential (default; doubles).", valueType: "string", availableValues: ["fixed", "linear", "exponential"] },
+      delayMs: { description: "The base delay in ms (default 500).", valueType: "integer" },
+      jitter: { description: "Adds ±25% to each delay (default true).", valueType: "boolean" },
+      onlyCategories: { description: "The error categories retried, as a comma list or an array (default: the errors whose `retryable` is true).", valueType: "any" },
+      timeoutMs: { description: "Per attempt, for DataSources without timeoutMs.", valueType: "integer" },
+      honourRetryAfter: { description: "A Retry-After header sets the next delay, up to 60 s (default true).", valueType: "boolean" },
+      circuitBreaker: { description: "{ failureThreshold, resetMs }: after that many failed attempts in a row, requests fail at once (code circuit-open) for resetMs; then one probe.", valueType: "any" },
+    },
+    nonVisual: true,
+  },
   ChangeListener: {
     description: "Fires didChange when a value changes (structurally), optionally debounced or throttled.",
     props: {
@@ -1895,6 +1926,10 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
           "Before a navigation (navigate(), a Link or NavLink click, back or forward; not the Pages fallback or the first load). Receives the target path (with its query) and the query parameters; returning false cancels it. A handler that throws or times out cancels it too.",
       },
       didNavigate: { description: "After a navigation (not the first load). Receives the path (with its query) and the query parameters." },
+      error: {
+        description:
+          "An error nothing else handled (a handler, a DataSource, a render error, a navigation event): (error: AppError, event). event.preventDefault() or returning false (also after an await) suppresses the default report (a toast, an announcement, the console). App.errors keeps the last 50.",
+      },
     },
     eventResults: true,
     templates: {

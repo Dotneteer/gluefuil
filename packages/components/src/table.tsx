@@ -18,7 +18,7 @@
 //     div.gfui-Table-body role=rowgroup  the rows' box (height: all rows when virtual)
 //       div.gfui-Table-row role=row       cells (role=cell); a detail row after an expanded one
 //   nav.gfui-Pagination                 (paging)
-import { HandlerSlot, pointerData, reportRuntimeError, templateRenderer, useComponentApi, type RegisterApi, type TemplateFunction, type TemplateRenderer } from "@gluefuil/runtime";
+import { HandlerSlot, pointerData, reportDiagnostic, reportRuntimeError, templateRenderer, useComponentApi, type RegisterApi, type TemplateFunction, type TemplateRenderer } from "@gluefuil/runtime";
 import { Checkbox, Switch } from "@mantine/core";
 import {
   useCallback,
@@ -125,7 +125,7 @@ function TableView(props: TableProps) {
     const signature = problems.join("\u0000");
     if (problems.length > 0 && signature !== warned.current) {
       warned.current = signature;
-      reportRuntimeError(new Error(`Table: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`));
+      reportDiagnostic(`Table: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`);
     }
   }, [source, idKey]);
   const { columns, problems } = useMemo(
@@ -137,7 +137,7 @@ function TableView(props: TableProps) {
     const signature = problems.map((p) => `${p.column}:${p.message}`).join("\u0000");
     if (signature === "" || signature === reportedTypes.current) return;
     reportedTypes.current = signature;
-    for (const p of problems) reportRuntimeError(new Error(`Table column '${p.column}': ${p.message} The column shows text.`));
+    for (const p of problems) reportDiagnostic(`Table column '${p.column}': ${p.message} The column shows text.`);
   }, [problems]);
 
   // --- Sorting ------------------------------------------------------------------------------
@@ -366,8 +366,8 @@ function TableView(props: TableProps) {
     } catch (error) {
       // Decision 5: rows are frozen data; XMLUI's `row.x = value` fails here.
       if (error instanceof TypeError && /read only|read-only|not extensible/i.test(error.message)) {
-        reportRuntimeError(new Error(`Table column '${column.id}': table rows are read-only. Assign the variable instead, for example rows = rows.map(r => r.${idKey} === row.${idKey} ? { ...r, ${column.field ?? "field"}: value } : r)`));
-      } else reportRuntimeError(error);
+        reportRuntimeError(new Error(`Table column '${column.id}': table rows are read-only. Assign the variable instead, for example rows = rows.map(r => r.${idKey} === row.${idKey} ? { ...r, ${column.field ?? "field"}: value } : r)`), "handler");
+      } else reportRuntimeError(error, "handler");
     }
   };
   const flag = (value: unknown, column: TableColumn, row: Row, colIndex: number, fallback: boolean) => {

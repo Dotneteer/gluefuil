@@ -1,7 +1,7 @@
 // Step 22 in jsdom: Form, and inputs bound with the formBinding and validation
 // behaviors (no FormItem). See .ai/plan/poc-22-forms.md.
 import { compileModule } from "@gluefuil/compiler";
-import { confirmQueue, loadModule, resetOverlayState, setErrorReporter } from "@gluefuil/runtime";
+import { confirmQueue, loadModule, resetOverlayState, setDiagnosticReporter, setErrorReporter } from "@gluefuil/runtime";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode, type ComponentType } from "react";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -11,7 +11,13 @@ let errors: unknown[];
 let restore: () => void;
 beforeEach(() => {
   errors = [];
-  restore = setErrorReporter((error) => errors.push(error));
+  // Step 33: developer diagnostics (duplicate ids, an unbound input) go to their own reporter.
+  const restoreErrors = setErrorReporter((error) => errors.push(error));
+  const restoreDiagnostics = setDiagnosticReporter((problem) => errors.push(problem));
+  restore = () => {
+    restoreErrors();
+    restoreDiagnostics();
+  };
 });
 afterEach(() => {
   cleanup();
@@ -312,5 +318,5 @@ test("outside a Form, a bound input works unbound and the problem is reported", 
   show(`<App><TextBox bindTo="name" label="Name"/></App>`);
   await type("Name", "free");
   expect(input("Name").value).toBe("free");
-  expect(errors.map(String)).toContain("Error: An input with bindTo is not inside a Form: it works unbound");
+  expect(errors.map(String)).toContain("An input with bindTo is not inside a Form: it works unbound");
 });

@@ -34,6 +34,7 @@ import {
   type TemplateRenderer,
 } from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { RenderBoundary } from "./errors";
 import { Glyph } from "./icons";
 import { BAR_SCOPE, childCount, LayoutScope, pageScope } from "./layout";
 
@@ -114,6 +115,7 @@ export function Shell({ config = NO_SHELL, header, nav, footer, logo, root, chil
   // regions are bars, whose content starts at the deepest level.
   const single = childCount(children) === 1;
   const page = useMemo(() => pageScope(single), [single]);
+  const pathname = useComputed(() => currentLocation().pathname, []);
   const bar = (region: ReactNode) => (region === null || region === undefined ? null : <LayoutScope value={BAR_SCOPE}>{region}</LayoutScope>);
   return (
     <ShellContext.Provider value={{ config, nav, logo, navId }}>
@@ -125,7 +127,10 @@ export function Shell({ config = NO_SHELL, header, nav, footer, logo, root, chil
           {bar(slot("side"))}
           <main className="gfui-AppMain">
             <div className="gfui-AppContent">
-              <LayoutScope value={page}>{children}</LayoutScope>
+              {/* Step 33: a render error in the content shows a panel there; the shell stays. A navigation resets it. */}
+              <LayoutScope value={page}>
+                <RenderBoundary resetKey={pathname}>{children}</RenderBoundary>
+              </LayoutScope>
             </div>
           </main>
         </div>

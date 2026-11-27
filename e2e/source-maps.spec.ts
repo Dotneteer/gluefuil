@@ -25,8 +25,8 @@ test("a handler's exception resolves to its line in the .gui file", async ({ pag
       }
     });
   });
-  // Not awaited: the page is paused until we resume.
-  void page.getByRole("button", { name: "Throw" }).click();
+  // Not awaited yet: the page is paused until we resume (awaited after the resume, so it can't outlive the test).
+  const click = page.getByRole("button", { name: "Throw" }).click();
   const location = await paused;
 
   const script = scripts.get(location.scriptId)!;
@@ -44,4 +44,5 @@ test("a handler's exception resolves to its line in the .gui file", async ({ pag
 
   await cdp.send("Debugger.setPauseOnExceptions", { state: "none" });
   await cdp.send("Debugger.resume");
+  await click;
 });

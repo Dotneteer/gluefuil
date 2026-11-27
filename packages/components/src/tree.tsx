@@ -14,7 +14,7 @@
 // writes at once (step 30 found APIs that read stale React state). Its changes
 // re-render the component through `notify`.
 import { createTree, hotkeysCoreFeature, syncDataLoaderFeature, type FeatureImplementation, type TreeInstance } from "@headless-tree/core";
-import { pointerData, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
+import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { DataUrl, isDataUrl } from "./data";
 import { Spinner } from "./display";
@@ -419,7 +419,7 @@ class TreeStore {
       this.loading.set(key, "unloaded");
       this.expanded.delete(key);
       this.changed();
-      reportRuntimeError(error instanceof Error ? error : new Error(String(error)));
+      reportRuntimeError(error instanceof Error ? error : new Error(String(error)), "loader");
       return;
     }
     if (this.loads.get(key) !== seq || !this.exists(key)) return;
@@ -579,7 +579,7 @@ function TreeView(props: TreeProps) {
     const keysToLoad = store.toLoad.splice(0);
     for (const k of keysToLoad) void store.loadChildren(k);
     if (store.duplicates.length > 0) {
-      reportRuntimeError(new Error(`Tree: the ids must be unique; repeated: ${store.duplicates.slice(0, 5).join(", ")}`));
+      reportDiagnostic(`Tree: the ids must be unique; repeated: ${store.duplicates.slice(0, 5).join(", ")}`);
       store.duplicates = [];
     }
   });

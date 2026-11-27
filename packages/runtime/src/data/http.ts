@@ -130,7 +130,11 @@ export async function sendRequest(spec: RequestSpec, signal?: AbortSignal): Prom
         }
       } else data = text;
     }
-    if (!response.ok) throw httpError(where, response.status, response.statusText, data, parseRetryAfter(response.headers.get("retry-after")));
+    if (!response.ok) {
+      // Step 33: the server's correlation id (XMLUI's documented header; its source never read it).
+      const correlationId = response.headers.get("x-correlation-id") ?? undefined;
+      throw httpError(where, response.status, response.statusText, data, parseRetryAfter(response.headers.get("retry-after")), correlationId);
+    }
     // An HTML page where data was expected (a proxy's error page, a login page): a parse error.
     if (text !== "" && contentType.includes("text/html")) {
       throw dataError({ message: "Expected data, got an HTML page", category: "parse", code: "parse", status: response.status, body: text, ...where });

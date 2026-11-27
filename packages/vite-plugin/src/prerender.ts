@@ -87,6 +87,16 @@ export interface RenderedRoute {
 
 const escapeText = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
+/**
+ * Step 33: how many sections of a prerendered page React left to the client.
+ * renderToString writes `<!--$!-->` where a Suspense boundary's content threw
+ * (a Fallback's child failing in the server render) and reports nothing else:
+ * its error callback is empty (.ai/plan/poc-33-errors.md, option A).
+ */
+export function clientRenderedSections(html: string): number {
+  return html.split("<!--$!-->").length - 1;
+}
+
 /** Step 32: sets the document's `<title>` (replacing the first one, or added at the end of `<head>`). */
 export function injectTitle(html: string, title: string): string {
   const element = `<title>${escapeText(title)}</title>`;

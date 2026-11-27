@@ -13,7 +13,7 @@
 // construction; the store's watchdog (signals.ts `startBatch`) recovers if
 // that is ever violated.
 
-import { reportRuntimeError, scheduleMicrotask } from "../errors";
+import { reportRuntimeError, scheduleMicrotask, type ErrorSource } from "../errors";
 import { batch, endBatch, startBatch } from "../reactivity/signals";
 
 export type CancelReason = "user" | "supersede" | "timeout" | "unmount";
@@ -146,6 +146,14 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
 
 export type HandlerFunction = (invocation: Invocation) => (...args: unknown[]) => unknown;
 
+/** Step 33: where a slot's errors go. */
+export interface HandlerErrorOptions {
+  /** The element's `onError`: receives the errors nothing waits for (and those of `call`, which then resolves to undefined). */
+  onError?: (error: unknown) => void;
+  /** The source the error pipeline reports without `onError` (default "handler"). */
+  source?: ErrorSource;
+}
+
 /**
  * The running and queued invocations of one handler of one element instance,
  * applying its policy.
@@ -160,6 +168,7 @@ export class HandlerSlot {
     private readonly handler: HandlerFunction,
     private readonly policy: HandlerPolicy = "parallel",
     private readonly timeoutMs?: number,
+    private readonly errors: HandlerErrorOptions = {},
   ) {}
 
   /** Called by the component on each event. Errors are reported (`reportRuntimeError`). */
@@ -245,8 +254,12 @@ export class HandlerSlot {
       this.running.delete(invocation);
       if (!failed) settle?.resolve(value);
       else if (value instanceof HandlerCancelledError) settle?.resolve(undefined);
-      else if (settle) settle.reject(value);
-      else if (caller === undefined) reportRuntimeError(value);
+      else if (this.errors.onError) {
+        // Step 33: the element's onError handles it (a waiting caller gets undefined).
+        settle?.resolve(undefined);
+        if (settle || caller === undefined) this.errors.onError(value);
+      } else if (settle) settle.reject(value);
+      else if (caller === undefined) reportRuntimeError(value, this.errors.source ?? "handler");
       const next = this.queued.shift();
       if (next) scheduleMicrotask(next.run);
     };

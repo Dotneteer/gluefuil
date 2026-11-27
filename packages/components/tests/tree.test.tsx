@@ -3,7 +3,7 @@
 // shows). Scrolling, measuring and resizing are E2E tests (e2e/tree.spec.ts).
 // Design: .ai/plan/poc-31-tree-tilegrid.md
 import { compileModule } from "@gluefuil/compiler";
-import { loadModule, resetRouter, setErrorReporter } from "@gluefuil/runtime";
+import { loadModule, resetRouter, setDiagnosticReporter, setErrorReporter } from "@gluefuil/runtime";
 import { renderStatic } from "@gluefuil/runtime/server";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentType } from "react";
@@ -14,7 +14,13 @@ let errors: unknown[];
 let restore: () => void;
 beforeEach(() => {
   errors = [];
-  restore = setErrorReporter((error) => errors.push(error));
+  // Step 33: developer diagnostics (duplicate ids, an unbound input) go to their own reporter.
+  const restoreErrors = setErrorReporter((error) => errors.push(error));
+  const restoreDiagnostics = setDiagnosticReporter((problem) => errors.push(problem));
+  restore = () => {
+    restoreErrors();
+    restoreDiagnostics();
+  };
 });
 afterEach(() => {
   cleanup();

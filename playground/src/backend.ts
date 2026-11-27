@@ -13,6 +13,10 @@ function received(value: unknown): unknown {
   return value;
 }
 
+/** Step 33: failed attempts per key of /api/errors/flaky, and a correlation id counter. */
+const flakyAttempts = new Map<string, number>();
+let correlation = 0;
+
 export default defineBackend({
   seed: {
     people: [
@@ -58,6 +62,19 @@ export default defineBackend({
     },
     "GET /api/files/people.csv": ({ db }) =>
       file(["name,field\n", ...db.people!.list().map((p) => `${p.name},${p.field}\n`)], { type: "text/csv", name: "people.csv" }),
+    // Step 33 (Errors and recovery): fails `fails` times per `key` with a 503, then answers with the attempts made.
+    "GET /api/errors/flaky": ({ query }) => {
+      const key = String(query.key ?? "");
+      const attempts = (flakyAttempts.get(key) ?? 0) + 1;
+      flakyAttempts.set(key, attempts);
+      if (attempts <= Number(query.fails ?? 0)) return status(503, { message: `Attempt ${attempts} failed (on purpose)` }, { "X-Correlation-Id": `req-${++correlation}` });
+      return { attempts };
+    },
+    // Always down: for the circuit breaker.
+    "GET /api/errors/down": () => status(503, { message: "The report service is down" }, { "X-Correlation-Id": `req-${++correlation}` }),
+    // A report that fails while `fail` is set.
+    "GET /api/errors/report": ({ query }) =>
+      query.fail === "true" ? status(500, { message: "The report could not be built" }, { "X-Correlation-Id": `req-${++correlation}` }) : { title: "Quarterly report", rows: 42 },
     "GET /api/members": ({ db }) => db.members!.list(),
     "GET /api/members/:id": ({ db, params }) => db.members!.get(params.id) ?? status(404, { message: `No member ${params.id}` }),
     // Server-side validation as RFC 7807 problem details: the form puts each message on its input.
