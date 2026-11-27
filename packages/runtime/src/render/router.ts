@@ -206,7 +206,7 @@ function guard(target: RouteLocation): Promise<boolean> | true {
     try {
       return (await willNavigate(routePath(target), Object.freeze({ ...target.query }))) !== false;
     } catch (error) {
-      reportRuntimeError(error);
+      reportRuntimeError(error, "navigation");
       return false;
     }
   })();
@@ -216,9 +216,9 @@ function fireDidNavigate(target: RouteLocation): void {
   const didNavigate = handlers.didNavigate;
   if (!didNavigate) return;
   try {
-    void Promise.resolve(didNavigate(routePath(target), Object.freeze({ ...target.query }))).catch(reportRuntimeError);
+    void Promise.resolve(didNavigate(routePath(target), Object.freeze({ ...target.query }))).catch((error: unknown) => reportRuntimeError(error, "navigation"));
   } catch (error) {
-    reportRuntimeError(error);
+    reportRuntimeError(error, "navigation");
   }
 }
 

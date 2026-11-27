@@ -63,3 +63,4 @@ export { Logo, NoResult, PageMetaTitle, Redirect, ToneChangerButton, ToneSwitch 
 export { ChangeListener, deepEqual, MessageListener, Queue, rateLimited, sourcesChange, Timer, type QueueEntry, type QueueItemStatus } from "./nonvisual";
 export { AppInfoContext, type AppInfo } from "./app-info";
 export { acceptRules, acceptsFile, FileInput, filesOf, FileUploadDropZone, parseFiles, type ParseAsResult, type ParseResult } from "./files";
+export { categoryList, ErrorBoundary, Fallback, RenderBoundary, retryPolicySpec, RetryPolicy, useLoaderErrorReport, useRetryPolicy, type FallbackProps, type RetryPolicyProps } from "./errors";

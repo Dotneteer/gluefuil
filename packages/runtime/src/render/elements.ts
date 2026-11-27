@@ -7,7 +7,7 @@
 // Components themselves are plain React components that receive values.
 
 import { createElement, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
-import { scheduleMicrotask } from "../errors";
+import { AppError, scheduleMicrotask } from "../errors";
 import { useComputed } from "../reactivity/react";
 import { isServerView } from "../reactivity/server-view";
 import { computed, type ReadonlySignal } from "../reactivity/signals";
@@ -41,8 +41,8 @@ export interface BoundProps {
   id?: string;
   /** Template props (`itemTemplate`): compiled templates, given to the component as renderers. */
   templates?: Record<string, TemplateFunction> | null;
-  /** `onMount` / `onUnmount` handlers (any element). */
-  lifecycle?: { mount?: HandlerFactory; unmount?: HandlerFactory } | null;
+  /** `onMount` / `onUnmount` handlers (any element); step 33: `onError`, the element's own error handler. */
+  lifecycle?: { mount?: HandlerFactory; unmount?: HandlerFactory; error?: HandlerFactory } | null;
   /** Handler props return a promise of the handler's result (APICall's beforeRequest, success; step 20). */
   results?: boolean;
   /** The scope the bindings read and the handlers write. */
@@ -85,21 +85,26 @@ type Wiring = Pick<BoundProps, "handlers" | "policies" | "timeouts" | "id" | "te
 export function useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }: Wiring, withResults: boolean) {
   // One slot per handler: it applies the policy, the timeout, and batching
   // (one batch per synchronous segment of each call).
+  // Step 33: the element's `onError` receives the errors of its other handlers ("action") and of its lifecycle.
+  const errorSlot = useMemo(() => (lifecycle?.error ? new HandlerSlot(lifecycle.error(scope)) : undefined), [lifecycle, scope]);
   const slots = useMemo(() => {
     const result: Record<string, HandlerSlot> = {};
+    const errors = errorSlot ? { onError: elementErrorHandler(errorSlot, "action") } : undefined;
     for (const name in handlers) {
-      result[name] = new HandlerSlot(handlers[name]!(scope), policies?.[name], timeouts?.[name]);
+      result[name] = new HandlerSlot(handlers[name]!(scope), policies?.[name], timeouts?.[name], errors);
     }
     return result;
-  }, [handlers, policies, timeouts, scope]);
+  }, [handlers, policies, timeouts, scope, errorSlot]);
   // Unmounting aborts running handlers ("unmount"). StrictMode re-mounts:
   // activate() undoes the simulated unmount.
   useEffect(() => {
     for (const name in slots) slots[name]!.activate();
+    errorSlot?.activate();
     return () => {
       for (const name in slots) slots[name]!.dispose();
+      errorSlot?.dispose();
     };
-  }, [slots]);
+  }, [slots, errorSlot]);
   const handlerProps = useMemo(() => {
     const result: Record<string, (...args: unknown[]) => unknown> = {};
     for (const name in slots) {
@@ -113,7 +118,7 @@ export function useWiring({ handlers, policies, timeouts, id, templates, lifecyc
     for (const name in templates) result[name] = templateRenderer(scope, templates[name]!);
     return result;
   }, [templates, scope]);
-  useLifecycle(lifecycle, scope);
+  useLifecycle(lifecycle, scope, errorSlot);
   return { handlerProps, templateProps, registerApi };
 }
 
@@ -123,13 +128,13 @@ export function useWiring({ handlers, policies, timeouts, id, templates, lifecyc
  * remount in development: the unmount is deferred by a microtask and cancelled
  * by an immediate remount, so each handler fires once per real transition.
  */
-function useLifecycle(lifecycle: BoundProps["lifecycle"], scope: object): void {
+function useLifecycle(lifecycle: BoundProps["lifecycle"], scope: object, errorSlot: HandlerSlot | undefined): void {
   const slots = useMemo(
     () => ({
-      mount: lifecycle?.mount ? new HandlerSlot(lifecycle.mount(scope)) : undefined,
-      unmount: lifecycle?.unmount ? new HandlerSlot(lifecycle.unmount(scope)) : undefined,
+      mount: lifecycle?.mount ? new HandlerSlot(lifecycle.mount(scope), undefined, undefined, lifecycleErrors(errorSlot, "mount")) : undefined,
+      unmount: lifecycle?.unmount ? new HandlerSlot(lifecycle.unmount(scope), undefined, undefined, lifecycleErrors(errorSlot, "unmount")) : undefined,
     }),
-    [lifecycle, scope],
+    [lifecycle, scope, errorSlot],
   );
   const pendingUnmount = useRef(false);
   useEffect(() => {
@@ -145,6 +150,16 @@ function useLifecycle(lifecycle: BoundProps["lifecycle"], scope: object): void {
       });
     };
   }, [slots]);
+}
+
+/** Step 33: an element's `onError` as a handler slot's error sink: `(error: AppError, source)`. */
+function elementErrorHandler(errorSlot: HandlerSlot, source: "action" | "mount" | "unmount"): (error: unknown) => void {
+  return (error) => errorSlot.invoke([AppError.from(error), source]);
+}
+
+/** A lifecycle slot's errors: the element's `onError`, else the pipeline as "lifecycle". */
+function lifecycleErrors(errorSlot: HandlerSlot | undefined, source: "mount" | "unmount") {
+  return errorSlot ? { onError: elementErrorHandler(errorSlot, source) } : { source: "lifecycle" as const };
 }
 
 /**

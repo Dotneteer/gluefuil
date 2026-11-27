@@ -3,6 +3,7 @@
 // .ai/plan/poc-19-routing.md
 import { currentLocation, findRoute, hrefFor, navigate, redirect, registerRoutes, useComputed } from "@gluefuil/runtime";
 import { Children, isValidElement, useEffect, type MouseEvent, type ReactNode } from "react";
+import { RenderBoundary } from "./errors";
 import { Glyph } from "./icons";
 import { LayoutScope, useLayout, useRecountedScope, type LayoutProps } from "./layout";
 import { mergeStyles, textOverflow, type TextOverflowProps } from "./text";
@@ -11,7 +12,12 @@ import { mergeStyles, textOverflow, type TextOverflowProps } from "./text";
 export function Page({ children }: { url?: unknown; children?: ReactNode }) {
   // A fragment: the page's roots are the content's children. Counted again for
   // the layout's wrapper rule (layout.tsx).
-  return <LayoutScope value={useRecountedScope(children)}>{children}</LayoutScope>;
+  // Step 33: a page that fails to render shows a panel in its place; the shell stays.
+  return (
+    <LayoutScope value={useRecountedScope(children)}>
+      <RenderBoundary>{children}</RenderBoundary>
+    </LayoutScope>
+  );
 }
 
 /**

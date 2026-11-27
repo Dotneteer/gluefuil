@@ -1328,10 +1328,12 @@ class ModuleCompiler {
     if (isLayoutRoot && acceptsLayoutProps(this.metadataOf(rendered) ?? metadata)) bindings.push(["$$layoutFrom", this.layoutFromProps()]);
     // The App shell's regions: props of their own, plus the settings (step 19A).
     if (metadata.regions) this.regions(node, regionNodes, metadata.regions, scopeVar, constants);
-    // onMount / onUnmount (any element): not component props.
+    // onMount / onUnmount (any element): not component props. Step 33: onError too, on an element
+    // whose component has no `error` event of its own (DataSource, APICall and App keep theirs).
     const lifecycle: [string, string][] = [];
+    const ownError = Object.hasOwn(metadata.events ?? {}, "error");
     for (let i = handlers.length - 1; i >= 0; i--) {
-      const kind = LIFECYCLE[handlers[i]![0]];
+      const kind = handlers[i]![0] === "onError" ? (ownError ? undefined : "error") : LIFECYCLE[handlers[i]![0]];
       if (kind) {
         lifecycle.unshift([kind, handlers[i]![1]]);
         handlers.splice(i, 1);
@@ -1576,6 +1578,8 @@ class ModuleCompiler {
 
   private checkEvent(metadata: ComponentMetadata, component: string, event: string, span: Span): boolean {
     if (`on${event[0]!.toUpperCase()}${event.slice(1)}` in LIFECYCLE) return true;
+    // Step 33: every element accepts onError (its own, or the component's `error` event below).
+    if (event === "error") return true;
     if (metadata.events && Object.hasOwn(metadata.events, event)) {
       const deprecation = metadata.events[event]!.deprecationMessage;
       if (deprecation !== undefined) this.reportDeprecated(span, `The event '${event}' of '${component}'`, deprecation);

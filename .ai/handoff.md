@@ -9,7 +9,7 @@
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
 > steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26), and after
-> step 32 and 32B (2026-11-27).
+> step 32 and 32B (2026-11-27), and after step 33 (2026-11-27).
 
 ## State
 
@@ -44,7 +44,13 @@
   [`plan/poc-32b-files.md`](plan/poc-32b-files.md); reference:
   [`docs/files.md`](docs/files.md). `npm run check`: 3,364 unit tests in
   120 files, 296 E2E tests. Next: step 33 (`poc-steps.md`).
-- **`master` holds steps 0–32B, merged.** `origin/master`
+- **Step 33 (structured errors) is done and merged into master.** Plan and findings:
+  [`plan/poc-33-errors.md`](plan/poc-33-errors.md); reference:
+  [`docs/errors.md`](docs/errors.md). `npm run check`: 3,470 unit tests in
+  125 files, 302 E2E tests. `AppError` everywhere, `App onError`/`App.errors`,
+  a per-element `onError`, `Fallback`, boundaries around Pages and the App
+  content, `RetryPolicy` with a circuit breaker. Next: step 34 (i18n).
+- **`master` holds steps 0–33, merged.** `origin/master`
   (as last fetched) is at the rename after step 22B; the later merges are not
   pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
@@ -284,6 +290,14 @@
   step 32B) runs late. Poll for the final state (`eventually` in
   `components/tests/step32.test.tsx`, a `vi.waitFor`) and make in-progress
   windows wide (hundreds of ms). Check with several runs in parallel.
+
+- **Errors (step 33):** a handler or DataSource error nobody handles now
+  shows a toast (when an App is mounted). Tests that capture errors use
+  `setErrorReporter` (the console stage) and, for developer warnings
+  (duplicate ids, an unbound input), `setDiagnosticReporter`. A test that
+  clicks a throwing button must await the click before it ends.
+- **Render errors in tests:** `{null.x}` doesn't throw (null-safe member
+  access); use `JSON.parse('{oops')`.
 
 ## Open questions for the user
 

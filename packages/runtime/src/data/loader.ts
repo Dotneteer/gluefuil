@@ -10,9 +10,9 @@
 import { QueryObserver, type QueryObserverOptions, type QueryObserverResult } from "@tanstack/query-core";
 import { signal, type ReadonlySignal } from "../reactivity/signals";
 import { queryClient, queryKey } from "./client";
-import { toDataError, withAttempts, type DataError } from "./errors";
+import { isDataError, toDataError, withAttempts, type DataError } from "./errors";
 import { buildUrl, sendRequest, type HttpResult, type RequestSpec } from "./http";
-import { retryDelay, shouldRetry } from "./retry";
+import { policyOf, retryDelay, shouldRetry, type RetryPolicy } from "./retry";
 
 export interface LoaderOptions {
   /** The request; undefined while it can't be made yet (an unresolved part of the URL). */
@@ -21,6 +21,8 @@ export interface LoaderOptions {
   enabled: boolean;
   retries: number;
   retryDelay: number;
+  /** Step 33: a `<RetryPolicy>` (and its circuit breaker) instead of `retries`/`retryDelay`. */
+  policy?: RetryPolicy;
   /** Refetch every this many ms (0 or undefined: no polling). */
   pollIntervalMs?: number;
   structuralSharing: boolean;
@@ -132,13 +134,23 @@ export class Loader {
 
   private queryOptions(options: LoaderOptions): QueryObserverOptions<Envelope, DataError, unknown, Envelope, readonly unknown[]> {
     const request = options.request;
-    const retry = { retries: options.retries, retryDelay: options.retryDelay };
+    const retry = options.policy?.spec ?? policyOf({ retries: options.retries, retryDelay: options.retryDelay });
+    const breaker = options.policy?.breaker;
     const where = () => ({ method: (request?.method ?? "get").toUpperCase(), url: request ? buildUrl(request.url, request.queryParams) : "" });
     return {
       queryKey: this.keyOf(request),
       enabled: options.enabled && request !== undefined,
       queryFn: async ({ signal }) => {
-        const result: HttpResult = await sendRequest(request!, signal);
+        // Step 33: an open circuit fails at once; every attempt's outcome moves the breaker.
+        breaker?.check(where());
+        let result: HttpResult;
+        try {
+          result = await sendRequest(request!, signal);
+        } catch (error) {
+          if (isDataError(error)) breaker?.failed();
+          throw error;
+        }
+        breaker?.succeeded();
         return { data: result.data, headers: result.headers };
       },
       // query-core counts failures from 0; ours from 1.

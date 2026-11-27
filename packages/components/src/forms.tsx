@@ -8,6 +8,7 @@ import {
   isDataError,
   FormProvider,
   provideContext,
+  reportDiagnostic,
   reportRuntimeError,
   useComponentApi,
   useComputed,
@@ -303,7 +304,7 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
         setTimeout(() => target?.focusTarget?.(), 0);
         // A server's answer is shown in the form; anything else is a bug worth reporting.
         if (props.onSubmitError) await props.onSubmitError(error, problem);
-        else if (!isDataError(error)) reportRuntimeError(error);
+        else if (!isDataError(error)) reportRuntimeError(error, "handler");
       } finally {
         store.submitting.set(false);
       }
@@ -426,7 +427,7 @@ export function FormBindingBehavior(props: FormBindingBehaviorProps) {
 function reportOnce(key: object, message: string): void {
   if (reported.has(key)) return;
   reported.add(key);
-  reportRuntimeError(new Error(message));
+  reportDiagnostic(message);
 }
 
 function fieldOptions(path: string, noSubmit: boolean, settings: ValidationSettings | undefined): FieldOptions {

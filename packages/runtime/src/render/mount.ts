@@ -3,7 +3,7 @@
 
 import { createElement, useEffect, type ReactNode } from "react";
 import { createRoot, hydrateRoot, type Root } from "react-dom/client";
-import { reportRuntimeError } from "../errors";
+import { reportDiagnostic, reportRuntimeError } from "../errors";
 import { setBasename, setServerPath } from "./router";
 import { breakpointFromName, setServerBreakpoint } from "./visibility";
 
@@ -46,7 +46,7 @@ export interface MountOptions {
   /**
    * Called for errors React recovers from while hydrating, such as a
    * mismatch between the HTML and the first client render. Default:
-   * `reportRuntimeError`.
+   * `reportDiagnostic` (step 33: React recovered, so they are not the app's errors).
    */
   onRecoverableError?: (error: unknown) => void;
   /**
@@ -56,6 +56,17 @@ export interface MountOptions {
    */
   basename?: string;
 }
+
+/**
+ * Step 33: render errors. A boundary that caught one (a Fallback, the built-in
+ * boundaries) has handled or reported it: React's default console output is
+ * dropped. One no boundary caught (the shell itself) removed the app: it is
+ * reported as a render error.
+ */
+const ROOT_ERRORS = {
+  onCaughtError: () => {},
+  onUncaughtError: (error: unknown) => reportRuntimeError(error, "render"),
+};
 
 /**
  * Renders `app` into `container`. A prerendered container is hydrated: React
@@ -74,10 +85,11 @@ export function mountApp(container: Element, app: ReactNode, options: MountOptio
     setServerBreakpoint(breakpointFromName(prerendered) ?? 0);
     setServerPath(container.getAttribute(PATH_ATTRIBUTE) ?? "/");
     return hydrateRoot(container, tree, {
-      onRecoverableError: (error) => (options.onRecoverableError ?? reportRuntimeError)(error),
+      onRecoverableError: (error) => (options.onRecoverableError ?? reportDiagnostic)(error),
+      ...ROOT_ERRORS,
     });
   }
-  const root = createRoot(container);
+  const root = createRoot(container, ROOT_ERRORS);
   root.render(tree);
   return root;
 }

@@ -4,7 +4,7 @@
 // MessageListenerReact.tsx). They render nothing of their own (MessageListener
 // its children). Script gets plain values only: a message is a frozen
 // `{ data, origin }`, never the MessageEvent (whose `source` is a window).
-import { contentToast, freezeDeep, removeToast, reportRuntimeError, signal, toast, useComponentApi, useSignal, type RegisterApi, type Signal, type TemplateRenderer } from "@gluefuil/runtime";
+import { contentToast, freezeDeep, removeToast, reportRuntimeError, signal, useComponentApi, useSignal, type RegisterApi, type Signal, type TemplateRenderer } from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 const isFalse = (value: unknown) => value === false || value === "false";
@@ -187,7 +187,7 @@ export function Timer({ enabled, interval, initialDelay, once, onTick, registerA
       try {
         await tickHandler.current?.();
       } catch (error) {
-        reportRuntimeError(error);
+        reportRuntimeError(error, "handler");
       } finally {
         busy.current = false;
         started.current = true;
@@ -345,13 +345,11 @@ export function Queue(props: QueueProps) {
         try {
           shown = await call("onProcessError", error, { item, actionItemId, processItemContext });
         } catch (handlerError) {
-          reportRuntimeError(handlerError);
+          reportRuntimeError(handlerError, "handler");
         }
         update(actionItemId, { status: "error", error });
-        if (shown !== false) {
-          reportRuntimeError(error);
-          toast.error((error as { message?: unknown }).message ?? String(error));
-        }
+        // Step 33: the error pipeline shows it (App onError, else the toast), as XMLUI's signError does.
+        if (shown !== false) reportRuntimeError(error, "handler");
       }
     };
     const run = async () => {

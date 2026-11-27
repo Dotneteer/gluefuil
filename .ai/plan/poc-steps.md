@@ -555,7 +555,7 @@ E2E tests for interaction-heavy ones.
 
 | Step | Subject | Reference |
 |------|---------|-----------|
-| 33 | Structured errors: `AppError`, `<Fallback>`, `<RetryPolicy>`, `App onError` | `pages/managed-react/structured-exception-model.md` |
+| 33 | Structured errors: `AppError`, `<Fallback>`, `<RetryPolicy>`, `App onError` (plan: [poc-33-errors.md](poc-33-errors.md)) ✅ | `pages/managed-react/structured-exception-model.md` |
 | 34 | Internationalization: locale bundles, ICU messages, formatters, RTL | `pages/managed-react/i18n-foundations.md` |
 | 35 | Observability: trace stream emitted only when enabled, pointing at markup lines | `pages/managed-react/observability-substrate.md` |
 | 36 | Reactive cycle detection, versioning diagnostics, centralized HTTP, UDC sandbox | the matching `pages/managed-react/*.md` |

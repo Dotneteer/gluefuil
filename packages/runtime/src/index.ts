@@ -180,3 +180,34 @@ export { deferredValue, isDeferred, resolveDeferred, type DeferredValue } from "
 export { lazyResource, noteServerLoad, requestServerRender, type LazyResource } from "./render/lazy";
 export { inStaticRender, setStaticTitle, staticRenderInfo, staticTitle, type StaticRenderInfo } from "./render/static-render";
 export { createElement, Fragment } from "react";
+// Errors (step 33): AppError, the error pipeline, the App's sink, App.errors.
+export {
+  APP_ERROR_CATEGORIES,
+  AppError,
+
+  isAppErrorCategory,
+  pushErrorSink,
+  reportDiagnostic,
+  reportToConsole,
+  resetErrorSinks,
+  retryableByDefault,
+  setDiagnosticReporter,
+  withFields,
+  type AppErrorCategory,
+  type AppErrorInit,
+  type ErrorSink,
+  type ErrorSource,
+} from "./errors";
+export {
+  appErrors,
+  appErrorSink,
+  AppGlobal,
+  defaultErrorReport,
+  ERROR_BUFFER_SIZE,
+  errorAnnouncement,
+  registerAppErrors,
+  resetAppErrors,
+  type AppErrorEvent,
+  type AppErrorHandler,
+} from "./render/app-errors";
+export { BACKOFFS, CircuitBreaker, policyOf, type Backoff, type CircuitBreakerSpec, type CircuitState, type RetryPolicy, type RetryPolicySpec } from "./data/retry";

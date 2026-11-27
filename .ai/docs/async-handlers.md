@@ -121,9 +121,12 @@ are delivered as one batch:
   calls (`"unmount"`), drops the queue, and ignores later calls.
   `activate()` re-enables the slot (StrictMode re-mounts).
 - **Errors:** a handler's errors, synchronous or asynchronous, go to the
-  runtime error reporter (`reportRuntimeError`, replaceable with
-  `setErrorReporter`). They are not thrown at the component calling the
-  handler.
+  error pipeline (`reportRuntimeError(error, "handler")`; step 33:
+  `App onError`, `App.errors`, the default toast; [errors.md](errors.md)).
+  They are not thrown at the component calling the handler. A slot can be
+  given `{ onError, source }` (its fourth argument): the element's own
+  `onError` then receives them, and a waiting `call()` resolves to
+  `undefined`.
 
 ## Async-aware array methods (`$$r.arr`)
 
@@ -155,7 +158,7 @@ are delivered as one batch:
 | `runtime/src/render/handlers.ts` | `Invocation`, `CancellationToken`, `HandlerCancelledError`, `HandlerSlot`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay` |
 | `runtime/src/script/async-array.ts` | `arrayCall` (`$$r.arr`), `ASYNC_ARRAY_METHODS` |
 | `runtime/src/reactivity/signals.ts` | `startBatch`, `endBatch`, `isBatching`, the watchdog, robust `flush` |
-| `runtime/src/errors.ts` | `reportRuntimeError`, `setErrorReporter`, `scheduleMicrotask` |
+| `runtime/src/errors/` | `reportRuntimeError`, `setErrorReporter`, `scheduleMicrotask`; step 33: `AppError`, sinks, `reportDiagnostic` ([errors.md](errors.md)) |
 | `runtime/src/render/app-globals.ts`, `app-global-names.ts` | `createAppScope`, `APP_GLOBAL_NAMES` |
 | `compiler/src/codegen/emitter.ts` | `handlerFunction`, `awaitText`, `asyncBody`, `containsAwait`, `$$r.arr` routing |
 

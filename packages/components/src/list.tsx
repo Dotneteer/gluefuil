@@ -13,7 +13,7 @@
 //     viewport has no size (jsdom, a hidden tab);
 //   - virtual: the rows in range, each placed absolutely at its measured
 //     offset in a content box as tall as all rows.
-import { pointerData, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
+import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
 import { Checkbox } from "@mantine/core";
 import {
   useCallback,
@@ -219,7 +219,7 @@ function ListView(props: ListProps) {
     const signature = problems.join("\u0000");
     if (problems.length > 0 && signature !== warned.current) {
       warned.current = signature;
-      reportRuntimeError(new Error(`List: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`));
+      reportDiagnostic(`List: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`);
     }
   }, [model.items, idKey]);
 

@@ -285,8 +285,8 @@ test("Source maps: the handler's exception resolves to its line in SourceMapsSce
       }
     });
   });
-  // Not awaited: the page is paused until we resume.
-  void button(page, "Throw an error in a handler").click();
+  // Not awaited yet: the page is paused until we resume (awaited after the resume, so it can't outlive the test).
+  const click = button(page, "Throw an error in a handler").click();
   const location = await paused;
 
   const script = scripts.get(location.scriptId)!;
@@ -301,6 +301,7 @@ test("Source maps: the handler's exception resolves to its line in SourceMapsSce
 
   await cdp.send("Debugger.setPauseOnExceptions", { state: "none" });
   await cdp.send("Debugger.resume");
+  await click;
 });
 
 test("App shell: the preview frames each layout; the playground's own nav collapses", async ({ page }) => {

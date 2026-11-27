@@ -181,6 +181,10 @@ They reach no DOM node or window; script reads them (`name`, `size`, `type`,
 `text()`) and passes them on, but can't construct them (not in
 `CONSTRUCTIBLE`). See [files.md](files.md#files-in-script).
 
+**`AppError` (step 33)** is an allowed global and constructible: `throw new
+AppError({ code, category, message })`. The class and its prototype are
+frozen. See [errors.md](errors.md#apperror).
+
 ## Interpolated values
 
 These follow XMLUI's `extractParam.ts`:

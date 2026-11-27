@@ -23,6 +23,7 @@ export class SandboxError extends Error {
   override name = "SandboxError";
 }
 
+import { AppError } from "../errors/app-error";
 import { arrayCall } from "./async-array";
 import { deleteIn, mutate, setIn, updateIn } from "./paths";
 
@@ -124,6 +125,8 @@ function createGlobals(): Readonly<Record<string, unknown>> {
   globals.Intl = copyNamespace(Intl);
   globals.console = copyNamespace(host.console as object);
   globals.Object = curatedObject();
+  // Step 33: `throw new AppError({ code, category, message })`.
+  globals.AppError = AppError;
   // `undefined`, `NaN` and `Infinity` are compiled as literals.
   return Object.freeze(globals);
 }

@@ -58,8 +58,9 @@
 |-------|--------------|
 | **The request** | The URL is resolved against the page. `queryParams` arrays repeat the key; null and undefined are left out. An object `body` is JSON (with its content type), or multipart/form-data when it has a File or Blob (step 32B; `payloadType` chooses json, form or multipart-form: [files.md](files.md#request-bodies-runtimesrcdatabodyts)); a string, a Blob or a FormData is sent as it is; a GET has no body. `responseType: "blob"` reads the response as a Blob (downloads). |
 | **The response** | JSON by content type, else text; 204 is `undefined`; an HTML page where data was expected, or invalid JSON, is a `parse` error. |
-| **Errors** | One plain, frozen object (body included): `{ message, category, code, status, statusText, retryable, body, method, url, attempts, retryAfterMs }`. The categories are XMLUI's (validation 400/422, authorization 401/403, not-found, conflict, rate-limit 429, server 5xx, network, internal) plus `parse` and `timeout`. `message` is the body's `message` when it has one. |
-| **Retry** | Only `retryable` errors: network, timeout, rate-limit, server. Backoff is `retryDelay × 2^(n−1)`, capped at 30 s, ±25% jitter. `Retry-After` (seconds or a date) wins, capped at 60 s. A cancel during the wait ends it. |
+| **Errors** | An `AppError` (step 33; [errors.md](errors.md)), frozen, body included: `message`, `category`, `code`, `status`, `statusText`, `retryable`, `body`, `method`, `url`, `attempts`, `retryAfterMs`, `correlationId` (the response's `X-Correlation-Id`), and XMLUI's `data` (`statusCode`, `response`, `retryAfterMs`). The categories are XMLUI's (validation 400/422, authorization 401/403, not-found, conflict, rate-limit 429, server 5xx, network, internal) plus `parse` and `timeout`. `message` is the body's `message` when it has one. |
+| **Unhandled DataSource errors (step 33)** | A DataSource without `onError` sends its error to the nearest `Fallback`, else to `App onError` and the default report (a toast). |
+| **Retry** | Only `retryable` errors: network, timeout, rate-limit, server. Backoff is `retryDelay × 2^(n−1)`, capped at 30 s, ±25% jitter. `Retry-After` (seconds or a date) wins, capped at 60 s. A cancel during the wait ends it. Step 33: a `<RetryPolicy>` around DataSources without `retries`/`retryDelay` of their own replaces this (attempts, fixed/linear/exponential, `onlyCategories`, a circuit breaker; [errors.md](errors.md#retrypolicy)). |
 | **Timeout** | Per attempt (`timeoutMs`); category `timeout`, retryable. |
 | **Deduplication** | The query key is method, path, query, body and headers. Two DataSources with the same key share one request and one cache entry. |
 | **A changed key** | A new query. The old one is aborted when no one else uses it, and its late answer can't reach this DataSource. |
@@ -81,8 +82,8 @@
 | Part | Does |
 |------|------|
 | `runtime/src/data/http.ts` | `sendRequest(spec, signal)`: one attempt, timeout, parse, errors; `buildUrl`, `parseRetryAfter`, `RequestCancelledError` |
-| `runtime/src/data/errors.ts` | `DataError`, `categoryOfStatus`, `dataError`, `httpError`, `toDataError`, `withAttempts` |
-| `runtime/src/data/retry.ts` | `shouldRetry`, `retryDelay`, `runWithRetry`, `sleep`, `setRetryJitter` |
+| `runtime/src/data/errors.ts` | `DataError` (an alias of `AppError` since step 33), `categoryOfStatus`, `dataError`, `httpError`, `toDataError`, `withAttempts` |
+| `runtime/src/data/retry.ts` | `shouldRetry`, `retryDelay`, `runWithRetry`, `sleep`, `setRetryJitter`; step 33: `RetryPolicySpec`, `policyOf`, `CircuitBreaker` |
 | `runtime/src/data/client.ts` | `@tanstack/query-core`'s client, one per page: `networkMode: "always"` (offline is an error, not a pause), no focus or reconnect refetch, notifications in one signal batch on a microtask. Also `queryKey`, `invalidate`, `pathMatches`, `resetDataState`, `setDataDefaults({ jitter })`. |
 | `runtime/src/data/loader.ts` | `Loader`: a `QueryObserver` bridged into one signal (`LoaderState`), its events, `refetch`, `cancel`. The first state is the optimistic one (`_optimisticResults: "optimistic"`, as React Query does). |
 | `runtime/src/data/api-call.ts` | `ApiCaller`: `execute` (beforeRequest, the request with retries, success, invalidation, error, cancel; the calling `invocation`, by default the current one), `cancel`, `dispose`/`activate` |

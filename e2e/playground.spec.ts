@@ -77,6 +77,7 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Timers, queues and listeners",
     "Focus, tone and announcements",
     "Files and uploads",
+    "Errors and recovery",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.

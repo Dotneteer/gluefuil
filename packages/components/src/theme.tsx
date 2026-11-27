@@ -1,6 +1,6 @@
 // App-level theming and the <Theme> element (step 17). The engine compiles the
 // active theme and tone (runtime theme state) to CSS custom properties.
-import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setNavigationHandlers, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@gluefuil/runtime";
+import { activeThemeId, activeThemeTone, errorAnnouncement, navDrawerOpen, navPanelCollapsed, registerAppErrors, setNavigationHandlers, setRoutingMode, setThemeDefaults, useSignal, type AppErrorHandler, type TemplateRenderer } from "@gluefuil/runtime";
 import { MantineProvider } from "@mantine/core";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { AppInfoContext } from "./app-info";
@@ -50,6 +50,7 @@ export function App({
   $$shell,
   onWillNavigate,
   onDidNavigate,
+  onError,
   children,
 }: {
   name?: unknown;
@@ -68,6 +69,8 @@ export function App({
   /** `willNavigate` (step 21): resolves to the handler's result; `false` cancels the navigation. */
   onWillNavigate?: (to: string, queryParams: Readonly<Record<string, string>>) => unknown;
   onDidNavigate?: (to: string, queryParams: Readonly<Record<string, string>>) => unknown;
+  /** Step 33: the errors nothing else handled; `(error, event)`, false or `event.preventDefault()` suppresses the default report. */
+  onError?: AppErrorHandler;
   children?: ReactNode;
 }) {
   // Routing mode (step 19): hash-based unless explicitly false.
@@ -77,6 +80,10 @@ export function App({
     () => setNavigationHandlers({ willNavigate: onWillNavigate, didNavigate: onDidNavigate }),
     [onWillNavigate, onDidNavigate],
   );
+  // Step 33: the App's error sink (App.errors, onError, the default report), read through a ref so it stays registered.
+  const errorHandler = useRef(onError);
+  errorHandler.current = onError;
+  useLayoutEffect(() => registerAppErrors(() => errorHandler.current), []);
   // Before reading the state, so this render (and a server render) uses them.
   setThemeDefaults(typeof defaultTheme === "string" ? defaultTheme : undefined, typeof defaultTone === "string" ? defaultTone : undefined);
   const { tone, style } = useActiveTheme();
@@ -115,10 +122,21 @@ export function App({
           <OverlayLayer layer={overlays}>
             <AppOverlays />
           </OverlayLayer>
+          <ErrorAnnouncer />
         </OverlayLayerProvider>
         </HeadingRegistryContext.Provider>
         </AppInfoContext.Provider>
       </MantineProvider>
+    </div>
+  );
+}
+
+/** Step 33: the default report's announcement, in an assertive live region (XMLUI's announceLiveRegion). */
+function ErrorAnnouncer() {
+  const { message } = useSignal(errorAnnouncement);
+  return (
+    <div className="gfui-ErrorAnnouncer" aria-live="assertive" aria-atomic="true">
+      {message}
     </div>
   );
 }

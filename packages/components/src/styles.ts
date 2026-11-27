@@ -1150,7 +1150,8 @@ ${[2, 3, 4, 5, 6]
   white-space: nowrap;
 }
 .gfui-SkipLink:focus { top: var(--gfui-space-4); outline: 3px solid var(--gfui-color-primary-500); outline-offset: 2px; }
-.gfui-LiveRegion {
+.gfui-LiveRegion,
+.gfui-ErrorAnnouncer {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1161,6 +1162,19 @@ ${[2, 3, 4, 5, 6]
   border: 0;
 }
 .gfui-FocusScope:focus { outline: none; }
+/* Step 33: the panel of a built-in error boundary (a Page or the App's content that failed to render). */
+.gfui-ErrorPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gfui-space-2);
+  padding: var(--gfui-space-4);
+  border: 1px solid var(--gfui-color-danger-700);
+  border-radius: var(--gfui-borderRadius);
+  background: var(--gfui-color-surface-100);
+}
+.gfui-ErrorPanel-title { color: var(--gfui-color-danger-700); }
+.gfui-ErrorPanel-retry { font: inherit; cursor: pointer; }
 .gfui-Logo { width: auto; max-width: 100%; }
 .gfui-Logo[data-inline] { display: inline; vertical-align: middle; }
 .gfui-NoResult {
