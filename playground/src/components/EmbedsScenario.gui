@@ -1,0 +1,50 @@
+<!-- Step 32: QRCode (uqr's matrix as one SVG path), IFrame with postMessage both ways (MessageListener), MediaPlayer events and API. -->
+<Component name="EmbedsScenario">
+  <VStack var.qrText="https://example.com/orders/42" var.qrLevel="M" var.replies="" var.loaded="{false}" var.media="" var.position="{0}">
+    <ScenarioHeader title="Embeds and media" description="A QR code that follows the text and the level; a frame that answers messages; a video whose events and state show below it. Script never gets the frame's window or the media element's events: only postMessage and frozen snapshots."/>
+
+    <Card title="QR code">
+      <TextBox id="qrInput" label="Text" initialValue="{qrText}" onDidChange="v => qrText = v"/>
+      <HStack wrapContent="true">
+        <Button label="L" onClick="qrLevel = 'L'"/>
+        <Button label="M" onClick="qrLevel = 'M'"/>
+        <Button label="Q" onClick="qrLevel = 'Q'"/>
+        <Button label="H" onClick="qrLevel = 'H'"/>
+      </HStack>
+      <Text>Level: {qrLevel}</Text>
+      <QRCode value="{qrText}" level="{qrLevel}" size="200" title="QR code of the text"/>
+    </Card>
+
+    <Card title="A frame and its messages">
+      <MessageListener onMessageReceived="(data, m) => replies += (data.echo ?? data) + ' (from ' + m.origin + '); '">
+        <IFrame id="frame" srcdoc="{frameDocument}" sandbox="allow-scripts" name="echo" height="120px" onLoad="loaded = true"/>
+      </MessageListener>
+      <HStack>
+        <Button label="Send hello" enabled="{loaded}" onClick="frame.postMessage('hello')"/>
+        <Button label="Send 42" enabled="{loaded}" onClick="frame.postMessage(42)"/>
+      </HStack>
+      <Text>Loaded: {loaded}</Text>
+      <Text>Replies: {replies}</Text>
+    </Card>
+
+    <Card title="Media">
+      <MediaPlayer
+        id="player"
+        src="/media/clip.webm"
+        width="320px"
+        muted="true"
+        onPlay="s => media += 'play; '"
+        onPause="s => media += 'pause at ' + s.currentTime.toFixed(1) + '; '"
+        onEnded="s => media += 'ended; '"
+        onLoadedMetadata="s => media += 'metadata ' + s.duration.toFixed(1) + ' s; '"
+        onTimeUpdate="s => position = s.currentTime"/>
+      <HStack>
+        <Button label="Play" onClick="player.play()"/>
+        <Button label="Pause" onClick="player.pause()"/>
+        <Button label="To 1 s" onClick="player.seek(1)"/>
+      </HStack>
+      <Text>Events: {media}</Text>
+      <Text>State: {player.paused ? 'paused' : 'playing'}, {player.ended ? 'ended' : 'not ended'}, at {position.toFixed(1)} of {player.duration?.toFixed(1) ?? '?'} s</Text>
+    </Card>
+  </VStack>
+</Component>

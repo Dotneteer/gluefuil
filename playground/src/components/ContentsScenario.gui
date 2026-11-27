@@ -1,0 +1,33 @@
+<!-- Step 32: TableOfContents with headings and bookmarks (prerendered), PageMetaTitle (the tab's title with the App's name). -->
+<Component name="ContentsScenario">
+  <VStack>
+    <ScenarioHeader title="Table of contents" description="The contents list the headings and the bookmark below; a click scrolls there and moves focus; the heading at the top of the view is marked as you scroll. The tab's title comes from PageMetaTitle."/>
+    <PageMetaTitle value="Table of contents"/>
+    <HStack>
+      <VStack width="*">
+        <H2>Getting started</H2>
+        <Text>{lorem}</Text>
+        <H3>Installing</H3>
+        <Text>{lorem}</Text>
+        <H3>Your first app</H3>
+        <Text>{lorem}</Text>
+        <H2>Concepts</H2>
+        <Text>{lorem}</Text>
+        <H3>Markup</H3>
+        <Text>{lorem}</Text>
+        <H3>Reactivity</H3>
+        <Text>{lorem}</Text>
+        <Bookmark id="faq" title="Frequently asked" level="2"><Text variant="strong">FAQ: questions people ask</Text></Bookmark>
+        <Text>{lorem}</Text>
+        <H4 omitFromToc="true">Not in the contents</H4>
+        <Text>{lorem}</Text>
+        <H2>Reference</H2>
+        <Text>{lorem}</Text>
+        <Text>{lorem}</Text>
+      </VStack>
+      <StickyBox to="top" width="220px">
+        <TableOfContents smoothScrolling="true" omitH1="true"/>
+      </StickyBox>
+    </HStack>
+  </VStack>
+</Component>

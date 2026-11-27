@@ -173,9 +173,14 @@ function useDrawer(config: ShellConfig, open: boolean, root: RefObject<HTMLDivEl
 /** The App's logo: `logoTemplate`, else the image for the active tone. */
 export function appLogo(tone: string, logo: unknown, logoLight: unknown, logoDark: unknown, logoTemplate: TemplateRenderer | undefined): ReactNode {
   if (logoTemplate) return logoTemplate({});
-  const toned = tone === "dark" ? logoDark : logoLight;
-  const url = typeof toned === "string" && toned !== "" ? toned : typeof logo === "string" && logo !== "" ? logo : undefined;
+  const url = appLogoUrl(tone, logo, logoLight, logoDark);
   return url ? <img className="gfui-AppLogo" src={url} alt="Logo" /> : null;
+}
+
+/** The App's logo image for the tone: `logo-dark`/`logo-light`, else `logo` (step 32: Logo shows it too). */
+export function appLogoUrl(tone: string, logo: unknown, logoLight: unknown, logoDark: unknown): string | undefined {
+  const toned = tone === "dark" ? logoDark : logoLight;
+  return typeof toned === "string" && toned !== "" ? toned : typeof logo === "string" && logo !== "" ? logo : undefined;
 }
 
 // ---------------------------------------------------------------------------

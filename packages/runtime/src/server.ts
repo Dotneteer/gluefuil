@@ -7,6 +7,7 @@ import { resetDataState } from "./data/client";
 import { BASE_ATTRIBUTE, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE } from "./render/mount";
 import { getBasename, getServerPath, resetRouter, setBasename, setServerPath } from "./render/router";
 import { resetShellState } from "./render/shell-state";
+import { inStaticRender, staticTitle } from "./render/static-render";
 import { resetThemeState } from "./render/theme-state";
 import { BREAKPOINT_NAMES, breakpointFromName, setServerBreakpoint, type BreakpointName } from "./render/visibility";
 
@@ -33,6 +34,8 @@ export interface RenderStaticResult {
   html: string;
   /** Attributes for the container: `mountApp` hydrates when it finds them. */
   attributes: Record<string, string>;
+  /** The page title a PageMetaTitle rendered (step 32), for the document's `<title>`. */
+  title?: string;
 }
 
 /**
@@ -51,10 +54,13 @@ export function renderStatic(app: ReactNode | ComponentType, options: RenderStat
   if (options.basename !== undefined) setBasename(options.basename);
   // A component (a compiled module's default export) is rendered without props.
   const element = typeof app === "function" && !isValidElement(app) ? createElement(app as ComponentType) : (app as ReactNode);
-  const html = renderToString(element);
+  // The app's identity (its component) tells a new render from the prerender rendering the same route again.
+  const identity = isValidElement(element) ? element.type : element;
+  const html = inStaticRender(getServerPath(), identity, () => renderToString(element));
   const attributes: Record<string, string> = { [PRERENDERED_ATTRIBUTE]: name, [PATH_ATTRIBUTE]: getServerPath() };
   if (getBasename() !== "") attributes[BASE_ATTRIBUTE] = getBasename();
-  return { html, attributes };
+  const title = staticTitle();
+  return title === undefined ? { html, attributes } : { html, attributes, title };
 }
 
 /**

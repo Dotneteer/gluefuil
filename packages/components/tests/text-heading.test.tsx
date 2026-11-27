@@ -54,11 +54,11 @@ describe("Heading", () => {
   });
 
   test.each<[markup: string, html: string]>([
-    ['<Heading value="Title"/>', '<h1 class="gfui-Heading" data-level="1">Title</h1>'],
-    ['<Heading level="h2">Sub</Heading>', '<h2 class="gfui-Heading" data-level="2">Sub</h2>'],
-    ['<Heading level="H4" value="Four"/>', '<h4 class="gfui-Heading" data-level="4">Four</h4>'],
-    ["<H3>Three</H3>", '<h3 class="gfui-Heading" data-level="3">Three</h3>'],
-    ['<H6 value="Six"/>', '<h6 class="gfui-Heading" data-level="6">Six</h6>'],
+    ['<Heading value="Title"/>', '<h1 id="title" class="gfui-Heading" data-level="1">Title</h1>'],
+    ['<Heading level="h2">Sub</Heading>', '<h2 id="sub" class="gfui-Heading" data-level="2">Sub</h2>'],
+    ['<Heading level="H4" value="Four"/>', '<h4 id="four" class="gfui-Heading" data-level="4">Four</h4>'],
+    ["<H3>Three</H3>", '<h3 id="three" class="gfui-Heading" data-level="3">Three</h3>'],
+    ['<H6 value="Six"/>', '<h6 id="six" class="gfui-Heading" data-level="6">Six</h6>'],
   ])("%s", (markup, html) => {
     expect(inner(markup)).toBe(html);
   });

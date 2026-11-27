@@ -56,3 +56,9 @@ export {
   Tabs,
 } from "./structure";
 export { Form, FormBindingBehavior, ValidationBehavior, type FormProps } from "./forms";
+export { IFrame, MediaPlayer, QR_LEVELS, QRCode, qrPath, REFERRER_POLICIES } from "./media";
+export { Bookmark, HeadingRegistry, HeadingRegistryContext, TableOfContents, useTocEntry, type TocEntry } from "./toc";
+export { FocusScope, LiveRegion, SkipLink } from "./a11y";
+export { Logo, NoResult, PageMetaTitle, Redirect, ToneChangerButton, ToneSwitch } from "./misc";
+export { ChangeListener, deepEqual, MessageListener, Queue, rateLimited, sourcesChange, Timer, type QueueEntry, type QueueItemStatus } from "./nonvisual";
+export { AppInfoContext, type AppInfo } from "./app-info";

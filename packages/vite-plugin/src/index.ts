@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
 import { AppGlobals, ComponentFolder, GLOBALS_FILE, importSpecifier, readCodeBehind } from "./components";
-import { addRootAttributes, basenameOf, injectPrerendered, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
+import { addRootAttributes, basenameOf, injectPrerendered, injectTitle, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
 
 export { basenameOf, injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
 export { gfuiMockBackend, type MockBackendOptions } from "./mock";
@@ -141,8 +141,8 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
         }
         routePages = [];
         let index = html;
-        for (const [path, { html: inner, attributes }] of rendered) {
-          const page = injectPrerendered(html, prerender.rootId, inner, attributes);
+        for (const [path, { html: inner, attributes, title }] of rendered) {
+          const page = injectPrerendered(title === undefined ? html : injectTitle(html, title), prerender.rootId, inner, attributes);
           if (path === "/") index = page;
           else routePages.push({ fileName: routeFileName(path), source: page });
         }

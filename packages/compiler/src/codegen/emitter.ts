@@ -42,7 +42,7 @@ export interface EmitterOptions {
 }
 
 /** For a scope name that is a component ID: its component and the API members it exposes. */
-export type MemberLookup = (name: string) => { component: string; members: readonly string[] } | undefined;
+export type MemberLookup = (name: string) => { component: string; members: readonly string[]; removed?: Readonly<Record<string, string>> } | undefined;
 
 /** Array methods compiled to `$$r.mutate` when called on a variable path (runtime ARRAY_MUTATORS). */
 const ARRAY_MUTATORS: ReadonlySet<string> = new Set([
@@ -558,7 +558,9 @@ export class Emitter {
     const api = this.members(node.object.name);
     const name = (node.property as A.Identifier).name;
     if (!api || api.members.includes(name)) return;
-    this.report(node.property, "C015", node.object.name, api.component, name, didYouMean(name, api.members));
+    // Step 32: an XMLUI member left out on purpose says why (IFrame getContentWindow).
+    const removed = api.removed && Object.hasOwn(api.removed, name) ? ` ${api.removed[name]}.` : undefined;
+    this.report(node.property, "C015", node.object.name, api.component, name, removed ?? didYouMean(name, api.members));
     if (this.contractSeverity === "warning") this.diagnostics[this.diagnostics.length - 1]!.severity = "warning";
   }
 

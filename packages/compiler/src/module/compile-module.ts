@@ -300,7 +300,8 @@ class ModuleCompiler {
   private readonly memberLookup = (name: string) => {
     const component = this.idComponent(name);
     if (component === undefined) return undefined;
-    return { component, members: Object.keys(this.metadataOf(component)?.api ?? {}) };
+    const metadata = this.metadataOf(component);
+    return { component, members: Object.keys(metadata?.api ?? {}), ...(metadata?.removedApi ? { removed: metadata.removedApi } : {}) };
   };
 
   /** Options every expression compile gets: contracts. */
@@ -815,7 +816,11 @@ class ModuleCompiler {
     const attribute = node.attributes.find((a) => a.name.full === "id");
     if (attribute) {
       const value = attribute.value?.value;
-      if (value === undefined || !VARIABLE_NAME.test(value)) {
+      // Step 32: an anchor id (Bookmark) may be any name (`getting-started`); one that isn't an identifier has no API.
+      const anchorOnly = value !== undefined && value !== "" && !VARIABLE_NAME.test(value) && this.metadataOf(node.name.full)?.receivesId === true;
+      if (anchorOnly) {
+        // Not a component ID: nothing to collect.
+      } else if (value === undefined || !VARIABLE_NAME.test(value)) {
         this.report(attribute.value ?? attribute.name, "E011", value ?? "");
       } else if (into.has(value) || (into !== this.ids && this.isId(value))) {
         this.report(attribute.value!, "E010", value);
@@ -865,6 +870,9 @@ class ModuleCompiler {
       this.reportContract(node.name, "E032", name, removed);
       return "null";
     }
+    // Step 32: a deprecated component (ToneChangerButton) is a warning.
+    const deprecated = this.metadataOf(name)?.deprecationMessage;
+    if (deprecated !== undefined) this.reportDeprecated(node.name, `'${name}'`, deprecated);
     // Shell regions belong to App (step 19A).
     if (this.metadataOf(name)?.isRegion && !regionAllowed) {
       this.report(node.name, "E028", `<${name}> must be a direct child of <App>`);
@@ -1115,6 +1123,11 @@ class ModuleCompiler {
     }
     for (const [prop, value] of Object.entries(alias?.props ?? {})) {
       if (!node.attributes.some((a) => a.name.full === prop)) constants.push([prop, jsString(value)]);
+    }
+    // Step 32: the literal id as a prop (Bookmark: its anchor's DOM id).
+    if (!isUser && metadata.receivesId) {
+      const literalId = node.attributes.find((a) => a.name.full === "id")?.value?.value;
+      if (literalId !== undefined && literalId !== "") constants.push(["$$id", jsString(literalId)]);
     }
     const bindings: [string, string][] = [];
     const handlers: [string, string][] = [];

@@ -81,6 +81,18 @@ export function basenameOf(base: string): string {
 export interface RenderedRoute {
   html: string;
   attributes: Record<string, string>;
+  /** A PageMetaTitle's title (step 32). */
+  title?: string;
+}
+
+const escapeText = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+/** Step 32: sets the document's `<title>` (replacing the first one, or added at the end of `<head>`). */
+export function injectTitle(html: string, title: string): string {
+  const element = `<title>${escapeText(title)}</title>`;
+  if (/<title[\s>][\s\S]*?<\/title>/i.test(html)) return html.replace(/<title[\s>][\s\S]*?<\/title>/i, () => element);
+  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, () => `${element}</head>`);
+  return html;
 }
 
 interface RenderModule {

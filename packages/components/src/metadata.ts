@@ -86,6 +86,15 @@ export interface ComponentMetadata {
   eventResults?: boolean;
   /** The component no longer exists: using it is E032 with this message (`FlowLayout`). */
   removed?: string;
+  /** Using the component is a warning with this message (E024; step 32: ToneChangerButton). */
+  deprecationMessage?: string;
+  /**
+   * Step 32: XMLUI API members left out, with why (IFrame's `getContentWindow`):
+   * using one is C015 with this message instead of "did you mean".
+   */
+  removedApi?: Record<string, string>;
+  /** Step 32: the component receives its literal `id` as `$$id` (Bookmark: the anchor's DOM id). */
+  receivesId?: boolean;
   /**
    * The component is another one with fixed props (`HStack` is `Stack`
    * with `orientation="horizontal"`). The compiler renders `component`;
@@ -235,7 +244,8 @@ const TEXT_OVERFLOW_PROPS: Record<string, PropMetadata> = {
 const HEADING_PROPS: Record<string, PropMetadata> = {
   value: { description: "The heading text. Nested text is used when it is absent.", valueType: "any" },
   ...TEXT_OVERFLOW_PROPS,
-  showAnchor: { description: "Gives the heading an id from its text and a # link to it, shown on hover.", valueType: "boolean" },
+  showAnchor: { description: "Shows a # link to the heading (its anchor id comes from its text), on hover.", valueType: "boolean" },
+  omitFromToc: { description: "Leaves the heading out of the TableOfContents.", valueType: "boolean" },
 };
 
 const HEADING_API = {
@@ -1462,6 +1472,294 @@ function stackAlias(orientation: "vertical" | "horizontal", centered: boolean): 
   };
 }
 
+
+/** Step 32: the remaining components (.ai/plan/poc-32-remaining.md). */
+const STEP32_COMPONENTS: Record<string, ComponentMetadata> = {
+  QRCode: {
+    description: "A QR code of `value` (up to 2,953 bytes at level L), drawn as one SVG path.",
+    props: {
+      value: { description: "The text to encode (UTF-8, emoji included).", valueType: "string" },
+      size: { description: "The width and height in pixels. Default: the size-QRCode theme variable (256).", valueType: "number" },
+      level: { description: "The error correction: L (default, 7%), M (15%), Q (25%), H (30%).", valueType: "string", availableValues: ["L", "M", "Q", "H"] },
+      color: { description: "The dark modules' color. Default: color-QRCode (#000000).", valueType: "string" },
+      backgroundColor: { description: "The background (and quiet zone) color. Default: backgroundColor-QRCode (#FFFFFF).", valueType: "string" },
+      title: { description: "The accessible name of the code (an SVG title).", valueType: "string" },
+    },
+    events: { init: { description: "The QR code rendered for the first time.", args: "none" } },
+    themeVars: {
+      "backgroundColor-QRCode": "#FFFFFF",
+      "color-QRCode": "#000000",
+      "padding-QRCode": "$space-4",
+      "size-QRCode": "256",
+    },
+  },
+  IFrame: {
+    description: "Embeds another document (`src` or `srcdoc`); `postMessage()` sends it a message (a MessageListener receives its replies).",
+    props: {
+      src: { description: "The URL of the document to embed.", valueType: "string" },
+      srcdoc: { description: "The HTML to embed instead of a URL.", valueType: "string" },
+      allow: { description: "The permissions policy (camera, microphone, fullscreen, …).", valueType: "string" },
+      name: { description: "The frame's name (a target for links and forms; also its accessible title).", valueType: "string" },
+      referrerPolicy: {
+        description: "How much referrer information the request sends.",
+        valueType: "string",
+        availableValues: ["no-referrer", "no-referrer-when-downgrade", "origin", "origin-when-cross-origin", "same-origin", "strict-origin", "strict-origin-when-cross-origin", "unsafe-url"],
+      },
+      sandbox: { description: "Restrictions, as space-separated flags (allow-scripts allow-same-origin …).", valueType: "string" },
+    },
+    events: { load: { description: "The embedded document finished loading.", args: "none" } },
+    api: { postMessage: { description: "Sends a message to the embedded document: postMessage(message, targetOrigin = \"*\")." } },
+    removedApi: {
+      getContentWindow: "gfui gives script no window object (the sandbox); use postMessage() and a MessageListener",
+      getContentDocument: "gfui gives script no document object (the sandbox); use postMessage() and a MessageListener",
+    },
+    themeVars: {
+      "border-IFrame": "1px solid $borderColor",
+      "borderRadius-IFrame": "$borderRadius",
+      "width-IFrame": "100%",
+      "height-IFrame": "300px",
+    },
+  },
+  MediaPlayer: {
+    description: "Plays video (default) or audio with the browser's player; events and API for the playback state.",
+    props: {
+      src: { description: "The media URL (the browser decides which formats play).", valueType: "string" },
+      kind: { description: "video (default) or audio.", valueType: "string", availableValues: ["video", "audio"] },
+      poster: { description: "An image shown before a video plays.", valueType: "string" },
+      autoPlay: { description: "Starts playing when it can (browsers block it with sound unless muted).", valueType: "boolean" },
+      controls: { description: "The browser's controls (default true).", valueType: "boolean" },
+      loop: { description: "Starts over at the end.", valueType: "boolean" },
+      muted: { description: "No sound.", valueType: "boolean" },
+      playbackRate: { description: "The speed (default 1).", valueType: "number" },
+      preload: { description: "How much to load before playing: none, metadata, auto.", valueType: "string", availableValues: ["none", "metadata", "auto"] },
+      crossOrigin: { description: "The CORS mode of the request.", valueType: "string", availableValues: ["anonymous", "use-credentials"] },
+    },
+    events: {
+      play: { description: "Playback started or resumed: ({ currentTime })." },
+      pause: { description: "Playback paused: ({ currentTime })." },
+      ended: { description: "Playback reached the end (not with loop): ({ currentTime })." },
+      seeked: { description: "A seek finished: ({ currentTime })." },
+      timeUpdate: { description: "The playhead moved (every 15–250 ms while playing): ({ currentTime })." },
+      loadedMetadata: { description: "The duration is known: ({ duration }), plus videoWidth and videoHeight for a video." },
+    },
+    api: {
+      play: { description: "Starts or resumes; rejects if the browser refuses (autoplay with sound)." },
+      pause: { description: "Pauses." },
+      seek: { description: "Moves the playhead: seek(seconds)." },
+      getCurrentTime: { description: "The playhead position in seconds, when called (not reactive)." },
+      duration: { description: "The length in seconds once known, else undefined (reactive)." },
+      paused: { description: "True unless playing (reactive)." },
+      ended: { description: "True after reaching the end (reactive)." },
+    },
+    themeVars: { "borderRadius-MediaPlayer": "$borderRadius" },
+  },
+  TableOfContents: {
+    description: "Links to the page's headings and bookmarks; a click scrolls there and moves focus; the one at the top of the view is marked. Prerendered.",
+    props: {
+      maxHeadingLevel: { description: "The deepest level listed, 1–6 (default 6).", valueType: "integer" },
+      omitH1: { description: "Leaves out level 1 (the page title).", valueType: "boolean" },
+      smoothScrolling: { description: "Scrolls smoothly to a heading.", valueType: "boolean" },
+      scrollStyle: { description: "normal (default), overlay, whenMouseOver, whenScrolling: how a long list's scrollbar shows.", valueType: "string", availableValues: ["normal", "overlay", "whenMouseOver", "whenScrolling"] },
+      showScrollerFade: { description: "With a scroll style: fades where there is more (default true).", valueType: "boolean" },
+    },
+    events: { contextMenu: CONTEXT_MENU },
+    themeVars: {
+      "padding-TableOfContents": "$space-2",
+      "height-TableOfContents": "auto",
+      "width-indicator-TableOfContents": "2px",
+      "color-indicator-TableOfContents": "$color-surface-100",
+      "color-indicator-TableOfContents--active": "$color-surface-900",
+      "fontSize-TableOfContentsItem": "0.875em",
+      "fontWeight-TableOfContentsItem": "700",
+      "fontWeight-TableOfContentsItem--active": "700",
+      "fontWeight-TableOfContentsItem-level-2": "500",
+      "fontWeight-TableOfContentsItem-level-3": "400",
+      "fontWeight-TableOfContentsItem-level-4": "400",
+      "fontWeight-TableOfContentsItem-level-5": "400",
+      "fontWeight-TableOfContentsItem-level-6": "400",
+      "fontStyle-TableOfContentsItem-level-6": "italic",
+      "paddingVertical-TableOfContentsItem": "$space-1",
+      "paddingLeft-TableOfContentsItem": "$space-1",
+      "paddingLeft-TableOfContentsItem-level-2": "$space-3",
+      "paddingLeft-TableOfContentsItem-level-3": "$space-5",
+      "paddingLeft-TableOfContentsItem-level-4": "$space-6",
+      "paddingLeft-TableOfContentsItem-level-5": "$space-6",
+      "paddingLeft-TableOfContentsItem-level-6": "$space-6",
+      "textColor-TableOfContentsItem": "$color-secondary-500",
+      "textColor-TableOfContentsItem--active": "$color-primary-500",
+      "textColor-TableOfContentsItem--hover": "$textColor",
+      "wordWrap-TableOfContentsItem": "break-word",
+    },
+  },
+  Bookmark: {
+    description: "An anchor (`#id`) in the page, around its children if any, and an entry of the TableOfContents.",
+    props: {
+      title: { description: "The text in the TableOfContents (default: the text inside, else the id).", valueType: "string" },
+      level: { description: "Its level in the TableOfContents, 1–6 (default 1).", valueType: "integer" },
+      omitFromToc: { description: "Not in the TableOfContents.", valueType: "boolean" },
+    },
+    api: { scrollIntoView: { description: "Scrolls the bookmark into view." } },
+    receivesId: true,
+    layoutProps: false,
+  },
+  SkipLink: {
+    description: "A link for keyboard users, hidden until it has focus (the first Tab), that moves focus to the main content.",
+    props: {
+      label: { description: 'The text (default "Skip to main content").', valueType: "string" },
+      target: { description: 'The id to skip to (default "main": also the App\'s main region).', valueType: "string" },
+    },
+    layoutProps: false,
+  },
+  LiveRegion: {
+    description: "Announces `message` to screen readers when it changes; visually hidden.",
+    props: {
+      message: { description: "The text announced.", valueType: "string" },
+      politeness: { description: "polite (default: after what is being read) or assertive (at once).", valueType: "string", availableValues: ["polite", "assertive"] },
+    },
+    layoutProps: false,
+  },
+  FocusScope: {
+    description: "Keeps keyboard focus inside its children (trap), returns it afterwards (restore), and can focus the first of them (autoFocus).",
+    props: {
+      trap: { description: "Tab and Shift+Tab cycle inside (default true).", valueType: "boolean" },
+      restore: { description: "When it unmounts, focus returns where it was (default true).", valueType: "boolean" },
+      autoFocus: { description: "Focuses the first focusable child when it mounts.", valueType: "boolean" },
+    },
+  },
+  Logo: {
+    description: "The App's logo (`logo`, `logo-light`, `logo-dark`) for the active tone; nothing without one.",
+    props: {
+      alt: { description: 'The image\'s alternative text (default "Logo").', valueType: "string" },
+      inline: { description: "Displays inline (in a line of text).", valueType: "boolean" },
+    },
+  },
+  NoResult: {
+    description: "An icon and a label for an empty result.",
+    props: {
+      label: { description: "The text; none without it.", valueType: "string" },
+      icon: { description: 'The icon (default "noresult").', valueType: "string", knownValues: ICON_NAMES },
+      hideIcon: { description: "No icon.", valueType: "boolean" },
+    },
+    themeVars: {
+      "backgroundColor-NoResult": "transparent",
+      "border-NoResult": "0px solid $borderColor",
+      "gap-icon-NoResult": "$space-2",
+      "paddingVertical-NoResult": "$space-2",
+      "size-icon-NoResult": "$space-8",
+    },
+  },
+  ToneSwitch: {
+    description: "A switch between the light and the dark tone.",
+    props: {
+      iconLight: { description: 'The icon in the light tone (default "sun").', valueType: "string", knownValues: ICON_NAMES },
+      iconDark: { description: 'The icon in the dark tone (default "moon").', valueType: "string", knownValues: ICON_NAMES },
+    },
+    events: { didChange: { description: 'The user switched the tone: ("light" or "dark").' } },
+    themeVars: {
+      "backgroundColor-ToneSwitch-light": "$color-surface-200",
+      "backgroundColor-ToneSwitch-dark": "$color-primary-500",
+      "backgroundColor-indicator-ToneSwitch": "white",
+      "borderColor-ToneSwitch": "$color-surface-300",
+      "borderColor-ToneSwitch--hover": "$color-surface-400",
+      "boxShadow-indicator-ToneSwitch": "0 2px 4px rgba(0, 0, 0, 0.1)",
+      "color-ToneSwitch-light": "$color-surface-900",
+      "color-ToneSwitch-dark": "$color-primary-600",
+    },
+  },
+  ToneChangerButton: {
+    description: "An icon button that switches between the light and the dark tone (XMLUI deprecated it for ToneSwitch).",
+    props: {
+      lightToDarkIcon: { description: 'The icon in the light tone (default "moon").', valueType: "string", knownValues: ICON_NAMES },
+      darkToLightIcon: { description: 'The icon in the dark tone (default "sun").', valueType: "string", knownValues: ICON_NAMES },
+    },
+    events: { click: { description: 'The button switched the tone: ("light" or "dark").' } },
+    deprecationMessage: "use ToneSwitch (XMLUI deprecated ToneChangerButton)",
+  },
+  PageMetaTitle: {
+    description: 'Sets the browser tab\'s title: `value` (or the text inside) and " | " with the App\'s name. Prerendered into <title>.',
+    props: {
+      value: { description: "The title.", valueType: "string" },
+      noSuffix: { description: "Without the App's name.", valueType: "boolean" },
+    },
+    nonVisual: true,
+  },
+  Redirect: {
+    description: "Navigates to `to` when it mounts (use `when`), through the App's willNavigate.",
+    props: {
+      to: { description: "The route (with a query) to go to.", valueType: "string" },
+      replace: { description: "Replaces the current history entry instead of adding one.", valueType: "boolean" },
+    },
+    nonVisual: true,
+  },
+  ChangeListener: {
+    description: "Fires didChange when a value changes (structurally), optionally debounced or throttled.",
+    props: {
+      listenTo: { description: "The value to watch.", valueType: "any" },
+      listenToSources: { description: "Named values to watch ({ a, b }); then didChange also gets changedSources and changes. Wins over listenTo.", valueType: "any" },
+      debounceWaitInMs: { description: "Fires after the value has been still this long (default 0: at once).", valueType: "integer" },
+      throttleWaitInMs: { description: "Fires at most once per this many ms (default 0).", valueType: "integer" },
+    },
+    events: { didChange: { description: "The value changed: ({ prevValue, newValue }), plus changedSources and changes with listenToSources." } },
+    nonVisual: true,
+  },
+  Timer: {
+    description: "Fires tick every `interval` ms while enabled; a tick waits for the previous handler (one is skipped meanwhile).",
+    props: {
+      enabled: { description: "Ticks while true (default true).", valueType: "boolean" },
+      interval: { description: "The ms between ticks (default 1000).", valueType: "integer" },
+      initialDelay: { description: "The ms before the first tick period starts (default 0).", valueType: "integer" },
+      once: { description: "Stops after the first tick (enabling it again restarts it).", valueType: "boolean" },
+    },
+    events: { tick: { description: "An interval passed.", args: "none" } },
+    api: {
+      pause: { description: "Pauses the timer." },
+      resume: { description: "Resumes a paused timer." },
+      isPaused: { description: "isPaused(): whether it is paused." },
+      isRunning: { description: "isRunning(): whether it is enabled and not paused." },
+    },
+    eventResults: true,
+    nonVisual: true,
+  },
+  Queue: {
+    description: "Processes items one at a time, first in first out (process), with progress and result feedback as toasts.",
+    props: {
+      clearAfterFinish: { description: "Removes the finished items (completed or failed) when the queue empties.", valueType: "boolean" },
+    },
+    templates: {
+      progressFeedback: { description: "A toast while items are processed.", contextVars: ["$completedItems", "$queuedItems"] },
+      resultFeedback: { description: "A toast when the queue empties (if an item completed).", contextVars: ["$completedItems", "$queuedItems"] },
+    },
+    events: {
+      willProcess: { description: "Before an item: ({ item, actionItemId, processItemContext }); returning false skips it." },
+      process: { description: "Processes an item: ({ item, actionItemId, processItemContext, onProgress }); throwing fails it; the result is kept." },
+      didProcess: { description: "An item was processed: ({ item, actionItemId, processItemContext }) with processItemContext.processResult." },
+      processError: { description: "An item failed: (error, { item, actionItemId, processItemContext }); returning false hides the error." },
+      complete: { description: "The queue emptied after processing.", args: "none" },
+    },
+    api: {
+      enqueueItem: { description: "Adds an item: enqueueItem(item); returns its id." },
+      enqueueItems: { description: "Adds items: enqueueItems([…]); returns their ids." },
+      getQueuedItems: { description: "Every item not removed: { item, actionItemId, status, progress, result, error } (reactive)." },
+      getQueueLength: { description: "How many items wait or run (reactive)." },
+      remove: { description: "Removes an item by id." },
+      clearCompleted: { description: "Removes the finished items." },
+    },
+    eventResults: true,
+    nonVisual: true,
+  },
+  MessageListener: {
+    description: "Receives window.postMessage messages (from an IFrame or another window); renders its children as they are.",
+    props: {},
+    events: { messageReceived: { description: "A message arrived: (data, { data, origin })." } },
+    nonVisual: true,
+  },
+  AppState: {
+    description: "Removed: reactive globals do its job.",
+    props: {},
+    removed: "declare a reactive global instead (global.name on the root element, or Globals.xs), as XMLUI itself advises (AppState.md)",
+  },
+};
+
 export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   App: {
     layoutProps: false,
@@ -1473,6 +1771,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
         availableValues: ["page", "content", "none"],
         isLiteral: true,
       },
+      name: { description: "The app's name: PageMetaTitle adds it to the page title (\"Orders | Shop\").", valueType: "string" },
       logo: { description: "The logo image's URL.", valueType: "string" },
       "logo-light": { description: "The logo in the light tone.", valueType: "string" },
       "logo-dark": { description: "The logo in the dark tone.", valueType: "string" },
@@ -2240,6 +2539,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   ...DISPLAY_COMPONENTS,
   ...SHELL_COMPONENTS,
+  ...STEP32_COMPONENTS,
   Stack: {
     description: "Lays out its children in a column or a row, or wraps them into rows (a flow). Gaps and paddings are automatic.",
     props: {

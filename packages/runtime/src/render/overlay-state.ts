@@ -21,6 +21,8 @@ export interface Toast {
   readonly position: ToastPosition | undefined;
   /** Changes when a toast with the same id replaces it (the renderer updates it). */
   readonly version: number;
+  /** Step 32: rendered content instead of `message` (a Queue's feedback templates); not reachable from script. */
+  readonly content?: () => unknown;
 }
 
 /** XMLUI's options object (`pages/globals.md` § toast). */
@@ -40,12 +42,20 @@ let versionCounter = 0;
 /** The toasts on screen, oldest first. */
 export const toasts: ReadonlySignal<readonly Toast[]> = toastList;
 
-function show(kind: ToastKind, message: unknown, options?: unknown): string {
+function show(kind: ToastKind, message: unknown, options?: unknown, content?: () => unknown): string {
   const o = (typeof options === "object" && options !== null ? options : {}) as ToastOptions;
   const id = o.id === undefined || o.id === null || o.id === "" ? `gfui-toast-${++toastCounter}` : String(o.id);
   const duration = typeof o.duration === "number" && Number.isFinite(o.duration) && o.duration > 0 ? o.duration : DEFAULT_DURATION[kind];
   const position = TOAST_POSITIONS.includes(o.position as ToastPosition) ? (o.position as ToastPosition) : undefined;
-  const entry: Toast = Object.freeze({ id, kind, message: message === undefined || message === null ? "" : String(message), duration, position, version: ++versionCounter });
+  const entry: Toast = Object.freeze({
+    id,
+    kind,
+    message: message === undefined || message === null ? "" : String(message),
+    duration,
+    position,
+    version: ++versionCounter,
+    ...(content ? { content } : {}),
+  });
   const others = toastList.get().filter((t) => t.id !== id);
   toastList.set([...others, entry]);
   return id;
@@ -56,6 +66,14 @@ export function removeToast(id: unknown): void {
   const key = String(id);
   const list = toastList.get();
   if (list.some((t) => t.id === key)) toastList.set(list.filter((t) => t.id !== key));
+}
+
+/**
+ * Step 32: a toast showing rendered content (a component's templates, such as a
+ * Queue's progressFeedback); `render` returns a React node. Returns the id.
+ */
+export function contentToast(kind: ToastKind, render: () => unknown, options?: ToastOptions): string {
+  return show(kind, "", options, render);
 }
 
 export interface ToastFunction {

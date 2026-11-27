@@ -71,6 +71,12 @@ interface EventMetadata { description: string; deprecationMessage?: string }
 
 ## The checks (`compileModule`)
 
+Step 32 added three metadata fields the checks read: `removedApi` (an API
+member left out on purpose: C015 says why, IFrame's `getContentWindow`), a
+component-level `deprecationMessage` (E024 on use: ToneChangerButton) and
+`receivesId` (the literal `id` passed as `$$id`; such a component's id may be
+any anchor name, and one that isn't an identifier has no API).
+
 Only element attributes are checked. The props of an attached behavior
 are the behavior's ([behaviors.md](behaviors.md)), checked against its
 own props. **Framework attributes are never

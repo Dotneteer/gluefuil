@@ -4,7 +4,7 @@ import { gfui } from "../src/index";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { addRootAttributes, basenameOf, injectPrerendered, isStaticRoute, previewRewrite, resolvePrerender, routeFileName, routesToRender } from "../src/prerender";
+import { addRootAttributes, basenameOf, injectPrerendered, injectTitle, isStaticRoute, previewRewrite, resolvePrerender, routeFileName, routesToRender } from "../src/prerender";
 
 describe("options", () => {
   test.each([
@@ -176,5 +176,16 @@ describe("the basename (step 21, part 2)", () => {
     ['<div id="other"></div>', '<div id="other"></div>'],
   ])("addRootAttributes(%s)", (html, expected) => {
     expect(addRootAttributes(html, "root", { "data-gfui-base": "/app" })).toBe(expected);
+  });
+});
+
+describe("injectTitle (step 32: PageMetaTitle)", () => {
+  test.each([
+    ["replaces the title", "<head><title>Old</title></head>", "New", "<head><title>New</title></head>"],
+    ["escapes it, and $ patterns stay literal", "<head><title>x</title></head>", "A & <B> $&", "<head><title>A &amp; &lt;B> $&amp;</title></head>"],
+    ["adds one to the head", "<html><head><meta charset=\"utf-8\"></head></html>", "T", "<html><head><meta charset=\"utf-8\"><title>T</title></head></html>"],
+    ["leaves a page without a head", "<div></div>", "T", "<div></div>"],
+  ])("%s", (_, html, title, expected) => {
+    expect(injectTitle(html, title)).toBe(expected);
   });
 });

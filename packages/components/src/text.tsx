@@ -5,6 +5,7 @@
 import { pointerData, useComponentApi, type PointerData, type RegisterApi } from "@gluefuil/runtime";
 import { createElement, useMemo, useRef, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { useLayout, type LayoutProps } from "./layout";
+import { useTocEntry } from "./toc";
 
 /** Text variants and the element each renders (default: span). */
 export const TEXT_VARIANT_ELEMENTS: Readonly<Record<string, string>> = {
@@ -175,6 +176,7 @@ type HeadingProps = LayoutProps &
     value?: unknown;
     level?: unknown;
     showAnchor?: unknown;
+    omitFromToc?: unknown;
     registerApi?: RegisterApi;
     /** Internal (Markdown): the text for the anchor id when the children are elements. */
     $$anchorText?: string;
@@ -190,12 +192,16 @@ export function Heading(props: HeadingProps) {
   useOverflowApi(registerApi, ref, scroll);
   const n = headingLevel(level);
   const text = content(value, children);
-  const anchor = isTrue(showAnchor) ? headingId(props.$$anchorText ?? (typeof text === "string" ? text : childrenText(text))) : undefined;
+  // Step 32: every heading with text has an anchor id (XMLUI), and is in the table of contents unless omitFromToc.
+  const plain = props.$$anchorText ?? (typeof text === "string" ? text : childrenText(text));
+  const id = headingId(plain);
+  useTocEntry(ref, id, n, plain?.trim(), isTrue(props.omitFromToc));
+  const anchor = isTrue(showAnchor) ? id : undefined;
   return createElement(
     `h${n}`,
     {
       ref,
-      id: anchor,
+      id,
       className: "gfui-Heading",
       "data-level": n,
       ...overflow.attributes,

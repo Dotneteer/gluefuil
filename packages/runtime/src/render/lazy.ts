@@ -18,6 +18,8 @@ export interface LazyResource<T> {
 }
 
 const serverLoads = new Set<Promise<unknown>>();
+/** How many loads of code were recorded (not `requestServerRender`): a pass that recorded one was incomplete. */
+let codeLoads = 0;
 
 export function lazyResource<T>(loader: () => Promise<T>): LazyResource<T> {
   let value: T | undefined;
@@ -42,7 +44,21 @@ export function lazyResource<T>(loader: () => Promise<T>): LazyResource<T> {
 
 /** Records a load a server render waited on (the prerender renders again after it). */
 export function noteServerLoad(promise: Promise<unknown>): void {
+  codeLoads++;
   serverLoads.add(promise);
+}
+
+/**
+ * Asks the prerender to render the route once more, though nothing is loading
+ * (step 32: a TableOfContents renders the headings the previous pass found).
+ */
+export function requestServerRender(): void {
+  serverLoads.add(Promise.resolve());
+}
+
+/** The number of code loads recorded so far (a pass that added one is incomplete). */
+export function serverLoadCount(): number {
+  return codeLoads;
 }
 
 /** The loads recorded since the last call, emptied. */

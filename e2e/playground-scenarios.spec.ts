@@ -1433,3 +1433,43 @@ test("Tile grids: a click selects a tile and the small grid shows the same selec
   await expect(text(page, "Selected: 1 (p4)")).toBeVisible();
   await expect(grids.nth(1).getByRole("gridcell").filter({ hasText: "Photo 4" })).toHaveAttribute("aria-selected", "true");
 });
+
+test("Embeds and media: the frame answers a message; the QR code follows the level", async ({ page }) => {
+  await open(page, "/embeds");
+  await expect(text(page, "Loaded: true")).toBeVisible();
+  await button(page, "Send hello").click();
+  await expect(text(page, "Replies: ready (from null); echo hello (from null);")).toBeVisible();
+  const modules = () => page.locator(".gfui-QRCode svg").first().getAttribute("data-modules");
+  const before = await modules();
+  await button(page, "H").click();
+  await expect(text(page, "Level: H")).toBeVisible();
+  expect(Number(await modules())).toBeGreaterThan(Number(before));
+});
+
+test("Table of contents: a link focuses its heading; the tab title", async ({ page }) => {
+  await open(page, "/contents");
+  await page.getByRole("navigation", { name: "Table of Contents" }).getByRole("link", { name: "Markup" }).click();
+  await expect(page.getByRole("heading", { name: "Markup", exact: true })).toBeFocused();
+  await expect(page).toHaveTitle("Table of contents | gfui playground");
+});
+
+test("Timers, queues and listeners: named sources and the queue's result", async ({ page }) => {
+  await open(page, "/timers");
+  await button(page, "a + 1").click();
+  await expect(text(page, "Changed: a")).toBeVisible();
+  await button(page, "Add one").click();
+  await expect(text(page, "Processed: extra")).toBeVisible();
+  await expect(page.locator(".gfui-Toast").filter({ hasText: "All done: 1 processed" })).toBeVisible();
+});
+
+test("Focus, tone and announcements: the live region, the box and the empty state", async ({ page }) => {
+  await open(page, "/focus-tone");
+  await button(page, "Announce saving").click();
+  await expect(page.getByRole("status").filter({ hasText: /^Saved at / })).toHaveCount(1);
+  await button(page, "Open the box").click();
+  await expect(page.getByRole("textbox", { name: "Name" })).toBeFocused();
+  await button(page, "Close the box").click();
+  await expect(button(page, "Open the box")).toBeFocused();
+  await button(page, "Find something").click();
+  await expect(text(page, "result 1")).toBeVisible();
+});

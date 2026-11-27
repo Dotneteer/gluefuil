@@ -27,7 +27,7 @@ test("a server render without the renderer records the load; the next render has
   await Promise.all(loads);
   resetServerState();
   const second = renderStatic(Main);
-  expect(second.html).toContain('<h1 class="gfui-Heading" data-level="1">Title</h1>');
+  expect(second.html).toContain('<h1 id="title" class="gfui-Heading" data-level="1">Title</h1>');
   expect(takeServerLoads()).toEqual([]);
 });
 

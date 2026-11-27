@@ -60,6 +60,13 @@ test("with JavaScript disabled, the prerendered content is there", async ({ brow
   // Step 23: Markdown's renderer is a lazy chunk; the prerender waited for it.
   await expect(page.getByRole("heading", { name: "Markdown, prerendered" })).toBeVisible();
   await expect(page.locator(".gfui-Markdown strong")).toHaveText("0");
+  // Step 32: the TableOfContents lists the headings after it too (a second pass) and Markdown's (a third,
+  // after its chunk); the QR code is there; the PageMetaTitle is the document's <title>.
+  const toc = page.getByRole("navigation", { name: "Table of Contents" });
+  await expect(toc.getByRole("link", { name: "Markdown, prerendered" })).toHaveAttribute("href", "#markdown-prerendered");
+  await expect(toc.getByRole("link", { name: "Step 32 · Contents" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Hello QR code" })).toBeVisible();
+  await expect(page).toHaveTitle("Hello gfui, prerendered");
   // Not live: nothing took it over.
   await expect(page.locator("#root")).toHaveAttribute("data-gfui-prerendered", "xs");
   await expect(page.locator("#root")).not.toHaveAttribute("data-gfui-ready", /.*/);
@@ -94,6 +101,10 @@ test("at the prerendered breakpoint (xs), takeover changes nothing; then the app
   await expect(tree.getByRole("treeitem")).toHaveText(["Folder", "Sub folder", "A file", "Other"]);
   await expect(tree.getByRole("treeitem", { selected: true })).toHaveText("A file");
   await expect(page.locator(".gfui-TileGrid-row").first()).toBeAttached();
+
+  // Step 32: the prerendered TableOfContents is live: a click focuses Markdown's heading.
+  await page.getByRole("navigation", { name: "Table of Contents" }).getByRole("link", { name: "Markdown, prerendered" }).click();
+  await expect(page.getByRole("heading", { name: "Markdown, prerendered" })).toBeFocused();
 
   await page.getByRole("button", { name: "Increment", exact: true }).click();
   await expect(page.getByText(/^Count: \d+$/)).toHaveText("Count: 1");

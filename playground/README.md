@@ -66,6 +66,10 @@ One or more per concept of proof-of-concept steps 2–31
 | 31 | Trees | A file tree from flat data: the selection follows a variable and opens its path, keys and a Delete action, the API (expand all, a level, edits in the tree's own copy); nested data with mapped fields and a turning chevron; 50,000 nodes with expand all and `scrollIntoView` |
 | 31 | Lazy trees | Folders that load their children on expand (a spinner after 200 ms), Reload (`markNodeUnloaded`), Live data that loads again after 3 seconds closed; save and restore the view state; new data in `reset` and `preserve-state` trees, and `preserveStateOnNextDataRefresh` |
 | 31 | Tile grids | 10,000 tiles: Narrow and Wide change the column count and keep the first tile in view, Stretch; selection by click, Shift and Ctrl/Cmd click, arrows, Space and checkboxes, shared with a small grid through `syncWithVar`; Ctrl/Cmd+A, Delete and a double click reported |
+| 32 | Embeds and media | A QR code that follows the text and the level (L, M, Q, H); a sandboxed frame that says ready and echoes messages (IFrame `postMessage`, MessageListener with the origin); a 2-second video: play, pause, seek, its events and its reactive `paused`, `ended`, `duration` |
+| 32 | Table of contents | Headings and a bookmark listed beside the text (omitH1, one heading omitted); a click scrolls smoothly and moves focus; scrolling marks the heading at the top; the tab title from PageMetaTitle with the App's name, restored on leaving |
+| 32 | Timers, queues and listeners | A Timer every 500 ms with pause and resume; a search debounced by 300 ms; named sources (changedSources); a Queue of five jobs with a progress toast and a result toast, job 3 failing on purpose |
+| 32 | Focus, tone and announcements | Tab from the top: the skip link; a live region; a FocusScope that keeps Tab inside and gives focus back; ToneSwitch; Logo (empty: the playground's App has no logo); NoResult; a Redirect to the table of contents |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the
