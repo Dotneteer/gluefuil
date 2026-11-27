@@ -1,0 +1,47 @@
+<!-- Step 32: SkipLink, LiveRegion, FocusScope, ToneSwitch, Logo, NoResult, Redirect. -->
+<Component name="FocusToneScenario">
+  <VStack var.announced="" var.dialogOpen="{false}" var.leave="{false}" var.results="{[]}">
+    <ScenarioHeader title="Focus, tone and announcements" description="Press Tab from the top of the page: the skip link appears. Announcements go to a live region (screen readers read them). Focus stays inside the open box until it closes, then returns. The switch changes the tone."/>
+    <SkipLink target="focus-demo" label="Skip to the focus demo"/>
+
+    <Card title="Live region">
+      <HStack>
+        <Button label="Announce saving" onClick="announced = 'Saved at ' + new Date().toLocaleTimeString()"/>
+        <Button label="Clear" onClick="announced = ''"/>
+      </HStack>
+      <LiveRegion message="{announced}"/>
+      <Text>Announced: {announced}</Text>
+    </Card>
+
+    <Card title="Focus scope">
+      <Bookmark id="focus-demo"/>
+      <Button label="Open the box" onClick="dialogOpen = true"/>
+      <FocusScope when="{dialogOpen}" autoFocus="true">
+        <Card title="Focus stays here">
+          <TextBox label="Name"/>
+          <HStack>
+            <Button label="Save"/>
+            <Button label="Close the box" onClick="dialogOpen = false"/>
+          </HStack>
+        </Card>
+      </FocusScope>
+    </Card>
+
+    <Card title="Tone, logo, no results">
+      <HStack verticalAlignment="center">
+        <ToneSwitch/>
+        <Text>Tone: {activeThemeTone}</Text>
+      </HStack>
+      <Logo alt="The playground's logo"/>
+      <NoResult when="{results.length === 0}" label="No results yet"/>
+      <Button label="Find something" onClick="results = [...results, 'result ' + (results.length + 1)]"/>
+      <Items data="{results}"><Text>{$item}</Text></Items>
+    </Card>
+
+    <Card title="Redirect">
+      <Text variant="secondary">The Redirect below navigates when it becomes visible.</Text>
+      <Button label="Go to the table of contents" onClick="leave = true"/>
+      <Redirect when="{leave}" to="/contents"/>
+    </Card>
+  </VStack>
+</Component>

@@ -98,7 +98,9 @@ plugins: [gfui(), gfuiMockBackend({ module: "src/backend.ts", host: "worker", bu
     starts the worker, then imports `X`. `main.tsx`, `mountApp` and the
     compiled markup are untouched.
   - The dev server serves MSW's `mockServiceWorker.js`, from the mock
-    package's own `msw`.
+    package's own `msw`, after `MEDIA_BYPASS` (step 32): a fetch listener that
+    lets video, audio and range requests go to the network, since Chrome can't
+    seek a video that MSW's passthrough `fetch()` delivered.
   - The plugin pre-bundles `@gluefuil/mock-backend > msw` and
     `> msw/browser`, so the first page load doesn't discover them and reload
     every open page.

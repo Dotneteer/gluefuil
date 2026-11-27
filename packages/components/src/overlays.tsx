@@ -642,7 +642,7 @@ function Toasts() {
 function notification(toast: Toast): NotificationData {
   return {
     id: toast.id,
-    message: toast.message,
+    message: toast.content ? (toast.content() as ReactNode) : toast.message,
     loading: toast.kind === "loading",
     autoClose: toast.duration,
     withCloseButton: true,

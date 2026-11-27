@@ -59,6 +59,16 @@ build:
      awaits them and renders the route again, at most 4 times (more is an
      error). The second render finds the module loaded
      ([display.md](display.md#lazy-loading-prerendering-and-hydration)).
+   - **Passes (step 32):** `renderStatic` runs each render in
+     `inStaticRender(path, app, …)`, so a component can read
+     `staticRenderInfo()`: the pass and, when the previous pass rendered the
+     same app and path, whether it waited for code. A TableOfContents renders
+     the headings the previous pass recorded and asks for another pass with
+     `requestServerRender()` (a resolved load that doesn't count as waiting)
+     ([remaining-components.md](remaining-components.md#tableofcontents-and-bookmark)).
+   - **The title (step 32):** a PageMetaTitle's `setStaticTitle` makes
+     `renderStatic` return `title`; the plugin writes it into the page's
+     `<title>` (`injectTitle`, before `injectPrerendered`).
 4. **`injectPrerendered`** fills the root element and adds the
    attributes. The element must exist, be empty (whitespace is fine) and
    not be self-closing. Otherwise the build fails with a message, rather

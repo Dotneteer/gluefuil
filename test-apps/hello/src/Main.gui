@@ -212,5 +212,12 @@
     <TileGrid height="200px" itemWidth="100px" itemHeight="60px" data="{Array.from({ length: 12 }, (_, i) => ({ id: i, name: 'Tile ' + i }))}">
       <Text>{$item.name}</Text>
     </TileGrid>
+
+    <!-- Step 32: a TableOfContents after the headings it lists (the prerender renders the page again
+         to fill it, after Markdown's chunk: its heading is listed too), a QR code, the tab's title. -->
+    <H2>Step 32 · Contents</H2>
+    <PageMetaTitle value="Hello gfui, prerendered"/>
+    <QRCode value="https://example.com/hello" size="120" title="Hello QR code"/>
+    <TableOfContents maxHeadingLevel="3"/>
   </Stack>
 </App>

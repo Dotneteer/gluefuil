@@ -1,0 +1,58 @@
+<!-- Step 32: Timer (pause, resume, once), ChangeListener (debounced search, sources), Queue (FIFO with progress and result toasts, a failing item). -->
+<Component name="TimersScenario">
+  <VStack
+    var.ticks="{0}"
+    var.searches="{0}"
+    var.searched=""
+    var.changed=""
+    var.a="{1}"
+    var.b="{1}"
+    var.processed="{[]}"
+    var.failures="">
+    <ScenarioHeader title="Timers, queues and listeners" description="A timer that ticks every half second; a search that waits until typing stops for 300 ms; named sources; a queue that processes jobs one at a time, with a progress toast, a result toast and a job that fails."/>
+
+    <Card title="Timer">
+      <Timer id="clock" interval="500" onTick="ticks++"/>
+      <HStack>
+        <Button label="Pause" onClick="clock.pause()"/>
+        <Button label="Resume" onClick="clock.resume()"/>
+      </HStack>
+      <Text>Ticks: {ticks} ({clock.isPaused() ? 'paused' : 'running'})</Text>
+    </Card>
+
+    <Card title="ChangeListener">
+      <TextBox id="search" label="Search" placeholder="Type, then stop"/>
+      <ChangeListener listenTo="{search.value ?? ''}" debounceWaitInMs="300" onDidChange="c => { searches++; searched = c.newValue }"/>
+      <Text>Searched {searches} times; last: {searched}</Text>
+      <HStack>
+        <Button label="a + 1" onClick="a++"/>
+        <Button label="b + 1" onClick="b++"/>
+        <Button label="Both + 1" onClick="a++; b++"/>
+      </HStack>
+      <ChangeListener listenToSources="{{ a, b }}" onDidChange="c => changed = c.changedSources.join(' and ')"/>
+      <Text>Changed: {changed}</Text>
+    </Card>
+
+    <Card title="Queue">
+      <Queue
+        id="jobs"
+        clearAfterFinish="true"
+        onProcess="p => { delay(400); if (p.item === 'job 3') throw 'job 3 failed on purpose'; processed = [...processed, p.item]; return p.item.length }"
+        onProcessError="(e, p) => { failures += p.item + ': ' + e.message + '; '; return false }">
+        <property name="progressFeedback">
+          <Text>Processed {$completedItems.length} of {$queuedItems.length}</Text>
+        </property>
+        <property name="resultFeedback">
+          <Text>All done: {$completedItems.length} processed</Text>
+        </property>
+      </Queue>
+      <HStack>
+        <Button label="Add 5 jobs" onClick="jobs.enqueueItems(['job 1', 'job 2', 'job 3', 'job 4', 'job 5'])"/>
+        <Button label="Add one" onClick="jobs.enqueueItem('extra')"/>
+      </HStack>
+      <Text>Waiting or running: {jobs.getQueueLength()}</Text>
+      <Text>Processed: {processed.join(', ')}</Text>
+      <Text>Failures: {failures}</Text>
+    </Card>
+  </VStack>
+</Component>

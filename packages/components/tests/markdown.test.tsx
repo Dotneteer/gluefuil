@@ -36,7 +36,7 @@ describe("Markdown → HTML (GFM)", () => {
     ["a paragraph", "Hello", "<p>Hello</p>"],
     ["emphasis, strong, strikethrough", "*a* **b** ~~c~~", "<p><em>a</em> <strong>b</strong> <del>c</del></p>"],
     ["inline code is a Text code variant", "`x = 1`", '<p><code class="gfui-Text" data-variant="code">x = 1</code></p>'],
-    ["headings are Heading components", "## Two", '<h2 class="gfui-Heading" data-level="2">Two</h2>'],
+    ["headings are Heading components", "## Two", '<h2 id="two" class="gfui-Heading" data-level="2">Two</h2>'],
     ["a fenced code block keeps its language", "```js\nlet a;\n```", '<pre class="gfui-Markdown-code"><code data-language="js">let a;</code></pre>'],
     ["a tight list has no paragraphs", "- a\n- b", "<ul><li>a</li><li>b</li></ul>"],
     ["an ordered list keeps its start", "3. c\n4. d", '<ol start="3"><li>c</li><li>d</li></ol>'],
@@ -127,7 +127,7 @@ describe("raw HTML: the allowlist", () => {
 describe("content", () => {
   test("the nested text's common indent is removed (removeIndents, default true)", () => {
     const container = mount("<App><Markdown>\n    # Title\n\n    Text\n  </Markdown></App>");
-    expect(container.querySelector(".gfui-Markdown")!.innerHTML).toBe('<h1 class="gfui-Heading" data-level="1">Title</h1><p>Text</p>');
+    expect(container.querySelector(".gfui-Markdown")!.innerHTML).toBe('<h1 id="title" class="gfui-Heading" data-level="1">Title</h1><p>Text</p>');
   });
 
   test('removeIndents="false": an indented line is a code block', () => {

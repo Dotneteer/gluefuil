@@ -8,7 +8,8 @@
 > after the inserted steps 19A–19C (the App shell), 19D–19F (the layout
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
-> steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26).
+> steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26), and after
+> step 32 (2026-11-27).
 
 ## State
 
@@ -32,8 +33,14 @@
   against TanStack's lanes in `.tmp/vproto/tiles.html`). `Bound` now computes
   each binding apart (a runtime change: a literal keeps its identity when
   another prop changes).
-- **Next: step 32** (the remaining components, `poc-steps.md`), not started.
-- **`master` holds steps 0–31, merged.** `origin/master`
+- **Step 32 (the remaining components, except files) is done and merged into master.** Plan and findings:
+  [`plan/poc-32-remaining.md`](plan/poc-32-remaining.md); reference:
+  [`docs/remaining-components.md`](docs/remaining-components.md).
+  `npm run check`: 3,310 unit tests in 117 files, 288 E2E tests. The user
+  split the step: **32B** (FileInput, FileUploadDropZone, uploads) gets its own
+  plan after 32 is merged; its decisions are already recorded in the step 32
+  plan (*Decisions* 3–6).
+- **`master` holds steps 0–32, merged.** `origin/master`
   (as last fetched) is at the rename after step 22B; the later merges are not
   pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
@@ -252,6 +259,16 @@
   mounts a moment after opening and may stay `display: none`. Use
   `findBy*` with `hidden: true`; prove visibility, focus and placement in
   `e2e/overlays.spec.ts`. Reset with `resetOverlayState()` after each test.
+
+- **The prerender's passes (step 32):** a component can read
+  `staticRenderInfo()` and ask for another pass with `requestServerRender()`;
+  `previous` is set only for the same app and path. Hydration can read what
+  the server rendered back from the DOM (find it by `useId`) as
+  `getServerSnapshot` (the TableOfContents).
+- **The mock backend's worker and media (step 32):** MSW's passthrough broke
+  video seeking in Chrome; `MEDIA_BYPASS` in the plugin's worker script fixes
+  it. A port taken by an old prototype server (5199) answered a probe once:
+  check `lsof -iTCP:<port>` when a dev server's answer looks wrong.
 
 ## Open questions for the user
 

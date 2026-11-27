@@ -8,13 +8,16 @@ test("components package loads", () => {
 
 test("every component has metadata, and the metadata entry point loads on its own", () => {
   expect(Object.keys(componentMetadata).sort()).toEqual([
-    "APICall", "App", "AppHeader", "AutoComplete", "Avatar", "Badge", "Button", "CHStack", "CVStack", "Card", "Checkbox", "ColorPicker", "Column",
-    "ContentSeparator", "ContextMenu", "DataSource", "DateInput", "DatePicker", "Drawer", "DropdownMenu", "ExpandableItem", "FlowLayout", "Footer",
-    "Form", "H1", "H2", "H3", "H4", "H5", "H6", "HSplitter", "HStack", "Heading", "Icon", "Image", "Items", "Link", "List", "Markdown", "MenuItem",
-    "MenuSeparator", "ModalDialog", "NavGroup", "NavLink", "NavPanel", "NavPanelCollapseButton", "NumberBox", "Option", "Page", "Pages", "Pagination",
-    "PasswordInput", "ProgressBar", "RadioGroup", "ResponsiveBar", "ScrollViewer", "Select", "Slider", "SpaceFiller", "Spinner", "Splitter", "Stack",
-    "Step", "Stepper", "StickyBox", "StickySection", "SubMenuItem", "Switch", "TabItem", "Table", "Tabs", "Text", "TextArea", "TextBox", "Theme", "TileGrid", "TimeInput",
-    "Tooltip", "Tree", "VSplitter", "VStack", "Value",
+    "APICall", "App", "AppHeader", "AppState", "AutoComplete", "Avatar", "Badge", "Bookmark", "Button", "CHStack", "CVStack", "Card",
+    "ChangeListener", "Checkbox", "ColorPicker", "Column", "ContentSeparator", "ContextMenu", "DataSource", "DateInput", "DatePicker", "Drawer",
+    "DropdownMenu", "ExpandableItem", "FlowLayout", "FocusScope", "Footer", "Form", "H1", "H2", "H3", "H4", "H5", "H6", "HSplitter", "HStack",
+    "Heading", "IFrame", "Icon", "Image", "Items", "Link", "List", "LiveRegion", "Logo", "Markdown", "MediaPlayer", "MenuItem", "MenuSeparator",
+    "MessageListener", "ModalDialog", "NavGroup", "NavLink", "NavPanel", "NavPanelCollapseButton", "NoResult", "NumberBox", "Option", "Page",
+    "PageMetaTitle", "Pages", "Pagination", "PasswordInput", "ProgressBar", "QRCode", "Queue", "RadioGroup", "Redirect", "ResponsiveBar",
+    "ScrollViewer", "Select", "SkipLink", "Slider", "SpaceFiller", "Spinner", "Splitter", "Stack", "Step", "Stepper", "StickyBox", "StickySection",
+    "SubMenuItem", "Switch", "TabItem", "Table", "TableOfContents", "Tabs", "Text", "TextArea", "TextBox", "Theme", "TileGrid", "TimeInput", "Timer",
+    "ToneChangerButton", "ToneSwitch", "Tooltip", "Tree", "VSplitter", "VStack", "Value",
+
   ]);
   for (const [name, metadata] of Object.entries(componentMetadata)) {
     // Aliases render another component (HStack → Stack); removed ones exist only for their migration error.

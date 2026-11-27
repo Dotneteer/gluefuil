@@ -1059,6 +1059,168 @@ const PAGINATION = `
 .gfui-Pagination-info { color: var(--gfui-textColor-secondary); white-space: nowrap; }
 `;
 
+/* Step 32: the remaining components. */
+const REMAINING = `
+.gfui-QRCode {
+  box-sizing: border-box;
+  width: var(--gfui-qr-size, calc(var(--gfui-size-QRCode) * 1px));
+  max-width: 100%;
+  padding: var(--gfui-padding-QRCode);
+  background: var(--gfui-qr-bg, var(--gfui-backgroundColor-QRCode));
+  color: var(--gfui-qr-color, var(--gfui-color-QRCode));
+  line-height: 0;
+}
+.gfui-QRCode > svg { display: block; width: 100%; height: auto; }
+.gfui-QRCode-error { aspect-ratio: 1; }
+.gfui-IFrame {
+  display: block;
+  box-sizing: border-box;
+  width: var(--gfui-width-IFrame);
+  height: var(--gfui-height-IFrame);
+  border: var(--gfui-border-IFrame);
+  border-radius: var(--gfui-borderRadius-IFrame);
+}
+.gfui-MediaPlayer { display: block; max-width: 100%; border-radius: var(--gfui-borderRadius-MediaPlayer); }
+.gfui-MediaPlayer[data-kind="audio"] { width: 100%; }
+.gfui-TableOfContents {
+  position: relative;
+  box-sizing: border-box;
+  height: var(--gfui-height-TableOfContents);
+  padding: var(--gfui-padding-TableOfContents);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.gfui-TableOfContents-scroll { overflow: auto; min-height: 0; flex: 1 1 auto; }
+.gfui-TableOfContents-scroll[data-scroll-style] { scrollbar-width: thin; }
+.gfui-TableOfContents-scroll[data-scroll-style="whenMouseOver"]:not(:hover),
+.gfui-TableOfContents-scroll[data-scroll-style="whenScrolling"]:not([data-scrolling]) { scrollbar-color: transparent transparent; }
+.gfui-TableOfContents[data-fade-top]::before,
+.gfui-TableOfContents[data-fade-bottom]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.5em;
+  pointer-events: none;
+  z-index: 1;
+}
+.gfui-TableOfContents[data-fade-top]::before { top: 0; background: linear-gradient(var(--gfui-backgroundColor), transparent); }
+.gfui-TableOfContents[data-fade-bottom]::after { bottom: 0; background: linear-gradient(transparent, var(--gfui-backgroundColor)); }
+.gfui-TableOfContents-list { list-style: none; margin: 0; padding: 0; }
+.gfui-TableOfContentsItem {
+  border-left: var(--gfui-width-indicator-TableOfContents) solid var(--gfui-color-indicator-TableOfContents);
+  font-size: var(--gfui-fontSize-TableOfContentsItem);
+  font-weight: var(--gfui-fontWeight-TableOfContentsItem);
+  overflow-wrap: var(--gfui-wordWrap-TableOfContentsItem);
+}
+.gfui-TableOfContentsItem[data-active] {
+  border-left-color: var(--gfui-color-indicator-TableOfContents--active);
+  font-weight: var(--gfui-fontWeight-TableOfContentsItem--active);
+}
+.gfui-TableOfContentsItem > a {
+  display: block;
+  padding: var(--gfui-paddingVertical-TableOfContentsItem) 0 var(--gfui-paddingVertical-TableOfContentsItem) var(--gfui-toc-indent, var(--gfui-paddingLeft-TableOfContentsItem));
+  color: var(--gfui-textColor-TableOfContentsItem);
+  text-decoration: none;
+}
+.gfui-TableOfContentsItem > a:hover { color: var(--gfui-textColor-TableOfContentsItem--hover); }
+.gfui-TableOfContentsItem[data-active] > a { color: var(--gfui-textColor-TableOfContentsItem--active); }
+${[2, 3, 4, 5, 6]
+  .map(
+    (n) => `.gfui-TableOfContentsItem[data-level="${n}"] { --gfui-toc-indent: var(--gfui-paddingLeft-TableOfContentsItem-level-${n}); font-weight: var(--gfui-fontWeight-TableOfContentsItem-level-${n}); }`,
+  )
+  .join("\n")}
+.gfui-TableOfContentsItem[data-level="6"] { font-style: var(--gfui-fontStyle-TableOfContentsItem-level-6); }
+.gfui-Bookmark { scroll-margin-top: var(--gfui-space-4); }
+.gfui-SkipLink {
+  position: fixed;
+  top: -999px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  padding: var(--gfui-space-2) var(--gfui-space-4);
+  background: var(--gfui-backgroundColor);
+  color: var(--gfui-textColor);
+  border: 2px solid currentColor;
+  border-radius: var(--gfui-borderRadius);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.24);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.gfui-SkipLink:focus { top: var(--gfui-space-4); outline: 3px solid var(--gfui-color-primary-500); outline-offset: 2px; }
+.gfui-LiveRegion {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.gfui-FocusScope:focus { outline: none; }
+.gfui-Logo { width: auto; max-width: 100%; }
+.gfui-Logo[data-inline] { display: inline; vertical-align: middle; }
+.gfui-NoResult {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gfui-gap-icon-NoResult);
+  padding: var(--gfui-paddingVertical-NoResult) 0;
+  background: var(--gfui-backgroundColor-NoResult);
+  border: var(--gfui-border-NoResult);
+  color: var(--gfui-textColor-secondary);
+}
+.gfui-NoResult > .gfui-Icon { --gfui-icon-size: var(--gfui-size-icon-NoResult); }
+.gfui-ToneSwitch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 3.25em;
+  height: 1.75em;
+  padding: var(--gfui-space-0_5);
+  border: 1px solid var(--gfui-borderColor-ToneSwitch);
+  border-radius: 999px;
+  background: var(--gfui-backgroundColor-ToneSwitch-light);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+.gfui-ToneSwitch:hover { border-color: var(--gfui-borderColor-ToneSwitch--hover); }
+.gfui-ToneSwitch[data-tone="dark"] { background: var(--gfui-backgroundColor-ToneSwitch-dark); }
+.gfui-ToneSwitch-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50%;
+  background: var(--gfui-backgroundColor-indicator-ToneSwitch);
+  box-shadow: var(--gfui-boxShadow-indicator-ToneSwitch);
+  color: var(--gfui-color-ToneSwitch-light);
+  transition: transform 0.15s;
+  --gfui-icon-size: 0.9em;
+}
+.gfui-ToneSwitch[data-tone="dark"] .gfui-ToneSwitch-thumb { transform: translateX(1.45em); color: var(--gfui-color-ToneSwitch-dark); }
+.gfui-ToneChangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gfui-space-1);
+  border: 0;
+  border-radius: var(--gfui-borderRadius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.gfui-ToneChangerButton:hover { background: var(--gfui-color-surface-100); }
+`;
+
 export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
@@ -1073,6 +1235,7 @@ ${TREE}
 ${TILEGRID}
 ${VALUE}
 ${PAGINATION}
+${REMAINING}
 .gfui-App,
 .gfui-Theme {
   /* Mantine's global variables, redirected to the gfui theme. */

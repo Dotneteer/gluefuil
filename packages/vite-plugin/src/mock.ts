@@ -52,11 +52,23 @@ export function bootstrapCode(backendModule: string, workerUrl: string, entry: s
   ].join("\n");
 }
 
-/** MSW's worker script, from the mock backend's own dependency. */
-function workerScript(): string {
+/**
+ * Step 32: media and range requests skip the worker. MSW passes every request on
+ * through its own fetch(), and Chrome can't seek a video loaded that way
+ * (found with MediaPlayer). Registered before MSW's listener, this one stops
+ * the event, so the browser fetches the request itself; no API call is one.
+ */
+export const MEDIA_BYPASS = `self.addEventListener("fetch", function (event) {
+  var request = event.request;
+  if (request.destination === "video" || request.destination === "audio" || request.headers.has("range")) event.stopImmediatePropagation();
+});
+`;
+
+/** MSW's worker script, from the mock backend's own dependency, after MEDIA_BYPASS. */
+export function workerScript(): string {
   const require = createRequire(import.meta.url);
   const packageJson = require.resolve("@gluefuil/mock-backend/package.json");
-  return readFileSync(createRequire(packageJson).resolve(`msw/${WORKER_SCRIPT}`), "utf8");
+  return MEDIA_BYPASS + readFileSync(createRequire(packageJson).resolve(`msw/${WORKER_SCRIPT}`), "utf8");
 }
 
 export function gfuiMockBackend(options: MockBackendOptions): Plugin {

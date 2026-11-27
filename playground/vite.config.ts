@@ -7,7 +7,7 @@ export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
   // Pre-bundled at startup, so the first page load is not interrupted by a reload.
   // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).
-  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
+  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   // prerender: `npm run playground:build` renders the dashboard into index.html.
   plugins: [
     gfui({
@@ -62,7 +62,7 @@ export default defineConfig({
   // React, ReactDOM, Mantine and (for the live compiler) the compiler: one ~670 kB chunk; fine here.
   // Two pages: the playground, and the layout demos (layouts.html?layout=…, not prerendered).
   build: {
-    chunkSizeWarningLimit: 900,
+    chunkSizeWarningLimit: 1000,
     rolldownOptions: { input: { main: "index.html", layouts: "layouts.html" } },
   },
 });

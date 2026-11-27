@@ -61,7 +61,9 @@
   - `enabled="false"` renders no href and `aria-disabled`;
   - without `to`, a link with `click` is a button.
 - **`Heading showAnchor`:** the id is the text lowercased, punctuation
-  removed and spaces as dashes (`headingId`). It is computed while rendering,
+  removed and spaces as dashes (`headingId`). Since step 32 every heading with
+  text has this id (XMLUI gives every heading an anchor) and registers for the
+  TableOfContents unless `omitFromToc`; `showAnchor` adds the `#` link. It is computed while rendering,
   so it is in the prerendered HTML too; XMLUI computes it after mount from
   the DOM, and keeps only ASCII word characters. The `#` link scrolls (a
   `#id` href would be a route under hash routing).

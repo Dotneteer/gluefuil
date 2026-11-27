@@ -2,12 +2,14 @@
 // active theme and tone (runtime theme state) to CSS custom properties.
 import { activeThemeId, activeThemeTone, navDrawerOpen, navPanelCollapsed, setNavigationHandlers, setRoutingMode, setThemeDefaults, useSignal, type TemplateRenderer } from "@gluefuil/runtime";
 import { MantineProvider } from "@mantine/core";
-import { useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { AppInfoContext } from "./app-info";
+import { HeadingRegistry, HeadingRegistryContext } from "./toc";
 import { MANTINE_STYLESHEET, MANTINE_STYLESHEET_HREF } from "./mantine";
 import { OverlayLayer, OverlayLayerProvider } from "./overlay-context";
 import { AppOverlays } from "./overlays";
 import { componentMetadata, componentThemeDefaults } from "./metadata";
-import { appLogo, needsGeneratedHeader, Shell, shellAttributes, type ShellConfig } from "./shell";
+import { appLogo, appLogoUrl, needsGeneratedHeader, Shell, shellAttributes, type ShellConfig } from "./shell";
 import { BASE_STYLESHEET, BASE_STYLESHEET_HREF } from "./styles";
 import { compileTheme, scopedThemeVars, type Tone } from "./theming/engine";
 import { BUILT_IN_THEME_MAP } from "./theming/themes";
@@ -33,6 +35,7 @@ function useActiveTheme(): { themeId: string; tone: Tone; style: CSSProperties }
  * and their settings (`$$shell`).
  */
 export function App({
+  name,
   defaultTheme,
   defaultTone,
   useHashBasedRouting,
@@ -49,6 +52,7 @@ export function App({
   onDidNavigate,
   children,
 }: {
+  name?: unknown;
   defaultTheme?: unknown;
   defaultTone?: unknown;
   useHashBasedRouting?: unknown;
@@ -84,6 +88,11 @@ export function App({
   // A generated header (shell.tsx) shows on wide screens only when the nav lives in it.
   const headerShown = $$header !== undefined || (needsGeneratedHeader(shell, false) && shell.nav?.placement === "header");
   const attributes = shellAttributes(shell, headerShown, collapsed, drawerOpen);
+  // Step 32: the name (PageMetaTitle's suffix), the logo (Logo), the headings (TableOfContents).
+  const logoUrl = appLogoUrl(tone, logo, logoLight, logoDark);
+  const appName = typeof name === "string" && name !== "" ? name : undefined;
+  const info = useMemo(() => ({ name: appName, logoUrl }), [appName, logoUrl]);
+  const [headings] = useState(() => new HeadingRegistry());
   return (
     // data-mantine-color-scheme: Mantine's tone selectors match below the app,
     // also in a server render (no script has to set it on <html> first).
@@ -96,6 +105,8 @@ export function App({
       </style>
       {/* Mantine's variables and global classes come from MANTINE_STYLESHEET: no <style> elements of its own. */}
       <MantineProvider forceColorScheme={tone} withCssVariables={false} withGlobalClasses={false}>
+        <AppInfoContext.Provider value={info}>
+        <HeadingRegistryContext.Provider value={headings}>
         <OverlayLayerProvider layer={overlays}>
           <Shell config={shell} header={$$header} nav={$$nav} footer={$$footer} logo={appLogo(tone, logo, logoLight, logoDark, logoTemplate)} root={root}>
             {children}
@@ -105,6 +116,8 @@ export function App({
             <AppOverlays />
           </OverlayLayer>
         </OverlayLayerProvider>
+        </HeadingRegistryContext.Provider>
+        </AppInfoContext.Provider>
       </MantineProvider>
     </div>
   );

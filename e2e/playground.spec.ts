@@ -72,6 +72,10 @@ test("every scenario on the dashboard opens its page, without errors, shows its 
     "Trees",
     "Lazy trees",
     "Tile grids",
+    "Embeds and media",
+    "Table of contents",
+    "Timers, queues and listeners",
+    "Focus, tone and announcements",
   ]);
   for (const title of titles) {
     // Display is the first scenario with Markdown: nothing before it (the dashboard included) has loaded the chunk.
