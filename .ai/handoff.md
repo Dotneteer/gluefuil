@@ -9,7 +9,7 @@
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
 > steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26), and after
-> step 32 (2026-11-27).
+> step 32 and 32B (2026-11-27).
 
 ## State
 
@@ -40,7 +40,11 @@
   split the step: **32B** (FileInput, FileUploadDropZone, uploads) gets its own
   plan after 32 is merged; its decisions are already recorded in the step 32
   plan (*Decisions* 3–6).
-- **`master` holds steps 0–32, merged.** `origin/master`
+- **Step 32B (files and uploads) is done and merged into master.** Plan and findings:
+  [`plan/poc-32b-files.md`](plan/poc-32b-files.md); reference:
+  [`docs/files.md`](docs/files.md). `npm run check`: 3,364 unit tests in
+  120 files, 296 E2E tests. Next: step 33 (`poc-steps.md`).
+- **`master` holds steps 0–32B, merged.** `origin/master`
   (as last fetched) is at the rename after step 22B; the later merges are not
   pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
@@ -269,6 +273,17 @@
   video seeking in Chrome; `MEDIA_BYPASS` in the plugin's worker script fixes
   it. A port taken by an old prototype server (5199) answered a probe once:
   check `lsof -iTCP:<port>` when a dev server's answer looks wrong.
+
+- **jsdom and files (step 32B):** jsdom's `Blob`/`FormData` aren't Node
+  fetch's. Tests that send files through real `fetch` run in Node's
+  environment (`// @vitest-environment node`); component tests stub `fetch`.
+  Check a Blob by its shape where two realms meet.
+
+- **Timing in jsdom tests:** don't assert a final state after a fixed short
+  `settle(ms)`; a loaded machine (two `npm run check`s at once, found after
+  step 32B) runs late. Poll for the final state (`eventually` in
+  `components/tests/step32.test.tsx`, a `vi.waitFor`) and make in-progress
+  windows wide (hundreds of ms). Check with several runs in parallel.
 
 ## Open questions for the user
 

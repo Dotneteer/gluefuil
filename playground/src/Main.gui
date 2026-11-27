@@ -70,7 +70,8 @@
     { path: '/embeds', step: '32', title: 'Embeds and media', description: 'A QR code, a frame that answers messages, a video with its events and state.' },
     { path: '/contents', step: '32', title: 'Table of contents', description: 'Headings and bookmarks in a table of contents that follows scrolling; the tab title.' },
     { path: '/timers', step: '32', title: 'Timers, queues and listeners', description: 'Timer, a debounced ChangeListener, named sources, a Queue with feedback toasts.' },
-    { path: '/focus-tone', step: '32', title: 'Focus, tone and announcements', description: 'SkipLink, LiveRegion, FocusScope, ToneSwitch, Logo, NoResult, Redirect.' }
+    { path: '/focus-tone', step: '32', title: 'Focus, tone and announcements', description: 'SkipLink, LiveRegion, FocusScope, ToneSwitch, Logo, NoResult, Redirect.' },
+    { path: '/files', step: '32B', title: 'Files and uploads', description: 'FileInput in a Form (multipart), CSV and JSON parsing, drop and paste, upload, cancel, download.' }
   ]}"
   global.unsavedChanges="{false}"
   global.navigationLog="{[]}"
@@ -167,6 +168,7 @@
     <Page url="/contents"><VStack><ContentsScenario/><ScenarioSource file="ContentsScenario"/></VStack></Page>
     <Page url="/timers"><VStack><TimersScenario/><ScenarioSource file="TimersScenario"/></VStack></Page>
     <Page url="/focus-tone"><VStack><FocusToneScenario/><ScenarioSource file="FocusToneScenario"/></VStack></Page>
+    <Page url="/files"><VStack><FilesScenario/><ScenarioSource file="FilesScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

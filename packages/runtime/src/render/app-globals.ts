@@ -7,6 +7,7 @@ import { APP_GLOBAL_NAMES } from "./app-global-names";
 import { delay } from "./handlers";
 import { currentLocation, currentRouteParams, navigate } from "./router";
 import { confirm, toast } from "./overlay-state";
+import { Actions } from "../data/transfer";
 import { navDrawerOpen, navPanelCollapsed, setNavDrawerOpen, setNavPanelCollapsed } from "./shell-state";
 import { activeThemeId, activeThemeTone, setTheme, setThemeTone, toggleThemeTone } from "./theme-state";
 
@@ -26,6 +27,8 @@ const APP_GLOBALS: Record<string, ScopeEntry> = {
   navDrawerOpen: { signal: navDrawerOpen },
   setNavDrawerOpen: { value: setNavDrawerOpen },
   toast: { value: toast },
+  // Step 32B: Actions.upload() and Actions.download().
+  Actions: { value: Actions },
   confirm: { value: confirm },
 };
 

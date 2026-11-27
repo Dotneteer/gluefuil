@@ -547,7 +547,7 @@ E2E tests for interaction-heavy ones.
 | 30 ✅ | **`Table` + `Column`** (our own column model; `Value`, `Pagination`) | Sorting, selection, resizing, pinning, pagination, editable cells |
 | 31 ✅ | `Tree`, `TileGrid`, `Items` (`Pagination` moved to step 30) | Virtualized scrolling |
 | 32 ✅ | Remaining: `QRCode`, `IFrame`, `MediaPlayer`, `TableOfContents`, `Bookmark`, `SkipLink`, `LiveRegion`, `FocusScope`, `Logo`, `NoResult`, `ToneSwitch`, `ToneChangerButton`, non-visual components (`ChangeListener`, `Timer`, `Queue`, `MessageListener`, `Redirect`, `PageMetaTitle`; `AppState` removed) ([poc-32-remaining.md](poc-32-remaining.md)) | Accessibility, media, messages |
-| 32B | Files: `FileInput`, `FileUploadDropZone`, files in script, multipart uploads, `FileUpload`/`FileDownload` (split from 32 by the user) | File drop, paste, upload |
+| 32B ✅ | Files: `FileInput`, `FileUploadDropZone`, files in script, multipart uploads, `FileUpload`/`FileDownload` (split from 32 by the user; [poc-32b-files.md](poc-32b-files.md)) | File drop, paste, upload |
 
 ---
 

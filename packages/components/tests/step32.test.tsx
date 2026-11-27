@@ -43,6 +43,15 @@ const show = (markup: string) => {
   return render(<Main />);
 };
 const settle = (ms = 0) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+/** Waits until `check` passes (timing-independent under load), rendering in between. */
+const eventually = (check: () => void, timeout = 4000) =>
+  vi.waitFor(
+    async () => {
+      await settle(10);
+      check();
+    },
+    { timeout, interval: 20 },
+  );
 const click = (label: string) => act(async () => fireEvent.click(screen.getByRole("button", { name: label })));
 const text = (prefix: string) => [...document.querySelectorAll(".gfui-Text")].find((e) => e.textContent?.startsWith(prefix))?.textContent?.slice(prefix.length);
 
@@ -482,16 +491,16 @@ describe("Queue", () => {
     show(`<App var.done="{[]}" var.completes="{0}">
       <Queue id="jobs"
         onWillProcess="p => p.item !== 2"
-        onProcess="p => { delay(5); done = [...done, p.item]; return p.item * 10 }"
+        onProcess="p => { delay(300); done = [...done, p.item]; return p.item * 10 }"
         onDidProcess="p => done = [...done, 'r' + p.processItemContext.processResult]"
         onComplete="completes++"/>
       <Button label="Add" onClick="jobs.enqueueItems([1, 2, 3])"/>
       <Text>done: {done.join(',')} / {completes} / {jobs.getQueueLength()}</Text>
     </App>`);
     await click("Add");
-    expect(text("done: ")!.endsWith(" / 0 / 2") || text("done: ")!.endsWith(" / 0 / 3")).toBe(true);
-    await settle(60);
-    expect(text("done: ")).toBe("1,r10,3,r30 / 1 / 0");
+    // While the first item is held for 300 ms: nothing done yet, the items waiting or running counted.
+    expect(text("done: ")).toMatch(/^ \/ 0 \/ [23]$/);
+    await eventually(() => expect(text("done: ")).toBe("1,r10,3,r30 / 1 / 0"));
   });
 
   test("a thrown error goes to processError (false hides it); the item records it", async () => {
@@ -504,9 +513,8 @@ describe("Queue", () => {
       <Text>statuses: {jobs.getQueuedItems().map(i => i.status).join(',')}</Text>
     </App>`);
     await click("Add");
-    await settle(30);
+    await eventually(() => expect(text("statuses: ")).toBe("completed,error,completed"));
     expect(text("log: ")).toBe("ok:a;err:Conflict:bad;ok:b;");
-    expect(text("statuses: ")).toBe("completed,error,completed");
     expect(errors).toEqual([]);
   });
 
@@ -517,7 +525,7 @@ describe("Queue", () => {
       <Text>items: {jobs.getQueuedItems().length}</Text>
     </App>`);
     await click("Add");
-    await settle(30);
+    await eventually(() => expect(text("items: ")).toBe("0"));
     expect(errors).toHaveLength(1);
     expect(toasts.get().map((t) => `${t.kind}:${t.message}`)).toEqual(["error:Nope"]);
     expect(text("items: ")).toBe("0");
@@ -525,17 +533,17 @@ describe("Queue", () => {
 
   test("progressFeedback shows as a toast while processing; resultFeedback replaces it at the end", async () => {
     show(`<App>
-      <Queue id="jobs" onProcess="p => delay(20)">
+      <Queue id="jobs" onProcess="p => delay(400)">
         <property name="progressFeedback"><Text>Progress {$completedItems.length}/{$queuedItems.length}</Text></property>
         <property name="resultFeedback"><Text>Finished {$completedItems.length}</Text></property>
       </Queue>
       <Button label="Add" onClick="jobs.enqueueItems(['a', 'b'])"/>
     </App>`);
     await click("Add");
-    await settle(5);
-    expect(toasts.get().map((t) => t.kind)).toEqual(["loading"]);
+    // While the first item is held for 400 ms: the progress toast.
+    await eventually(() => expect(toasts.get().map((t) => t.kind)).toEqual(["loading"]), 300);
     expect(toasts.get()[0]!.content).toBeTypeOf("function");
-    await settle(80);
+    await eventually(() => expect(toasts.get().map((t) => t.kind)).toEqual(["success"]));
     const list = toasts.get();
     expect(list.map((t) => t.kind)).toEqual(["success"]);
     const shown = render(<>{list[0]!.content!() as never}</>);

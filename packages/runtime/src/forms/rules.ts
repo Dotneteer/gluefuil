@@ -50,7 +50,11 @@ export function isEmptyValue(value: unknown): boolean {
   if (typeof value === "boolean") return !value;
   if (typeof value === "number") return false;
   if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === "object") return Object.keys(value).length === 0;
+  // Step 32B: only a plain object is empty without keys; a File (or another platform value) is a value.
+  if (typeof value === "object") {
+    const proto = Object.getPrototypeOf(value);
+    return (proto === Object.prototype || proto === null) && Object.keys(value).length === 0;
+  }
   return false;
 }
 

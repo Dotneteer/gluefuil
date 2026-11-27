@@ -25,6 +25,12 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     const other = b as unknown[];
     return a.length === other.length && a.every((value, i) => deepEqual(value, other[i]));
   }
+  // Step 32B: only plain objects compare by their keys; a File (or another platform value) by identity.
+  const plain = (value: object) => {
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+  };
+  if (!plain(a) || !plain(b)) return false;
   const ka = Object.keys(a);
   const kb = Object.keys(b);
   return ka.length === kb.length && ka.every((key) => Object.hasOwn(b, key) && deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));

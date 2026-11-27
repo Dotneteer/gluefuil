@@ -168,6 +168,9 @@ export {
   type DataErrorCategory,
 } from "./data/errors";
 export { buildUrl, parseRetryAfter, RequestCancelledError, sendRequest, type HttpResult, type RequestSpec } from "./data/http";
+export { Actions, download, downloadName, downloadSpec, saveBlob, upload, uploadSpec, type TransferOptions } from "./data/transfer";
+export { actionHandler, type ActionComponent, type ActionInput } from "./render/actions";
+export { appendField, containsBinary, encodeBody, PAYLOAD_TYPES, type EncodedBody, type PayloadType } from "./data/body";
 export { MAX_BACKOFF_MS, MAX_RETRY_AFTER_MS, retryDelay, runWithRetry, shouldRetry, type RetryOptions } from "./data/retry";
 export { invalidate, pathMatches, queryClient, queryKey, resetDataState, setDataDefaults, type DataDefaults } from "./data/client";
 export { Loader, type LoaderEvents, type LoaderOptions, type LoaderState } from "./data/loader";

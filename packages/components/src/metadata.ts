@@ -96,6 +96,12 @@ export interface ComponentMetadata {
   /** Step 32: the component receives its literal `id` as `$$id` (Bookmark: the anchor's DOM id). */
   receivesId?: boolean;
   /**
+   * Step 32B: the component can be an `<event>`'s content (`<event name="click"><APICall …/></event>`):
+   * the event runs it (its static `runAction`) with every prop deferred (`$param`, `$params`).
+   * `"only"`: it can't be anywhere else (FileUpload, FileDownload: E037).
+   */
+  action?: true | "only";
+  /**
    * The component is another one with fixed props (`HStack` is `Stack`
    * with `orientation="horizontal"`). The compiler renders `component`;
    * markup values win over `props`.
@@ -752,6 +758,7 @@ const DISPLAY_COMPONENTS: Record<string, ComponentMetadata> = {
     description: "A picture from a URL.",
     props: {
       src: { description: "The image's URL. Without one, nothing is shown.", valueType: "string" },
+      data: { description: "Step 32B: the image as a File or Blob (a pasted or picked file), shown when there is no `src`. Not prerendered.", valueType: "any" },
       alt: { description: "The alternative text, for screen readers and when the image can't load.", valueType: "string" },
       fit: { description: "contain (default: the whole image fits) or cover (it fills the box, cropped).", valueType: "string", availableValues: ["contain", "cover"] },
       aspectRatio: { description: "A width/height ratio: 1.5 or 16/9.", valueType: "string" },
@@ -1473,6 +1480,109 @@ function stackAlias(orientation: "vertical" | "horizontal", centered: boolean): 
 }
 
 
+const TRANSFER_PROPS: Record<string, PropMetadata> = {
+  url: { description: "The URL; may use $param (the event's argument).", valueType: "string", isRequired: true },
+  method: { description: "The HTTP method.", valueType: "string", availableValues: ["get", "post", "put", "patch", "delete", "GET", "POST", "PUT", "PATCH", "DELETE"] },
+  queryParams: { description: "Added to the URL.", valueType: "any" },
+  headers: { description: "Request headers.", valueType: "any" },
+  body: { description: "A request body.", valueType: "any" },
+  payloadType: { description: "json, form or multipart-form (default: multipart when the body has a file).", valueType: "string", availableValues: ["json", "form", "multipart-form"] },
+  timeoutMs: { description: "Per attempt, in ms. Default 30000.", valueType: "integer" },
+};
+
+const TRANSFER_EVENTS: Record<string, EventMetadata> = {
+  success: { description: "It succeeded: (result)." },
+  error: { description: "It failed: (error). With a handler, the event's handler doesn't fail." },
+  cancel: { description: "The calling handler was cancelled: (reason)." },
+};
+
+/** Step 32B: files and uploads (.ai/plan/poc-32b-files.md). */
+const FILE_COMPONENTS: Record<string, ComponentMetadata> = {
+  FileInput: {
+    description: "Picks files (a browse button, or files dropped on it): its value is File[]; with parseAs, { files, parsedData }. Binds to a Form with bindTo.",
+    props: {
+      initialValue: { description: "The files when it mounts.", valueType: "any" },
+      acceptsFileType: { description: "Accepted types: extensions (.pdf) and MIME types (image/*), as an array or comma-separated.", valueType: "any" },
+      multiple: { description: "Several files.", valueType: "boolean" },
+      directory: { description: "Picks a folder (its files).", valueType: "boolean" },
+      placeholder: { description: "Shown while no file is picked.", valueType: "string" },
+      required: { description: "In a Form: a file must be picked.", valueType: "boolean" },
+      parseAs: { description: "csv or json: the files are parsed; the value and didChange get { files, parsedData: [{ file, data, error }] }.", valueType: "string", availableValues: ["csv", "json"] },
+      csvOptions: { description: "papaparse's config for parseAs=\"csv\" (default { header: true, skipEmptyLines: true }).", valueType: "any" },
+      buttonLabel: { description: 'The button\'s text (default "Browse").', valueType: "string" },
+      buttonIcon: { description: "An icon in the button.", valueType: "string", knownValues: ICON_NAMES },
+      buttonIconPosition: { description: "start (default) or end.", valueType: "string", availableValues: ["start", "end"] },
+      buttonPosition: { description: "The button after (end, default) or before (start) the names.", valueType: "string", availableValues: ["start", "end"] },
+      buttonSize: { description: "XMLUI's button size; not used yet.", valueType: "string" },
+      buttonThemeColor: { description: "XMLUI's button color; not used yet.", valueType: "string" },
+      buttonVariant: { description: "XMLUI's button variant; not used yet.", valueType: "string" },
+      ...INPUT_COMMON,
+    },
+    events: {
+      didChange: { description: "Files were picked or dropped: (files), or with parseAs ({ files, parsedData })." },
+      parseError: { description: "A file couldn't be parsed: (error, file)." },
+      ...FOCUS_EVENTS,
+    },
+    api: {
+      value: { description: "The files (reactive)." },
+      setValue: { description: "Replaces the files (no didChange)." },
+      focus: { description: "Moves the keyboard focus to it." },
+      open: { description: "Opens the file dialog." },
+      inProgress: { description: "Files are being parsed (parseAs)." },
+      getFields: { description: "The header fields of the last parsed CSV." },
+    },
+    themeVars: textInputTheme("FileInput"),
+  },
+  FileUploadDropZone: {
+    description: "Files dropped on its children (or pasted into it with allowPaste) fire upload(files); it doesn't upload.",
+    props: {
+      acceptedFileTypes: { description: "Accepted MIME types (and extensions), comma-separated: image/*,application/pdf.", valueType: "string" },
+      maxFiles: { description: "At most this many files at once (more: nothing happens).", valueType: "integer" },
+      allowPaste: { description: "Files pasted into it count too (not when pasting into a text input inside it).", valueType: "boolean" },
+      enabled: { description: "false: no drops.", valueType: "boolean" },
+      icon: { description: 'The icon without children and while dragging (default "upload").', valueType: "string", knownValues: ICON_NAMES },
+      text: { description: 'The text without children and while dragging (default "Drop files here").', valueType: "string" },
+    },
+    events: { upload: { description: "Files were dropped or pasted: (files)." } },
+    api: { open: { description: "Opens the file dialog." } },
+    themeVars: {
+      "backgroundColor-FileUploadDropZone": "$backgroundColor",
+      "backgroundColor-dropping-FileUploadDropZone": "$color-primary-100",
+      "borderColor-FileUploadDropZone": "$color-secondary-200",
+      "borderRadius-FileUploadDropZone": "$borderRadius",
+      "borderStyle-FileUploadDropZone": "dashed",
+      "borderWidth-FileUploadDropZone": "2px",
+      "opacity-dropping-FileUploadDropZone": "0.3",
+      "textColor-dropping-FileUploadDropZone": "$color-primary-700",
+      "textColor-FileUploadDropZone": "$textColor-secondary",
+    },
+  },
+  FileUpload: {
+    description: "An action inside <event>: sends `file` (the body, or with asForm a form field); `$param` is the event's argument.",
+    props: {
+      ...TRANSFER_PROPS,
+      file: { description: "The File or Blob: file=\"{$param[0]}\" in an upload event.", valueType: "any" },
+      asForm: { description: "Sends multipart/form-data with the file under fieldName and formParams.", valueType: "boolean" },
+      fieldName: { description: 'The file\'s form field (default "file").', valueType: "string" },
+      formParams: { description: "More form fields with asForm.", valueType: "any" },
+      invalidates: { description: "URL paths whose DataSources refetch after success. Default: every DataSource.", valueType: "any" },
+    },
+    events: TRANSFER_EVENTS,
+    action: "only",
+    nonVisual: true,
+  },
+  FileDownload: {
+    description: "An action inside <event>: fetches `url` and saves the response as a file.",
+    props: {
+      ...TRANSFER_PROPS,
+      fileName: { description: "The name to save it under (default: the response's Content-Disposition, else the URL's last part).", valueType: "string" },
+    },
+    events: TRANSFER_EVENTS,
+    action: "only",
+    nonVisual: true,
+  },
+};
+
 /** Step 32: the remaining components (.ai/plan/poc-32-remaining.md). */
 const STEP32_COMPONENTS: Record<string, ComponentMetadata> = {
   QRCode: {
@@ -1978,7 +2088,13 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       method: { description: "The HTTP method (default get, as in XMLUI).", valueType: "string", deferred: ["$param", "$params"] },
       queryParams: { description: "Added to the URL; may use $param.", valueType: "any", deferred: ["$param", "$params"] },
       headers: { description: "Request headers; may use $param.", valueType: "any", deferred: ["$param", "$params"] },
-      body: { description: "The request body (an object is sent as JSON); may use $param.", valueType: "any", deferred: ["$param", "$params"] },
+      body: { description: "The request body: an object is sent as JSON, as multipart/form-data when it has a File or Blob; may use $param.", valueType: "any", deferred: ["$param", "$params"] },
+      payloadType: {
+        description: "How the body is sent: json, form (URL-encoded) or multipart-form. Default: json, multipart-form when the body has a file.",
+        valueType: "string",
+        availableValues: ["json", "form", "multipart-form"],
+        deferred: ["$param", "$params"],
+      },
       invalidates: {
         description: "URL paths whose DataSources refetch after success (and those below them). Default: every DataSource.",
         valueType: "any",
@@ -2017,7 +2133,9 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
     },
     nonVisual: true,
     eventResults: true,
+    action: true,
   },
+  ...FILE_COMPONENTS,
   Items: {
     description: "Renders `data` through its item template, without a wrapper element. An instance stays with its item (keyed by $id, id or key).",
     props: {

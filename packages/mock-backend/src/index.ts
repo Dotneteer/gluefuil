@@ -39,7 +39,10 @@ export interface RouteContext {
   params: Record<string, string>;
   /** Query parameters; a repeated key becomes an array. */
   query: Record<string, string | string[]>;
-  /** The parsed body: JSON, else text; undefined when empty. */
+  /**
+   * The parsed body: JSON, else text; a form (multipart or URL-encoded) as an
+   * object with File values (step 32B); a binary body as a Blob; undefined when empty.
+   */
   body: Json;
   db: Db;
 }
@@ -133,6 +136,19 @@ export function status(code: number, body?: Json, headers?: Record<string, strin
   return { [RESPONSE]: true, status: code, body, headers };
 }
 export const created = (body: Json, headers?: Record<string, string>) => status(201, body, headers);
+
+/** A part of a file's content (BlobPart, without the DOM library's type). */
+export type FilePart = string | ArrayBuffer | ArrayBufferView | Blob;
+
+/**
+ * Step 32B: answer with a file to download: its content, its type and, with
+ * `name`, a Content-Disposition attachment.
+ */
+export function file(content: FilePart | FilePart[], options: { type?: string; name?: string; status?: number } = {}): Response {
+  const headers: Record<string, string> = { "content-type": options.type ?? "application/octet-stream" };
+  if (options.name) headers["content-disposition"] = `attachment; filename="${options.name.replace(/"/g, "")}"; filename*=UTF-8''${encodeURIComponent(options.name)}`;
+  return new Response(new Blob((Array.isArray(content) ? content : [content]) as ConstructorParameters<typeof Blob>[0]), { status: options.status ?? 200, headers });
+}
 export const noContent = () => status(204);
 export const notFound = (message = "Not found") => status(404, { message });
 
@@ -252,7 +268,47 @@ function forever(signal: AbortSignal): Promise<never> {
   });
 }
 
+/**
+ * Step 32B: a form body as an object: a field once is its value, a repeated
+ * one an array; files stay `File` objects (the route sees what was uploaded).
+ */
+function formObject(data: FormData | URLSearchParams): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of data as Iterable<[string, unknown]>) {
+    const existing = result[key];
+    result[key] = existing === undefined ? value : Array.isArray(existing) ? [...existing, value] : [existing, value];
+  }
+  return result;
+}
+
+function isBlobLike(value: unknown): value is Blob {
+  return typeof value === "object" && value !== null && typeof (value as Blob).arrayBuffer === "function" && typeof (value as Blob).size === "number" && typeof (value as Blob).type === "string";
+}
+
+/** What the request log keeps of a body: a file as `{ name, size, type }` (step 32B). */
+function logView(body: Json): Json {
+  // Blob-like, not `instanceof Blob`: the request's parser and the page may have different Blob classes (jsdom).
+  if (isBlobLike(body)) return { file: true, name: (body as Partial<File>).name ?? "", size: body.size, type: body.type };
+  if (Array.isArray(body)) return body.map(logView);
+  if (body !== null && typeof body === "object") return Object.fromEntries(Object.entries(body).map(([k, v]) => [k, logView(v)]));
+  return body;
+}
+
 async function readBody(request: Request): Promise<Json> {
+  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  if (type.startsWith("multipart/form-data")) {
+    try {
+      return formObject(await request.formData());
+    } catch {
+      return undefined;
+    }
+  }
+  if (type.startsWith("application/x-www-form-urlencoded")) return formObject(new URLSearchParams(await request.text()));
+  // A binary body (an upload of the file itself): the route sees a File-like Blob.
+  if (type !== "" && !type.includes("json") && !type.startsWith("text/")) {
+    const blob = await request.blob();
+    return blob.size === 0 ? undefined : blob;
+  }
   const text = await request.text();
   if (text === "") return undefined;
   if ((request.headers.get("content-type") ?? "").includes("json")) {
@@ -386,7 +442,7 @@ export function defineBackend(definition: BackendDefinition): Backend {
   const serve = async (request: Request, url: URL): Promise<Response> => {
     const method = request.method.toUpperCase();
     const body = await readBody(request);
-    const entry: RequestLogEntry = { id: nextRequest++, method, url: url.pathname + url.search, body, start: Date.now(), outcome: "ok" };
+    const entry: RequestLogEntry = { id: nextRequest++, method, url: url.pathname + url.search, body: logView(body), start: Date.now(), outcome: "ok" };
     entries.push(entry);
     const signal = request.signal;
     try {

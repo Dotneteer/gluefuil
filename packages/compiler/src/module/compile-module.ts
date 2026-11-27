@@ -138,6 +138,8 @@ const RUNTIME_IMPORTS: [string, string][] = [
   ["optionItems", "$$optionItems"],
   ["OptionContent", "$$OptionContent"],
   ["usePerChildScope", "$$usePerChildScope"],
+  // Step 32B: action elements inside <event>.
+  ["actionHandler", "$$action"],
 ];
 
 /** Attribute forms that later steps implement; reported instead of ignored. */
@@ -870,6 +872,11 @@ class ModuleCompiler {
       this.reportContract(node.name, "E032", name, removed);
       return "null";
     }
+    // Step 32B: an action-only component (FileUpload) belongs inside <event>.
+    if (this.metadataOf(name)?.action === "only") {
+      this.report(node.name, "E037", name, "an <event> block (it runs when the event fires)");
+      return "null";
+    }
     // Step 32: a deprecated component (ToneChangerButton) is a warning.
     const deprecated = this.metadataOf(name)?.deprecationMessage;
     if (deprecated !== undefined) this.reportDeprecated(node.name, `'${name}'`, deprecated);
@@ -1590,6 +1597,69 @@ class ModuleCompiler {
     return result.code;
   }
 
+  /**
+   * Step 32B: an action element as an `<event>`'s content. Every prop is deferred
+   * (it sees `$param`/`$params`, the event's arguments, when the event fires);
+   * `on*` attributes and `<event>` children are the action's own handlers.
+   * Compiles to `($$s) => $$action(Component, props, handlers, $$s)`.
+   */
+  private actionHandler(node: ElementNode): string {
+    const name = node.name.full;
+    const metadata = this.metadataOf(name)!;
+    this.usedComponents.add(name);
+    const props: [string, string][] = [];
+    const handlers: [string, string][] = [];
+    // The action's own handlers see the event's arguments too (`$param`, `$params`; a statement
+    // handler's own arguments shadow them). The runtime puts them in the scope of each run.
+    this.contextFrames.push(new Set(["$param", "$params"]));
+    try {
+    for (const attribute of node.attributes) {
+      const attributeName = attribute.name.full;
+      if (attributeName === "id" || attributeName.startsWith("when") || attributeName.startsWith("var.") || attributeName.startsWith("global.") || attribute.name.prefix !== undefined) {
+        this.report(attribute.name, "E002", `'${attributeName}' on an action inside <event>`);
+        continue;
+      }
+      if (/^on[A-Z]/.test(attributeName)) {
+        const event = attributeName[2]!.toLowerCase() + attributeName.slice(3);
+        if (!this.checkEvent(metadata, name, event, attribute.name) || !attribute.value) continue;
+        const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
+        handlers.push([attributeName, this.handler(decoded.value, { offsets: decoded.offsets }, metadata.events?.[event])]);
+        continue;
+      }
+      const prop = metadata.props[attributeName];
+      if (!prop) {
+        this.reportContract(attribute.name, "E020", attributeName, name, didYouMean(attributeName, Object.keys(metadata.props)));
+        continue;
+      }
+      if (!attribute.value) {
+        props.push([attributeName, '"true"']);
+        continue;
+      }
+      const value = this.propValue(attribute as ValuedAttribute, { ...prop, deferred: [...new Set([...(prop.deferred ?? []), "$param", "$params"])] });
+      if ("constant" in value) {
+        this.checkPropLiteral(prop, attributeName, JSON.parse(value.constant) as string, attribute.value);
+        props.push([attributeName, value.constant]);
+      } else props.push([attributeName, `$$deferred($$s, ${this.hoistRaw("$$d", value.binding)})`]);
+    }
+    for (const child of node.children) {
+      if (child.kind === "element" && child.name.full === "event") {
+        const handler = this.eventTag(child, metadata, name);
+        if (handler) handlers.push(handler);
+      } else if (child.kind === "element" || (child.kind === "text" && child.value.trim() !== "")) {
+        this.report(child.kind === "element" ? child.name : child, "E002", `Content inside an action in <event>`);
+      }
+    }
+    } finally {
+      this.contextFrames.pop();
+    }
+    for (const [propName, prop] of Object.entries(metadata.props)) {
+      if (prop.isRequired && !node.attributes.some((a) => a.name.full === propName)) this.reportContract(node.name, "E021", propName, name);
+    }
+    const propsCode = `{ ${props.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }`;
+    const handlersCode = handlers.length > 0 ? this.hoist("$$e", handlers) : this.empty();
+    return `($$s) => $$action($$C_${name}, ${propsCode}, ${handlersCode}, $$s)`;
+  }
+
   /** `<event name="click">statements</event>`; returns `[prop, factory]`. */
   private eventTag(tag: ElementNode, metadata: ComponentMetadata, component: string): [string, string] | undefined {
     const nameAttribute = tag.attributes.find((a) => a.name.full === "name");
@@ -1618,6 +1688,11 @@ class ModuleCompiler {
   /** The handler in a code tag's content (`<event>`, `<method>`): text or CDATA, not whitespace-collapsed. */
   private tagHandler(tag: ElementNode, event?: EventMetadata): string | undefined {
     const content = tag.children.filter((c) => c.kind !== "comment" && !(c.kind === "text" && c.value.trim() === ""));
+    // Step 32B: one action element (APICall, FileUpload, FileDownload) is the handler.
+    if (content.length === 1 && content[0]!.kind === "element") {
+      const element = content[0] as ElementNode;
+      if (element.name.prefix === undefined && this.metadataOf(element.name.full)?.action !== undefined) return this.actionHandler(element);
+    }
     if (content.length > 1 || content.some((c) => c.kind === "element" || c.kind === "script")) {
       this.report(tag.name, "E002", `Components inside <${tag.name.full}>`);
       return undefined;

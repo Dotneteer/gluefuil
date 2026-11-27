@@ -229,4 +229,4 @@ export const RESERVED_PREFIX = "$$";
  * (runtime src/render/app-global-names.ts); tools/sandbox-drift.test.ts
  * keeps them in sync.
  */
-export const APP_GLOBALS: readonly string[] = ["delay", "activeThemeId", "activeThemeTone", "setTheme", "setThemeTone", "toggleThemeTone", "navigate", "$pathname", "$queryParams", "$routeParams", "navPanelCollapsed", "setNavPanelCollapsed", "navDrawerOpen", "setNavDrawerOpen", "toast", "confirm"];
+export const APP_GLOBALS: readonly string[] = ["delay", "activeThemeId", "activeThemeTone", "setTheme", "setThemeTone", "toggleThemeTone", "navigate", "$pathname", "$queryParams", "$routeParams", "navPanelCollapsed", "setNavPanelCollapsed", "navDrawerOpen", "setNavDrawerOpen", "toast", "confirm", "Actions"];

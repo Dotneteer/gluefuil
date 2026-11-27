@@ -8,7 +8,7 @@ import { BREAKPOINTS } from "@gluefuil/runtime";
 export const BASE_STYLESHEET_HREF = "gfui-base";
 
 /** The text inputs: each has TextBox's five theme variables, with its own name (step 24). */
-const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker", "Select", "AutoComplete", "DateInput", "TimeInput", "DatePicker"];
+const TEXT_INPUTS = ["TextBox", "PasswordInput", "TextArea", "NumberBox", "ColorPicker", "Select", "AutoComplete", "DateInput", "TimeInput", "DatePicker", "FileInput"];
 
 /** Below md: a phone. The spacing ladder's page level steps down, and flows go one item per row. */
 const PHONE_MAX = BREAKPOINTS.find(([name]) => name === "md")![1] - 0.02;
@@ -1221,6 +1221,56 @@ ${[2, 3, 4, 5, 6]
 .gfui-ToneChangerButton:hover { background: var(--gfui-color-surface-100); }
 `;
 
+/* Step 32B: FileInput and FileUploadDropZone. */
+const FILES = `
+.gfui-FileInput { display: flex; align-items: flex-end; gap: var(--gfui-space-2); min-width: 0; }
+.gfui-FileInput:focus { outline: none; }
+.gfui-FileInput-text { flex: 1 1 auto; min-width: 0; }
+.gfui-FileInput-text .mantine-Input-input { text-overflow: ellipsis; }
+.gfui-FileInput-button { flex: 0 0 auto; }
+.gfui-FileUploadDropZone {
+  position: relative;
+  box-sizing: border-box;
+  min-height: calc(var(--gfui-space-4) * 4);
+  background: var(--gfui-backgroundColor-FileUploadDropZone);
+  color: var(--gfui-textColor-FileUploadDropZone);
+  border: var(--gfui-borderWidth-FileUploadDropZone) var(--gfui-borderStyle-FileUploadDropZone) var(--gfui-borderColor-FileUploadDropZone);
+  border-radius: var(--gfui-borderRadius-FileUploadDropZone);
+}
+.gfui-FileUploadDropZone:focus-visible { outline: 2px solid var(--gfui-color-primary-500); outline-offset: 2px; }
+.gfui-FileUploadDropZone-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gfui-space-2);
+  height: 100%;
+  min-height: inherit;
+  padding: var(--gfui-space-4);
+  box-sizing: border-box;
+  text-align: center;
+}
+.gfui-FileUploadDropZone-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gfui-textColor-dropping-FileUploadDropZone);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.gfui-FileUploadDropZone-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--gfui-backgroundColor-dropping-FileUploadDropZone);
+  opacity: var(--gfui-opacity-dropping-FileUploadDropZone);
+}
+.gfui-FileUploadDropZone-overlay > * { position: relative; }
+`;
+
 export const BASE_STYLESHEET = `
 ${SHELL}
 ${SHELL_DRAWER}
@@ -1236,6 +1286,7 @@ ${TILEGRID}
 ${VALUE}
 ${PAGINATION}
 ${REMAINING}
+${FILES}
 .gfui-App,
 .gfui-Theme {
   /* Mantine's global variables, redirected to the gfui theme. */
