@@ -1,0 +1,72 @@
+<!-- Step 32B: FileInput in a Form sent as multipart; parseAs csv and json; FileUploadDropZone with paste and an inline FileUpload; Image data; an upload you can cancel; a download. -->
+<Component name="FilesScenario">
+  <VStack
+    var.ticket=""
+    var.rows="{[]}"
+    var.parseLog=""
+    var.images="{[]}"
+    var.dropLog=""
+    var.receipt=""
+    var.downloads="{0}">
+    <ScenarioHeader title="Files and uploads" description="Files reach script as File objects. A form with an attachment is sent as multipart/form-data; a CSV or JSON file is parsed; files dropped or pasted on the zone are shown and uploaded; an upload can be cancelled; a download is saved under its name."/>
+
+    <Card title="A form with an attachment">
+      <Form submitUrl="/api/tickets" onSuccess="r => ticket = r.contentType + ': ' + JSON.stringify(r.received)">
+        <TextBox label="Subject" bindTo="subject" initialValue="The printer is on fire"/>
+        <FileInput label="Attachments" bindTo="attachments" multiple="true" required="true" acceptsFileType="{['.txt', '.pdf', 'image/*']}" placeholder="Pick or drop .txt, .pdf or images"/>
+      </Form>
+      <Text>Server received: {ticket}</Text>
+    </Card>
+
+    <Card title="Parse a CSV or JSON file">
+      <HStack wrapContent="true">
+        <FileInput id="csvInput" label="CSV" parseAs="csv" csvOptions="{{ dynamicTyping: true }}" width="*"
+          onDidChange="r => { rows = r.parsedData[0]?.data ?? []; parseLog = 'csv: ' + rows.length + ' rows' }"
+          onParseError="(e, f) => parseLog = 'error in ' + f.name + ': ' + e.message"/>
+        <FileInput label="JSON" parseAs="json" width="*"
+          onDidChange="r => { rows = r.parsedData[0]?.data ?? []; parseLog = 'json: ' + rows.length + ' rows' }"
+          onParseError="(e, f) => parseLog = 'error in ' + f.name + ': ' + e.message"/>
+      </HStack>
+      <Text>Parsed: {parseLog} {csvInput.getFields() ? '(fields: ' + csvInput.getFields().join(', ') + ')' : ''}</Text>
+      <Table data="{rows}" height="160px"/>
+    </Card>
+
+    <Card title="Drop or paste">
+      <FileUploadDropZone allowPaste="true" acceptedFileTypes="image/*" maxFiles="3" text="Drop up to 3 images here, or click and paste one">
+        <event name="upload">
+          <FileUpload url="/api/tickets" file="{$param[0]}" asForm="true" fieldName="image" onSuccess="r => { images = [...images, ...$param]; dropLog = 'uploaded ' + r.received.image.name }"/>
+        </event>
+        <VStack minHeight="100px">
+          <Text variant="secondary">Drop images here (rejected: other types, more than 3). Click here, then paste a screenshot.</Text>
+          <HStack wrapContent="true">
+            <Items data="{images}">
+              <VStack width="120px">
+                <Image data="{$item}" alt="{$item.name}" height="80px" fit="cover"/>
+                <Text variant="small">{$item.name} · {Math.round($item.size / 1024)} KB</Text>
+              </VStack>
+            </Items>
+          </HStack>
+        </VStack>
+      </FileUploadDropZone>
+      <Text>Drop: {dropLog}</Text>
+    </Card>
+
+    <Card title="Upload and download">
+      <APICall id="upload" method="post" url="/api/receipts" body="{{ receipt: receiptInput.value?.[0], note: 'expense' }}"
+        onSuccess="r => receipt = 'received ' + r.received.receipt.name + ' (' + r.received.receipt.size + ' bytes)'"
+        onCancel="reason => receipt = 'cancelled (' + reason + ')'"/>
+      <FileInput id="receiptInput" label="Receipt"/>
+      <HStack wrapContent="true">
+        <Button label="Upload (1.5 s)" enabled="{receiptInput.value?.length > 0 &amp;&amp; !upload.inProgress}" onClick="receipt = 'uploading…'; upload.execute()"/>
+        <Button label="Cancel upload" enabled="{upload.inProgress}" onClick="upload.cancel()"/>
+        <Button label="Download people.csv">
+          <event name="click">
+            <FileDownload url="/api/files/people.csv" onSuccess="downloads++"/>
+          </event>
+        </Button>
+      </HStack>
+      <Text>Receipt: {receipt}</Text>
+      <Text>Downloads: {downloads}</Text>
+    </Card>
+  </VStack>
+</Component>

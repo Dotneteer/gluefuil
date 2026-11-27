@@ -39,7 +39,7 @@ describe("a production build (no source maps)", () => {
     output = await buildHello(false);
   }, 60_000);
 
-  test("is one entry chunk with the app's compiled markup, the runtime and the components, plus lazy chunks: Markdown's renderer, the date inputs", () => {
+  test("is one entry chunk with the app's compiled markup, the runtime and the components, plus lazy chunks: Markdown's renderer, the date inputs, the CSV parser", () => {
     const entries = chunks(output).filter((chunk) => chunk.isEntry);
     expect(entries).toHaveLength(1);
     const ids = relativeIds(entries[0]!);
@@ -54,14 +54,17 @@ describe("a production build (no source maps)", () => {
     // statically: eager. The bundler's small runtime (rolldown-runtime) is a chunk of its own too.
     const eager = new Set(entries[0]!.imports);
     const lazy = chunks(output).filter((chunk) => !chunk.isEntry && !eager.has(chunk.fileName) && chunk.moduleIds.some((id) => !id.includes("rolldown")));
-    expect(lazy).toHaveLength(2);
-    expect(lazy.map((chunk) => ["markdown-render.tsx", "dates-native.tsx"].find((file) => relativeIds(chunk).includes(`packages/components/src/${file}`))).sort()).toEqual([
+    // Step 32B: FileInput parseAs="csv"'s papaparse.
+    expect(lazy).toHaveLength(3);
+    expect(lazy.map((chunk) => ["markdown-render.tsx", "dates-native.tsx", "files-parse.ts"].find((file) => relativeIds(chunk).includes(`packages/components/src/${file}`))).sort()).toEqual([
       "dates-native.tsx",
+      "files-parse.ts",
       "markdown-render.tsx",
     ]);
     const eagerIds = chunks(output).filter((chunk) => chunk.isEntry || eager.has(chunk.fileName)).flatMap(relativeIds);
     // Only their stylesheet is eager (MANTINE_STYLESHEET: the prerender inlines it).
     expect(eagerIds.filter((id) => (id.includes("@mantine/dates") || id.includes("dayjs")) && !id.includes(".css"))).toEqual([]);
+    expect(eagerIds.filter((id) => id.includes("papaparse"))).toEqual([]);
   });
 
   test("contains no compiler module", () => {

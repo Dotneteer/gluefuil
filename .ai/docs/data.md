@@ -56,7 +56,7 @@
 
 | Topic | What happens |
 |-------|--------------|
-| **The request** | The URL is resolved against the page. `queryParams` arrays repeat the key; null and undefined are left out. An object `body` is JSON (with its content type); a string is sent as it is; a GET has no body. |
+| **The request** | The URL is resolved against the page. `queryParams` arrays repeat the key; null and undefined are left out. An object `body` is JSON (with its content type), or multipart/form-data when it has a File or Blob (step 32B; `payloadType` chooses json, form or multipart-form: [files.md](files.md#request-bodies-runtimesrcdatabodyts)); a string, a Blob or a FormData is sent as it is; a GET has no body. `responseType: "blob"` reads the response as a Blob (downloads). |
 | **The response** | JSON by content type, else text; 204 is `undefined`; an HTML page where data was expected, or invalid JSON, is a `parse` error. |
 | **Errors** | One plain, frozen object (body included): `{ message, category, code, status, statusText, retryable, body, method, url, attempts, retryAfterMs }`. The categories are XMLUI's (validation 400/422, authorization 401/403, not-found, conflict, rate-limit 429, server 5xx, network, internal) plus `parse` and `timeout`. `message` is the body's `message` when it has one. |
 | **Retry** | Only `retryable` errors: network, timeout, rate-limit, server. Backoff is `retryDelay × 2^(n−1)`, capped at 30 s, ±25% jitter. `Retry-After` (seconds or a date) wins, capped at 60 s. A cancel during the wait ends it. |
@@ -73,6 +73,7 @@
 | **APICall errors** | With `onError` (or `errorNotificationMessage`, step 27): it is called, and `execute()` resolves `undefined`. Without them, `execute()` rejects, the handler stops, and the error is reported once. |
 | **APICall confirmation and notifications (step 27)** | `confirmTitle`/`confirmMessage` (with `confirmButtonLabel`) ask with `confirm()` before `beforeRequest`; "Cancel" skips the call (`execute()` resolves `undefined`). `inProgressNotificationMessage` shows a loading toast once the request starts; `completedNotificationMessage` (`$result`) and `errorNotificationMessage` (`$error`) replace it; without them it goes. All are `deferred` props with `$param`/`$params`. The calling handler is read before the confirmation's `await` and passed to `ApiCaller.execute` (its `invocation` parameter), so its cancellation still aborts the request. |
 | **Invalidation** | After success: the queries whose path is an `invalidates` path, or lies below it. Without `invalidates`, every query (XMLUI). Active ones refetch. |
+| **APICall inside `<event>` (step 32B)** | `<event name="click"><APICall …/></event>`: one call per event, its props evaluated with the event's arguments as `$param`/`$params`, a new `ApiCaller` each time (no `id`, no API). FileUpload and FileDownload work the same way, and `Actions.upload()`/`Actions.download()` from script ([files.md](files.md)). |
 | **Server render** | No fetch. The component API is published in an effect, so `users.inProgress` is undefined on the server and in the first client render, and the takeover is clean. Loading shows after it. |
 
 ## Who does what

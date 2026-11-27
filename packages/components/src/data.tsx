@@ -4,6 +4,10 @@
 // the events. Neither renders anything.
 import {
   ApiCaller,
+  download,
+  upload,
+  type ActionInput,
+  type TransferOptions,
   confirm,
   currentInvocation,
   toast,
@@ -168,6 +172,7 @@ export interface APICallProps {
   queryParams?: unknown;
   headers?: unknown;
   body?: unknown;
+  payloadType?: unknown;
   invalidates?: unknown;
   retries?: unknown;
   retryDelay?: unknown;
@@ -185,7 +190,97 @@ export interface APICallProps {
   registerApi?: RegisterApi;
 }
 
+/** Props of an action element inside <event> resolved with the event's arguments (`$param`, `$params`). */
+function resolveAll(props: Readonly<Record<string, unknown>>, params: readonly unknown[], keep: ReadonlySet<string> = new Set()) {
+  const context = { $param: params[0], $params: [...params] };
+  const result: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(props)) result[name] = keep.has(name) ? value : resolveDeferred(value, context);
+  return result;
+}
+
+/** APICall's props it resolves itself, with more context ($result, $error). */
+const API_CALL_DEFERRED = new Set(["url", "method", "queryParams", "headers", "body", "payloadType", "invalidates", "confirmTitle", "confirmMessage", "confirmButtonLabel", "inProgressNotificationMessage", "completedNotificationMessage", "errorNotificationMessage"]);
+
 const messageText = (value: unknown): string | undefined => (value === undefined || value === null || value === "" ? undefined : String(value));
+
+/**
+ * One APICall execution (the component's `execute()`, and an APICall inside an
+ * <event>, step 32B): confirmation, notifications, the request through `caller`.
+ * The calling handler is read before the first await (its cancellation aborts the request).
+ */
+async function runApiCall(caller: ApiCaller, p: APICallProps, params: unknown[]): Promise<unknown> {
+  const invocation = currentInvocation();
+
+  const context = (args: readonly unknown[]) => ({ $param: args[0], $params: [...args] });
+  const base = context(params);
+  // Step 27: confirmTitle/confirmMessage ask first (confirm()); a "no" skips the call.
+  const confirmTitle = messageText(resolveDeferred(p.confirmTitle, base));
+  const confirmMessage = messageText(resolveDeferred(p.confirmMessage, base));
+  if (confirmTitle !== undefined || confirmMessage !== undefined) {
+    const ok = await confirm({ title: confirmTitle, message: confirmMessage, actionLabel: messageText(resolveDeferred(p.confirmButtonLabel, base)) });
+    if (!ok) return undefined;
+  }
+  // The notification messages: a loading toast while the request runs, replaced by the outcome's.
+  let toastId: string | undefined;
+  const settle = (kind: "success" | "error", message: string | undefined) => {
+    if (message !== undefined) toast[kind](message, toastId === undefined ? undefined : { id: toastId });
+    else if (toastId !== undefined) toast.remove(toastId);
+    toastId = undefined;
+  };
+  const errorMessage = (error: DataError) => messageText(resolveDeferred(p.errorNotificationMessage, { ...base, $error: error }));
+  const spec = (args: readonly unknown[]): RequestSpec => {
+    const ctx = context(args);
+    const progress = messageText(resolveDeferred(p.inProgressNotificationMessage, ctx));
+    if (progress !== undefined && toastId === undefined) toastId = toast.loading(progress);
+    const method = resolveDeferred(p.method, ctx);
+    return {
+      url: String(resolveDeferred(p.url, ctx) ?? ""),
+      method: typeof method === "string" ? method : "get",
+      queryParams: asRecord(resolveDeferred(p.queryParams, ctx)) ?? null,
+      headers: asRecord(resolveDeferred(p.headers, ctx)) ?? null,
+      body: resolveDeferred(p.body, ctx),
+      timeoutMs: asNumber(p.timeoutMs, 30_000),
+    };
+  };
+  const invalidates = resolveDeferred(p.invalidates, context(params));
+  const handlesError = p.onError !== undefined || p.errorNotificationMessage !== undefined;
+  const events: ApiCallEvents = {
+    ...(p.onBeforeRequest ? { beforeRequest: (...args: unknown[]) => p.onBeforeRequest!(...args) } : {}),
+    success: (result: unknown) => {
+      settle("success", messageText(resolveDeferred(p.completedNotificationMessage, { ...base, $result: result })));
+      return p.onSuccess?.(result);
+    },
+    // An errorNotificationMessage handles the error, as an error handler does.
+    ...(handlesError
+      ? {
+          error: (error: DataError) => {
+            settle("error", errorMessage(error));
+            return p.onError?.(error);
+          },
+        }
+      : {}),
+    cancel: (reason: string) => {
+      settle("success", undefined);
+      return p.onCancel?.(reason);
+    },
+  };
+  try {
+    return await caller.execute(
+      params,
+      spec,
+      {
+        retries: asNumber(p.retries, 0),
+        retryDelay: asNumber(p.retryDelay, 500),
+        ...(invalidates !== undefined && invalidates !== null && invalidates !== "" ? { invalidates: invalidates as string | string[] } : {}),
+      },
+      events,
+      invocation,
+    );
+  } finally {
+    // An unhandled failure (it rejects): the loading toast goes.
+    if (toastId !== undefined) toast.remove(toastId);
+  }
+}
 
 export function APICall(props: APICallProps) {
   const [caller] = useState(() => new ApiCaller());
@@ -197,80 +292,7 @@ export function APICall(props: APICallProps) {
   }, [caller]);
   const api = useMemo(() => {
     const state = () => caller.state.get();
-    const execute = async (...params: unknown[]) => {
-      // The calling handler, read before the first await (its cancellation aborts the request).
-      const invocation = currentInvocation();
-      const p = latest.current;
-      const context = (args: readonly unknown[]) => ({ $param: args[0], $params: [...args] });
-      const base = context(params);
-      // Step 27: confirmTitle/confirmMessage ask first (confirm()); a "no" skips the call.
-      const confirmTitle = messageText(resolveDeferred(p.confirmTitle, base));
-      const confirmMessage = messageText(resolveDeferred(p.confirmMessage, base));
-      if (confirmTitle !== undefined || confirmMessage !== undefined) {
-        const ok = await confirm({ title: confirmTitle, message: confirmMessage, actionLabel: messageText(resolveDeferred(p.confirmButtonLabel, base)) });
-        if (!ok) return undefined;
-      }
-      // The notification messages: a loading toast while the request runs, replaced by the outcome's.
-      let toastId: string | undefined;
-      const settle = (kind: "success" | "error", message: string | undefined) => {
-        if (message !== undefined) toast[kind](message, toastId === undefined ? undefined : { id: toastId });
-        else if (toastId !== undefined) toast.remove(toastId);
-        toastId = undefined;
-      };
-      const errorMessage = (error: DataError) => messageText(resolveDeferred(p.errorNotificationMessage, { ...base, $error: error }));
-      const spec = (args: readonly unknown[]): RequestSpec => {
-        const ctx = context(args);
-        const progress = messageText(resolveDeferred(p.inProgressNotificationMessage, ctx));
-        if (progress !== undefined && toastId === undefined) toastId = toast.loading(progress);
-        const method = resolveDeferred(p.method, ctx);
-        return {
-          url: String(resolveDeferred(p.url, ctx) ?? ""),
-          method: typeof method === "string" ? method : "get",
-          queryParams: asRecord(resolveDeferred(p.queryParams, ctx)) ?? null,
-          headers: asRecord(resolveDeferred(p.headers, ctx)) ?? null,
-          body: resolveDeferred(p.body, ctx),
-          timeoutMs: asNumber(p.timeoutMs, 30_000),
-        };
-      };
-      const invalidates = resolveDeferred(p.invalidates, context(params));
-      const handlesError = p.onError !== undefined || p.errorNotificationMessage !== undefined;
-      const events: ApiCallEvents = {
-        ...(p.onBeforeRequest ? { beforeRequest: (...args: unknown[]) => p.onBeforeRequest!(...args) } : {}),
-        success: (result: unknown) => {
-          settle("success", messageText(resolveDeferred(p.completedNotificationMessage, { ...base, $result: result })));
-          return p.onSuccess?.(result);
-        },
-        // An errorNotificationMessage handles the error, as an error handler does.
-        ...(handlesError
-          ? {
-              error: (error: DataError) => {
-                settle("error", errorMessage(error));
-                return p.onError?.(error);
-              },
-            }
-          : {}),
-        cancel: (reason: string) => {
-          settle("success", undefined);
-          return p.onCancel?.(reason);
-        },
-      };
-      try {
-        return await caller.execute(
-          params,
-          spec,
-          {
-            retries: asNumber(p.retries, 0),
-            retryDelay: asNumber(p.retryDelay, 500),
-            ...(invalidates !== undefined && invalidates !== null && invalidates !== "" ? { invalidates: invalidates as string | string[] } : {}),
-          },
-          events,
-          invocation,
-        );
-      } finally {
-        // An unhandled failure (it rejects): the loading toast goes.
-        if (toastId !== undefined) toast.remove(toastId);
-      }
-    };
+    const execute = (...params: unknown[]) => runApiCall(caller, latest.current, params);
     return {
       execute,
       cancel: (reason?: unknown) => caller.cancel(typeof reason === "string" ? reason : "user"),
@@ -318,3 +340,30 @@ export function DataUrl({ url, render }: { url: string; render: (value: unknown)
   const state = useSignal(loader.state);
   return <>{render(state.value)}</>;
 }
+
+/** Step 32B: an APICall inside <event>: one call with the event's arguments as `$param`/`$params`. */
+APICall.runAction = (input: ActionInput): Promise<unknown> => {
+  const caller = new ApiCaller();
+  const props = { ...resolveAll(input.props, input.params, API_CALL_DEFERRED), ...input.handlers } as APICallProps;
+  return runApiCall(caller, props, [...input.params]);
+};
+
+/** The options of FileUpload/FileDownload from an action element's props and handlers. */
+function transferOptions(input: ActionInput): TransferOptions {
+  return { ...resolveAll(input.props, input.params), ...input.handlers };
+}
+
+/**
+ * `FileUpload` (step 32B): only inside an <event> (an action): sends `file` (the
+ * event's argument is `$param`: `file="{$param[0]}"` in an upload event).
+ */
+export function FileUpload(): null {
+  return null;
+}
+FileUpload.runAction = (input: ActionInput): Promise<unknown> => upload(transferOptions(input));
+
+/** `FileDownload` (step 32B): only inside an <event>: fetches `url` and saves it as `fileName`. */
+export function FileDownload(): null {
+  return null;
+}
+FileDownload.runAction = (input: ActionInput): Promise<unknown> => download(transferOptions(input));

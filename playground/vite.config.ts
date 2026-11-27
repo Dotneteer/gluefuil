@@ -7,7 +7,7 @@ export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
   // Pre-bundled at startup, so the first page load is not interrupted by a reload.
   // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).
-  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
+  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "react-dropzone", "papaparse", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   // prerender: `npm run playground:build` renders the dashboard into index.html.
   plugins: [
     gfui({

@@ -3,7 +3,15 @@
 // The app doesn't import this file; the mock backend plugin starts it in a
 // service worker before the app (vite.config.ts). The network conditions
 // panel steers it through /__mock, like a test would.
-import { defineBackend, status } from "@gluefuil/mock-backend";
+import { defineBackend, file, status } from "@gluefuil/mock-backend";
+
+/** Step 32B: what the backend received, with files as { name, size, type }. */
+function received(value: unknown): unknown {
+  if (value instanceof Blob) return { name: (value as File).name ?? "", size: value.size, type: value.type };
+  if (Array.isArray(value)) return value.map(received);
+  if (value !== null && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, received(v)]));
+  return value;
+}
 
 export default defineBackend({
   seed: {
@@ -42,6 +50,14 @@ export default defineBackend({
     // Markdown for the Display scenario (step 23): Markdown data="/api/docs/markdown".
     "GET /api/docs/markdown": () =>
       "### Loaded from the server\n\nThis text came from `GET /api/docs/markdown` through the data layer (`data` is a URL).",
+    // Step 32B: uploads (multipart or the file itself) answer with what arrived; a download.
+    "POST /api/tickets": ({ body, request }) => ({ contentType: (request.headers.get("content-type") ?? "").split(";")[0], received: received(body) }),
+    "POST /api/receipts": async ({ body }) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return { received: received(body) };
+    },
+    "GET /api/files/people.csv": ({ db }) =>
+      file(["name,field\n", ...db.people!.list().map((p) => `${p.name},${p.field}\n`)], { type: "text/csv", name: "people.csv" }),
     "GET /api/members": ({ db }) => db.members!.list(),
     "GET /api/members/:id": ({ db, params }) => db.members!.get(params.id) ?? status(404, { message: `No member ${params.id}` }),
     // Server-side validation as RFC 7807 problem details: the form puts each message on its input.

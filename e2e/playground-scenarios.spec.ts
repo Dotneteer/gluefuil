@@ -1473,3 +1473,11 @@ test("Focus, tone and announcements: the live region, the box and the empty stat
   await button(page, "Find something").click();
   await expect(text(page, "result 1")).toBeVisible();
 });
+
+test("Files and uploads: a picked file goes to the server as multipart", async ({ page }) => {
+  await open(page, "/files");
+  const form = page.locator(".gfui-Card").filter({ has: page.getByRole("heading", { name: "A form with an attachment", exact: true }) });
+  await form.locator('input[type="file"]').setInputFiles({ name: "a.txt", mimeType: "text/plain", buffer: Buffer.from("hi") });
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(form.getByText(/^Server received: multipart\/form-data: .*"name":"a\.txt","size":2/)).toBeVisible();
+});

@@ -48,6 +48,7 @@ const ASPECT_RATIO = /^\d+(\.\d+)?(\s*\/\s*\d+(\.\d+)?)?$/;
 
 type ImageProps = LayoutProps & {
   src?: unknown;
+  data?: unknown;
   alt?: unknown;
   fit?: unknown;
   aspectRatio?: unknown;
@@ -57,11 +58,31 @@ type ImageProps = LayoutProps & {
   onClick?: (ev?: unknown) => unknown;
 };
 
-/** `Image`: nothing without `src`. `fit`: contain (default) or cover. */
+/**
+ * A Blob's object URL while it is shown (step 32B: Image `data`, XMLUI
+ * ImageReact.tsx 50–70); revoked when the Blob changes or the image unmounts.
+ * After mount only: a static render has no Blob URL.
+ */
+function useBlobUrl(data: unknown): string | undefined {
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    if (typeof Blob === "undefined" || !(data instanceof Blob)) {
+      setUrl(undefined);
+      return undefined;
+    }
+    const created = URL.createObjectURL(data);
+    setUrl(created);
+    return () => URL.revokeObjectURL(created);
+  }, [data]);
+  return url;
+}
+
+/** `Image`: `src`, else `data` (a File or Blob); nothing without either. `fit`: contain (default) or cover. */
 export function Image(props: ImageProps) {
-  const { src, alt, fit, aspectRatio, lazyLoad, inline, grayscale, onClick } = props;
+  const { src, data, alt, fit, aspectRatio, lazyLoad, inline, grayscale, onClick } = props;
   const layout = useLayout(props);
-  const source = text(src);
+  const blobUrl = useBlobUrl(text(src) ? undefined : data);
+  const source = text(src) ?? blobUrl;
   if (!source) return null;
   const ratio = text(aspectRatio);
   const own: CSSProperties | undefined = ratio !== undefined && ASPECT_RATIO.test(ratio) ? { aspectRatio: ratio } : undefined;

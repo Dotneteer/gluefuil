@@ -22,7 +22,7 @@ describe("module shape", () => {
   test("esm: imports from the runtime and the components package, exports Main", () => {
     const { code } = compileModule(markup);
     expect(code.split("\n")).toEqual([
-      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, When as $$When, BoundUser as $$BoundUser, Slot as $$Slot, useComponent as $$useComponent, Fragment as $$Fragment, GlobalScope as $$GlobalScope, useContextScope as $$useContextScope, scriptGlobals as $$g, scriptRuntime as $$r, deferredValue as $$deferred, optionItems as $$optionItems, OptionContent as $$OptionContent, usePerChildScope as $$usePerChildScope } from "@gluefuil/runtime";',
+      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, When as $$When, BoundUser as $$BoundUser, Slot as $$Slot, useComponent as $$useComponent, Fragment as $$Fragment, GlobalScope as $$GlobalScope, useContextScope as $$useContextScope, scriptGlobals as $$g, scriptRuntime as $$r, deferredValue as $$deferred, optionItems as $$optionItems, OptionContent as $$OptionContent, usePerChildScope as $$usePerChildScope, actionHandler as $$action } from "@gluefuil/runtime";',
       'import { App as $$C_App, Text as $$C_Text } from "@gluefuil/components";',
       "const $$scope = $$createAppScope();",
       'const $$b0 = { "value": ($$s) => 1 + 2 };',
@@ -43,7 +43,7 @@ describe("module shape", () => {
   test("function: reads $$imports and returns Main; valid as a function body", () => {
     const { code } = compileModule(markup, { format: "function" });
     expect(code.split("\n").slice(0, 2)).toEqual([
-      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, useFileScope: $$useFileScope, When: $$When, BoundUser: $$BoundUser, Slot: $$Slot, useComponent: $$useComponent, Fragment: $$Fragment, GlobalScope: $$GlobalScope, useContextScope: $$useContextScope, scriptGlobals: $$g, scriptRuntime: $$r, deferredValue: $$deferred, optionItems: $$optionItems, OptionContent: $$OptionContent, usePerChildScope: $$usePerChildScope } = $$imports.runtime;",
+      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, useFileScope: $$useFileScope, When: $$When, BoundUser: $$BoundUser, Slot: $$Slot, useComponent: $$useComponent, Fragment: $$Fragment, GlobalScope: $$GlobalScope, useContextScope: $$useContextScope, scriptGlobals: $$g, scriptRuntime: $$r, deferredValue: $$deferred, optionItems: $$optionItems, OptionContent: $$OptionContent, usePerChildScope: $$usePerChildScope, actionHandler: $$action } = $$imports.runtime;",
       "const { App: $$C_App, Text: $$C_Text } = $$imports.components;",
     ]);
     expect(code.trimEnd().endsWith("return Main;")).toBe(true);

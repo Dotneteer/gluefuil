@@ -32,7 +32,11 @@ export default defineBackend({
   or a helper's result (`status`, `created`, `noContent`, `notFound`).
   - A route that throws is a 500; an unknown path under a prefix is a 404.
   - The route gets `params`, `query` (repeated keys become arrays), the
-    parsed `body`, the `request` and `db`.
+    parsed `body`, the `request` and `db`. Since step 32B a form body
+    (multipart or URL-encoded) is an object whose files are `File`s, and another
+    binary body is a Blob; the log shows a file as `{ file, name, size, type }`.
+  - **`file(content, { type, name })`** answers a download (a
+    `Content-Disposition` attachment with the name) ([files.md](files.md#the-mock-backend)).
 - **`db`:** collections with `list(filter?)`, `get(id)`, `insert` (the next
   numeric id when missing), `update(id, patch)`, `remove(id)`. Ids are
   compared as strings. Everything is copied in and out (`structuredClone`),

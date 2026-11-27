@@ -70,6 +70,7 @@ One or more per concept of proof-of-concept steps 2–31
 | 32 | Table of contents | Headings and a bookmark listed beside the text (omitH1, one heading omitted); a click scrolls smoothly and moves focus; scrolling marks the heading at the top; the tab title from PageMetaTitle with the App's name, restored on leaving |
 | 32 | Timers, queues and listeners | A Timer every 500 ms with pause and resume; a search debounced by 300 ms; named sources (changedSources); a Queue of five jobs with a progress toast and a result toast, job 3 failing on purpose |
 | 32 | Focus, tone and announcements | Tab from the top: the skip link; a live region; a FocusScope that keeps Tab inside and gives focus back; ToneSwitch; Logo (empty: the playground's App has no logo); NoResult; a Redirect to the table of contents |
+| 32B | Files and uploads | A form whose attachments go to the mock backend as multipart (it answers with what arrived); CSV (dynamicTyping) and JSON parsed into a table; a drop zone for up to 3 images that also takes a pasted screenshot, uploads it with an inline FileUpload and shows it with Image data; an upload of 1.5 s you can cancel; a download of people.csv |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the

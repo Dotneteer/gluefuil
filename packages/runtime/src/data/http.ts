@@ -3,6 +3,7 @@
 // with a timeout and cancellation, the response parsed, failures as DataError.
 // It calls the platform's `fetch` (whatever answers it: a server, or a mock
 // backend's host, is invisible here).
+import { encodeBody } from "./body";
 import { dataError, httpError, type DataError } from "./errors";
 
 export interface RequestSpec {
@@ -12,8 +13,15 @@ export interface RequestSpec {
   /** Appended to the URL; arrays repeat the key; null and undefined are left out. */
   queryParams?: Record<string, unknown> | null;
   headers?: Record<string, unknown> | null;
-  /** An object or array is sent as JSON; a string as it is; undefined: no body. */
+  /**
+   * An object or array is sent as JSON, or as multipart/form-data when it has a
+   * File or Blob (step 32B); a string or a Blob as it is; undefined: no body.
+   */
   body?: unknown;
+  /** Step 32B: "json", "form" or "multipart-form" chooses the encoding (body.ts). */
+  payloadType?: unknown;
+  /** Step 32B: "blob" reads the response as a Blob (downloads); default: JSON or text. */
+  responseType?: "blob";
   /** Per attempt. 0 or undefined: no timeout. */
   timeoutMs?: number;
 }
@@ -75,13 +83,14 @@ export async function sendRequest(spec: RequestSpec, signal?: AbortSignal): Prom
   const where = { method, url };
   const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(spec.headers ?? {})) if (value !== undefined && value !== null) headers[name] = String(value);
-  let body: string | undefined;
+  let body: BodyInit | undefined;
   if (spec.body !== undefined && spec.body !== null && method !== "GET" && method !== "HEAD") {
-    if (typeof spec.body === "string") body = spec.body;
-    else {
-      body = JSON.stringify(spec.body);
-      if (!Object.keys(headers).some((h) => h.toLowerCase() === "content-type")) headers["content-type"] = "application/json";
-    }
+    const encoded = encodeBody(spec.body, spec.payloadType);
+    body = encoded.body;
+    const given = Object.keys(headers).find((h) => h.toLowerCase() === "content-type");
+    // Multipart: the browser writes the Content-Type with its boundary.
+    if (encoded.contentType === null && given !== undefined) delete headers[given];
+    else if (typeof encoded.contentType === "string" && given === undefined) headers["content-type"] = encoded.contentType;
   }
   if (signal?.aborted) throw new RequestCancelledError(signal.reason);
   const controller = new AbortController();
@@ -94,6 +103,15 @@ export async function sendRequest(spec: RequestSpec, signal?: AbortSignal): Prom
       response = await fetch(url, { method, headers, body, signal: controller.signal });
     } catch (error) {
       throw failure(error);
+    }
+    if (spec.responseType === "blob" && response.ok) {
+      let blob: Blob;
+      try {
+        blob = await response.blob();
+      } catch (error) {
+        throw failure(error);
+      }
+      return { data: blob, status: response.status, headers: headersObject(response.headers) };
     }
     let text: string;
     try {

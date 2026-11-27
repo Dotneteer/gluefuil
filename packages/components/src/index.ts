@@ -13,7 +13,7 @@ export { Glyph, Icon, iconSize, lookupIcon, registeredIconNames, registerIcon, t
 export { Avatar, Badge, Card, ContentSeparator, Image, initials, ProgressBar, Spinner } from "./display";
 export { bindingText, Markdown, preloadMarkdown, removeIndents } from "./markdown";
 export { ALLOWED_TAGS, decodeHtmlEntities, isSafeUrl, tokenizeHtml, type HtmlToken } from "./markdown-html";
-export { APICall, DataSource, DataUrl, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
+export { APICall, DataSource, DataUrl, FileDownload, FileUpload, isDataUrl, type APICallProps, type DataSourceProps } from "./data";
 export { Items, itemKeys, itemsOf, orderedValues } from "./items";
 export { Tree, type TreeProps } from "./tree";
 export { columnCount, STATIC_TILES, TileGrid, type TileGridProps } from "./tilegrid";
@@ -62,3 +62,4 @@ export { FocusScope, LiveRegion, SkipLink } from "./a11y";
 export { Logo, NoResult, PageMetaTitle, Redirect, ToneChangerButton, ToneSwitch } from "./misc";
 export { ChangeListener, deepEqual, MessageListener, Queue, rateLimited, sourcesChange, Timer, type QueueEntry, type QueueItemStatus } from "./nonvisual";
 export { AppInfoContext, type AppInfo } from "./app-info";
+export { acceptRules, acceptsFile, FileInput, filesOf, FileUploadDropZone, parseFiles, type ParseAsResult, type ParseResult } from "./files";

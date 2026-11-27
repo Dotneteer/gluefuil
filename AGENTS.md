@@ -21,7 +21,7 @@ shell) of [.ai/plan/poc-steps.md](.ai/plan/poc-steps.md) are done (16 and
 19 with a reduced scope); the inserted 19D–19F (the layout system) are done too.
 Steps 20 (data binding and the mock backend), 21 (routing), 21B (globals),
 22 (client-side forms), 22B (form submission and server errors), 23 (text
-and display components), 24 (inputs), 25 (choice inputs), 26 (date and time inputs), 27 (overlays and menus), 28 (structure), 29 (the virtualized `List`), 30 (`Table`, `Value`, `Pagination`), 31 (`Tree`, `TileGrid`, `Items`) and 32 (the remaining components, except files) are done; step 32B (files and uploads) is next. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
+and display components), 24 (inputs), 25 (choice inputs), 26 (date and time inputs), 27 (overlays and menus), 28 (structure), 29 (the virtualized `List`), 30 (`Table`, `Value`, `Pagination`), 31 (`Tree`, `TileGrid`, `Items`), 32 (the remaining components, except files) and 32B (files and uploads) are done; step 33 is next. **Start a new session with [.ai/handoff.md](.ai/handoff.md)**:
 the current state, how the user works, practical notes, open questions.
 **Stop after each step so the user can review it.** Each step is developed on
 its own branch (`poc/NN-topic`).
@@ -119,6 +119,7 @@ here as one line each, with a link to the plan that justified them:
 - **Table: our own column model (no TanStack Table), Column children compiled to data, rendered as a grid of divs with table roles.** See [.ai/plan/poc-30-table.md](.ai/plan/poc-30-table.md).
 - **Tree: `@headless-tree/core` with its state controlled by the component (headless-tree gives the visible items, ARIA, focus and the navigation keys); our own data index, working copy and lazy loading. TileGrid: rows of tiles on the shared virtualizer.** See [.ai/plan/poc-31-tree-tilegrid.md](.ai/plan/poc-31-tree-tilegrid.md).
 - **QRCode: `uqr`'s module matrix drawn as one SVG path** (measured against `react-qr-code`, `qrcode`, `qrcode-generator`). **The TableOfContents is prerendered** through extra passes of the prerender's loop (`requestServerRender`), and hydration reads the prerendered list back from the DOM. Step 32B: `react-dropzone`, papaparse in a lazy chunk, `File` objects in script, multipart bodies with `FileUpload`/`FileDownload`. See [.ai/plan/poc-32-remaining.md](.ai/plan/poc-32-remaining.md).
+- **Files (step 32B):** `File` objects in script (an allowed platform value); a body with a file goes as multipart (`payloadType` chooses); action elements (`APICall`, `FileUpload`, `FileDownload`) inside `<event>` and `Actions.upload()`/`download()`; downloads always fetched. See [.ai/plan/poc-32b-files.md](.ai/plan/poc-32b-files.md).
 - **Base component library is Mantine.** Its styling is exposed only through XMLUI-style theme variables; Mantine's own theme API is an internal detail. See [.ai/plan/architecture.md](.ai/plan/architecture.md) § "Notes for area 5".
 
 ## Working agreements

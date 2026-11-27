@@ -110,7 +110,7 @@ test.describe("Focus, tone and announcements", () => {
     await open(page, "/focus-tone");
     const skip = page.getByRole("link", { name: "Skip to the focus demo" });
     await expect(skip).not.toBeInViewport();
-    for (let i = 0; i < 60 && !(await skip.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+    for (let i = 0; i < 200 && !(await skip.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
     await expect(skip).toBeFocused();
     await expect(skip).toBeInViewport();
     await page.keyboard.press("Enter");

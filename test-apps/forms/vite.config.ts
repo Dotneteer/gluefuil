@@ -12,7 +12,7 @@ export default defineConfig({
   // Pre-bundled at startup: otherwise the first page load discovers them,
   // and Vite reloads the page mid-test (a cold cache).
   // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).
-  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
+  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "@tanstack/query-core", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "react-dropzone", "papaparse", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   // The mock backend (step 22B) in a service worker, in the prerendered build too.
   plugins: [gfui({ prerender: true }), gfuiMockBackend({ module: "src/backend.ts", build: true }), react()],
 });

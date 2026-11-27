@@ -175,6 +175,12 @@ functions.
 component APIs) must not expose raw platform objects. The sandbox cuts paths
 through code, not through data.
 
+**The allowed platform values (step 32B):** `File` and `Blob` objects (a
+FileInput's value, a drop zone's `upload` argument, a parsed file's `file`).
+They reach no DOM node or window; script reads them (`name`, `size`, `type`,
+`text()`) and passes them on, but can't construct them (not in
+`CONSTRUCTIBLE`). See [files.md](files.md#files-in-script).
+
 ## Interpolated values
 
 These follow XMLUI's `extractParam.ts`:
