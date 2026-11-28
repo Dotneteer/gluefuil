@@ -15,7 +15,7 @@ describe("component IDs", () => {
   test("the file component creates a file scope holding the IDs", () => {
     const out = code('<App><TextBox id="name"/><TextBox id="email"/></App>');
     expect(out).toContain('  const $$f = $$useFileScope($$scope, ["name","email"]);');
-    expect(out).toContain('$$h($$Bound, { type: $$C_TextBox, props: null, bindings: $$empty, id: "name", scope: $$f })');
+    expect(out).toContain('$$h($$Bound, { type: $$C_TextBox, props: null, bindings: $$empty, id: "name", at: $$L[0], scope: $$f })');
   });
 
   test("without IDs, there is no file scope", () => {
@@ -37,7 +37,7 @@ describe("component IDs", () => {
 
   test("an element inside a container registers in the file scope chain (its container's scope)", () => {
     const out = code('<App var.a="{1}"><TextBox id="box"/></App>');
-    expect(out).toContain('id: "box", scope: $$c');
+    expect(out).toContain('id: "box", at: $$L[1], scope: $$c');
     expect(out).toContain("return $$h($$K");
     expect(out).toMatch(/\$\$h\(\$\$K\d+, \{ \$\$p: \$\$f \}\)/);
   });

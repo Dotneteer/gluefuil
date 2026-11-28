@@ -14,6 +14,8 @@
 // .ai/plan/poc-07-async-handlers.md
 
 import { reportRuntimeError, scheduleMicrotask } from "../errors";
+import { tracing } from "../trace/core";
+import type { Cause } from "../trace/entries";
 
 export type Equals<T> = (a: T, b: T) => boolean;
 
@@ -58,8 +60,32 @@ interface Observer {
   mark(state: typeof CHECK | typeof DIRTY): void;
 }
 
+/**
+ * Step 35 (observability): who last wrote a value, so a re-evaluation can name
+ * the write that caused it. `n` orders writes; `cause` is the tracer's (a trace
+ * context and its state entry). Recorded only while tracing (trace/core.ts).
+ */
+export interface WriteMark {
+  readonly n: number;
+  readonly cause: Cause;
+}
+
+let writeCount = 0;
+
+/** Marks `source`'s current value as written by `cause` (a variable's write, a loader's result). */
+export function markWrite(source: ReadonlySignal<unknown>, cause: Cause): void {
+  if (!tracing) return;
+  nodeOf(source).writer = { n: ++writeCount, cause };
+}
+
+/** The newest write a value depends on (for a computed: the newest among what it read when computed). */
+export function lastWrite(source: ReadonlySignal<unknown>): WriteMark | undefined {
+  return nodeOf(source).writer;
+}
+
 abstract class Source {
   version = 0;
+  writer: WriteMark | undefined = undefined;
   readonly observers = new Set<Observer>();
   addObserver(observer: Observer): void {
     this.observers.add(observer);
@@ -77,7 +103,9 @@ let batchDepth = 0;
 const pending = new Set<WatcherNode>();
 
 function track(source: Source): void {
-  tracking?.addDependency(source);
+  if (!tracking) return;
+  tracking.addDependency(source);
+  if (tracing && source.writer !== undefined) tracking.noteWrite(source.writer);
 }
 
 class SignalNode<T> extends Source implements Signal<T> {
@@ -173,6 +201,11 @@ class ComputedNode<T> extends Source implements Observer, ReadonlySignal<T> {
     if (!this.dependencies.has(source)) this.dependencies.set(source, source.version);
   }
 
+  /** While computing: keeps the newest write among the values read (step 35). */
+  noteWrite(mark: WriteMark): void {
+    if (this.writer === undefined || mark.n > this.writer.n) this.writer = mark;
+  }
+
   private computing = false;
 
   private recompute(): void {
@@ -180,6 +213,8 @@ class ComputedNode<T> extends Source implements Observer, ReadonlySignal<T> {
     this.computing = true;
     const previous = this.dependencies;
     this.dependencies = new Map();
+    // Step 35: the newest write among what this computation reads (only while tracing).
+    if (tracing) this.writer = undefined;
     const outer = tracking;
     tracking = this as ComputedNode<unknown>;
     try {

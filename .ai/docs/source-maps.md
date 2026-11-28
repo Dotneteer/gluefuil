@@ -22,6 +22,14 @@ parsers work in file offsets (steps 1–2).
 
 Not covered yet: code-behind (it doesn't exist yet).
 
+**Step 35: the location table.** A source map gives positions only to tools
+that read it. Trace entries need them at runtime, in every mode, without a
+map. Each module therefore also carries a small table of positions
+(`const $$L = $$locations(file, [element, line, column, …])`), and elements and
+variables pass `at: $$L[i]` ([observability.md § Markup positions](observability.md#markup-positions)).
+The table's file is `locationFile` (the plugin's path from the Vite root); the
+map's stays `fileName`.
+
 ## How it works: source markers
 
 Code generation builds JavaScript as strings, so it records positions

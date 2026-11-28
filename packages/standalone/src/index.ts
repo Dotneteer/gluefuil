@@ -3,11 +3,16 @@
 // DOMContentLoaded (data-autostart="false" to start manually with gfui.start()).
 
 import * as React from "react";
+import { isInspectorPage, startInspector } from "./inspector";
 import { start, StandaloneApp, type StartOptions } from "./loader";
 
 export { CompileCache, type CacheEntry, type StorageLike } from "./cache";
 export { hashText } from "./hash";
 export { start, StandaloneApp, type LoadStatus, type StartOptions } from "./loader";
+export { INSPECTOR_PARAM, inspectorUrl, isInspectorPage, startInspector } from "./inspector";
+
+/** Step 35: the trace (`gfui.trace.enable()`, `.inspect()`, `.export()`). */
+export { trace } from "@gluefuil/runtime";
 
 /** The engine's React: extensions must use this one, never bundle their own. */
 export { React };
@@ -45,11 +50,26 @@ export function optionsFromScript(script: HTMLOrSVGScriptElement | null): StartO
   return options;
 }
 
+/** Where the Inspector mounts: the app's root element, else a new one. */
+function inspectorContainer(root: StartOptions["root"]): Element {
+  if (root instanceof Element) return root;
+  const found = typeof root === "string" ? document.querySelector(root) : null;
+  if (found) return found;
+  const div = document.createElement("div");
+  div.id = "gfui-root";
+  document.body.appendChild(div);
+  return div;
+}
+
 // Autostart: only in a browser, when loaded by a <script> tag.
 if (typeof document !== "undefined" && document.currentScript) {
   const { autostart, ...options } = optionsFromScript(document.currentScript);
   if (autostart) {
-    const run = () => void startApp(options);
+    // Step 35: opened with ?gfui-inspector, the page is the Inspector.
+    const run = () => {
+      if (isInspectorPage()) startInspector(inspectorContainer(options.root));
+      else void startApp(options);
+    };
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run, { once: true });
     else run();
   }

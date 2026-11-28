@@ -6,7 +6,8 @@
 import { analyzeModule, compileModule, formatDiagnostic, LineMap, type Diagnostic, type UserComponentInfo } from "@gluefuil/compiler";
 import * as builtIns from "@gluefuil/components";
 import { componentMetadata } from "@gluefuil/components/metadata";
-import { loadModule, setDefaultHandlerTimeout } from "@gluefuil/runtime";
+import { autoEnableTrace, loadModule, setDefaultHandlerTimeout, setInspectorLocation } from "@gluefuil/runtime";
+import { inspectorUrl } from "./inspector";
 import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { CompileCache, defaultStorage, type CacheEntry, type StorageLike } from "./cache";
@@ -96,6 +97,10 @@ export class StandaloneApp {
   /** First load, mount, and (if enabled) start watching. */
   async start(): Promise<void> {
     this.container = this.resolveContainer();
+    // Step 35: tracing, when the URL or a stored setting asks for it.
+    // The Inspector is this page with ?gfui-inspector (gfui.trace.inspect() opens it).
+    setInspectorLocation(inspectorUrl(location.href));
+    autoEnableTrace(this.container);
     this.root = createRoot(this.container);
     try {
       this.load(await this.fetchAll(false));

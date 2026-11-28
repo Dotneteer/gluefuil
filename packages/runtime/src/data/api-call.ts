@@ -2,7 +2,9 @@
 // through the HTTP gate, with its own retry loop (none by default), events,
 // cancellation tied to the calling handler, and invalidation. React-free; the
 // APICall component (components) gives it the request and the events.
-import { signal, type ReadonlySignal } from "../reactivity/signals";
+import { markWrite, signal, type ReadonlySignal } from "../reactivity/signals";
+import { activeTrace, childSpan, tracing } from "../trace/core";
+import type { SourceLocation } from "../trace/location";
 import { currentInvocation, type Invocation } from "../render/handlers";
 import { invalidate } from "./client";
 import { isDataError, type DataError } from "./errors";
@@ -14,6 +16,8 @@ export interface ApiCallOptions {
   retryDelay: number;
   /** Paths to invalidate after success; undefined: every query (XMLUI). */
   invalidates?: string | readonly string[];
+  /** Step 35: the element, for the requests' trace entries. */
+  trace?: { component: string; id?: string; at?: SourceLocation };
 }
 
 /**
@@ -59,7 +63,11 @@ export class ApiCaller {
     return this.stateSignal;
   }
 
+  /** Step 35: the call whose outcome is published next (later renders name it). */
+  private lastCall: { traceId: string; spanId: string } | undefined;
+
   private set(patch: Partial<ApiCallState>): void {
+    if (tracing && this.lastCall) markWrite(this.stateSignal, this.lastCall);
     this.stateSignal.set(Object.freeze({ ...this.stateSignal.peek(), ...patch }));
   }
 
@@ -84,6 +92,9 @@ export class ApiCaller {
     if (events.beforeRequest && (await events.beforeRequest(...params)) === false) return undefined;
     const request = spec(params);
     const call = ++this.started;
+    // Step 35: the call's span, in the calling handler's trace; its attempts share it.
+    const context = tracing ? childSpan(caller?.trace?.context ?? activeTrace()?.context) : undefined;
+    let attempt = 0;
     const controller = new AbortController();
     const unlink = caller?.cancel.onAbort((reason) => controller.abort(reason));
     this.running.add(controller);
@@ -92,7 +103,18 @@ export class ApiCaller {
       let headers: Readonly<Record<string, string>> | undefined;
       const result = await runWithRetry(
         async () => {
-          const response = await sendRequest(request, controller.signal);
+          attempt++;
+          if (context) this.lastCall = { traceId: context.traceId, spanId: context.spanId };
+          const origin = context
+            ? {
+                component: options.trace?.component ?? "APICall",
+                ...(options.trace?.id !== undefined ? { id: options.trace.id } : {}),
+                ...(options.trace?.at ? { at: options.trace.at } : {}),
+                context,
+                attempt,
+              }
+            : undefined;
+          const response = await sendRequest(request, controller.signal, origin);
           headers = response.headers;
           return response.data;
         },

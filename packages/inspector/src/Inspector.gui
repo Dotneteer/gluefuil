@@ -1,0 +1,80 @@
+<!-- The gfui Inspector (step 35): the trace of the app tabs on this origin, live. -->
+<App name="gfui Inspector" scroll="content" var.kind="all" var.search="" var.selected="{undefined}">
+  <TraceFeed id="feed" />
+  <AppHeader>
+    <Text variant="strong">gfui Inspector</Text>
+    <Select
+      id="sourcePick"
+      width="360px"
+      placeholder="Waiting for an app tab with tracing on"
+      data="{feed.sources}"
+      onDidChange="feed.select($param); selected = undefined" />
+    <!-- The feed follows the last tab that sent something until one is picked: show it. -->
+    <ChangeListener listenTo="{feed.source}" onDidChange="sourcePick.setValue(feed.source)" />
+    <SpaceFiller />
+    <Text variant="secondary">{feed.count} entries{feed.dropped > 0 ? ', ' + feed.dropped + ' dropped' : ''}</Text>
+    <Button label="{feed.paused ? 'Resume' : 'Pause'}" onClick="feed.paused ? feed.resume() : feed.pause()" />
+    <Button label="Clear" onClick="feed.clear(); selected = undefined" />
+    <Button label="Export" onClick="feed.exportFile()" />
+    <FileInput width="200px" buttonLabel="Import" placeholder="A trace file (.json)" acceptsFileType=".json" onDidChange="feed.importFile($param[0])" />
+  </AppHeader>
+  <HStack>
+    <Select width="160px" initialValue="all" onDidChange="kind = $param">
+      <Option value="all" label="All kinds" />
+      <Option value="handler" label="Handlers" />
+      <Option value="state" label="State" />
+      <Option value="fetch" label="Requests" />
+      <Option value="navigate" label="Navigation" />
+      <Option value="error" label="Errors" />
+      <Option value="diagnostic" label="Diagnostics" />
+      <Option value="log" label="Console" />
+      <Option value="render" label="Renders" />
+    </Select>
+    <TextBox width="320px" placeholder="Filter: element, file, text" onDidChange="search = $param" />
+    <Text variant="secondary" when="{!feed.connected}">
+      Turn tracing on in the app's tab (the dev server does; elsewhere add ?gfui-trace to its URL).
+    </Text>
+  </HStack>
+  <!-- Dense rows: one line each. -->
+  <Theme fontSize-row-Table="13px" padding-cell-Table="2px 8px">
+  <HSplitter height="calc(100vh - 140px)" initialPrimarySize="62%" minPrimarySize="30%">
+    <Table
+      data="{feed.filtered(kind === 'all' ? '' : kind, search)}"
+      rowsSelectable="true"
+      enableMultiRowSelection="false"
+      hideSelectionCheckboxes="true"
+      onSelectionDidChange="selected = $param[0]?.id">
+      <Column bindTo="seq" header="#" width="48px"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="time" header="Time" width="96px"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="kind" header="Kind" width="88px"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="what" header="What" width="*"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="summary" header="Summary" width="3*"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="where" header="Where" width="1.5*"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="ms" header="Took" width="64px"><Text maxLines="1">{$cell}</Text></Column>
+      <Column bindTo="trace" header="Trace" width="80px"><Text maxLines="1">{$cell}</Text></Column>
+    </Table>
+    <ScrollViewer>
+      <Text when="{selected === undefined}" variant="secondary">Select an entry to see its trace and its details.</Text>
+      <VStack when="{selected !== undefined}">
+        <HStack>
+          <Text variant="strong">Trace</Text>
+          <SpaceFiller />
+          <Button
+            label="{'Open ' + feed.location(selected)}"
+            when="{feed.canOpen(selected)}"
+            onClick="feed.openInEditor(selected)" />
+        </HStack>
+        <Table data="{feed.traceRows(selected)}" height="280px">
+          <Column bindTo="time" header="Time" width="96px"><Text maxLines="1">{$cell}</Text></Column>
+          <Column bindTo="kind" header="Kind" width="88px"><Text maxLines="1">{$cell}</Text></Column>
+          <Column bindTo="what" header="What" width="*"><Text maxLines="1">{$cell}</Text></Column>
+          <Column bindTo="summary" header="Summary" width="3*"><Text maxLines="1">{$cell}</Text></Column>
+          <Column bindTo="ms" header="Took" width="64px"><Text maxLines="1">{$cell}</Text></Column>
+        </Table>
+        <Text variant="strong">Entry</Text>
+        <Markdown content="{'```json\n' + feed.detail(selected) + '\n```'}" />
+      </VStack>
+    </ScrollViewer>
+  </HSplitter>
+  </Theme>
+</App>

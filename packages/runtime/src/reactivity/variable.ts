@@ -8,7 +8,16 @@
 // along the path; mutating a value in place through an alias throws instead of
 // silently skipping the re-render. Design: .ai/plan/poc-06-variables-handlers.md
 
-import { batch, computed, signal, SIGNAL_NODE, type ReadonlySignal } from "./signals";
+import { tracing } from "../trace/core";
+import { traceState } from "../trace/emitters";
+import type { SourceLocation } from "../trace/location";
+import { batch, computed, markWrite, signal, SIGNAL_NODE, type ReadonlySignal } from "./signals";
+
+/** Step 35: what the trace says about a variable. */
+export interface VariableInfo {
+  name: string;
+  at?: SourceLocation;
+}
 
 export interface Variable<T> extends ReadonlySignal<T> {
   /** Assigns a value: the variable stops following its initializer. */
@@ -41,7 +50,10 @@ class VariableNode<T> implements Variable<T> {
   private readonly valueSignal = signal<T | undefined>(undefined);
   private readonly current: ReadonlySignal<T>;
 
-  constructor(init: () => T) {
+  constructor(
+    init: () => T,
+    private readonly info?: VariableInfo,
+  ) {
     const follow = computed(() => freezeDeep(init()));
     this.current = computed(() => (this.assignedSignal.get() ? (this.valueSignal.get() as T) : follow.get()));
   }
@@ -63,6 +75,13 @@ class VariableNode<T> implements Variable<T> {
   }
 
   set(value: T): void {
+    if (tracing && this.info) {
+      // Step 35: the state entry, and the write mark later evaluations name as their cause.
+      const before = this.current.peek();
+      const frozen = freezeDeep(value);
+      const cause = traceState(this.info.name, this.info.at, before, frozen);
+      markWrite(this.valueSignal, cause);
+    }
     batch(() => {
       this.valueSignal.set(freezeDeep(value));
       this.assignedSignal.set(true);
@@ -71,6 +90,6 @@ class VariableNode<T> implements Variable<T> {
 }
 
 /** A variable that follows `init` (evaluated lazily, tracked) until it is set. */
-export function variable<T>(init: () => T): Variable<T> {
-  return new VariableNode(init);
+export function variable<T>(init: () => T, info?: VariableInfo): Variable<T> {
+  return new VariableNode(init, info);
 }

@@ -9,33 +9,24 @@
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
 > steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26), and after
-> step 32 and 32B (2026-11-27), and after step 33 (2026-11-27), and after step 34 (2026-11-28).
+> step 32 and 32B (2026-11-27), and after step 33 (2026-11-27), and after step 34 (2026-11-28),
+> and after step 35 (2026-11-28).
 
 ## Next step
 
-**Step 35: observability** (`plan/poc-steps.md` row 35: a trace stream
-emitted only when enabled, pointing at markup lines). XMLUI reference:
-`website/content/docs/pages/managed-react/observability-substrate.md` (and
-`audit-grade-observability.md`; its source: `xmlui/src/components-core/inspector/`,
-`components-core/audit/`). What it builds on here:
+**Step 36** (`plan/poc-steps.md` row 36: reactive
+cycle detection, versioning diagnostics, centralized HTTP, UDC sandbox),
+with the same kickoff routine:
 
-- step 33's error pipeline (`runtime/src/errors/report.ts`: `ErrorSource`,
-  sinks, `reportDiagnostic`; "step 35 will give them a trace" in
-  `plan/poc-33-errors.md`);
-- step 34's i18n diagnostics (missing keys, load failures);
-- source maps (step 9, `docs/source-maps.md`): how a trace can point at a
-  `.gui` line;
-- the handler runtime (`render/handlers.ts`) and the data layer
-  (`data/http.ts`), the likely emitters.
-
-The kickoff routine (as for steps 33 and 34):
-
-1. delete the merged branch (`poc/34-i18n`);
-2. create `poc/35-observability`;
-3. write `plan/poc-35-observability.md`, citing XMLUI by path; measure open
+1. delete the merged branch (`poc/35-observability`);
+2. create `poc/36-…`;
+3. write the plan in `plan/`, citing XMLUI by path; measure open
    library or rendering choices in `.tmp/vproto/`; ask the open decisions with
    `AskUserQuestion`;
 4. implement only after the user accepts the plan.
+
+Step 36 can build on step 35: a reactive cycle or a versioning problem is a
+`diagnostic` entry with a position (`reportDiagnostic(problem, { category, at })`).
 
 ## State
 
@@ -82,7 +73,13 @@ The kickoff routine (as for steps 33 and 34):
   130 files, 308 E2E tests. ICU messages on `intl-messageformat`, locale files,
   `App.setLocale`, `I18n`, `Locale`, `gfui.*` framework strings, RTL. Next:
   step 35 (observability).
-- **`master` holds steps 0–34, merged.** `origin/master`
+- **Step 35 (observability) is done and merged into master.** Plan and findings:
+  [`plan/poc-35-observability.md`](plan/poc-35-observability.md); reference:
+  [`docs/observability.md`](docs/observability.md). `npm run check`: 3,711
+  unit tests in 138 files, 318 E2E tests. A trace stream behind one boolean,
+  positions compiled into every module, causes from write marks, the
+  Inspector (`packages/inspector`, a new package) in its own tab.
+- **`master` holds steps 0–35, merged.** `origin/master`
   (as last fetched) is at the rename after step 22B; the later merges are not
   pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
@@ -275,6 +272,8 @@ The kickoff routine (as for steps 33 and 34):
 - **New dependencies need `optimizeDeps.include`** in every fixture config,
   including those found only by a dynamic import (the Markdown parser);
   otherwise the dev server reloads the page mid-test.
+- **Port 5199** was held by an old prototype preview (found again in step 35);
+  prototypes use 5198 and 5195–5197.
 - **The sandbox invariant:** no platform object reaches script.
   `wrapComponent` calls an unconfigured `on*` handler without arguments for
   this reason. Pointer events pass `pointerData(event)` (step 27), and an
@@ -335,6 +334,22 @@ The kickoff routine (as for steps 33 and 34):
   `optimizeDeps.include`. Don't re-render the App (or anything above a lazy
   Suspense boundary) right after a takeover for a change that shows nothing:
   React drops a still-dehydrated boundary's HTML.
+- **Tracing (step 35) is on by default on every dev server,** the E2E
+  fixtures' included (the plugin's `data-gfui-trace="on"` on the root). Pass
+  `gfui({ inspector: false })` to turn it off. A test that needs the trace
+  calls `trace.enable()`, and `resetTrace()` after. Script can't read the
+  trace; app React code uses `trace` from `@gluefuil/runtime` (the
+  playground's `TraceControls`).
+- **The Inspector page** (dev server): `/__gfui/inspector/`. It reads the
+  `gfui-trace` `BroadcastChannel`; in E2E, open it from the app (the button,
+  or `trace.inspect()`), which opens a new tab without an opener. Its tables
+  are virtualized: filter before looking for a row far down. Playwright's
+  `hasText` sees the cells run together.
+- **Benchmarks against master:** a `git worktree` under `.tmp/` needs its own
+  `node_modules` whose `@gluefuil/*` link to the worktree's packages (else it
+  imports the branch's). Vitest's runner makes imported-binding reads export
+  getters; for the off-path cost, bundle with esbuild and run in Node
+  (`.tmp/vproto/obs/bundle/`).
 - **Render errors in tests:** `{null.x}` doesn't throw (null-safe member
   access); use `JSON.parse('{oops')`.
 

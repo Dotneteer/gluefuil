@@ -3,8 +3,50 @@
 // with a timeout and cancellation, the response parsed, failures as DataError.
 // It calls the platform's `fetch` (whatever answers it: a server, or a mock
 // backend's host, is invisible here).
+import { activeTrace, childSpan, emit, traceFields, traceNow, tracing } from "../trace/core";
+import type { Cause, FetchEntry, FetchOutcome, TraceContext } from "../trace/entries";
+import type { SourceLocation } from "../trace/location";
 import { encodeBody } from "./body";
-import { dataError, httpError, type DataError } from "./errors";
+import { dataError, httpError, isDataError, type DataError } from "./errors";
+
+/**
+ * Step 35: who sends a request, for its trace entries. Without a context the
+ * running handler's trace is used, else the first cause's, else a new trace.
+ */
+export interface FetchOrigin {
+  /** `DataSource`, `APICall`, `FileUpload`, … */
+  component: string;
+  id?: string;
+  at?: SourceLocation;
+  /** The request's span (one per DataSource fetch or APICall call; its attempts share it). */
+  context?: TraceContext;
+  causes?: Cause[];
+  /** 1 for the first attempt. */
+  attempt?: number;
+}
+
+/** The span a request of `origin` belongs to (made only while tracing). */
+export function fetchContext(origin: FetchOrigin | undefined): TraceContext {
+  if (origin?.context) return origin.context;
+  const running = activeTrace()?.context;
+  const cause = origin?.causes?.[0];
+  return childSpan(running ?? (cause ? { traceId: cause.traceId, spanId: cause.spanId } : undefined));
+}
+
+function outcomeOf(error: unknown): FetchOutcome {
+  if (error instanceof RequestCancelledError) return "cancelled";
+  if (!isDataError(error)) return "error";
+  switch (error.category) {
+    case "timeout":
+      return "timeout";
+    case "network":
+      return "network";
+    case "parse":
+      return "parse";
+    default:
+      return error.status !== undefined ? "http" : "error";
+  }
+}
 
 export interface RequestSpec {
   url: string;
@@ -77,9 +119,45 @@ export class RequestCancelledError extends Error {
  * One attempt. Resolves to the parsed response; rejects with a DataError, or
  * with a RequestCancelledError when `signal` aborts.
  */
-export async function sendRequest(spec: RequestSpec, signal?: AbortSignal): Promise<HttpResult> {
+export async function sendRequest(spec: RequestSpec, signal?: AbortSignal, origin?: FetchOrigin): Promise<HttpResult> {
   const method = (spec.method ?? "get").toUpperCase();
   const url = buildUrl(spec.url, spec.queryParams);
+  if (!tracing) return send(spec, method, url, signal);
+  // Step 35: a start entry and an end entry, joined by the span.
+  const context = fetchContext(origin);
+  const base: Omit<FetchEntry, "seq" | "time" | "phase"> = {
+    kind: "fetch",
+    ...traceFields(context),
+    ...(origin?.at ? { at: origin.at } : {}),
+    method,
+    url,
+    ...(origin ? { owner: { component: origin.component, ...(origin.id !== undefined ? { id: origin.id } : {}) } } : {}),
+    ...(origin?.attempt !== undefined ? { attempt: origin.attempt } : {}),
+  };
+  emit({ ...base, phase: "start", ...(origin?.causes && origin.causes.length > 0 ? { causes: origin.causes } : {}) });
+  const started = traceNow();
+  try {
+    const result = await send(spec, method, url, signal);
+    if (tracing) emit({ ...base, phase: "end", status: result.status, durationMs: traceNow() - started, outcome: "ok" });
+    return result;
+  } catch (error) {
+    if (tracing) {
+      const status = isDataError(error) ? error.status : undefined;
+      const correlationId = isDataError(error) ? error.correlationId : undefined;
+      emit({
+        ...base,
+        phase: "end",
+        ...(status !== undefined ? { status } : {}),
+        durationMs: traceNow() - started,
+        outcome: outcomeOf(error),
+        ...(correlationId !== undefined ? { correlationId } : {}),
+      });
+    }
+    throw error;
+  }
+}
+
+async function send(spec: RequestSpec, method: string, url: string, signal: AbortSignal | undefined): Promise<HttpResult> {
   const where = { method, url };
   const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(spec.headers ?? {})) if (value !== undefined && value !== null) headers[name] = String(value);

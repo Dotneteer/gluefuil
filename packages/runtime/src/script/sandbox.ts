@@ -24,6 +24,8 @@ export class SandboxError extends Error {
 }
 
 import { AppError } from "../errors/app-error";
+import { tracing } from "../trace/core";
+import { traceLog } from "../trace/emitters";
 import { arrayCall } from "./async-array";
 import { deleteIn, mutate, setIn, updateIn } from "./paths";
 
@@ -39,6 +41,21 @@ const OBJECT_RESTRICTED = new Set([
 const host = globalThis as unknown as Record<string, unknown>;
 
 /** A frozen copy of a namespace object (`Math`, `JSON`, …): script can't modify the real one. */
+/** Step 35: `console.log/info/warn/error/debug` from script are trace entries too (while tracing); the console still prints. */
+function tracedConsole(console: Record<string, unknown>): object {
+  const copy: Record<string, unknown> = Object.create(null);
+  for (const name of Object.keys(console)) copy[name] = console[name];
+  for (const level of ["log", "info", "warn", "error", "debug"] as const) {
+    const original = console[level];
+    if (typeof original !== "function") continue;
+    copy[level] = (...args: unknown[]) => {
+      if (tracing) traceLog(level, args);
+      return (original as (...a: unknown[]) => unknown)(...args);
+    };
+  }
+  return Object.freeze(copy);
+}
+
 function copyNamespace(source: object): object {
   const copy: Record<string, unknown> = Object.create(null);
   for (const name of Object.getOwnPropertyNames(source)) {
@@ -123,7 +140,7 @@ function createGlobals(): Readonly<Record<string, unknown>> {
   globals.Math = copyNamespace(Math);
   globals.JSON = copyNamespace(JSON);
   globals.Intl = copyNamespace(Intl);
-  globals.console = copyNamespace(host.console as object);
+  globals.console = tracedConsole(copyNamespace(host.console as object) as Record<string, unknown>);
   globals.Object = curatedObject();
   // Step 33: `throw new AppError({ code, category, message })`.
   globals.AppError = AppError;

@@ -13,7 +13,7 @@
 //     viewport has no size (jsdom, a hidden tab);
 //   - virtual: the rows in range, each placed absolutely at its measured
 //     offset in a content box as tall as all rows.
-import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer, useFrameworkText } from "@gluefuil/runtime";
+import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer, type TraceCell, useFrameworkText } from "@gluefuil/runtime";
 import { Checkbox } from "@mantine/core";
 import {
   useCallback,
@@ -51,6 +51,8 @@ const number = (value: unknown): number | undefined => {
 };
 
 export type ListProps = LayoutProps & {
+  /** Step 35: the element's trace cell (its position names the diagnostics). */
+  $$trace?: TraceCell;
   data?: unknown;
   items?: unknown;
   loading?: unknown;
@@ -220,7 +222,10 @@ function ListView(props: ListProps) {
     const signature = problems.join("\u0000");
     if (problems.length > 0 && signature !== warned.current) {
       warned.current = signature;
-      reportDiagnostic(`List: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`);
+      reportDiagnostic(`List: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`, {
+        category: "component",
+        ...(props.$$trace?.at ? { at: props.$$trace.at } : {}),
+      });
     }
   }, [model.items, idKey]);
 

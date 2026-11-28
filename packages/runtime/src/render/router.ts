@@ -23,7 +23,10 @@
 
 import { reportRuntimeError } from "../errors";
 import { isServerView } from "../reactivity/server-view";
-import { signal } from "../reactivity/signals";
+import { markWrite, signal } from "../reactivity/signals";
+import { activeTrace, childSpan, emit, traceFields, traceNow, tracing } from "../trace/core";
+import type { TraceContext } from "../trace/entries";
+import type { SourceLocation } from "../trace/location";
 
 export type RoutingMode = "hash" | "browser";
 
@@ -278,9 +281,11 @@ function onBrowserChange(): void {
   }
   if (nextPath === held) return;
   const token = ++latest;
+  const nav = startNavigationTrace();
   const accept = () => {
     held = undefined;
     settleOnBrowserEntry();
+    endNavigationTrace(nav, next, "done");
     location.set(next);
     fireDidNavigate(next);
     settleDeltas();
@@ -298,6 +303,7 @@ function onBrowserChange(): void {
       return;
     }
     held = undefined;
+    endNavigationTrace(nav, next, "cancelled");
     settleDeltas();
     // Back to the app's entry without a new history entry; the event this causes finds the
     // app's route. If the browser dropped that entry, the current one takes the app's URL.
@@ -360,6 +366,36 @@ function targetOf(to: unknown, queryParams: unknown): RouteLocation {
   return parseLocation(path);
 }
 
+/** Step 35: a navigation being traced (made only while tracing). */
+interface NavigationTrace {
+  context: TraceContext;
+  at?: SourceLocation;
+  from: string;
+  start: number;
+}
+
+/** Step 35: starts tracing a navigation, in the running handler's trace (or a new one: the URL changed). */
+function startNavigationTrace(): NavigationTrace | undefined {
+  if (!tracing) return undefined;
+  const active = activeTrace();
+  return { context: childSpan(active?.context), ...(active?.at ? { at: active.at } : {}), from: routePath(location.peek()), start: traceNow() };
+}
+
+/** Step 35: the navigation's entry; a move marks the location with it (renders that follow name it). */
+function endNavigationTrace(nav: NavigationTrace | undefined, target: RouteLocation, outcome: "done" | "cancelled" | "error"): void {
+  if (!nav || !tracing) return;
+  const seq = emit({
+    kind: "navigate",
+    ...traceFields(nav.context),
+    ...(nav.at ? { at: nav.at } : {}),
+    from: nav.from,
+    to: routePath(target),
+    outcome,
+    durationMs: traceNow() - nav.start,
+  });
+  if (outcome === "done") markWrite(location, { traceId: nav.context.traceId, spanId: nav.context.spanId, entry: seq });
+}
+
 /** Moves to `target`: a new (or replaced) history entry, then the location signal. */
 function commit(target: RouteLocation, replace: boolean): void {
   const view = browser();
@@ -390,14 +426,20 @@ export function navigate(to: unknown, options?: NavigateOptions): Promise<void> 
   if (options?.target === "_blank") return openInNewTab(target);
   const replace = options?.replace === true;
   const token = ++latest;
+  const nav = startNavigationTrace();
   const allowed = guard(target);
   if (allowed === true) {
+    endNavigationTrace(nav, target, "done");
     commit(target, replace);
     fireDidNavigate(target);
     return Promise.resolve();
   }
   return allowed.then((ok) => {
-    if (!ok || token !== latest) return;
+    if (!ok || token !== latest) {
+      endNavigationTrace(nav, target, "cancelled");
+      return;
+    }
+    endNavigationTrace(nav, target, "done");
     commit(target, replace);
     fireDidNavigate(target);
   });
@@ -453,6 +495,7 @@ function openInNewTab(target: RouteLocation): Promise<void> {
 export function redirect(to: string): void {
   const target = parseLocation(to);
   latest++;
+  endNavigationTrace(startNavigationTrace(), target, "done");
   commit(target, true);
   fireDidNavigate(target);
 }

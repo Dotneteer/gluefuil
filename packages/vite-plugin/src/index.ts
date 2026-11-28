@@ -10,9 +10,11 @@ import {
   type UserComponentInfo,
 } from "@gluefuil/compiler";
 import { componentMetadata, type ComponentMetadata } from "@gluefuil/components/metadata";
+import { inspectorComponents } from "@gluefuil/inspector/metadata";
 import { existsSync } from "node:fs";
-import { basename, dirname, resolve } from "node:path";
-import type { Plugin, ResolvedConfig } from "vite";
+import { createRequire } from "node:module";
+import { basename, dirname, relative, resolve, sep } from "node:path";
+import type { Plugin, ResolvedConfig, UserConfig } from "vite";
 import { AppGlobals, ComponentFolder, GLOBALS_FILE, importSpecifier, readCodeBehind } from "./components";
 import { appLocaleOf, localeFileErrors, localeFiles, localeRegistrationCode } from "./locales";
 import { addRootAttributes, basenameOf, clientRenderedSections, injectDocumentAttributes, injectPrerendered, injectTitle, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
@@ -58,6 +60,50 @@ export interface GfuiPluginOptions {
    * `wrapComponent` from @gluefuil/runtime in that module.
    */
   extensions?: Readonly<Record<string, { module: string; metadata: ComponentMetadata }>>;
+  /**
+   * Step 35: the Inspector page at `<base>__gfui/inspector/`, and tracing on by
+   * default. Default: on while serving, off in a build.
+   */
+  inspector?: boolean;
+}
+
+/** Step 35: where the Inspector is served, under Vite's base. */
+export const INSPECTOR_PATH = "__gfui/inspector/";
+
+/** Step 35: the Inspector's sources (@gluefuil/inspector's src folder). */
+const inspectorDir = dirname(createRequire(import.meta.url).resolve("@gluefuil/inspector/metadata"));
+
+/** Step 35: whether a file is one of the Inspector's own. */
+export function isInspectorFile(file: string): boolean {
+  return file.startsWith(inspectorDir + sep);
+}
+
+/** Step 35: the Inspector's entry module, as a page's script src resolves it (the plugin maps it). */
+export const INSPECTOR_ENTRY = "/@gfui/inspector-entry.tsx";
+
+/** Step 35: the Inspector page in a build (`inspector: true`): an input of its own, served at <base>__gfui/inspector/. */
+export const INSPECTOR_HTML = `${INSPECTOR_PATH}index.html`;
+
+/**
+ * Step 35: the Inspector page: its entry module, and (on the dev server) the
+ * project root, for opening files in the editor.
+ */
+export function inspectorHtml(base: string, projectRoot: string | undefined): string {
+  const entry = projectRoot === undefined ? INSPECTOR_ENTRY : `${base}@fs${resolve(inspectorDir, "main.tsx").split(sep).join("/")}`;
+  const root = projectRoot === undefined ? "" : ` data-gfui-project-root="${projectRoot.split(sep).join("/").replace(/"/g, "&quot;")}"`;
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gfui Inspector</title>
+  </head>
+  <body>
+    <div id="root"${root}></div>
+    <script type="module" src="${entry}"></script>
+  </body>
+</html>
+`;
 }
 
 /** Query parameters that make Vite load a file as something other than a module (`?raw`). */
@@ -101,13 +147,37 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
     }
     return { components, componentModules };
   };
+  // Step 35: the Inspector: on while serving unless turned off; in a build only when asked for.
+  const inspectorOn = () => options.inspector ?? config?.command === "serve";
   const componentsFolder = () => (folder ??= new ComponentFolder(resolve(config?.root ?? process.cwd(), options.componentsDir ?? "src/components")));
   let appGlobals: AppGlobals | undefined;
   const globalsOf = () => (appGlobals ??= new AppGlobals(resolve(config?.root ?? process.cwd(), options.entry ?? "src/Main.gui")));
+  /** Step 35: the build's Inspector page, as an absolute id under the root. */
+  const inspectorPage = () => resolve(config?.root ?? process.cwd(), INSPECTOR_HTML);
   return {
     name: "gfui",
     // Before other transforms (React's), which expect JavaScript.
     enforce: "pre",
+    config(user: UserConfig, env: { command: string }) {
+      // Step 35: a build with `inspector: true` gets the Inspector page as another input.
+      if (env.command !== "build" || options.inspector !== true || user.build?.ssr) return undefined;
+      const root = resolve(user.root ?? process.cwd());
+      const page = resolve(root, INSPECTOR_HTML);
+      const input = user.build?.rollupOptions?.input;
+      const inputs: Record<string, string> =
+        input === undefined ? { index: resolve(root, "index.html") } : typeof input === "string" ? { index: input } : Array.isArray(input) ? Object.fromEntries(input.map((file, i) => [`input${i}`, file])) : { ...input };
+      return { build: { rollupOptions: { input: { ...inputs, gfuiInspector: page } } } };
+    },
+    resolveId(id: string) {
+      // Step 35: the build's Inspector page (virtual) and its entry.
+      if (id === INSPECTOR_ENTRY) return resolve(inspectorDir, "main.tsx");
+      if (options.inspector === true && config?.command === "build" && resolve(id) === inspectorPage()) return inspectorPage();
+      return undefined;
+    },
+    load(id: string) {
+      if (options.inspector === true && config?.command === "build" && id === inspectorPage()) return inspectorHtml(config.base, undefined);
+      return undefined;
+    },
     configResolved(resolved: ResolvedConfig) {
       config = resolved;
       sourceMap = sourceMapOption === "auto" ? resolved.command === "serve" || !!resolved.build.sourcemap : sourceMapOption;
@@ -121,8 +191,12 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
         if (context?.path !== undefined && context.path !== "/index.html") return html;
         // The router's basename (step 21, part 2): Vite's base, on the container for mountApp.
         const basename = basenameOf(config.base ?? "/");
+        // Step 35: while serving, tracing is on and the Inspector is at <base>__gfui/inspector/.
+        const traceAttributes: Record<string, string> = inspectorOn() ? { "data-gfui-inspector": `${config.base ?? "/"}${INSPECTOR_PATH}` } : {};
+        if (config.command === "serve" && inspectorOn()) traceAttributes["data-gfui-trace"] = "on";
         if (!prerender || config.command !== "build") {
-          return basename === "" ? html : addRootAttributes(html, prerender?.rootId ?? "root", { [BASE_ATTRIBUTE]: basename });
+          const attributes = { ...(basename === "" ? {} : { [BASE_ATTRIBUTE]: basename }), ...traceAttributes };
+          return Object.keys(attributes).length === 0 ? html : addRootAttributes(html, prerender?.rootId ?? "root", attributes);
         }
         // The render's own server uses only the compile step (no prerender, no maps).
         const transform = gfui({
@@ -150,7 +224,7 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
             );
           }
           const titled = title === undefined ? html : injectTitle(html, title);
-          const page = injectPrerendered(document === undefined ? titled : injectDocumentAttributes(titled, document), prerender.rootId, inner, attributes);
+          const page = injectPrerendered(document === undefined ? titled : injectDocumentAttributes(titled, document), prerender.rootId, inner, { ...attributes, ...traceAttributes });
           if (path === "/") index = page;
           else routePages.push({ fileName: routeFileName(path), source: page });
         }
@@ -177,6 +251,21 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
       });
     },
     configureServer(server) {
+      // Step 35: the Inspector page.
+      if (inspectorOn()) {
+        const path = `${server.config.base}${INSPECTOR_PATH}`;
+        server.middlewares.use(async (request, response, next) => {
+          const url = request.url?.replace(/[?#].*$/, "");
+          if (url !== path && url !== path.slice(0, -1)) return next();
+          try {
+            const html = await server.transformIndexHtml(path, inspectorHtml(server.config.base, server.config.root));
+            response.setHeader("Content-Type", "text/html");
+            response.end(html);
+          } catch (error) {
+            next(error);
+          }
+        });
+      }
       // A component file (or code-behind) appearing or disappearing changes what
       // other files compile to: recompile every .gui module and reload.
       const changed = (path: string) => {
@@ -194,6 +283,19 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
     transform(source, id) {
       const file = gfuiFilePath(id);
       if (!file) return undefined;
+      // Step 35: the Inspector's own markup, with its feed component (none of the app's components or globals).
+      if (isInspectorFile(file)) {
+        const result = compileModule(source, {
+          format: "esm",
+          fileName: basename(file),
+          sourceMap,
+          components: { ...componentMetadata, ...inspectorComponents },
+          componentModules: { TraceFeed: "./feed" },
+        });
+        const failed = result.diagnostics.filter((d) => d.severity === "error");
+        if (failed.length > 0) this.error({ message: formatErrors(failed, source, file), id: file });
+        return { code: result.code, map: result.map ?? { mappings: "" } };
+      }
       // The other component files' interfaces; a change to one recompiles this file.
       const userComponents: Record<string, UserComponentInfo> = {};
       for (const [name, found] of componentsFolder().scan()) {
@@ -216,6 +318,8 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
         format: "esm",
         // The map's source resolves relative to the module's URL.
         fileName: basename(file),
+        // Step 35: trace entries name the file from the project root (the Inspector opens it there).
+        locationFile: relative(config?.root ?? process.cwd(), file).split(sep).join("/"),
         sourceMap,
         userComponents,
         ...(codeBehind !== undefined ? { codeBehind } : {}),

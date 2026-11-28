@@ -52,7 +52,7 @@ describe("file forms", () => {
     const out = code('<Component name="Hello"><Text>hi {$props.name}</Text></Component><App><Hello name="Ann"/></App>');
     expect(out).toContain("function $$U_Hello({ input: $$in }) {\n  const $$c = $$useComponent($$in, $$scope, $$empty, $$empty, []);");
     expect(out).toContain('$$U_Hello.displayName = "Hello";');
-    expect(out).toContain('$$h($$BoundUser, { type: $$U_Hello, props: { "name": "Ann" }, bindings: $$empty, scope: $$scope })');
+    expect(out).toContain('$$h($$BoundUser, { type: $$U_Hello, props: { "name": "Ann" }, bindings: $$empty, at: $$L[2], scope: $$scope })');
     expect(out).toMatch(/export default Main;\n$/);
   });
 
@@ -156,7 +156,7 @@ describe("inside a component", () => {
 
   test("the generated component: variables, methods, IDs, slots", () => {
     const out = code('<Component name="A" var.n="{0}" method.go="n++"><Stack><TextBox id="box"/><Slot name="rowTemplate" item="{n}" open/></Stack></Component>');
-    expect(out).toContain('const $$v0 = { "n": { init: ($$s) => 0 } };');
+    expect(out).toContain('const $$v0 = { "n": { init: ($$s) => 0, at: $$L[0] } };');
     expect(out).toContain('const $$m1 = { "go": ($$s) => ($$x) => async');
     expect(out).toContain('const $$c = $$useComponent($$in, $$scope, $$v0, $$m1, ["box"]);');
     expect(out).toContain('{ "$item": ($$s) => $$s.n, "$open": () => "true" }');

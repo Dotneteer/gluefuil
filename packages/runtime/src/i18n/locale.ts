@@ -17,6 +17,9 @@ import { noteServerLoad } from "../render/lazy";
 import { staticRenderInfo } from "../render/static-render";
 import { BUILT_IN_MESSAGES } from "./builtin-en";
 
+/** Step 35: the i18n diagnostics' category. */
+const I18N = { category: "i18n" } as const;
+
 export const PERSIST_KEY = "gfui.locale";
 
 /** Whether `value` is a BCP 47 locale `Intl` accepts. */
@@ -81,7 +84,7 @@ export function flattenMessages(input: unknown, prefix = "", into: Messages = {}
 /** Adds messages to a locale's bundle (later ones win). */
 export function registerBundle(locale: string, messages: unknown): void {
   if (!isValidLocale(locale)) {
-    reportDiagnostic(`i18n: a bundle for an invalid locale '${locale}' is ignored`);
+    reportDiagnostic(`i18n: a bundle for an invalid locale '${locale}' is ignored`, I18N);
     return;
   }
   const key = normalizeLocale(locale);
@@ -151,7 +154,7 @@ export function loadLocale(locale: string): Promise<void> {
           (error: unknown) => {
             loaded.add(l);
             version.set(version.peek() + 1);
-            reportDiagnostic(`i18n: the messages of '${l}' failed to load: ${error instanceof Error ? error.message : String(error)}`);
+            reportDiagnostic(`i18n: the messages of '${l}' failed to load: ${error instanceof Error ? error.message : String(error)}`, I18N);
           },
         );
       loading.set(l, running);
@@ -267,7 +270,7 @@ export function currentLocaleSource(): LocaleSource {
  */
 export function setLocaleDefaults(locale: unknown, fallback: unknown): void {
   const app = isValidLocale(locale) ? normalizeLocale(locale) : undefined;
-  if (locale !== undefined && locale !== null && locale !== "" && app === undefined) reportDiagnostic(`i18n: App locale '${String(locale)}' is not a valid locale`);
+  if (locale !== undefined && locale !== null && locale !== "" && app === undefined) reportDiagnostic(`i18n: App locale '${String(locale)}' is not a valid locale`, I18N);
   if (appLocale.peek() !== app) appLocale.set(app);
   const def = isValidLocale(fallback) ? normalizeLocale(fallback) : "en";
   if (defaultLocale.peek() !== def) defaultLocale.set(def);
@@ -276,7 +279,7 @@ export function setLocaleDefaults(locale: unknown, fallback: unknown): void {
 /** `App.setLocale(locale)`: the user's choice, kept in localStorage; resolves once its messages are loaded. */
 export function setLocale(locale: unknown): Promise<void> {
   if (!isValidLocale(locale)) {
-    reportDiagnostic(`i18n: setLocale('${String(locale)}'): not a valid locale`);
+    reportDiagnostic(`i18n: setLocale('${String(locale)}'): not a valid locale`, I18N);
     return Promise.resolve();
   }
   const normalized = normalizeLocale(locale);

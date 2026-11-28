@@ -8,6 +8,9 @@ import { compare, formatCurrency, formatDate, formatList, formatNumber, formatRe
 import { availableLocales, currentLocale, currentLocaleSource, isValidLocale, registerBundle, registerLocaleLoader, setLocale, textDirection } from "./locale";
 import { translate } from "./messages";
 
+/** Step 35: the i18n diagnostics' category. */
+const I18N = { category: "i18n" } as const;
+
 /** The locale of a bundle file's name: `de.json`, `de-AT.locale.json`, `messages.de.json`. */
 export function localeOfUrl(url: string): string | undefined {
   const name = url.split(/[?#]/)[0]!.split("/").pop() ?? "";
@@ -21,7 +24,7 @@ async function fetchBundle(url: string): Promise<void> {
   const json = (data ?? {}) as Record<string, unknown>;
   const locale = typeof json.locale === "string" ? json.locale : localeOfUrl(url);
   if (!locale) {
-    reportDiagnostic(`i18n: the bundle '${url}' names no locale (a "locale" field, or a file name like de.json)`);
+    reportDiagnostic(`i18n: the bundle '${url}' names no locale (a "locale" field, or a file name like de.json)`, I18N);
     return;
   }
   const { locale: _ignored, messages, ...rest } = json;
@@ -45,7 +48,7 @@ export function registerLocaleBundles(input: unknown): Promise<void> {
       });
       return Promise.resolve();
     }
-    return fetchBundle(input).catch((error: unknown) => reportDiagnostic(`i18n: the bundle '${input}' failed to load: ${error instanceof Error ? error.message : String(error)}`));
+    return fetchBundle(input).catch((error: unknown) => reportDiagnostic(`i18n: the bundle '${input}' failed to load: ${error instanceof Error ? error.message : String(error)}`, I18N));
   }
   if (Array.isArray(input)) return Promise.all(input.map(registerLocaleBundles)).then(() => undefined);
   if (typeof input === "object") {

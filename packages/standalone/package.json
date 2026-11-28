@@ -13,7 +13,8 @@
   "dependencies": {
     "@gluefuil/compiler": "0.0.0",
     "@gluefuil/components": "0.0.0",
-    "@gluefuil/runtime": "0.0.0"
+    "@gluefuil/runtime": "0.0.0",
+    "@gluefuil/inspector": "0.0.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",

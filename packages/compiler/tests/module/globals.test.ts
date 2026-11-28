@@ -75,8 +75,8 @@ describe("an app file's own globals", () => {
 
   test("the root's globals form a container that provides GlobalScope, around the root's own variables", () => {
     const { code } = compileModule('<App global.a="{1}" var.b="{2}"/>', { sourceMap: false });
-    expect(code).toContain('const $$v0 = { "a": { init: ($$s) => 1 } };');
-    expect(code).toContain('const $$v1 = { "b": { init: ($$s) => 2 } };');
+    expect(code).toContain('const $$v0 = { "a": { init: ($$s) => 1, at: $$L[0] } };');
+    expect(code).toContain('const $$v1 = { "b": { init: ($$s) => 2, at: $$L[1] } };');
     expect(code).toMatch(/return \$\$h\(\$\$GlobalScope, \{ scope: \$\$c \}, \$\$h\(\$\$K\d+, \{ \$\$p: \$\$c \}\)\);/);
   });
 

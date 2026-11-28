@@ -1,0 +1,24 @@
+{
+  "name": "@gluefuil/inspector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The gfui Inspector (step 35): a .gui app that shows the trace of the app tabs on its origin, fed over a BroadcastChannel. ./metadata is React-free.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./metadata": "./src/metadata.ts",
+    "./main": "./src/main.tsx",
+    "./Inspector.gui": "./src/Inspector.gui"
+  },
+  "dependencies": {
+    "@gluefuil/components": "0.0.0",
+    "@gluefuil/runtime": "0.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@gluefuil/compiler": "*"
+  }
+}

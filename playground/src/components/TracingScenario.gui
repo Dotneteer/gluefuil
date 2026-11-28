@@ -1,0 +1,55 @@
+<!--
+  Tracing (step 35): every action here leaves entries in the trace. The dev
+  server traces by default; "Open the Inspector" shows the stream in another
+  tab, with each entry's line in this file.
+-->
+<Component name="TracingScenario">
+  <VStack>
+    <ScenarioHeader
+      title="Tracing"
+      description="Step 35: a trace of handlers, state, requests, errors, diagnostics and console calls, each pointing at its markup line. Open the Inspector, then try the buttons."/>
+    <TraceControls/>
+    <HStack wrapContent="true" var.count="{0}" var.q="" var.secret="" var.slowRuns="{0}" var.handled="">
+      <Card title="State">
+        <Text>A write is a state entry; the text that shows it re-renders (a render entry, when they are on).</Text>
+        <HStack verticalAlignment="center">
+          <Button label="Add one" onClick="count++"/>
+          <Text>count = {count}</Text>
+        </HStack>
+      </Card>
+      <Card title="A request and its cause">
+        <Text>Typing writes q; the DataSource's URL reads it, so its fetch names the write as its cause.</Text>
+        <TextBox placeholder="Search people" onDidChange="(text) => q = text"/>
+        <DataSource id="tracedPeople" url="/api/people" queryParams="{{ q }}"/>
+        <Text>{tracedPeople.value?.length ?? 0} people</Text>
+      </Card>
+      <Card title="Errors">
+        <Text>An error entry says who handled it.</Text>
+        <HStack wrapContent="true">
+          <Button label="Fail, handled here" onClick="throw new Error('Handled by the button')" onError="(error) => handled = error.message"/>
+          <Button label="Fail, reported" onClick="throw new Error('Reported by the App')"/>
+        </HStack>
+        <Text when="{handled}">onError: {handled}</Text>
+      </Card>
+      <Card title="Console and cancellation">
+        <Text>console.* from script is a log entry. A second click on the slow button cancels the first (single-flight).</Text>
+        <HStack wrapContent="true">
+          <Button label="Log to the console" onClick="console.info('Tracing scenario', { count })"/>
+          <Button label="Slow (0.8 s)" handlerPolicy="single-flight" onClick="await delay(800); slowRuns++"/>
+        </HStack>
+        <Text>slow runs finished: {slowRuns}</Text>
+      </Card>
+      <Card title="A secret">
+        <Text>A password input's values are masked in the trace: its handler's arguments and the writes it makes.</Text>
+        <PasswordInput label="Password" onDidChange="(value) => secret = value"/>
+        <Text>{secret.length} characters</Text>
+      </Card>
+      <Card title="A diagnostic">
+        <Text>Rows with the same id: the List reports it, at its line.</Text>
+        <List data="{[{ id: 1, name: 'First' }, { id: 1, name: 'Second' }]}" height="72px">
+          <Text>{$item.name}</Text>
+        </List>
+      </Card>
+    </HStack>
+  </VStack>
+</Component>

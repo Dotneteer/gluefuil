@@ -6,8 +6,10 @@
 //   runtime    -> must not import the compiler or components
 //   components -> must not import the compiler
 //   components/metadata (and everything it reaches) -> no bare imports at all
-//   vite-plugin -> the compiler, components/metadata, vite and Node built-ins only
-//                  (it runs in the build: no React, no runtime, no components)
+//   vite-plugin -> the compiler, components/metadata, inspector/metadata, vite and
+//                  Node built-ins only (it runs in the build: no React, no runtime, no components)
+//   inspector/metadata (and everything it reaches) -> components/metadata only (step 35)
+//   inspector -> no app package (compiler, runtime, components) imports it (step 35)
 //   standalone, vite-plugin -> delivery packages: no other package imports them
 //   mock-backend -> msw, node: built-ins and relative files only; and no app
 //                   package (compiler, runtime, components) imports it: the app
@@ -143,12 +145,30 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
     }
   }
 
-  const VITE_PLUGIN_ALLOWED = ["@gluefuil/compiler", "@gluefuil/components/metadata", "@gluefuil/mock-backend/middleware", "vite"];
+  const VITE_PLUGIN_ALLOWED = ["@gluefuil/compiler", "@gluefuil/components/metadata", "@gluefuil/inspector/metadata", "@gluefuil/mock-backend/middleware", "vite"];
   for (const file of filesUnder(files, "packages/vite-plugin/src")) {
     for (const specifier of collectImports(files.get(file)!)) {
       if (isRelative(specifier) || specifier.startsWith("node:")) continue;
       if (VITE_PLUGIN_ALLOWED.includes(specifier)) continue;
-      report(file, specifier, "vite-plugin may only import the compiler, components/metadata, the mock backend's middleware, vite and node: built-ins");
+      report(file, specifier, "vite-plugin may only import the compiler, components/metadata, inspector/metadata, the mock backend's middleware, vite and node: built-ins");
+    }
+  }
+
+  // Step 35: the Inspector is a page of its own; the app's packages never import it.
+  for (const app of ["packages/compiler/src", "packages/runtime/src", "packages/components/src"]) {
+    for (const file of filesUnder(files, app)) {
+      for (const specifier of collectImports(files.get(file)!)) {
+        if (startsWithAny(specifier, ["@gluefuil/inspector"])) report(file, specifier, "the app's packages must not import the Inspector");
+      }
+    }
+  }
+  if (files.has("packages/inspector/src/metadata.ts")) {
+    for (const file of relativeClosure(files, "packages/inspector/src/metadata.ts")) {
+      for (const specifier of collectImports(files.get(file)!)) {
+        if (!isRelative(specifier) && specifier !== "@gluefuil/components/metadata") {
+          report(file, specifier, "inspector/metadata must stay React-free: only @gluefuil/components/metadata");
+        }
+      }
     }
   }
 

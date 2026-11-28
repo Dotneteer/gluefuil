@@ -3,7 +3,7 @@
 > **Cornerstone document.** Describes the repository as it is now. It is
 > updated at the end of every proof-of-concept step.
 >
-> **Last updated:** step 34 (internationalization).
+> **Last updated:** step 35 (observability).
 
 ## What this repository is
 
@@ -200,6 +200,21 @@ Current state:
   included. The prerender renders the app's locale; the takeover switches. RTL
   locales set `dir` on the App and `<html>`; the stylesheet is logical
   ([i18n.md](i18n.md)).
+- **Observability (step 35):** a trace stream, emitted only while tracing is
+  on (the dev server by default; `?gfui-trace`, a stored setting or
+  `trace.enable()` elsewhere). It records handlers (with W3C-shaped trace and
+  span IDs carried by the invocation), state writes, requests, navigations,
+  errors and who handled them, diagnostics, script's `console.*`, and,
+  optionally, element re-renders.
+  - Each entry has its markup position, from a location table the compiler
+    puts in every module.
+  - A re-render or refetch names the write that caused it: write marks are
+    tracked through the store.
+  - Values are bounded previews; passwords are masked.
+  - **The Inspector** (`@gluefuil/inspector`) is a separate `.gui` page fed
+    over a `BroadcastChannel`, on its own thread. It is served by the dev
+    server, by a build with `inspector: true`, and in standalone mode with
+    `?gfui-inspector` ([observability.md](observability.md)).
 - **Overlays and menus (step 27):** `ModalDialog` (opened by `open(...params)`
   with `$param` inside, or by `when`; a dirty guard; a Form inside closes it),
   `Drawer`, `DropdownMenu` with `MenuItem`, `SubMenuItem` and `MenuSeparator`
@@ -245,6 +260,7 @@ Current state:
 | [table.md](table.md) | `components/src/table.tsx`, `table-model.ts`, `value-types.ts`, `value.tsx`, `pagination.tsx`, `row-selection.ts`; `childrenAsColumns` (E040) in the compiler |
 | [tree.md](tree.md) | `components/src/tree.tsx`, `tree-model.ts`, `tilegrid.tsx`; `gridKeyTarget` in `selection.ts`; the `pinned` row in `virtual.ts` |
 | [files.md](files.md) | `components/src/files.tsx`, `files-parse.ts` (lazy), the actions in `data.tsx`, Image `data`; `runtime/src/data/body.ts`, `transfer.ts`, `render/actions.ts`; the compiler's action elements in `<event>`; the mock backend's form bodies and `file()` |
+| [observability.md](observability.md) | `runtime/src/trace/`, the emitters (handlers, variables, the HTTP gate, the router, the error pipeline, the sandbox's console, `Bound`), write marks in the store; the compiler's location table, `traced`/`sensitive`; `packages/inspector`; the plugin's Inspector and container attributes; standalone's `?gfui-inspector` |
 | [i18n.md](i18n.md) | `runtime/src/i18n/`, the static document in `static-render.ts`; `components/src/i18n.tsx`, App's locale props; `compiler/src/module/i18n.ts` (E041), `arbitraryTemplates`, `$$propKey`; `vite-plugin/src/locales.ts`, `injectDocumentAttributes` |
 | [errors.md](errors.md) | `runtime/src/errors/`, `render/app-errors.ts`, the error options of `HandlerSlot` and `lifecycle.error`, the policy in `data/retry.ts` and `loader.ts`; `components/src/errors.tsx`; `onError` in the compiler; `clientRenderedSections` in the plugin |
 | [remaining-components.md](remaining-components.md) | `components/src/media.tsx`, `toc.tsx`, `a11y.tsx`, `misc.tsx`, `nonvisual.tsx`, `app-info.ts`; `runtime/src/render/static-render.ts`, `requestServerRender`, `contentToast`; `receivesId`, `removedApi`, component `deprecationMessage` in the compiler; the plugin's `injectTitle` and `MEDIA_BYPASS` |
@@ -285,10 +301,12 @@ Current state:
 │   │   ├── src/server.ts    @gluefuil/runtime/server: renderStatic (static generation; never in client bundles)
 │   │   ├── src/errors/      AppError and the error pipeline (step 33: sinks, the console stage, diagnostics)
 │   │   ├── src/i18n/        the locale, bundles, messages (intl-messageformat), formatters, the App global (step 34)
+│   │   ├── src/trace/       the trace stream (step 35): the switch, the ring, entries, previews, locations, the Inspector channel
 │   │   └── bench/           benchmarks (npm run bench)
 │   ├── standalone/      @gluefuil/standalone  the one-file engine (dist/gfui.js): fetch, compile, cache, watch
 │   ├── vite-plugin/     @gluefuil/vite-plugin build-time compilation: .gui -> ES module in Vite; component discovery; prerendering; gfuiMockBackend
 │   ├── mock-backend/    @gluefuil/mock-backend a mock backend (Request -> Response) and its hosts: service worker, dev-server middleware, test server
+│   ├── inspector/       @gluefuil/inspector   the Inspector (step 35): Inspector.gui, TraceFeed (+ React-free metadata), the feed model, the page's entry
 │   └── components/      @gluefuil/components  built-in components (+ React-free metadata)
 │       ├── src/layout.tsx   Stack (VStack, HStack, … are compile-time aliases), SpaceFiller, the layout context and props (+ layout-metadata.ts, React-free)
 │       ├── src/mantine.tsx  Button, SubmitButton (Mantine, through wrapComponent), MANTINE_STYLESHEET
@@ -330,7 +348,7 @@ Current state:
 │   ├── forms/           @gluefuil/forms-app   E2E fixture: a sign-up form with bound inputs; a profile form against a mock backend (dev 5186, prerendered build 5187)
 │   ├── hello/           @gluefuil/hello-app   E2E fixture: the step demos in Main.gui (+ components/, code-behind), compiled by @gluefuil/vite-plugin, prerendered in builds
 │   └── data/            @gluefuil/data-app    E2E fixture: DataSource and APICall against the mock backend (worker host 5182, middleware host 5183)
-├── playground/          @gluefuil/playground  manual testing: a dashboard of 58 scenarios (steps 2–34), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
+├── playground/          @gluefuil/playground  manual testing: a dashboard of 59 scenarios (steps 2–35), one page each with its source, and a live compiler, on the App shell; layouts.html: one App shell demo per XMLUI layout, and the spacing demo (see playground/README.md)
 ├── e2e/                 Playwright specs; fixtures/standalone-site (served from .tmp/ by tools/static-server.mjs)
 ├── .tmp/                (ignored) test work folders: the standalone site copy, the hello app's production build, throwaway apps
 ├── .ai/                 AI working material: plans (plan/), docs (docs/)
@@ -354,14 +372,16 @@ version `0.0.0`.
 | `@gluefuil/standalone` | The one-file engine for standalone mode; built into `dist/gfui.js` (IIFE, global `gfui`). | `.` → `src/index.ts` | Browser |
 | `@gluefuil/vite-plugin` | Build-time compilation: the Vite plugin `gfui()`; `gfuiMockBackend()`. | `.` → `src/index.ts` | Node (Vite) |
 | `@gluefuil/mock-backend` | A mock backend for development and tests, and its hosts. Never imported by the app's packages. | `.` → `src/index.ts`; `./worker`, `./node`, `./middleware` | Browser (worker host), Node (middleware and test hosts) |
+| `@gluefuil/inspector` | Step 35: the Inspector page (a `.gui` app and its `TraceFeed`). Never imported by the app's packages. | `.` → `src/index.ts`; `./metadata` (React-free); `./main`; `./Inspector.gui` | Browser (its own page); `./metadata` in Node (the plugin) |
 
 **Current contents:**
 
 | File | Exports |
 |------|---------|
 | `packages/compiler/src/index.ts` | **Markup:** `parseMarkup`, the markup tree types, `MarkupDiagnostics`, `decodeEntities`, `decodeEntitiesWithOffsets`. **Script:** `parseExpression`, `parseStatements`, `parseInterpolation`, the segment types, `ScriptAst` (namespace of AST types), `ScriptDiagnostics`, `ScriptSourceOptions`. **Code generation:** `compileExpression`, `compileInterpolation`, `compileHandler`, `CompileOptions`, `CompileHandlerOptions`, `CompileResult`, `ScopeNames`, `EmitterOptions`, `CodegenDiagnostics`, and the sandbox tables `ALLOWED_GLOBALS`, `APP_GLOBALS`, `BANNED_GLOBALS`, `BANNED_MEMBERS`, `CONSTRUCTIBLE`, `RESTRICTED_GLOBAL_MEMBERS`. **Modules:** `compileModule`, `CompileModuleOptions`, `CompileModuleResult`, `ModuleDiagnostics`, `analyzeModule`, `ModuleAnalysis`, `UserComponentInfo`, `DEFAULT_SLOT`, `COMPONENT_NAME`, `compileFunction`. **Source maps:** `buildSourceMap`, `encodeMappings`, `decodeMappings`, `encodeVlq`, `decodeVlq`, `originalPositionFor`, `offsetSourceMapLines`, `SourceMap`, `Mapping`. **Shared:** `LineMap`, `Diagnostic`, `formatDiagnostic`, `codeFrame`, `editDistance`, `closestMatch`, `didYouMean`. |
-| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **Forms:** `extractServerProblem`, `ServerProblem`, `ServerFieldError`, `FormStore`, `FormField`, `FieldOptions`, `DEFAULT_FIELD_OPTIONS`, `ValidationSummary`, `validateRules`, `customResults`, `highestSeverity`, `isEmptyValue`, `parseRegex`, `PATTERNS`, `FieldRules`, `RuleResult`, `Severity`, `isShown`, `INITIAL_FLAGS`, `InteractionFlags`, `ValidationMode`, `parseFieldPath`, `getAt`, `setAt`, `deleteAt`, `FormProvider`, `useFormStore`, `FieldBindingProvider`, `useFieldBinding`, `FieldBinding`; `createContextScope`, `useContextScope`, `provideContext`, `usePerChildScope`, `ChildContextValues`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`; step 33: `AppError`, `APP_ERROR_CATEGORIES`, `isAppErrorCategory`, `retryableByDefault`, `withFields`, `pushErrorSink`, `resetErrorSinks`, `reportToConsole`, `reportDiagnostic`, `setDiagnosticReporter`, `appErrors`, `appErrorSink`, `registerAppErrors`, `defaultErrorReport`, `errorAnnouncement`, `ERROR_BUFFER_SIZE`, `AppGlobal`, `resetAppErrors`, `BACKOFFS`, `CircuitBreaker`, `policyOf`, their types. **Internationalization (step 34):** `activeLocale`, `AppGlobal`, `availableLocales`, `BUILT_IN_MESSAGES`, `compileMessage`, `createAppApi`, `currentLocale`, `currentLocaleSource`, `flattenMessages`, `formatPattern`, `frameworkText`, `isValidLocale`, `languageOf`, `loadLocale`, `localeLoad`, `LocaleProfileContext`, `localeOfUrl`, `lookupMessage`, `messagesVersion`, `normalizeLocale`, `pairSelfClosingTags`, `PERSIST_KEY`, `profileOf`, `registerBundle`, `registerLocaleBundles`, `registerLocaleLoader`, `resetI18nState`, `resetMessageCache`, `resolvedLocale`, `rootProfile`, `setLocale`, `setLocaleDefaults`, `textDirection`, `translate`, `useFrameworkText`, `useLocaleProfile`, `setStaticDocument`, `staticDocument`, their types. **Files (step 32B):** `encodeBody`, `containsBinary`, `appendField`, `PAYLOAD_TYPES`, `upload`, `download`, `uploadSpec`, `downloadSpec`, `downloadName`, `saveBlob`, `Actions`, `actionHandler`, their types. **Static passes (step 32):** `staticRenderInfo`, `inStaticRender`, `StaticRenderInfo`, `setStaticTitle`, `staticTitle`, `requestServerRender` (with `lazyResource`, `noteServerLoad`). **Overlays (step 27):** `toast`, `confirm`, `contentToast` (step 32), `toasts`, `confirmQueue`, `removeToast`, `answerConfirm`, `resetOverlayState`, `TOAST_POSITIONS`, their types; `pointerData`, `isPointerLike`, `PointerData`. Also `createElement`, `Fragment`. |
+| `packages/runtime/src/index.ts` | **Script:** `loadBinding`, `assertBindingValue`, `Binding`, `BindingError`, `scriptGlobals`, `scriptRuntime`, `BANNED_MEMBERS`, `SandboxError`. **Reactivity:** `signal`, `computed`, `batch`, `startBatch`, `endBatch`, `isBatching`, `watch`, `untracked`, `observerCount`, `ReactivityError`, the signal types, `useSignal`, `useComputed`, `shallowEqual`, `createScope`, `ScopeEntry`, `variable`, `Variable`, `freezeDeep`. **Rendering:** `Bound`, `TextNode`, `useScope`, `VariableDefinition`, `HandlerFactory`, `loadModule` (with `map`/`sourceURL`), `ModuleSourceMap`, `ARRAY_MUTATORS`, `ASYNC_ARRAY_METHODS`, `createAppScope`, `APP_GLOBAL_NAMES`. **Handlers:** `HandlerSlot`, `Invocation`, `HandlerCancelledError`, `HandlerTimeoutError`, `HANDLER_POLICIES`, `setDefaultHandlerTimeout`, `currentInvocation`, `delay`, their types. **Component APIs:** `createFileScope`, `useFileScope`, `apiRegistrar`, `useComponentApi`, `API_REFS`, `RegisterApi`. **Visibility and templates:** `When`, `resolveVisibility`, `breakpoint`, `breakpointIndex`, `BREAKPOINTS`, `BREAKPOINT_NAMES`, `TemplateInstance`, `templateRenderer`, their types. **Routing:** `navigate`, `redirect`, `setNavigationHandlers`, `currentLocation`, `currentRouteParams`, `matchRoute`, `findRoute`, `parseLocation`, `routePath`, `hrefFor`, `registerRoutes`, `registeredRoutes`, `setRoutingMode`, `routingMode`, `setServerPath`, `setBasename`, `getBasename`, `normalizeBasename`, `resetRouter`, their types. **Wrapping:** `wrapComponent`, `coerceLiteral`, `WrapConfig` and its parts. **Theme state:** `activeThemeId`, `activeThemeTone`, `setTheme`, `setThemeTone`, `toggleThemeTone`, `setThemeDefaults`, `resetThemeState`. **Shell state:** `navPanelCollapsed`, `setNavPanelCollapsed`, `navDrawerOpen`, `setNavDrawerOpen`, `resetShellState`. **Forms:** `extractServerProblem`, `ServerProblem`, `ServerFieldError`, `FormStore`, `FormField`, `FieldOptions`, `DEFAULT_FIELD_OPTIONS`, `ValidationSummary`, `validateRules`, `customResults`, `highestSeverity`, `isEmptyValue`, `parseRegex`, `PATTERNS`, `FieldRules`, `RuleResult`, `Severity`, `isShown`, `INITIAL_FLAGS`, `InteractionFlags`, `ValidationMode`, `parseFieldPath`, `getAt`, `setAt`, `deleteAt`, `FormProvider`, `useFormStore`, `FieldBindingProvider`, `useFieldBinding`, `FieldBinding`; `createContextScope`, `useContextScope`, `provideContext`, `usePerChildScope`, `ChildContextValues`. **User components:** `BoundUser`, `useComponent`, `Slot`, `SLOTS`, `DEFAULT_SLOT`, `ComponentInput`, `SlotProps`, `GlobalScope`, `useGlobalScope`. **Static generation:** `mountApp`, `MountOptions`, `PRERENDERED_ATTRIBUTE`, `PATH_ATTRIBUTE`, `BASE_ATTRIBUTE`, `READY_ATTRIBUTE`, `inServerView`, `isServerView`, `currentBreakpoint`, `setServerBreakpoint`, `breakpointFromName`. **Errors:** `reportRuntimeError`, `setErrorReporter`; step 33: `AppError`, `APP_ERROR_CATEGORIES`, `isAppErrorCategory`, `retryableByDefault`, `withFields`, `pushErrorSink`, `resetErrorSinks`, `reportToConsole`, `reportDiagnostic`, `setDiagnosticReporter`, `appErrors`, `appErrorSink`, `registerAppErrors`, `defaultErrorReport`, `errorAnnouncement`, `ERROR_BUFFER_SIZE`, `AppGlobal`, `resetAppErrors`, `BACKOFFS`, `CircuitBreaker`, `policyOf`, their types. **Internationalization (step 34):** `activeLocale`, `AppGlobal`, `availableLocales`, `BUILT_IN_MESSAGES`, `compileMessage`, `createAppApi`, `currentLocale`, `currentLocaleSource`, `flattenMessages`, `formatPattern`, `frameworkText`, `isValidLocale`, `languageOf`, `loadLocale`, `localeLoad`, `LocaleProfileContext`, `localeOfUrl`, `lookupMessage`, `messagesVersion`, `normalizeLocale`, `pairSelfClosingTags`, `PERSIST_KEY`, `profileOf`, `registerBundle`, `registerLocaleBundles`, `registerLocaleLoader`, `resetI18nState`, `resetMessageCache`, `resolvedLocale`, `rootProfile`, `setLocale`, `setLocaleDefaults`, `textDirection`, `translate`, `useFrameworkText`, `useLocaleProfile`, `setStaticDocument`, `staticDocument`, their types. **Observability (step 35):** `trace` (the API: `enable`, `disable`, `entries`, `subscribe`, `clear`, `export`, `flush`, `inspect`), `autoEnableTrace`, `locations`, `formatLocation`, `tracePreview`, `resetTrace`, `setInspectorLocation`, `stopBridge`, `traceDiagnostic`, `traceLog`, `takeCauses`, `TRACE_CHANNEL`, `TRACE_KINDS`, `TRACE_PARAM`, `TRACE_STORAGE_KEY`, `TRACE_ATTRIBUTE`, `INSPECTOR_ATTRIBUTE`, `DEFAULT_TRACE_SIZE`, `MASK`, and the entry types (`TraceEntry`, `HandlerEntry` … `RenderEntry`, `Cause`, `TraceContext`, `SourceLocation`, `TraceCell`, `HandlerTraceInfo`, `TraceExport`, `TraceOptions`, `BridgeMessage`, `SourceInfo`, `Preview`); `MountOptions.trace`. **Files (step 32B):** `encodeBody`, `containsBinary`, `appendField`, `PAYLOAD_TYPES`, `upload`, `download`, `uploadSpec`, `downloadSpec`, `downloadName`, `saveBlob`, `Actions`, `actionHandler`, their types. **Static passes (step 32):** `staticRenderInfo`, `inStaticRender`, `StaticRenderInfo`, `setStaticTitle`, `staticTitle`, `requestServerRender` (with `lazyResource`, `noteServerLoad`). **Overlays (step 27):** `toast`, `confirm`, `contentToast` (step 32), `toasts`, `confirmQueue`, `removeToast`, `answerConfirm`, `resetOverlayState`, `TOAST_POSITIONS`, their types; `pointerData`, `isPointerLike`, `PointerData`. Also `createElement`, `Fragment`. |
 | `packages/components/src/index.ts` | `App`, `Theme`, `AppHeader`, `NavPanel`, `Footer`, `NavLink`, `NavGroup`, `NavPanelCollapseButton`, `isActiveRoute`, `ShellConfig`, `Icon`, `ICON_NAMES`, `Text`, `Heading`, `H1`–`H6`, `Button`, the inputs, `Select`, `AutoComplete`, `Stack`, `SpaceFiller`, `LayoutContext`, `layoutStyle`, `useLayout`, `withoutLayoutProps`, `childCount`, `BAR_SCOPE`, `Items`, `itemKeys`, `itemsOf`, `orderedValues`, `Tree`, `TileGrid`, `columnCount`, `STATIC_TILES`, `gridKeyTarget`, `Pages`, `Page`, `Link`, the behavior components, the structure components (`Tabs`, `TabItem`, `ExpandableItem`, `Stepper`, `Step`, `Splitter`, `ScrollViewer`, `StickyBox`, `StickySection`, `ResponsiveBar`, `splitterSize`, `splitterSizeAfterDrag`, `fittingCount`), the overlays (`ModalDialog`, `Drawer`, `DropdownMenu`, `MenuItem`, `SubMenuItem`, `MenuSeparator`, `ContextMenu`, `Tooltip`, `parseTooltipOptions`), step 32's (`QRCode`, `qrPath`, `IFrame`, `MediaPlayer`, `TableOfContents`, `Bookmark`, `HeadingRegistry`, `HeadingRegistryContext`, `useTocEntry`, `SkipLink`, `LiveRegion`, `FocusScope`, `Logo`, `NoResult`, `ToneSwitch`, `ToneChangerButton`, `PageMetaTitle`, `Redirect`, `ChangeListener`, `Timer`, `Queue`, `MessageListener`, `deepEqual`, `rateLimited`, `sourcesChange`, `AppInfoContext`), step 32B's (`FileInput`, `FileUploadDropZone`, `FileUpload`, `FileDownload`, `acceptRules`, `acceptsFile`, `filesOf`, `parseFiles`), step 34's (`I18n`, `Locale`), step 33's (`Fallback`, `RetryPolicy`, `ErrorBoundary`, `RenderBoundary`, `useLoaderErrorReport`, `useRetryPolicy`, `retryPolicySpec`, `categoryList`), `BASE_STYLESHEET`, `MANTINE_STYLESHEET`; re-exports the metadata and the theme engine |
+| `packages/inspector/src/index.ts` | `TraceFeed`, `inspectorComponents`, `traceFeedMetadata`, `FeedModel`, `SOURCE_LIMIT`, `clockTime`, `compact`, `describe`, `locationText`, `Row` |
 | `packages/components/src/metadata.ts` | `componentMetadata` (every built-in, with `themeVars` defaults; props with value types and enums, events, API, templates; App's `regions` and `removedProps`), `LAYOUT_EQUIVALENTS`, `DRAWER_BREAKPOINTS`, `ComponentMetadata`, `PropMetadata`, `EventMetadata`, `PropValueType` |
 
 ### Compiler source layout
@@ -413,8 +433,10 @@ compiled app ──► @gluefuil/runtime ◄── @gluefuil/components
 @gluefuil/compiler ──► @gluefuil/components/metadata (React-free)
 
 delivery (imported by no package):
-  @gluefuil/standalone  ──► compiler, runtime, components
-  @gluefuil/vite-plugin ──► compiler, components/metadata, vite
+  @gluefuil/standalone  ──► compiler, runtime, components, inspector
+  @gluefuil/vite-plugin ──► compiler, components/metadata, inspector/metadata, vite
+
+@gluefuil/inspector ──► runtime, components (a page of its own; no app package imports it)
 ```
 
 | Package | May import | Must not import |
@@ -423,8 +445,9 @@ delivery (imported by no package):
 | runtime | React, relative files, third-party packages (`@tanstack/query-core`; step 34: `intl-messageformat`) | compiler, components (its *tests* may import the compiler, a devDependency) |
 | components | runtime, React, Mantine (`@mantine/core`, `@mantine/dates`, `@mantine/notifications`), `lucide-react`, `@tanstack/react-virtual` (step 29), `@headless-tree/core` (step 31), `uqr` (step 32), `react-dropzone` (step 32B), `papaparse` (step 32B; only in the lazy `files-parse.ts`), the Markdown parser (`mdast-util-from-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`, `mdast-util-to-string`; only in the lazy `markdown-render.tsx`) | compiler (its *tests* may import the compiler, a devDependency) |
 | everything reachable from `components/src/metadata.ts` | relative files only | any bare import (React, Mantine, runtime, …) |
-| standalone | compiler, runtime, components, React | (no package imports it) |
-| vite-plugin | compiler, `@gluefuil/components/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
+| standalone | compiler, runtime, components, inspector, React | (no package imports it) |
+| vite-plugin | compiler, `@gluefuil/components/metadata`, `@gluefuil/inspector/metadata`, `vite`, `node:*`, relative files | React, runtime, components' main entry (no package imports it) |
+| inspector | runtime, components, React; `./metadata`: only `@gluefuil/components/metadata` | (compiler, runtime and components never import it) |
 
 **Why:** the packages ship in different combinations. Standalone mode
 bundles all three; a build-time compiled app ships only runtime plus
@@ -476,7 +499,7 @@ All dev dependencies are pinned to exact versions in the root `package.json`.
 | `packages/runtime` | includes `src`, `tests` and `bench` |
 | `packages/standalone` | `types: ["node"]`; includes `src`, `tests` and `vite.config.ts` |
 | `packages/vite-plugin` | `lib: ["ES2023"]` (no DOM), `types: ["node"]` |
-| `packages/components`, `test-apps/smoke` | none (`components/src/css.d.ts` declares `*.css?inline`; `mantine.tsx` references it) |
+| `packages/components`, `packages/inspector`, `test-apps/smoke` | none (`components/src/css.d.ts` declares `*.css?inline`; `mantine.tsx` references it) |
 | `test-apps/hello` | `types: ["node"]` (for its `vite.config.ts`) |
 | `tools` | `lib: ["ES2023"]`, `types: ["node"]` |
 | `e2e` | `types: ["node"]`; also covers `playwright.config.ts` |
@@ -511,6 +534,7 @@ One-time machine setup for E2E: `npx playwright install chromium`.
 | `runtime` | `packages/runtime` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}`; benchmarks: `bench/**/*.bench.{ts,tsx}` |
 | `components` | `packages/components` | `jsdom`, React plugin, `tests/jsdom-setup.ts` (Mantine stubs; standalone loads it too) | `tests/**/*.test.{ts,tsx}` |
 | `standalone` | `packages/standalone` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
+| `inspector` | `packages/inspector` | `jsdom`, React plugin | `tests/**/*.test.{ts,tsx}` |
 | `vite-plugin` | `packages/vite-plugin` | `node` | `tests/**/*.test.ts` |
 | `tools` | `tools` | `node` | `**/*.test.ts` |
 
@@ -554,6 +578,7 @@ Conventions:
 | `packages/components/tests/dates.test.tsx` | Step 26: the formats, matchers, presets and times; the three date inputs through markup, in a Form, prerendered (see [dates.md](dates.md#tests)) |
 | `packages/compiler/tests/module/choice.test.ts`, `packages/components/tests/choice.test.tsx` | Step 25: Option children compiled to data; Select and AutoComplete through markup, in a Form, prerendered (see [choice.md](choice.md#tests)) |
 | `packages/components/tests/display.test.tsx`, `markdown.test.tsx`, `markdown-lazy.test.tsx`, `packages/compiler/tests/script/markdown-bindings.test.ts`, `packages/runtime/tests/render/lazy.test.ts` | Step 23: the display components, icons and E033; text overflow; Markdown (conformance, the HTML allowlist, `@{…}`, the lazy chunk and the prerender's second render) (see [display.md](display.md#tests)) |
+| `packages/runtime/tests/trace/*.test.ts(x)`, `packages/compiler/tests/module/locations.test.ts`, `packages/components/tests/trace.test.tsx`, `packages/inspector/tests/model.test.ts`, `packages/vite-plugin/tests/inspector.test.ts`, `tools/trace-kinds.test.ts` | Step 35: the core, causes from tracked reads, one table per entry kind and "off means off"; the location table; compiled markup traced in jsdom; the Inspector's model; the plugin's Inspector; kinds against emitters and docs (see [observability.md](observability.md#tests)) |
 | `packages/runtime/tests/i18n/i18n.test.ts`, `packages/compiler/tests/module/i18n.test.ts`, `packages/vite-plugin/tests/locales.test.ts`, `packages/components/tests/i18n.test.tsx`, `rtl-css.test.ts` | Step 34: the locale core, messages and formatters as tables; E041 and I18n's compilation; locale files; I18n, Locale, the framework strings and the prerender's takeover in jsdom; logical CSS (see [i18n.md](i18n.md#tests)) |
 | `packages/runtime/tests/errors/*.test.ts`, `runtime/tests/data/retry-policy.test.ts`, `packages/compiler/tests/module/errors.test.ts`, `packages/components/tests/errors.test.tsx` | Step 33: AppError, the pipeline and the App's sink; the retry policy and the circuit breaker; `onError` in the compiler; App onError, the per-element onError, Fallback, the boundaries, RetryPolicy and the prerender in jsdom (see [errors.md](errors.md#tests)) |
 | `packages/components/tests/files.test.tsx`, `packages/runtime/tests/data/transfer.test.ts` (Node environment), `packages/compiler/tests/module/actions.test.ts` | Step 32B: the accept rules, FileInput, the drop zone, Image `data`, action elements and `Actions` in jsdom (a stubbed fetch); bodies, uploads and downloads through the gate to the mock backend; the compiler's action elements (see [files.md](files.md#tests)) |
@@ -582,7 +607,7 @@ Conventions:
 | `packages/vite-plugin/tests/globals.test.ts`, `packages/compiler/tests/module/globals.test.ts`, `packages/components/tests/globals.test.tsx` | Globals in user components: the plugin's `entry` and `Globals.xs`, the compiler's tables, jsdom (see [scoping.md](scoping.md#tests)) |
 | `packages/vite-plugin/tests/prerender.test.ts` | Prerender options, HTML injection, when the hook runs, the routes to render and their files, the preview rewrite (see [ssg.md](ssg.md#tests)) |
 
-Count after step 34: 3,579 unit tests in 130 files, 308 E2E tests. Count after step 33: 3,470 unit tests in 125 files, 302 E2E tests. Count after step 32B: 3,364 unit tests in 120 files, 296 E2E tests. Count after step 32: 3,310 unit tests in 117 files, 288 E2E tests. Count after step 31: 3,244 unit tests in 113 files, 274 E2E tests. After step 30: 3,145 unit tests in 111 files, 260 E2E tests. After step 29: 3,010 unit tests in 108 files, 247 E2E tests. After step 28: 2,926 unit tests in 105 files, 235 E2E tests. After step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
+Count after step 35: 3,711 unit tests in 138 files, 318 E2E tests. Count after step 34: 3,579 unit tests in 130 files, 308 E2E tests. Count after step 33: 3,470 unit tests in 125 files, 302 E2E tests. Count after step 32B: 3,364 unit tests in 120 files, 296 E2E tests. Count after step 32: 3,310 unit tests in 117 files, 288 E2E tests. Count after step 31: 3,244 unit tests in 113 files, 274 E2E tests. After step 30: 3,145 unit tests in 111 files, 260 E2E tests. After step 29: 3,010 unit tests in 108 files, 247 E2E tests. After step 28: 2,926 unit tests in 105 files, 235 E2E tests. After step 27: 2,882 unit tests in 103 files, 220 E2E tests. After step 22B: 2,550 unit tests in 90 files. The totals per package
 are current; the breakdowns in parentheses were last counted after steps
 19A–19C and are updated only where steps 21–22B changed them.
 
@@ -623,6 +648,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `packages/runtime/bench/reactivity.bench.tsx` | 1,000 rows, one or all updated: signals 0.15 ms / 2.3 ms; React state 2.3 ms / 2.6 ms; with memo 1.2 ms / 2.7 ms |
 | `packages/compiler/bench/codegen.bench.ts` | Compiling typical bindings (about 0.45 µs each); compiled against hand-written evaluation (within about 10–15%); `compileModule` with a source map (about 38 µs for a small module) and without (26 µs) |
 | `packages/components/bench/layout.bench.tsx` | 1,000 stacks: the layout context against a plain div stack. Mount 27 ms vs 22 ms; a re-render 12 ms vs 7 ms (about 5 µs per stack, mostly the context provider) |
+| `packages/runtime/bench/trace.bench.tsx` | Step 35: a handler call that writes a variable, tracing off and on (about 0.5 µs and 1.2 µs); 100 elements re-rendering after one write: off, on, with render entries (0.54, 0.54, 0.56 ms) |
 | `packages/compiler/bench/script.bench.ts` | `parseInterpolation` on typical bindings (about 2 µs each), `parseStatements` on a 15-line handler (about 15 µs) |
 
 ### E2E tests (Playwright)
@@ -633,8 +659,9 @@ are current; the breakdowns in parentheses were last counted after steps
   - `hello-dev` (5174: the hello specs `first-app`, `variables`,
     `async-handlers`, `ids`, `conditionals-templates`, `user-components`,
     `theming`, `behaviors`, `mantine` and `globals`, plus `source-maps`);
-  - `hello-build` (5176: the same hello specs plus `build` and `ssg`,
-    against the prerendered production build under `script-src 'self'`);
+  - `hello-build` (5176: the same hello specs plus `build`, `ssg` and
+    `trace-build` (step 35), against the prerendered production build under
+    `script-src 'self'`);
   - `standalone` (5175, full URLs);
   - `routing-dev` (5177) and `routing-build` (5178): `routing.spec.ts`
     against `test-apps/routing`;
@@ -657,7 +684,8 @@ are current; the breakdowns in parentheses were last counted after steps
     `table.spec.ts` (step 30: sorting, resizing, pinning, copying, editing, paging) and
     `tree.spec.ts` (step 31: Tree and TileGrid, measured), and
     `errors.spec.ts` (step 33: retries, the circuit, Fallback, toasts) and
-    `i18n.spec.ts` (step 34: switching, persistence, scopes, RTL measured);
+    `i18n.spec.ts` (step 34: switching, persistence, scopes, RTL measured) and
+    `trace.spec.ts` (step 35: the Inspector against the "Tracing" scenario);
   - `playground-build` (5181): `app-shell-prerender.spec.ts`, against the
     playground's prerendered production build (`.tmp/playground-dist`);
   - `data-worker` (5182) and `data-server` (5183): `data.spec.ts` against
@@ -701,6 +729,8 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/data.spec.ts` | Data binding against the mock backend in both hosts: real requests, deduplication, slow network, out-of-order answers, retries, offline, hang and cancel, a rename with invalidation, validation errors, a slow double click (see [data.md](data.md#tests)) |
 | `e2e/mantine.spec.ts` | Mantine TextInput, Select (step 25's), Checkbox and Button round-trips and theming; text variants and headings (dev and build) |
 | `e2e/behaviors.spec.ts` | A tooltip on hover, a labeled input, a variant color (dev and build) |
+| `e2e/trace.spec.ts` | Step 35 in the playground's "Tracing" scenario: the Inspector in its own tab (no opener), live entries at their lines, a write and the request it caused, a password masked, errors by who handled them, a superseded click, filters, the trace tree and the entry's JSON, pause, a reload marked, export and import, the app's timers while the Inspector works (see [observability.md](observability.md#tests)) |
+| `e2e/trace-build.spec.ts` | Step 35 in the hello app's production build: off by default (nothing on the channel), `?gfui-trace` on and remembered for the tab, entries at `src/Main.gui` lines |
 | `e2e/i18n.spec.ts` | Step 34 in the playground: switching locales (messages, plurals, formats, the Form's strings, a locale file loaded only when chosen), a stored choice across a reload, Locale scopes, and Arabic: the app mirrored, measured (nav panel, Splitter drag, pinned Table columns, no overflow) (see [i18n.md](i18n.md#tests)) |
 | `e2e/errors.spec.ts` | Step 33 in the playground: retries and giving up with the reference, a timed Retry-After, the circuit breaker (three requests, then fast failures), a Fallback and Try again, a throwing component, the default toast and announcement, a button's own onError, App onError keeping it quiet (see [errors.md](errors.md#tests)) |
 | `e2e/tree.spec.ts` | Step 31 in the playground: a Tree of 50,000 nodes (expand all, fast scrolling, a toggle's time, `scrollIntoView`), keys with the focused row kept mounted, lazy loading, a saved state, preserve-state; a TileGrid of 10,000 tiles (columns from the width, the place kept when narrowing, 2-D keys, a shared selection) (see [tree.md](tree.md#tests)) |
@@ -713,7 +743,7 @@ are current; the breakdowns in parentheses were last counted after steps
 | `e2e/globals.spec.ts` | Globals (step 21B) in the hello app: a component file writes them, Main and another component read them, a local variable shadows one; dev and prerendered build |
 | `e2e/ssg.spec.ts` | Static generation: the content with JavaScript disabled (prerendered Markdown included); takeover at the prerendered breakpoint changes no DOM node (a TileGrid's subtree aside: its tiles are checked to stay in place); with Markdown's chunk held back, the takeover still changes none and the Markdown is live afterwards; at desktop width only the responsive text switches; the app is live afterwards |
 | `e2e/build.spec.ts` | The production build under a strict CSP: no violations (with a page-level eval as the control that the policy is enforced), no `.gui` fetched |
-| `e2e/standalone.spec.ts` | Standalone mode against the built `gfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files) |
+| `e2e/standalone.spec.ts` | Standalone mode against the built `gfui.js`: compile on first load, cache on reload, live edit, error overlay and recovery; a component file with code-behind, and editing it (serial: the tests edit the served files); step 35: `?gfui-trace` and the Inspector at `?gfui-inspector` |
 | `e2e/conditionals-templates.spec.ts` | Responsive `when` at three viewport sizes; `Items` add and remove |
 | `e2e/source-maps.spec.ts` | Through CDP: a handler's exception resolves to its `throw` line in `Main.gui` |
 | `e2e/ids.spec.ts` | Reading and writing another component through its id |
