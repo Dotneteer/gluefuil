@@ -124,6 +124,14 @@ starting from `pageIndex`/`pageSize` and following their changes, and fires
 layout: three slots, start, center and end; page buttons by
 `maxVisiblePages` (1, 3, 5); without `itemCount` only previous and next.
 
+### The locale (step 34)
+
+Typed cells (`Value` too) format in the nearest locale (the App's, or a
+`<Locale>`'s) unless `typeOptions.locale` sets one; sorting collates in it.
+Pinned columns use `insetInlineStart`/`End`, so in RTL `pinTo="left"` sticks
+to the start (right) side; the resizer sits on the inline end and its drag is
+mirrored ([i18n.md](i18n.md#direction)).
+
 ## Theme variables
 
 Table: `backgroundColor-Table`, `textColor-Table`, `borderRadius-Table`,

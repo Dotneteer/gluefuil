@@ -18,7 +18,7 @@
 //     div.gfui-Table-body role=rowgroup  the rows' box (height: all rows when virtual)
 //       div.gfui-Table-row role=row       cells (role=cell); a detail row after an expanded one
 //   nav.gfui-Pagination                 (paging)
-import { HandlerSlot, pointerData, reportDiagnostic, reportRuntimeError, templateRenderer, useComponentApi, type RegisterApi, type TemplateFunction, type TemplateRenderer } from "@gluefuil/runtime";
+import { HandlerSlot, pointerData, reportDiagnostic, reportRuntimeError, templateRenderer, useComponentApi, type RegisterApi, type TemplateFunction, type TemplateRenderer, useFrameworkText, useLocaleProfile } from "@gluefuil/runtime";
 import { Checkbox, Switch } from "@mantine/core";
 import {
   useCallback,
@@ -99,6 +99,9 @@ interface Row {
 }
 
 function TableView(props: TableProps) {
+  const t = useFrameworkText();
+  // Step 34: cells and sorting in the active (or nearest Locale's) locale.
+  const { locale } = useLocaleProfile();
   const layout = useLayout(props);
   const scope = useMultipleScope();
   const latest = useRef(props);
@@ -154,10 +157,10 @@ function TableView(props: TableProps) {
   }, [sortProps]);
   const sorted = useMemo(() => {
     if (!sort.by) return keyed;
-    const order = sortRows(keyed.map((k) => k.item), sort.by, sort.direction);
+    const order = sortRows(keyed.map((k) => k.item), sort.by, sort.direction, locale);
     const byItem = new Map(keyed.map((k) => [k.item, k]));
     return order.map((item) => byItem.get(item)!);
-  }, [keyed, sort]);
+  }, [keyed, sort, locale]);
   const onHeaderSort = async (column: TableColumn) => {
     if (!column.canSort || !column.field) return;
     const next = nextSort(sort, column.field, column.defaultSortDirection ?? defaultDirection);
@@ -292,13 +295,14 @@ function TableView(props: TableProps) {
     let left = 0;
     all.forEach((c, i) => {
       if (c.pin !== "left") return;
-      offsets[i] = { position: "sticky", left };
+      // Step 34: logical sides, so the start-pinned columns stick to the right in RTL.
+      offsets[i] = { position: "sticky", insetInlineStart: left };
       left += width(i);
     });
     let right = 0;
     for (let i = all.length - 1; i >= 0; i--) {
       if (all[i]!.pin !== "right") continue;
-      offsets[i] = { position: "sticky", right };
+      offsets[i] = { position: "sticky", insetInlineEnd: right };
       right += width(i);
     }
     return offsets;
@@ -312,8 +316,10 @@ function TableView(props: TableProps) {
     const cell = handle.parentElement!;
     const startX = event.clientX;
     const startWidth = cell.getBoundingClientRect().width;
+    // Step 34: in RTL the resizer is on the cell's left edge; moving left widens it.
+    const sign = getComputedStyle(cell).direction === "rtl" ? -1 : 1;
     handle.setPointerCapture(event.pointerId);
-    const move = (e: globalThis.PointerEvent) => setResized((old) => ({ ...old, [column.key]: clampWidth(column, startWidth + e.clientX - startX) }));
+    const move = (e: globalThis.PointerEvent) => setResized((old) => ({ ...old, [column.key]: clampWidth(column, startWidth + sign * (e.clientX - startX)) }));
     const up = () => {
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", up);
@@ -491,7 +497,7 @@ function TableView(props: TableProps) {
               {multi && !isTrue(props.hideSelectionCheckboxesHeader) ? (
                 <Checkbox
                   size="xs"
-                  aria-label="Select all rows"
+                  aria-label={t("gfui.aria.selectAllRows")}
                   checked={allSelected}
                   indeterminate={someSelected}
                   className="gfui-Table-check"
@@ -501,7 +507,7 @@ function TableView(props: TableProps) {
               ) : null}
             </div>
           ) : (
-            <div key="expand" className="gfui-Table-cell gfui-Table-expandCell" role="columnheader" aria-label="Details" data-pinned={pins[i] ? "" : undefined} style={pins[i]} />
+            <div key="expand" className="gfui-Table-cell gfui-Table-expandCell" role="columnheader" aria-label={t("gfui.aria.details")} data-pinned={pins[i] ? "" : undefined} style={pins[i]} />
           ),
         )}
         {columns.map((column, c) => {
@@ -576,7 +582,7 @@ function TableView(props: TableProps) {
         />
       );
     }
-    return renderValue(value, type);
+    return renderValue(value, type, { locale });
   };
 
   const renderRow = (row: Row, index: number, style: CSSProperties | undefined, measure: ((el: HTMLElement | null) => void) | undefined) => {
@@ -646,7 +652,7 @@ function TableView(props: TableProps) {
                 if (canSelect) pick(row.key, { toggle: true, shift: event.shiftKey });
               }}
             >
-              <Checkbox size="xs" aria-label="Select row" checked={selected} disabled={!canSelect} tabIndex={-1} className="gfui-Table-check" vars={checkboxVars} onChange={() => undefined} />
+              <Checkbox size="xs" aria-label={t("gfui.aria.selectRow")} checked={selected} disabled={!canSelect} tabIndex={-1} className="gfui-Table-check" vars={checkboxVars} onChange={() => undefined} />
             </div>
           ) : (
             <div key="expand" className="gfui-Table-cell gfui-Table-expandCell" role="cell" data-pinned={pins[i] ? "left" : undefined} style={pins[i]}>

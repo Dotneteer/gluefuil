@@ -177,6 +177,15 @@ dist/users/1/index.html       /users/1   (prerender: { routes: ["/users/1"] })
 | The prerender breakpoint (xs) | Nothing: all of the prerendered elements stay, with no node added, removed or changed |
 | Desktop (xl) | Only the responsive text: one `Text` removed, one added |
 
+- **The locale (step 34)** works the same way: in the server view
+  `currentLocale()` is the app's own locale (`locale`, else
+  `defaultLocale`). After the takeover, a stored choice or a browser language
+  switches it, and only text changes ([i18n.md](i18n.md)). The prerender
+  writes `lang` and `dir` on `<html>` (`staticDocument`,
+  `injectDocumentAttributes`). A `<Locale>` whose messages load lazily
+  suspends; the prerender renders again once they loaded, and hydration keeps
+  its HTML until they are in on the client.
+
 ### What does not match, by design
 
 - **Nondeterministic initializers** (`Math.random()`, the time) differ

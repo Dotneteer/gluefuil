@@ -211,6 +211,8 @@ function shellDrawer(name: string, min: number): string {
     visibility: hidden;
     transition: transform 200ms ease, visibility 0s 200ms;
   }
+  /* Step 34: in RTL the drawer slides out to the right (before the open rule, which wins). */
+  ${app}[dir="rtl"] .gfui-NavPanel { transform: translateX(100%); }
   ${app}[data-drawer-open] .gfui-NavPanel { transform: none; visibility: visible; transition: transform 200ms ease, visibility 0s; }
   ${app} .gfui-NavPanel .gfui-NavPanel-items { flex-direction: column; align-items: stretch; padding: var(--gfui-padding-NavPanel); }
   ${app} .gfui-NavPanel .gfui-NavLink-label,
@@ -577,7 +579,7 @@ const STRUCTURE = `
   border-color: var(--gfui-borderColor-Tabs--active);
 }
 .gfui-Tabs-panel { padding-top: var(--gfui-gap-Tabs, var(--gfui-space-level2)); }
-.gfui-Tabs[data-orientation="vertical"] > .gfui-Tabs-panel { padding-top: 0; padding-left: var(--gfui-gap-Tabs, var(--gfui-space-level2)); flex: 1 1 0; min-width: 0; }
+.gfui-Tabs[data-orientation="vertical"] > .gfui-Tabs-panel { padding-top: 0; padding-inline-start: var(--gfui-gap-Tabs, var(--gfui-space-level2)); flex: 1 1 0; min-width: 0; }
 .gfui-Tabs[data-accordion] .gfui-Tabs-panel { padding-top: 0; }
 .gfui-Tabs[data-accordion] .gfui-Tabs-tab[data-active] { color: var(--gfui-textColor-Tabs--active); }
 .gfui-ExpandableItem { display: flex; flex-direction: column; min-width: 0; }
@@ -685,8 +687,7 @@ button.gfui-Step-header { cursor: pointer; }
 .gfui-ScrollViewer-body::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   height: var(--gfui-height-fade-ScrollViewer);
   pointer-events: none;
   opacity: 0;
@@ -858,7 +859,7 @@ const LIST = `
 .gfui-List[data-scroll="own"] { min-height: 0; overflow-y: auto; overflow-anchor: none; display: flex; flex-direction: column; }
 .gfui-List-content { position: relative; flex-shrink: 0; width: 100%; }
 .gfui-List[data-scroll="own"][data-anchor="bottom"] > .gfui-List-content { margin-top: auto; }
-.gfui-List-content[data-virtual] > .gfui-List-row { position: absolute; top: 0; left: 0; width: 100%; }
+.gfui-List-content[data-virtual] > .gfui-List-row { position: absolute; top: 0; inset-inline-start: 0; width: 100%; }
 .gfui-List-row { display: flex; align-items: center; min-width: 0; }
 .gfui-List-cell { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .gfui-List-row[data-selectable] { cursor: pointer; }
@@ -893,7 +894,7 @@ const TREE = `
 .gfui-Tree-scroll { position: relative; min-width: 0; outline: none; }
 .gfui-Tree[data-scroll="own"] > .gfui-Tree-scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-anchor: none; }
 .gfui-Tree-content { position: relative; width: 100%; }
-.gfui-Tree-content[data-virtual] > .gfui-Tree-row { position: absolute; top: 0; left: 0; width: 100%; }
+.gfui-Tree-content[data-virtual] > .gfui-Tree-row { position: absolute; top: 0; inset-inline-start: 0; width: 100%; }
 .gfui-Tree-row {
   display: flex; align-items: center; min-height: var(--gfui-Tree-row-height, 32px); box-sizing: border-box;
   border-radius: var(--gfui-borderRadius-Tree-row); outline: none; cursor: pointer; user-select: none;
@@ -918,7 +919,7 @@ const TREE = `
 .gfui-Tree-scroll[data-scroll-style="whenMouseOver"]:not(:hover),
 .gfui-Tree-scroll[data-scroll-style="whenScrolling"]:not([data-scrolling]) { scrollbar-color: transparent transparent; }
 .gfui-Tree::before, .gfui-Tree::after {
-  content: ""; position: absolute; left: 0; right: 0; height: var(--gfui-space-6); z-index: 1;
+  content: ""; position: absolute; inset-inline: 0; height: var(--gfui-space-6); z-index: 1;
   pointer-events: none; opacity: 0; transition: opacity 0.15s ease;
 }
 .gfui-Tree::before { top: 0; background: linear-gradient(var(--gfui-backgroundColor), transparent); }
@@ -932,7 +933,7 @@ const TILEGRID = `
 .gfui-TileGrid { position: relative; min-width: 0; outline: none; }
 .gfui-TileGrid[data-scroll="own"] { min-height: 0; overflow-y: auto; overflow-anchor: none; }
 .gfui-TileGrid-content-box { position: relative; width: 100%; }
-.gfui-TileGrid-content-box[data-virtual] > .gfui-TileGrid-row { position: absolute; top: 0; left: 0; }
+.gfui-TileGrid-content-box[data-virtual] > .gfui-TileGrid-row { position: absolute; top: 0; inset-inline-start: 0; }
 .gfui-TileGrid-row { display: flex; gap: var(--gfui-TileGrid-gap); }
 .gfui-TileGrid-static { display: grid; gap: var(--gfui-TileGrid-gap); }
 .gfui-TileGrid-tile {
@@ -971,7 +972,7 @@ const TABLE = `
 .gfui-Table-head[data-sticky] { position: sticky; top: 0; }
 .gfui-Table[data-scroll="outside"] .gfui-Table-head[data-sticky] { top: var(--gfui-shell-top, 0px); }
 .gfui-Table-body { position: relative; }
-.gfui-Table-body[data-virtual] > .gfui-Table-row { position: absolute; top: 0; left: 0; width: 100%; }
+.gfui-Table-body[data-virtual] > .gfui-Table-row { position: absolute; top: 0; inset-inline-start: 0; width: 100%; }
 .gfui-Table-row { display: grid; box-sizing: border-box; width: 100%; --gfui-row-bg: var(--gfui-backgroundColor-row-Table); background-color: var(--gfui-row-bg); color: var(--gfui-textColor-row-Table); font-size: var(--gfui-fontSize-row-Table); font-weight: var(--gfui-fontWeight-row-Table); }
 .gfui-Table-cell {
   display: flex; align-items: center; min-width: 0; box-sizing: border-box; overflow: hidden; overflow-wrap: anywhere;
@@ -1003,7 +1004,7 @@ const TABLE = `
 .gfui-Table-sort { display: inline-flex; opacity: 0; }
 .gfui-Table-sort[data-visible], .gfui-Table-sortButton:hover .gfui-Table-sort, .gfui-Table-sortButton:focus-visible .gfui-Table-sort { opacity: 1; }
 .gfui-Table-sortIcon { width: 14px; height: 14px; }
-.gfui-Table-resizer { position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 1; }
+.gfui-Table-resizer { position: absolute; top: 0; inset-inline-end: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; z-index: 1; }
 .gfui-Table-resizer:hover, .gfui-Table-resizer:focus-visible { background-color: var(--gfui-color-primary-300); outline: none; }
 .gfui-Table-row[data-selectable] { cursor: pointer; }
 /* Row backgrounds by state, as --gfui-row-bg (pinned cells paint it too). Later rules win: striped, variant, hover, selected. */
@@ -1099,8 +1100,7 @@ const REMAINING = `
 .gfui-TableOfContents[data-fade-bottom]::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   height: 1.5em;
   pointer-events: none;
   z-index: 1;
@@ -1109,13 +1109,13 @@ const REMAINING = `
 .gfui-TableOfContents[data-fade-bottom]::after { bottom: 0; background: linear-gradient(transparent, var(--gfui-backgroundColor)); }
 .gfui-TableOfContents-list { list-style: none; margin: 0; padding: 0; }
 .gfui-TableOfContentsItem {
-  border-left: var(--gfui-width-indicator-TableOfContents) solid var(--gfui-color-indicator-TableOfContents);
+  border-inline-start: var(--gfui-width-indicator-TableOfContents) solid var(--gfui-color-indicator-TableOfContents);
   font-size: var(--gfui-fontSize-TableOfContentsItem);
   font-weight: var(--gfui-fontWeight-TableOfContentsItem);
   overflow-wrap: var(--gfui-wordWrap-TableOfContentsItem);
 }
 .gfui-TableOfContentsItem[data-active] {
-  border-left-color: var(--gfui-color-indicator-TableOfContents--active);
+  border-inline-start-color: var(--gfui-color-indicator-TableOfContents--active);
   font-weight: var(--gfui-fontWeight-TableOfContentsItem--active);
 }
 .gfui-TableOfContentsItem > a {
@@ -1220,6 +1220,7 @@ ${[2, 3, 4, 5, 6]
   --gfui-icon-size: 0.9em;
 }
 .gfui-ToneSwitch[data-tone="dark"] .gfui-ToneSwitch-thumb { transform: translateX(1.45em); color: var(--gfui-color-ToneSwitch-dark); }
+[dir="rtl"] .gfui-ToneSwitch[data-tone="dark"] .gfui-ToneSwitch-thumb { transform: translateX(-1.45em); }
 .gfui-ToneChangerButton {
   display: inline-flex;
   align-items: center;

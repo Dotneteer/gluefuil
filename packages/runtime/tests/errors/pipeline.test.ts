@@ -2,7 +2,8 @@
 // § App onError and App.errors): sinks, the App's sink, the default report.
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { AppError, pushErrorSink, reportDiagnostic, reportRuntimeError, resetErrorSinks, setDiagnosticReporter, setErrorReporter } from "../../src/errors";
-import { AppGlobal, appErrors, errorAnnouncement, ERROR_BUFFER_SIZE, registerAppErrors, resetAppErrors, type AppErrorHandler } from "../../src/render/app-errors";
+import { AppGlobal } from "../../src/i18n/app-api";
+import { appErrors, errorAnnouncement, ERROR_BUFFER_SIZE, registerAppErrors, resetAppErrors, type AppErrorHandler } from "../../src/render/app-errors";
 import { resetOverlayState, toasts } from "../../src/render/overlay-state";
 
 let consoleErrors: unknown[];

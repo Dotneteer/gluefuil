@@ -1,0 +1,58 @@
+<!-- Step 34: locale files (src/locales), App.setLocale, I18n with variables, plurals, ordinals and a slot, the formatters, Value and DateInput in the locale, a Form's own strings, Locale scopes, RTL. -->
+<Component name="LanguagesScenario">
+  <VStack var.name="Ada" var.count="{3}" var.place="{2}">
+    <ScenarioHeader title="Languages and formats" description="Messages come from src/locales/*.json (English is in the page, the others load when chosen). Switching the locale changes every message, number and date, and the Form's own strings; Arabic mirrors the whole layout. A Locale scope overrides the locale for its children."/>
+
+    <Card title="The locale">
+      <HStack wrapContent="true">
+        <Button label="English" onClick="App.setLocale('en')"/>
+        <Button label="Deutsch" onClick="App.setLocale('de')"/>
+        <Button label="Polski" onClick="App.setLocale('pl')"/>
+        <Button label="العربية" onClick="App.setLocale('ar')"/>
+      </HStack>
+      <Text>Locale: {App.locale} · direction: {App.direction} · from: {App.localeSource}</Text>
+    </Card>
+
+    <Card title="Messages">
+      <HStack wrapContent="true">
+        <TextBox label="Name" initialValue="{name}" onDidChange="v => name = v" width="*"/>
+        <NumberBox label="Messages" initialValue="{count}" onDidChange="v => count = v" width="*"/>
+        <NumberBox label="Place" initialValue="{place}" onDidChange="v => place = v" width="*"/>
+      </HStack>
+      <Text>Greeting: <I18n key="demo.greeting" name="{name}"/></Text>
+      <Text>Inbox: {App.translate('demo.inbox', { count })}</Text>
+      <Text>Place: <I18n key="demo.place" place="{place}"/></Text>
+      <Text>Terms: <I18n key="demo.terms"><property name="link"><Link to="/languages">{$content}</Link></property></I18n></Text>
+      <Text>Today: <I18n key="demo.today" day="{Date.UTC(2026, 10, 28, 12)}"/></Text>
+      <Text>Missing: <I18n key="demo.missing"/></Text>
+    </Card>
+
+    <Card title="Formats">
+      <Text>Number: {App.formatNumber(1234567.891)}</Text>
+      <Text>Currency: {App.formatCurrency(1234.5, 'EUR')}</Text>
+      <Text>List: {App.formatList(['red', 'green', 'blue'])}</Text>
+      <Text>Relative: {App.formatRelativeTime(-3, 'day')}</Text>
+      <Text>Date: {App.formatDate(Date.UTC(2026, 10, 28, 12), { dateStyle: 'long', timeZone: 'UTC' })}</Text>
+      <HStack>
+        <Text>Value:</Text>
+        <Value value="{9876.5}" type="number"/>
+      </HStack>
+      <DateInput label="A date (its labels follow the locale)" initialValue="2026-11-28" dateFormat="yyyy-MM-dd"/>
+    </Card>
+
+    <Card title="The framework's own strings">
+      <Form onSubmit="() => toast('Saved')">
+        <TextBox label="Required" bindTo="required" required="true"/>
+      </Form>
+    </Card>
+
+    <Card title="Locale scopes">
+      <Locale locale="de-CH" groupSeparator="’">
+        <Text>Swiss German: {App.locale} · {App.formatNumber(1234567.5)} · <I18n key="demo.greeting" name="{name}"/></Text>
+      </Locale>
+      <Locale locale="ar">
+        <Text>Arabic, right to left: <I18n key="demo.greeting" name="{name}"/> · {App.formatNumber(1234.5)}</Text>
+      </Locale>
+    </Card>
+  </VStack>
+</Component>

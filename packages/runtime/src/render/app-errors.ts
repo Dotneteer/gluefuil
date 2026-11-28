@@ -91,13 +91,6 @@ export function registerAppErrors(handler: () => AppErrorHandler | undefined): (
   return pushErrorSink(appErrorSink(handler));
 }
 
-/** The `App` app global (XMLUI's `App.errors`). */
-export const AppGlobal = Object.freeze({
-  get errors(): readonly AppError[] {
-    return buffer.get();
-  },
-});
-
 /** Clears the buffer and the announcement (tests; a new page). */
 export function resetAppErrors(): void {
   buffer.set(Object.freeze([]));

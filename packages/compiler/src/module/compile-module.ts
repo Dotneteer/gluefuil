@@ -49,6 +49,7 @@ import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, rootGlobalNames, type Us
 import { checkLiteral } from "./contracts";
 import { ModuleDiagnostics, type ModuleDiagnosticCode } from "./diagnostics";
 import { shellConfig, type ShellConfig } from "./shell";
+import { localeBundleProblems } from "./i18n";
 
 export interface CompileModuleOptions {
   /**
@@ -777,11 +778,25 @@ class ModuleCompiler {
       return undefined;
     }
     const template = property.startsWith("$") ? undefined : metadata.templates?.[property];
+    // Step 34: I18n's slots (`<property name="link">`), any name.
+    if (!template && metadata.arbitraryTemplates && !property.startsWith("$")) {
+      return [`$$slot.${property}`, this.template(tag.children, metadata.arbitraryTemplates.contextVars)];
+    }
     if (!template) {
       this.report(nameAttribute!.value!, "E013", `'${component}' has no template property '${property}'`);
       return undefined;
     }
     return [property, this.template(tag.children, template.contextVars)];
+  }
+
+  /** Step 34: E041 for each message of a literal `localeBundles` object that isn't valid ICU. */
+  private checkLocaleBundles(attribute: ValuedAttribute): void {
+    const decoded = decodeEntitiesWithOffsets(attribute.value.raw, attribute.value.inner.start);
+    const segments = parseInterpolation(decoded.value, { offsets: decoded.offsets }).segments;
+    if (segments.length !== 1 || segments[0]!.kind !== "expression") return;
+    for (const problem of localeBundleProblems(segments[0]!.expression)) {
+      this.report({ start: problem.start, end: problem.end }, "E041", problem.key, problem.locale, problem.problem);
+    }
   }
 
   /** Hoists an object of compiled values; returns its name. */
@@ -1198,6 +1213,8 @@ class ModuleCompiler {
         this.behaviorAttribute(attribute, behavior.props[attributeName]!, behaviorValues.get(behavior)!);
         if (!shared) continue;
       }
+      // Step 34: the messages of a literal App localeBundles are checked as ICU MessageFormat (E041).
+      if (rendered === "App" && attributeName === "localeBundles" && attribute.value) this.checkLocaleBundles(attribute as ValuedAttribute);
       const prop = shared ? undefined : Object.hasOwn(metadata.props, attributeName) ? metadata.props[attributeName]! : layoutProp(metadata, attributeName);
       if (shared) {
         if (!attribute.value) constants.push([attributeName, '"true"']);
@@ -1340,6 +1357,12 @@ class ModuleCompiler {
       }
     }
 
+    // Step 34: React keeps `key` and `ref` for itself; a prop of those names (I18n's key) goes as `$$propKey` / `$$propRef`.
+    if (!isUser) {
+      for (const list of [constants, bindings]) {
+        for (const entry of list) if (entry[0] === "key" || entry[0] === "ref") entry[0] = entry[0] === "key" ? "$$propKey" : "$$propRef";
+      }
+    }
     const component = isUser ? this.userComponentRef(name, node.name) : `$$C_${rendered}`;
     const props = constants.length > 0 ? `{ ${constants.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }` : "null";
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";

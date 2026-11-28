@@ -1,0 +1,9 @@
+{
+  "demo": {
+    "greeting": "Cześć, {name}!",
+    "inbox": "{count, plural, =0 {Nie masz wiadomości} one {Masz # wiadomość} few {Masz # wiadomości} many {Masz # wiadomości} other {Masz # wiadomości}}",
+    "place": "Zająłeś {place}. miejsce",
+    "terms": "Zapisując, akceptujesz <link>regulamin</link>.",
+    "today": "Dziś jest {day, date, full}."
+  }
+}

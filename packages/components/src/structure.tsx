@@ -16,7 +16,7 @@ import {
   useSignal,
   type RegisterApi,
   type TemplateFunction,
-  type TemplateRenderer,
+  type TemplateRenderer, useFrameworkText
 } from "@gluefuil/runtime";
 import { Accordion, Collapse, ScrollArea, Switch, Tabs as MantineTabs } from "@mantine/core";
 import {
@@ -518,6 +518,7 @@ const KEY_STEP = 10;
  * by min/max in CSS; an empty pane (its child hidden by `when`) hides the bar.
  */
 export function Splitter(props: SplitterProps) {
+  const t = useFrameworkText();
   const layout = useLayout(props);
   const horizontal = props.orientation === "horizontal";
   const swapped = isTrue(props.swapped);
@@ -547,7 +548,9 @@ export function Splitter(props: SplitterProps) {
   const grab = useRef(0);
   const pointerSize = (event: PointerEvent<HTMLDivElement>) => {
     const box = root.current!.getBoundingClientRect();
-    const position = horizontal ? event.clientX - box.left : event.clientY - box.top;
+    // Step 34: in RTL the first pane is on the right; measure from the right edge.
+    const rtl = horizontal && getComputedStyle(root.current!).direction === "rtl";
+    const position = horizontal ? (rtl ? box.right - event.clientX : event.clientX - box.left) : event.clientY - box.top;
     const length = horizontal ? box.width : box.height;
     return swapped ? length - position : position;
   };
@@ -571,7 +574,9 @@ export function Splitter(props: SplitterProps) {
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = event.shiftKey ? KEY_STEP * 5 : KEY_STEP;
-    const grow: Record<string, number> = horizontal ? { ArrowRight: step, ArrowLeft: -step } : { ArrowDown: step, ArrowUp: -step };
+    // Step 34: in RTL the bar still moves the way the arrow points.
+    const rtl = horizontal && root.current !== null && getComputedStyle(root.current).direction === "rtl";
+    const grow: Record<string, number> = horizontal ? { ArrowRight: rtl ? -step : step, ArrowLeft: rtl ? step : -step } : { ArrowDown: step, ArrowUp: -step };
     const delta = grow[event.key];
     const { total, current } = measure();
     let next: number | undefined;
@@ -615,7 +620,7 @@ export function Splitter(props: SplitterProps) {
         aria-valuenow={valueNow}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Resize"
+        aria-label={t("gfui.aria.resize")}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -760,6 +765,7 @@ export function fittingCount(sizes: readonly number[], available: number, gap: n
  * server render has every child in the bar (clipped).
  */
 export function ResponsiveBar(props: ResponsiveBarProps) {
+  const t = useFrameworkText();
   const items = Children.toArray(props.children).filter(isValidElement) as ReactElement[];
   const count = items.length;
   const vertical = props.orientation === "vertical";
@@ -845,7 +851,7 @@ export function ResponsiveBar(props: ResponsiveBarProps) {
             label={undefined}
             triggerButtonIcon={text(props.overflowIcon) ?? "dotmenuhorizontal"}
             triggerButtonIconPosition="start"
-            aria-label={text(props.dropdownText) ?? "More options"}
+            aria-label={text(props.dropdownText) ?? t("gfui.menu.more")}
             alignment={text(props.dropdownAlignment) ?? (reverse ? "start" : "end")}
             triggerTemplate={props.triggerTemplate}
             onWillOpen={props.onWillOpen}

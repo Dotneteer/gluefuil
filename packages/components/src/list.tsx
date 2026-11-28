@@ -13,7 +13,7 @@
 //     viewport has no size (jsdom, a hidden tab);
 //   - virtual: the rows in range, each placed absolutely at its measured
 //     offset in a content box as tall as all rows.
-import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
+import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer, useFrameworkText } from "@gluefuil/runtime";
 import { Checkbox } from "@mantine/core";
 import {
   useCallback,
@@ -173,6 +173,7 @@ export function List(props: ListProps) {
 }
 
 function ListView(props: ListProps) {
+  const t = useFrameworkText();
   const layout = useLayout(props);
   const scope = useMultipleScope();
   const latest = useRef(props);
@@ -437,7 +438,7 @@ function ListView(props: ListProps) {
               size="xs"
               checked={selected}
               disabled={!canSelect}
-              aria-label="Select row"
+              aria-label={t("gfui.aria.selectRow")}
               tabIndex={-1}
               className="gfui-List-checkbox"
               vars={checkboxVars}

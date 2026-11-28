@@ -75,6 +75,12 @@ identical either way (tested). The transform then returns
     the transform at the `.xs` file;
   - a component or code-behind file appearing or disappearing recompiles
     every `.gui` module and reloads.
+- **Locale files (step 34):** the entry gets code that registers
+  `src/locales/*.json`: the app's own locale (App `locale`, else
+  `defaultLocale`, else en) and its language as static imports, the others as
+  lazy loaders (dynamic imports). The files are checked as JSON and ICU
+  MessageFormat (an error fails the transform), watched, and a file appearing
+  or disappearing reloads ([i18n.md](i18n.md)).
 - **Warnings:** `this.warn` with `loc`.
 - **Errors:** `this.error` with:
   - `id`, `loc` (`file`, 1-based `line`, 0-based `column`) and `frame` for

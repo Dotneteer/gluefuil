@@ -178,7 +178,7 @@ export { ApiCaller, type ApiCallEvents, type ApiCallOptions, type ApiCallState }
 export { deferredValue, isDeferred, resolveDeferred, type DeferredValue } from "./render/deferred";
 // Compiled code creates elements through the runtime, never through React directly.
 export { lazyResource, noteServerLoad, requestServerRender, type LazyResource } from "./render/lazy";
-export { inStaticRender, setStaticTitle, staticRenderInfo, staticTitle, type StaticRenderInfo } from "./render/static-render";
+export { inStaticRender, setStaticDocument, setStaticTitle, staticDocument, staticRenderInfo, staticTitle, type StaticRenderInfo } from "./render/static-render";
 export { createElement, Fragment } from "react";
 // Errors (step 33): AppError, the error pipeline, the App's sink, App.errors.
 export {
@@ -201,7 +201,6 @@ export {
 export {
   appErrors,
   appErrorSink,
-  AppGlobal,
   defaultErrorReport,
   ERROR_BUFFER_SIZE,
   errorAnnouncement,
@@ -211,3 +210,47 @@ export {
   type AppErrorHandler,
 } from "./render/app-errors";
 export { BACKOFFS, CircuitBreaker, policyOf, type Backoff, type CircuitBreakerSpec, type CircuitState, type RetryPolicy, type RetryPolicySpec } from "./data/retry";
+// Internationalization (step 34): the locale, bundles, messages, formatters, the App global.
+export {
+  activeLocale,
+  AppGlobal,
+  availableLocales,
+  BUILT_IN_MESSAGES,
+  compileMessage,
+  createAppApi,
+  currentLocale,
+  currentLocaleSource,
+  flattenMessages,
+  formatPattern,
+  isValidLocale,
+  languageOf,
+  loadLocale,
+  localeLoad,
+  LocaleProfileContext,
+  localeOfUrl,
+  lookupMessage,
+  messagesSignature,
+  messagesVersion,
+  normalizeLocale,
+  pairSelfClosingTags,
+  PERSIST_KEY,
+  profileOf,
+  registerBundle,
+  registerLocaleBundles,
+  registerLocaleLoader,
+  resetI18nState,
+  resetMessageCache,
+  resolvedLocale,
+  rootProfile,
+  setLocale,
+  setLocaleDefaults,
+  text as frameworkText,
+  textDirection,
+  translate,
+  useFrameworkText,
+  useLocaleProfile,
+  type LocaleProfile,
+  type LocaleProfileInput,
+  type LocaleSource,
+  type TagHandler,
+} from "./i18n";

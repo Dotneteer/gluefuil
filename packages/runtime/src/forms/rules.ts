@@ -3,6 +3,8 @@
 // runs. Empty values pass every other rule (XMLUI fails `minValue` for an empty
 // value: Number("") is 0; we don't).
 
+import { text as frameworkText } from "../i18n/messages";
+
 export type Severity = "error" | "warning";
 
 export interface FieldRules {
@@ -63,7 +65,7 @@ const PHONE_ALLOWED = /^[a-zA-Z0-9#*)(+.\-_&']+$/;
 
 /** XMLUI's built-in patterns (components-core/forms/builtins: email, url, phone). */
 export const PATTERNS: Readonly<Record<string, { test: (value: string) => boolean; message: string }>> = {
-  email: { test: (value) => EMAIL.test(value), message: "Not a valid email address" },
+  email: { test: (value) => EMAIL.test(value), get message() { return frameworkText("gfui.validation.email"); } },
   url: {
     test: (value) => {
       try {
@@ -73,9 +75,11 @@ export const PATTERNS: Readonly<Record<string, { test: (value: string) => boolea
         return false;
       }
     },
-    message: "Not a valid URL",
+    get message() {
+      return frameworkText("gfui.validation.url");
+    },
   },
-  phone: { test: (value) => PHONE_ALLOWED.test(value) && /[0-9]/.test(value), message: "Not a valid phone number" },
+  phone: { test: (value) => PHONE_ALLOWED.test(value) && /[0-9]/.test(value), get message() { return frameworkText("gfui.validation.phone"); } },
 };
 
 /** `/re/flags` (XMLUI's delimiters / ~ @ ; % # ') or a bare expression. */
@@ -84,7 +88,6 @@ export function parseRegex(source: string): RegExp {
   return delimited ? new RegExp(delimited[2]!, delimited[3]!.replace(/[gy]/g, "")) : new RegExp(source);
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const isBlank = (value: unknown) => value === undefined || value === null || value === "";
 const numeric = (value: unknown) => (typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value) : NaN);
 
@@ -96,7 +99,7 @@ function result(rule: string, valid: boolean, severity: Severity | undefined, me
 export function validateRules(value: unknown, rules: FieldRules): RuleResult[] {
   const results: RuleResult[] = [];
   if (rules.required) {
-    const required = result("required", !isEmptyValue(value), "error", rules.requiredInvalidMessage || "This field is required");
+    const required = result("required", !isEmptyValue(value), "error", rules.requiredInvalidMessage || frameworkText("gfui.validation.required"));
     results.push(required);
     if (!required.valid) return results;
   }
@@ -107,10 +110,10 @@ export function validateRules(value: unknown, rules: FieldRules): RuleResult[] {
     const message =
       rules.lengthInvalidMessage ||
       (maxLength === undefined
-        ? `Input should be at least ${plural(minLength!, "character")}`
+        ? frameworkText("gfui.validation.minLength", { min: minLength })
         : minLength === undefined
-          ? `Input should be up to ${plural(maxLength, "character")}`
-          : `Input length should be between ${minLength} and ${maxLength}`);
+          ? frameworkText("gfui.validation.maxLength", { max: maxLength })
+          : frameworkText("gfui.validation.lengthBetween", { min: minLength, max: maxLength }));
     results.push(result("length", valid, rules.lengthInvalidSeverity, message));
   }
   const { minValue, maxValue } = rules;
@@ -124,10 +127,10 @@ export function validateRules(value: unknown, rules: FieldRules): RuleResult[] {
     const message =
       rules.rangeInvalidMessage ||
       (maxValue === undefined
-        ? `Input should be at least ${minValue}`
+        ? frameworkText("gfui.validation.minValue", { min: minValue })
         : minValue === undefined
-          ? `Input should be at most ${maxValue}`
-          : `Input should be between ${minValue} and ${maxValue}`);
+          ? frameworkText("gfui.validation.maxValue", { max: maxValue })
+          : frameworkText("gfui.validation.valueBetween", { min: minValue, max: maxValue }));
     results.push(result("range", valid, rules.rangeInvalidSeverity, message));
   }
   if (rules.pattern !== undefined && rules.pattern !== "") {
@@ -161,7 +164,7 @@ export function validateRules(value: unknown, rules: FieldRules): RuleResult[] {
  */
 export function customResults(raw: unknown): RuleResult[] {
   if (raw === null || raw === undefined || raw === true || raw === "") return [];
-  if (raw === false) return [{ rule: "custom", valid: false, severity: "error", message: "Invalid input", custom: true }];
+  if (raw === false) return [{ rule: "custom", valid: false, severity: "error", message: frameworkText("gfui.validation.invalid"), custom: true }];
   if (typeof raw === "string") return [{ rule: "custom", valid: false, severity: "error", message: raw, custom: true }];
   if (Array.isArray(raw)) return raw.flatMap(customResults);
   if (typeof raw === "object") {
@@ -172,7 +175,7 @@ export function customResults(raw: unknown): RuleResult[] {
         rule: "custom",
         valid,
         severity: severity === "warning" ? "warning" : "error",
-        message: typeof invalidMessage === "string" && invalidMessage !== "" ? invalidMessage : valid ? "" : "Invalid input",
+        message: typeof invalidMessage === "string" && invalidMessage !== "" ? invalidMessage : valid ? "" : frameworkText("gfui.validation.invalid"),
         custom: true,
       },
     ];

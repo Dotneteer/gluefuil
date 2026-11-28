@@ -2,7 +2,7 @@
 // size selector and page information, on its own or under a Table. XMLUI:
 // xmlui/src/components/Pagination/PaginationReact.tsx (its props, events, API,
 // labels and layout: three slots, start, center and end).
-import { useComponentApi, type RegisterApi } from "@gluefuil/runtime";
+import { useComponentApi, type RegisterApi, useFrameworkText } from "@gluefuil/runtime";
 import { ActionIcon, NativeSelect } from "@mantine/core";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Glyph } from "./icons";
@@ -57,6 +57,7 @@ let pagerIds = 0;
 
 /** The pager itself, controlled (the Table's, and Pagination's). */
 export function Pager(props: PagerProps) {
+  const t = useFrameworkText();
   const [id] = useState(() => `gfui-pagination-${++pagerIds}`);
   const vertical = props.orientation === "vertical";
   const counted = typeof props.itemCount === "number" && props.itemCount >= 0;
@@ -154,7 +155,7 @@ export function Pager(props: PagerProps) {
   };
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t("gfui.aria.pagination")}
       className={props.className ? `gfui-Pagination ${props.className}` : "gfui-Pagination"}
       data-orientation={props.orientation}
       {...props.attributes}

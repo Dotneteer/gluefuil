@@ -80,6 +80,11 @@ normalizes it too).
   `minValue`/`maxValue` are dates; the validation behavior's numeric range
   would reject them, so they go to the component only.
 
+### The locale (step 34)
+
+Without a `locale` prop, the calendars' labels follow the nearest locale (the
+App's, or a `<Locale>`'s), not `en-US` ([i18n.md](i18n.md)).
+
 ## Theme variables
 
 The five text-input variables for each (`TEXT_INPUTS`), and

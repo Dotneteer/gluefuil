@@ -50,6 +50,12 @@ export interface ComponentMetadata {
   rawText?: boolean;
   /** Any attribute is accepted as a prop (no unknown-prop check). */
   allowArbitraryProps?: boolean;
+  /**
+   * Step 34 (I18n): a `<property name="x">` with markup and no template of that
+   * name is a template anyway, passed as the prop `$$slot.x`, with these context
+   * variables.
+   */
+  arbitraryTemplates?: { contextVars: string[] };
   /** Any event is accepted (no unknown-event check). */
   allowArbitraryEvents?: boolean;
   /**
@@ -1801,6 +1807,30 @@ const STEP32_COMPONENTS: Record<string, ComponentMetadata> = {
     },
     nonVisual: true,
   },
+  I18n: {
+    description:
+      "A message of the active (or nearest Locale's) locale, by `key`; its other props are the message's variables. A `<property name=\"link\">` replaces the message's <link/> or <link>…</link> ($content is the tag's text). A missing key shows the key.",
+    props: { key: { description: "The message's key.", valueType: "string", isRequired: true } },
+    allowArbitraryProps: true,
+    arbitraryTemplates: { contextVars: ["$content"] },
+    layoutProps: false,
+    nonVisual: true,
+  },
+  Locale: {
+    description:
+      "A locale for its children: I18n, Value, Table, the date inputs and `App` in script (App.translate, the formatters, App.locale) use it. Also number traits for the formatters.",
+    props: {
+      locale: { description: "A BCP 47 locale (default: the enclosing one).", valueType: "string" },
+      decimalSeparator: { description: "Replaces the decimal separator in formatted numbers.", valueType: "string" },
+      groupSeparator: { description: "Replaces the grouping separator.", valueType: "string" },
+      thousandSeparator: { description: "The same as groupSeparator.", valueType: "string" },
+      minusSign: { description: "Replaces the minus sign.", valueType: "string" },
+      currency: { description: "The default currency of App.formatCurrency.", valueType: "string" },
+      numberingSystem: { description: "An Intl numbering system (arab, latn, …).", valueType: "string" },
+    },
+    childContextVars: ["App"],
+    nonVisual: true,
+  },
   Fallback: {
     description:
       "Shows `errorTemplate` instead of its children when a child throws while rendering or a DataSource inside fails without its own onError (step 33). `reset()` shows the children again (a DataSource fetches again). A child that fails in the prerender is rendered on the client.",
@@ -1919,6 +1949,13 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
       defaultTheme: { description: "The theme until `setTheme()`.", valueType: "string", availableValues: THEME_IDS },
       defaultTone: { description: "The tone until `setThemeTone()`.", valueType: "string", availableValues: TONES },
       useHashBasedRouting: { description: "Routes after `#` (default true: any static server works); false: the path and the History API.", valueType: "boolean" },
+      locale: { description: "Step 34: the app's locale (BCP 47); wins over App.setLocale(), the stored choice and the browser's languages.", valueType: "string" },
+      defaultLocale: { description: "The locale when nothing else decides (default en); the prerender renders it unless `locale` is set.", valueType: "string" },
+      localeBundles: {
+        description: "Messages per locale ({ en: { key: 'ICU message' }, de: {…} }), a URL (de.json) or { locale, messages }; also src/locales/<locale>.json files.",
+        valueType: "any",
+      },
+      direction: { description: "auto (default: from the locale), ltr or rtl: the dir of the App and of <html>.", valueType: "string", availableValues: ["auto", "ltr", "rtl"] },
     },
     events: {
       willNavigate: {

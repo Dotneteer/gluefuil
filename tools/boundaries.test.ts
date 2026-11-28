@@ -42,7 +42,7 @@ describe("checkBoundaries", () => {
     expect(
       checkBoundaries(
         files({
-          "packages/compiler/src/index.ts": `import { m } from "@gluefuil/components/metadata"; import "./x";`,
+          "packages/compiler/src/index.ts": `import { m } from "@gluefuil/components/metadata"; import { parse } from "@formatjs/icu-messageformat-parser"; import "./x";`,
           "packages/compiler/src/x.ts": ``,
           "packages/runtime/src/index.ts": `import { useState } from "react";`,
           "packages/components/src/index.ts": `import { r } from "@gluefuil/runtime"; import "react";`,

@@ -98,6 +98,13 @@ DateInput's `minValue`/`maxValue` are its own dates, not the range rule),
 - **Stale results:** while a new custom check runs, the previous custom
   results stay, marked stale (`data-stale`, half opacity).
 
+### Translated messages (step 34)
+
+The built-in messages (required, length, range, email, URL, phone, invalid
+input), the Save/Cancel/Saving... labels and the warnings dialog are `gfui.*`
+keys in the active locale ([i18n.md](i18n.md#framework-strings-decision-d1)). A
+`requiredInvalidMessage`, `saveLabel` or similar prop still wins.
+
 ## The form store (`runtime/src/forms/`)
 
 | File | Contents |

@@ -135,6 +135,9 @@ export default Main;
 | `id="x"` | A file-scoped component ID ([scoping.md](scoping.md)): `Main` creates a file scope (`$$useFileScope`), and the element is a `Bound` with `id: "x"`, so the component receives `registerApi` |
 | `when`, `when-xs` … `when-xxl` | A `When` wrapper, or nothing for a constant false ([visibility-templates.md](visibility-templates.md)) |
 | `onMount`, `onUnmount` (`onInit`, `onCleanup`); `<event name="mount">` | `lifecycle: $$lN` on any element |
+| `onError` (step 33) on an element whose component has no `error` event | `lifecycle.error` ([errors.md](errors.md)) |
+| `key="…"` or `ref="…"` on a built-in (step 34) | The prop `$$propKey` / `$$propRef`: React keeps `key` and `ref` for itself (I18n's `key`) |
+| `<property name="x">markup</property>` on a component with `arbitraryTemplates` (step 34: I18n) | A template passed as `$$slot.x`, with the metadata's context variables ([i18n.md](i18n.md)) |
 | `<property name="tpl">markup</property>`; children of an element with a `childrenTemplate` | A template function `$$TN`, given as `templates: $$tN` |
 | `<Component name="X">` (top level), `<Slot>`, `method.*`, `<method>` | User-defined components ([user-components.md](user-components.md)) |
 | `<X …>` for a user component | `$$h($$BoundUser, …)`; all content becomes templates (slots) |

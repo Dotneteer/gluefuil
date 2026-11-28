@@ -64,3 +64,4 @@ export { ChangeListener, deepEqual, MessageListener, Queue, rateLimited, sources
 export { AppInfoContext, type AppInfo } from "./app-info";
 export { acceptRules, acceptsFile, FileInput, filesOf, FileUploadDropZone, parseFiles, type ParseAsResult, type ParseResult } from "./files";
 export { categoryList, ErrorBoundary, Fallback, RenderBoundary, retryPolicySpec, RetryPolicy, useLoaderErrorReport, useRetryPolicy, type FallbackProps, type RetryPolicyProps } from "./errors";
+export { I18n, Locale, type LocaleProps } from "./i18n";

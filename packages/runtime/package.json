@@ -17,6 +17,7 @@
     "@gluefuil/mock-backend": "*"
   },
   "dependencies": {
-    "@tanstack/query-core": "5.108.4"
+    "@tanstack/query-core": "5.108.4",
+    "intl-messageformat": "12.1.5"
   }
 }

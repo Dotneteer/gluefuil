@@ -1,3 +1,4 @@
+import { useLocaleProfile } from "@gluefuil/runtime";
 // The date and time inputs' Mantine parts (step 26; design: .ai/plan/poc-26-dates.md):
 // a lazy chunk, loaded by dates.tsx when a DateInput, TimeInput or DatePicker
 // first renders. Mantine (@mantine/dates) works with ISO strings; these
@@ -238,7 +239,9 @@ export function DatePickerNative(props: DatePickerNativeProps) {
   const range = props.mode === "range";
   const inline = isTrue(props.inline);
   const readOnly = isTrue(props.readOnly);
-  const locale = typeof props.locale === "string" && props.locale !== "" ? props.locale : "en-US";
+  // Step 34: the prop, else the active (or nearest Locale's) locale.
+  const active = useLocaleProfile().locale;
+  const locale = typeof props.locale === "string" && props.locale !== "" ? props.locale : active;
   const weekStartsOn = Number(props.weekStartsOn ?? 0) % 7;
   const [opened, setOpened] = useState(false);
   // A range shows its first click before it is a value (XMLUI publishes complete ranges only).

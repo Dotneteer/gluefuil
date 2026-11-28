@@ -1,7 +1,7 @@
 // Small components (step 32; design: .ai/plan/poc-32-remaining.md): Logo, NoResult,
 // ToneSwitch, ToneChangerButton (XMLUI's props), and the non-visual PageMetaTitle
 // and Redirect.
-import { activeThemeTone, navigate, setStaticTitle, setThemeTone, staticRenderInfo, useSignal } from "@gluefuil/runtime";
+import { activeThemeTone, navigate, setStaticTitle, setThemeTone, staticRenderInfo, useSignal, useFrameworkText } from "@gluefuil/runtime";
 import { useContext, useEffect, useRef } from "react";
 import { AppInfoContext } from "./app-info";
 import { Icon } from "./icons";
@@ -35,6 +35,7 @@ type ToneHandler = (tone: "light" | "dark") => unknown;
 
 /** `ToneSwitch`: a switch between the light and the dark tone; `didChange(tone)` after a change. */
 export function ToneSwitch(props: LayoutProps & { iconLight?: unknown; iconDark?: unknown; onDidChange?: ToneHandler }) {
+  const t = useFrameworkText();
   const { iconLight, iconDark, onDidChange } = props;
   const layout = useLayout(props);
   const dark = useSignal(activeThemeTone) === "dark";
@@ -48,7 +49,7 @@ export function ToneSwitch(props: LayoutProps & { iconLight?: unknown; iconDark?
       type="button"
       role="switch"
       aria-checked={dark}
-      aria-label="Dark mode"
+      aria-label={t("gfui.aria.darkMode")}
       className="gfui-ToneSwitch"
       data-tone={dark ? "dark" : "light"}
       onClick={toggle}
@@ -64,6 +65,7 @@ export function ToneSwitch(props: LayoutProps & { iconLight?: unknown; iconDark?
 
 /** `ToneChangerButton` (deprecated in XMLUI for ToneSwitch): an icon button that switches the tone; `click(tone)`. */
 export function ToneChangerButton(props: LayoutProps & { lightToDarkIcon?: unknown; darkToLightIcon?: unknown; onClick?: ToneHandler }) {
+  const t = useFrameworkText();
   const { lightToDarkIcon, darkToLightIcon, onClick } = props;
   const layout = useLayout(props);
   const dark = useSignal(activeThemeTone) === "dark";
@@ -73,7 +75,7 @@ export function ToneChangerButton(props: LayoutProps & { lightToDarkIcon?: unkno
     if (typeof onClick === "function") void onClick(tone);
   };
   return (
-    <button type="button" aria-label="Toggle color mode" className="gfui-ToneChangerButton" onClick={toggle} {...layout.attributes} style={layout.style}>
+    <button type="button" aria-label={t("gfui.aria.toggleColorMode")} className="gfui-ToneChangerButton" onClick={toggle} {...layout.attributes} style={layout.style}>
       <Icon name={dark ? name(darkToLightIcon, "sun") : name(lightToDarkIcon, "moon")} fallback={dark ? "sun" : "moon"} />
     </button>
   );

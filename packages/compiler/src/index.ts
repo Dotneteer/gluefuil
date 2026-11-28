@@ -72,3 +72,5 @@ export {
 // --- Source positions and diagnostics ---------------------------------------------
 export { codeFrame, formatDiagnostic, type Diagnostic, type Severity } from "./source/diagnostic";
 export { LineMap, type Position } from "./source/line-map";
+// Step 34: ICU checks of locale bundles (the Vite plugin checks locale files with them).
+export { icuProblem, localeBundleProblems, localeFileProblems, type MessageProblem } from "./module/i18n";
