@@ -55,7 +55,7 @@ const reported = new Set<string>();
 function reportOnce(id: string, message: string): void {
   if (reported.has(id)) return;
   reported.add(id);
-  reportDiagnostic(message);
+  reportDiagnostic(message, { category: "i18n" });
 }
 
 /** A tag handler: receives the tag's content (strings, or rendered parts). */

@@ -22,6 +22,8 @@ import {
   type RegisterApi,
   type RequestSpec,
   type RetryPolicy,
+  takeCauses,
+  type TraceCell,
 } from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLoaderErrorReport, useRetryPolicy } from "./errors";
@@ -95,6 +97,8 @@ export interface DataSourceProps {
   onError?: Handler;
   onCancel?: Handler;
   registerApi?: RegisterApi;
+  /** Step 35: the element's trace cell (position, id, what changed its request). */
+  $$trace?: TraceCell;
 }
 
 /** The request of a DataSource or a `data` URL; undefined while the URL can't be built. */
@@ -126,6 +130,17 @@ function loaderOptions(props: DataSourceProps, select: ((data: unknown) => unkno
     pollIntervalMs: asNumber(props.pollIntervalInSeconds, 0) * 1000,
     structuralSharing: !isFalse(props.structuralSharing),
     ...(select ? { select } : {}),
+    ...(props.$$trace ? { trace: traceOf("DataSource", props.$$trace) } : {}),
+  };
+}
+
+/** Step 35: a data element's trace details for the loader (the causes are taken once, by a fetch). */
+function traceOf(component: string, cell: TraceCell) {
+  return {
+    component,
+    ...(cell.id !== undefined ? { id: cell.id } : {}),
+    ...(cell.at ? { at: cell.at } : {}),
+    causes: () => takeCauses(cell),
   };
 }
 
@@ -197,6 +212,8 @@ export interface APICallProps {
   onError?: Handler;
   onCancel?: Handler;
   registerApi?: RegisterApi;
+  /** Step 35: the element's trace cell. */
+  $$trace?: TraceCell;
 }
 
 /** Props of an action element inside <event> resolved with the event's arguments (`$param`, `$params`). */
@@ -281,6 +298,7 @@ async function runApiCall(caller: ApiCaller, p: APICallProps, params: unknown[])
         retries: asNumber(p.retries, 0),
         retryDelay: asNumber(p.retryDelay, 500),
         ...(invalidates !== undefined && invalidates !== null && invalidates !== "" ? { invalidates: invalidates as string | string[] } : {}),
+        ...(p.$$trace ? { trace: { component: "APICall", ...(p.$$trace.id !== undefined ? { id: p.$$trace.id } : {}), ...(p.$$trace.at ? { at: p.$$trace.at } : {}) } } : {}),
       },
       events,
       invocation,

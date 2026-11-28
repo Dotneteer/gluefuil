@@ -429,7 +429,7 @@ export function FormBindingBehavior(props: FormBindingBehaviorProps) {
 function reportOnce(key: object, message: string): void {
   if (reported.has(key)) return;
   reported.add(key);
-  reportDiagnostic(message);
+  reportDiagnostic(message, { category: "component" });
 }
 
 function fieldOptions(path: string, noSubmit: boolean, settings: ValidationSettings | undefined): FieldOptions {

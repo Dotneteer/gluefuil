@@ -136,7 +136,7 @@ const invalidatesOf = (value: unknown) =>
  */
 export async function upload(options: TransferOptions, invocation: Invocation | undefined = currentInvocation()): Promise<unknown> {
   const caller = new ApiCaller();
-  return caller.execute([], () => uploadSpec(options), { retries: 0, retryDelay: 500, ...invalidatesOf(options.invalidates) }, events(options), invocation);
+  return caller.execute([], () => uploadSpec(options), { retries: 0, retryDelay: 500, ...invalidatesOf(options.invalidates), trace: { component: "upload" } }, events(options), invocation);
 }
 
 /** `Actions.download(options)`: fetches a file and saves it; resolves when saved. */
@@ -147,7 +147,7 @@ export async function download(options: TransferOptions, invocation: Invocation 
   await caller.execute(
     [],
     () => spec,
-    { retries: 0, retryDelay: 500 },
+    { retries: 0, retryDelay: 500, trace: { component: "download" } },
     events(options, (blob) => {
       headers = caller.state.peek().lastResponseHeaders;
       if (isBlobLike(blob)) saveBlob(blob, downloadName(options.fileName, headers, spec.url));

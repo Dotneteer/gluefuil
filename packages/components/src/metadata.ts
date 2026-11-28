@@ -90,6 +90,14 @@ export interface ComponentMetadata {
   whenIsProp?: boolean;
   /** Its event handlers return the handler's result (APICall: `beforeRequest` false skips the call). */
   eventResults?: boolean;
+  /**
+   * Step 35: the component receives a `$$trace` cell (its markup position and the
+   * causes of its bindings' latest change): data components name their fetches'
+   * owner and causes; List, Table, Tree and Form name their diagnostics' line.
+   */
+  traced?: boolean;
+  /** Step 35: it holds a secret (a password): its handlers' arguments and writes are masked in the trace. */
+  sensitive?: boolean;
   /** The component no longer exists: using it is E032 with this message (`FlowLayout`). */
   removed?: string;
   /** Using the component is a warning with this message (E024; step 32: ToneChangerButton). */
@@ -553,6 +561,7 @@ const INPUT_COMPONENTS: Record<string, ComponentMetadata> = {
   },
   PasswordInput: {
     description: "A text input whose text is masked (Mantine PasswordInput).",
+    sensitive: true,
     props: {
       initialValue: { description: "The text when the component mounts.", valueType: "any" },
       ...INPUT_COMMON,
@@ -2062,6 +2071,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   ...STRUCTURE_COMPONENTS,
   Form: {
     description: "A form: edits a copy of `data`. Inputs inside bind a path of it with `bindTo` (the formBinding and validation behaviors); `$data` shows the current values.",
+    traced: true,
     props: {
       data: {
         description: "The initial data: an object, or a URL to load it from (once; the form is disabled meanwhile, and saves back to it). Later changes are not applied (XMLUI).",
@@ -2114,6 +2124,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   DataSource: {
     description: "Loads data from a URL and keeps it: value, inProgress, loaded, error; refetch() and cancel().",
+    traced: true,
     props: {
       url: {
         description: "The URL; with an unresolved part (an interpolated null or undefined) there is no request yet.",
@@ -2155,6 +2166,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   APICall: {
     description: "Sends a request when executed (create, update, delete): execute(...params), then success or error, and invalidation.",
+    traced: true,
     props: {
       url: { description: "The URL; may use $param and $params (the arguments of execute()).", valueType: "string", deferred: ["$param", "$params"] },
       method: { description: "The HTTP method (default get, as in XMLUI).", valueType: "string", deferred: ["$param", "$params"] },
@@ -2225,6 +2237,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   List: {
     description: "A virtualized list: renders only the rows in view, with groups, ordering, selection and bottom anchoring (step 29).",
+    traced: true,
     props: {
       data: { description: "The items: an array, or a URL to load it from (/api/users).", valueType: "any" },
       items: { description: "An alias of data (wins over it).", valueType: "any" },
@@ -2312,6 +2325,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   Tree: {
     description: "Hierarchical data (flat with parent ids, or nested) as a virtualized tree: expansion, single selection, keys, lazy loading, a saved state (step 31).",
+    traced: true,
     eventResults: true,
     props: {
       data: { description: "The nodes: a flat array (dataFormat flat) or nested items (hierarchy), or a URL to load them from.", valueType: "any", isRequired: true },
@@ -2476,6 +2490,7 @@ export const componentMetadata: Readonly<Record<string, ComponentMetadata>> = {
   },
   Table: {
     description: "Rows of data in columns: Column children (also from Items) or columns inferred from the data; virtualized, sortable, selectable, resizable, pinned, paged (step 30).",
+    traced: true,
     childrenAsColumns: "Column",
     eventResults: true,
     props: {

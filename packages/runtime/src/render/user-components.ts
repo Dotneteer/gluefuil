@@ -42,7 +42,7 @@ export interface ComponentInput {
  * bindings itself: it hands the component a computed over them, so a change
  * re-renders only what inside reads the changed `$props` member.
  */
-export function BoundUser({ type, props, bindings, handlers, policies, timeouts, id, templates, lifecycle, scope }: Omit<BoundProps, "type" | "children"> & { type: ComponentType<{ input: ComponentInput }> }) {
+export function BoundUser({ type, props, bindings, handlers, policies, timeouts, id, templates, lifecycle, scope, at }: Omit<BoundProps, "type" | "children"> & { type: ComponentType<{ input: ComponentInput }> }) {
   const propsSignal = useMemo(
     () =>
       computed(
@@ -55,7 +55,7 @@ export function BoundUser({ type, props, bindings, handlers, policies, timeouts,
       ),
     [props, bindings, scope],
   );
-  const { handlerProps, templateProps, registerApi } = useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope }, true);
+  const { handlerProps, templateProps, registerApi } = useWiring({ handlers, policies, timeouts, id, templates, lifecycle, scope, at }, true);
   const input = useMemo<ComponentInput>(
     () => ({
       props: propsSignal,
@@ -114,7 +114,8 @@ export function useComponent(
     const scope = createVariableScope(withIds, variables);
     const slots: Record<string, HandlerSlot> = {};
     for (const [name, factory] of Object.entries(methods)) {
-      const slot = new HandlerSlot(factory(scope));
+      // Step 35: a method call is a span of the caller's trace.
+      const slot = new HandlerSlot(factory(scope), undefined, undefined, undefined, { event: `method ${name}` });
       slots[name] = slot;
       api[name] = (...args) => slot.call(args);
     }

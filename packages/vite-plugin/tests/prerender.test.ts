@@ -60,7 +60,7 @@ describe("when it runs", () => {
 
   test.each([
     ["prerender off", {}, { command: "build", build: {} }],
-    ["dev server", { prerender: true }, { command: "serve", build: {} }],
+    ["dev server", { prerender: true, inspector: false }, { command: "serve", build: {} }],
     ["SSR build", { prerender: true }, { command: "build", build: { ssr: true } }],
   ])("not for: %s", async (_, options, config) => {
     expect(await hookOf(options, config).handler(HTML)).toBe(HTML);
@@ -71,15 +71,26 @@ describe("when it runs", () => {
   });
 
   test.each([
-    ["dev server", { prerender: true }, { command: "serve", base: "/app/", build: {} }, HTML],
+    ["dev server", { prerender: true, inspector: false }, { command: "serve", base: "/app/", build: {} }, HTML],
     ["a build without prerender", {}, { command: "build", base: "/app/", build: {} }, HTML],
-    ["a custom root id", { prerender: { rootId: "app" } }, { command: "serve", base: "/app/", build: {} }, '<div id="app"></div>'],
+    ["a custom root id", { prerender: { rootId: "app" }, inspector: false }, { command: "serve", base: "/app/", build: {} }, '<div id="app"></div>'],
   ])("under base /app/, %s writes data-gfui-base on the root", async (_, options, config, html) => {
     expect(await hookOf(options, config).handler(html)).toBe(html.replace('">', '" data-gfui-base="/app">'));
   });
 
   test("a root base writes nothing", async () => {
-    expect(await hookOf({}, { command: "serve", base: "/", build: {} }).handler(HTML)).toBe(HTML);
+    expect(await hookOf({ inspector: false }, { command: "serve", base: "/", build: {} }).handler(HTML)).toBe(HTML);
+  });
+
+  // Step 35: the dev server traces by default and names its Inspector; a build only names one when asked.
+  test.each([
+    ["the dev server", {}, { command: "serve", base: "/", build: {} }, '<div id="root" data-gfui-inspector="/__gfui/inspector/" data-gfui-trace="on"></div>'],
+    ["the dev server under a base", {}, { command: "serve", base: "/app/", build: {} }, '<div id="root" data-gfui-base="/app" data-gfui-inspector="/app/__gfui/inspector/" data-gfui-trace="on"></div>'],
+    ["the dev server with inspector: false", { inspector: false }, { command: "serve", base: "/", build: {} }, HTML],
+    ["a build", {}, { command: "build", base: "/", build: {} }, HTML],
+    ["a build with inspector: true", { inspector: true }, { command: "build", base: "/", build: {} }, '<div id="root" data-gfui-inspector="/__gfui/inspector/"></div>'],
+  ])("trace attributes: %s", async (_, options, config, expected) => {
+    expect(await hookOf(options, config).handler(HTML)).toBe(expected);
   });
 });
 

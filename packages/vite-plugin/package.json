@@ -10,7 +10,8 @@
   "dependencies": {
     "@gluefuil/compiler": "0.0.0",
     "@gluefuil/components": "0.0.0",
-    "@gluefuil/mock-backend": "0.0.0"
+    "@gluefuil/mock-backend": "0.0.0",
+    "@gluefuil/inspector": "0.0.0"
   },
   "peerDependencies": {
     "vite": "^8.0.0"

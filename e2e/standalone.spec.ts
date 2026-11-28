@@ -70,3 +70,26 @@ test("editing a component file on the server updates the open app", async ({ pag
   writeFileSync(GREETING, greeting.replace("{greet($props.name)}", "Edited {greet($props.name)}"));
   await expect(page.getByText("Edited Hello, gfui!")).toBeVisible();
 });
+
+// Step 35: standalone mode traces with ?gfui-trace, and the same page with
+// ?gfui-inspector is the Inspector (compiled in the browser from gfui.js).
+test("?gfui-trace traces; gfui.trace.inspect() opens this page as the Inspector, which shows the entries", async ({ page, context }) => {
+  await page.goto(`${URL}?gfui-trace`);
+  await expect(page.getByText("Standalone: count = 0")).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { gfui: { trace: { enabled: boolean } } }).gfui.trace.enabled)).toBe(true);
+  await page.getByRole("button", { name: "Increment" }).click();
+  const [inspector] = await Promise.all([
+    context.waitForEvent("page"),
+    page.evaluate(() => (window as unknown as { gfui: { trace: { inspect(): void } } }).gfui.trace.inspect()),
+  ]);
+  await inspector.waitForLoadState();
+  expect(new globalThis.URL(inspector.url()).search).toBe("?gfui-inspector");
+  const write = inspector.locator('[role="row"]').filter({ hasText: /count\s*0 → 1/ });
+  await expect(write).toBeVisible();
+  await expect(write).toContainText("Main.gui:1:6");
+  // Off without the parameter (a new tab: nothing remembered).
+  const plain = await context.newPage();
+  await plain.goto(URL);
+  await expect(plain.getByText("Standalone: count = 0")).toBeVisible();
+  expect(await plain.evaluate(() => (window as unknown as { gfui: { trace: { enabled: boolean } } }).gfui.trace.enabled)).toBe(false);
+});

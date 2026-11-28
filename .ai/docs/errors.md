@@ -184,6 +184,22 @@ microtask later.
   - After `resetMs`, one probe: a success closes it, a failure opens it
     again.
 
+## Traces (step 35)
+
+- **While tracing,** `reportRuntimeError` records an `error` entry in the
+  running trace, with `handledBy`: `app` (an App's sink: App onError, then the
+  default report) or `console` (no App).
+- **An element's own `onError`** records one with `handledBy: "onError"` and
+  the source `action`.
+- **A `Fallback`** records the errors it handles (`handledBy: "fallback"`),
+  with the source `loader` or `render`.
+- **`reportDiagnostic(problem, { category, at })`** records a `diagnostic`
+  entry. The categories are `i18n`, `data`, `component` (List, Table and Tree
+  duplicate ids, a column's type, an unbound input) and `hydration`. List,
+  Table and Tree give their element's position. The console output is
+  unchanged.
+- See [observability.md](observability.md).
+
 ## Divergences from XMLUI
 
 | XMLUI | Here |

@@ -13,25 +13,25 @@ function lines(markup: string): string[] {
 describe("containers", () => {
   test("an element declaring variables becomes a component that creates them", () => {
     const code = lines('<App var.count="{0}" var.title="Hello"><Text value="{title}"/></App>');
-    expect(code).toContain('const $$v0 = { "count": { init: ($$s) => 0 }, "title": { value: "Hello" } };');
+    expect(code).toContain('const $$v0 = { "count": { init: ($$s) => 0, at: $$L[0] }, "title": { value: "Hello", at: $$L[1] } };');
     expect(code).toContain("function $$K2({ $$p }) {");
     expect(code).toContain("  const $$c = $$useScope($$p, $$v0);");
-    expect(code).toContain("  return $$h($$C_App, null, $$h($$Bound, { type: $$C_Text, props: null, bindings: $$b1, scope: $$c }));");
+    expect(code).toContain("  return $$h($$C_App, null, $$h($$Bound, { type: $$C_Text, props: null, bindings: $$b1, at: $$L[2], scope: $$c }));");
     expect(code).toContain("  return $$h($$K2, { $$p: $$scope });");
   });
 
   test("<variable> and <global> children declare like attributes; key-only var.x is \"true\"", () => {
     const code = lines('<App global.g="{1}" var.flag><variable name="v" value="{g + 1}"/><global name="h"/></App>');
     // Globals (step 21B): their own container around the root's variables, providing GlobalScope.
-    expect(code).toContain('const $$v0 = { "g": { init: ($$s) => 1 }, "h": { value: undefined } };');
-    expect(code).toContain('const $$v1 = { "flag": { value: "true" }, "v": { init: ($$s) => $$s.g + 1 } };');
+    expect(code).toContain('const $$v0 = { "g": { init: ($$s) => 1, at: $$L[0] }, "h": { value: undefined } };');
+    expect(code).toContain('const $$v1 = { "flag": { value: "true" }, "v": { init: ($$s) => $$s.g + 1, at: $$L[1] } };');
     expect(code).toContain("  return $$h($$GlobalScope, { scope: $$c }, $$h($$K2, { $$p: $$c }));");
   });
 
   test("nested containers receive the enclosing scope", () => {
     const code = lines('<App var.a="{1}"><Stack var.b="{a + 1}"><Text value="{a + b}"/></Stack></App>');
     expect(code.find((l) => l.startsWith("  return $$h($$C_App"))).toContain("$$h($$K");
-    expect(code.find((l) => l.startsWith("const $$v") && l.includes('"b"'))).toBe('const $$v1 = { "b": { init: ($$s) => $$s.a + 1 } };');
+    expect(code.find((l) => l.startsWith("const $$v") && l.includes('"b"'))).toBe('const $$v1 = { "b": { init: ($$s) => $$s.a + 1, at: $$L[1] } };');
     expect(code.some((l) => l.includes("$$h($$K3, { $$p: $$c })"))).toBe(true);
   });
 

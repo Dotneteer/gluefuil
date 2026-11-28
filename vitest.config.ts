@@ -76,6 +76,17 @@ export default defineConfig({
         },
       },
       {
+        // Step 35: the Inspector (its model; the page itself is proven in E2E).
+        plugins: [react()],
+        test: {
+          name: "inspector",
+          root: "packages/inspector",
+          environment: "jsdom",
+          setupFiles: ["../components/tests/jsdom-setup.ts"],
+          include: ["tests/**/*.test.{ts,tsx}"],
+        },
+      },
+      {
         test: {
           name: "vite-plugin",
           root: "packages/vite-plugin",

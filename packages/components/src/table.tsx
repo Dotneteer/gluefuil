@@ -18,7 +18,7 @@
 //     div.gfui-Table-body role=rowgroup  the rows' box (height: all rows when virtual)
 //       div.gfui-Table-row role=row       cells (role=cell); a detail row after an expanded one
 //   nav.gfui-Pagination                 (paging)
-import { HandlerSlot, pointerData, reportDiagnostic, reportRuntimeError, templateRenderer, useComponentApi, type RegisterApi, type TemplateFunction, type TemplateRenderer, useFrameworkText, useLocaleProfile } from "@gluefuil/runtime";
+import { HandlerSlot, pointerData, reportDiagnostic, reportRuntimeError, templateRenderer, useComponentApi, type RegisterApi, type TemplateFunction, type TemplateRenderer, type TraceCell, useFrameworkText, useLocaleProfile } from "@gluefuil/runtime";
 import { Checkbox, Switch } from "@mantine/core";
 import {
   useCallback,
@@ -72,6 +72,8 @@ export function Column(): null {
 }
 
 export type TableProps = LayoutProps & {
+  /** Step 35: the element's trace cell (its position names the diagnostics). */
+  $$trace?: TraceCell;
   data?: unknown;
   items?: unknown;
   $$columns?: ColumnEntry[];
@@ -82,6 +84,11 @@ export type TableProps = LayoutProps & {
 };
 
 /** Renders `data` (an array or a URL) in columns, virtualized (XMLUI Table). */
+/** Step 35: a diagnostic's details: a component's, at the element's position. */
+function diagnosticAt(props: TableProps) {
+  return { category: "component" as const, ...(props.$$trace?.at ? { at: props.$$trace.at } : {}) };
+}
+
 export function Table(props: TableProps) {
   const data = props.items ?? props.data;
   if (isDataUrl(data)) return <DataUrl url={data} render={(value) => <TableView {...props} items={undefined} data={value} loading={value === undefined ? true : props.loading} />} />;
@@ -128,7 +135,7 @@ function TableView(props: TableProps) {
     const signature = problems.join("\u0000");
     if (problems.length > 0 && signature !== warned.current) {
       warned.current = signature;
-      reportDiagnostic(`Table: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`);
+      reportDiagnostic(`Table: the '${idKey}' values must be unique and not empty; rows fall back to their position (${problems.slice(0, 5).join(", ")})`, diagnosticAt(props));
     }
   }, [source, idKey]);
   const { columns, problems } = useMemo(
@@ -140,7 +147,7 @@ function TableView(props: TableProps) {
     const signature = problems.map((p) => `${p.column}:${p.message}`).join("\u0000");
     if (signature === "" || signature === reportedTypes.current) return;
     reportedTypes.current = signature;
-    for (const p of problems) reportDiagnostic(`Table column '${p.column}': ${p.message} The column shows text.`);
+    for (const p of problems) reportDiagnostic(`Table column '${p.column}': ${p.message} The column shows text.`, diagnosticAt(props));
   }, [problems]);
 
   // --- Sorting ------------------------------------------------------------------------------

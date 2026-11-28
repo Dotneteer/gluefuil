@@ -4,6 +4,7 @@
 import { createElement, useEffect, type ReactNode } from "react";
 import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { reportDiagnostic, reportRuntimeError } from "../errors";
+import { autoEnableTrace } from "../trace";
 import { setBasename, setServerPath } from "./router";
 import { breakpointFromName, setServerBreakpoint } from "./visibility";
 
@@ -55,6 +56,8 @@ export interface MountOptions {
    * `base`), else none.
    */
   basename?: string;
+  /** Step 35: false never turns tracing on for this page (the Inspector: it must not trace itself). */
+  trace?: boolean;
 }
 
 /**
@@ -76,6 +79,8 @@ const ROOT_ERRORS = {
  * once the app is live.
  */
 export function mountApp(container: Element, app: ReactNode, options: MountOptions = {}): Root {
+  // Step 35: tracing, when the dev server, the URL or a stored setting asks for it (before the first render).
+  if (options.trace !== false) autoEnableTrace(container);
   const prerendered = container.getAttribute(PRERENDERED_ATTRIBUTE);
   container.removeAttribute(READY_ATTRIBUTE);
   const basename = options.basename ?? container.getAttribute(BASE_ATTRIBUTE);
@@ -85,7 +90,7 @@ export function mountApp(container: Element, app: ReactNode, options: MountOptio
     setServerBreakpoint(breakpointFromName(prerendered) ?? 0);
     setServerPath(container.getAttribute(PATH_ATTRIBUTE) ?? "/");
     return hydrateRoot(container, tree, {
-      onRecoverableError: (error) => (options.onRecoverableError ?? reportDiagnostic)(error),
+      onRecoverableError: (error) => (options.onRecoverableError ?? ((problem: unknown) => reportDiagnostic(problem, { category: "hydration" })))(error),
       ...ROOT_ERRORS,
     });
   }

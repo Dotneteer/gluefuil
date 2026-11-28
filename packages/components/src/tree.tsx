@@ -14,7 +14,7 @@
 // writes at once (step 30 found APIs that read stale React state). Its changes
 // re-render the component through `notify`.
 import { createTree, hotkeysCoreFeature, syncDataLoaderFeature, type FeatureImplementation, type TreeInstance } from "@headless-tree/core";
-import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer, useFrameworkText } from "@gluefuil/runtime";
+import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer, type TraceCell, useFrameworkText } from "@gluefuil/runtime";
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { DataUrl, isDataUrl } from "./data";
 import { Spinner } from "./display";
@@ -65,6 +65,8 @@ const number = (value: unknown): number | undefined => {
 };
 
 export type TreeProps = LayoutProps & {
+  /** Step 35: the element's trace cell (its position names the diagnostics). */
+  $$trace?: TraceCell;
   data?: unknown;
   dataFormat?: unknown;
   idField?: unknown;
@@ -580,7 +582,10 @@ function TreeView(props: TreeProps) {
     const keysToLoad = store.toLoad.splice(0);
     for (const k of keysToLoad) void store.loadChildren(k);
     if (store.duplicates.length > 0) {
-      reportDiagnostic(`Tree: the ids must be unique; repeated: ${store.duplicates.slice(0, 5).join(", ")}`);
+      reportDiagnostic(`Tree: the ids must be unique; repeated: ${store.duplicates.slice(0, 5).join(", ")}`, {
+        category: "component",
+        ...(props.$$trace?.at ? { at: props.$$trace.at } : {}),
+      });
       store.duplicates = [];
     }
   });

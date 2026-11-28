@@ -18,6 +18,8 @@ import {
   CircuitBreaker,
   reportRuntimeError,
   signal,
+  trace,
+  traceError,
   useComponentApi,
   useSignal,
   type Backoff,
@@ -123,11 +125,21 @@ export function Fallback({ isLoading, errorTemplate, loadingTemplate, registerAp
   const generation = useSignal(state.generation);
   const api = useMemo(() => {
     // The first error wins: later ones (the same section) are not shown.
-    const report = (next: AppError) => {
+    const show = (next: AppError) => {
       if (state.error.peek() === undefined) state.error.set(next);
+    };
+    // Step 35: while tracing, an error this Fallback handles is an entry (a DataSource's, or a render error).
+    const report = (next: AppError) => {
+      if (trace.enabled) traceError(next, "loader", "fallback");
+      show(next);
+    };
+    const caught = (next: AppError) => {
+      if (trace.enabled) traceError(next, "render", "fallback");
+      show(next);
     };
     return {
       report,
+      caught,
       reset: () => {
         if (state.error.peek() === undefined) return;
         state.error.set(undefined);
@@ -154,7 +166,7 @@ export function Fallback({ isLoading, errorTemplate, loadingTemplate, registerAp
   return (
     <FallbackContext.Provider value={api.report}>
       <Suspense fallback={null}>
-        <ErrorBoundary key={generation} onCatch={api.report}>
+        <ErrorBoundary key={generation} onCatch={api.caught}>
           {children}
         </ErrorBoundary>
       </Suspense>

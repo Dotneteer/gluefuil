@@ -40,6 +40,13 @@ export default defineConfig({
             props: {},
           },
         },
+        TraceControls: {
+          module: "src/react/TraceControls.tsx",
+          metadata: {
+            description: "Step 35: tracing on or off, the number of entries, render entries, and a button that opens the Inspector.",
+            props: {},
+          },
+        },
         ScenarioSource: {
           module: "src/react/ScenarioSource.tsx",
           metadata: {

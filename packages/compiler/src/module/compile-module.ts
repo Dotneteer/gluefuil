@@ -43,6 +43,7 @@ import { parseMarkdownBindings } from "../script/markdown-bindings";
 import type { ArrayExpression, Expression, FunctionDeclaration, Literal } from "../script/ast";
 import { parseStatements } from "../script/parse";
 import type { Diagnostic } from "../source/diagnostic";
+import { LineMap } from "../source/line-map";
 import { buildSourceMap, type SourceMap } from "../source/source-map";
 import { didYouMean } from "../source/suggest";
 import { analyzeDocument, COMPONENT_NAME, DEFAULT_SLOT, rootGlobalNames, type UserComponentInfo } from "./analyze";
@@ -71,6 +72,12 @@ export interface CompileModuleOptions {
   componentModules?: Readonly<Record<string, string>>;
   /** The source file's name, as the source map's `sources` entry. Default "Main.gui". */
   fileName?: string;
+  /**
+   * Step 35: the file as trace entries name it (the location table, `$$L`).
+   * Default: `fileName`. The Vite plugin gives the path from the project root
+   * (`src/Main.gui`), so the Inspector can open it in the editor.
+   */
+  locationFile?: string;
   /** Produce a source map (default true). */
   sourceMap?: boolean;
   /**
@@ -122,6 +129,7 @@ export interface CompileModuleResult {
 const RUNTIME_IMPORTS: [string, string][] = [
   ["createElement", "$$h"],
   ["Bound", "$$Bound"],
+  ["locations", "$$locations"],
   ["TextNode", "$$TextNode"],
   ["createAppScope", "$$createAppScope"],
   ["useScope", "$$useScope"],
@@ -267,10 +275,24 @@ class ModuleCompiler {
 
   /** Source markers on (a source map is wanted). */
   private readonly markers: boolean;
+  /** Step 35: the module's location table, `[element, line, column, …]` (`$$L`). */
+  private readonly locationTable: (string | number)[] = [];
+  private lineMap: LineMap | undefined;
 
   constructor(private readonly options: CompileModuleOptions) {
     this.components = options.components ?? componentMetadata;
     this.markers = options.sourceMap !== false;
+  }
+
+  /**
+   * Step 35: `$$L[i]`, the markup position of an element or variable at
+   * `offset` (1-based line and column), for trace entries.
+   */
+  private location(element: string, offset: number): string {
+    const position = this.lineMap!.positionAt(offset);
+    const index = this.locationTable.length / 3;
+    this.locationTable.push(element, position.line + 1, position.column + 1);
+    return `$$L[${index}]`;
   }
 
   /** A source marker for `offset`, when a source map is wanted. */
@@ -337,6 +359,7 @@ class ModuleCompiler {
   }
 
   compile(markup: string): CompileModuleResult {
+    this.lineMap = new LineMap(markup);
     const parsed = parseMarkup(markup);
     this.diagnostics.push(...parsed.diagnostics);
     const { definitions, app } = this.topLevel(parsed.document.children, parsed.document);
@@ -387,6 +410,8 @@ class ModuleCompiler {
     const marked = [
       this.header(),
       "const $$scope = $$createAppScope();",
+      // Step 35: hoisted values refer to it, so it comes first.
+      ...(this.locationTable.length > 0 ? [`const $$L = $$locations(${jsString(this.options.locationFile ?? this.options.fileName ?? "Main.gui")}, ${JSON.stringify(this.locationTable)});`] : []),
       ...(this.usesEmpty ? ["const $$empty = Object.freeze({});"] : []),
       ...this.hoisted,
       ...(main ? [main] : []),
@@ -635,10 +660,11 @@ class ModuleCompiler {
         continue;
       }
       const value = this.value(this.segments(declaration.value));
+      const at = this.location(declaration.name, declaration.span.start);
       if ("constant" in value) {
-        entries.push([declaration.name, `{ value: ${value.constant} }`]);
+        entries.push([declaration.name, `{ value: ${value.constant}, at: ${at} }`]);
       } else {
-        entries.push([declaration.name, `{ init: ${value.binding} }`]);
+        entries.push([declaration.name, `{ init: ${value.binding}, at: ${at} }`]);
         graph.set(declaration.name, value.dependencies.filter((d) => own.has(d)));
       }
     }
@@ -1368,7 +1394,7 @@ class ModuleCompiler {
     const args = children.length > 0 ? `, ${children.join(", ")}` : "";
     const idValue = node.attributes.find((a) => a.name.full === "id")?.value?.value;
     const id = idValue !== undefined && this.isId(idValue) ? idValue : undefined;
-    if (!isUser && bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
+    if (!isUser && !metadata.traced && bindings.length === 0 && handlers.length === 0 && id === undefined && templates.length === 0 && lifecycle.length === 0) {
       return this.withBehaviors(`$$h(${component}, ${props}${args})`, behaviors, behaviorValues, name, scopeVar);
     }
     const bindingsName = bindings.length > 0 ? this.hoist("$$b", bindings) : this.empty();
@@ -1390,10 +1416,15 @@ class ModuleCompiler {
     const templatesPart = templates.length > 0 ? `, templates: ${this.hoistRaw("$$t", `{ ${templates.map(([k, v]) => `${jsString(k)}: ${v}`).join(", ")} }`)}` : "";
     const lifecyclePart = lifecycle.length > 0 ? `, lifecycle: ${this.hoist("$$l", lifecycle)}` : "";
     const bound = isUser ? "$$BoundUser" : "$$Bound";
+    // Step 35: the element's position; a traced component gets a trace cell; a password input is masked.
+    let tracePart = `, at: ${this.location(name, node.start)}`;
+    if (!isUser && metadata.traced) tracePart += ", traced: true";
+    const passwordType = constants.some(([k, v]) => k === "type" && v === '"password"');
+    if (!isUser && (metadata.sensitive || passwordType)) tracePart += ", sensitive: true";
     // Handlers that return their result to the component (APICall's beforeRequest, success).
     if (!isUser && metadata.eventResults && handlers.length > 0) handlersPart += ", results: true";
     return this.withBehaviors(
-      `$$h(${bound}, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}, scope: ${scopeVar} }${args})`,
+      `$$h(${bound}, { type: ${component}, props: ${props}, bindings: ${bindingsName}${handlersPart}${idPart}${templatesPart}${lifecyclePart}${tracePart}, scope: ${scopeVar} }${args})`,
       behaviors,
       behaviorValues,
       name,
@@ -2147,6 +2178,9 @@ class ModuleCompiler {
     );
     const value = this.value(segments);
     if ("constant" in value) return value.constant;
-    return this.mark(start, `$$h($$Bound, { type: $$TextNode, bindings: ${this.hoist("$$b", [["value", value.binding]])}, scope: ${scopeVar} })`);
+    return this.mark(
+      start,
+      `$$h($$Bound, { type: $$TextNode, bindings: ${this.hoist("$$b", [["value", value.binding]])}, at: ${this.location("#text", start + raw.length - raw.trimStart().length)}, scope: ${scopeVar} })`,
+    );
   }
 }

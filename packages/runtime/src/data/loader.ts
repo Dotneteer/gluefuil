@@ -8,10 +8,13 @@
 // our delays, structural sharing, polling without overlap. This file adds
 // the state shape, the events and cancel().
 import { QueryObserver, type QueryObserverOptions, type QueryObserverResult } from "@tanstack/query-core";
-import { signal, type ReadonlySignal } from "../reactivity/signals";
+import { markWrite, signal, type ReadonlySignal } from "../reactivity/signals";
+import { emit, traceFields, tracing } from "../trace/core";
+import type { Cause, TraceContext } from "../trace/entries";
+import type { SourceLocation } from "../trace/location";
 import { queryClient, queryKey } from "./client";
 import { isDataError, toDataError, withAttempts, type DataError } from "./errors";
-import { buildUrl, sendRequest, type HttpResult, type RequestSpec } from "./http";
+import { buildUrl, fetchContext, sendRequest, type HttpResult, type RequestSpec } from "./http";
 import { policyOf, retryDelay, shouldRetry, type RetryPolicy } from "./retry";
 
 export interface LoaderOptions {
@@ -28,6 +31,15 @@ export interface LoaderOptions {
   structuralSharing: boolean;
   /** The response data → the value (resultSelector, then transformResult). May throw. */
   select?: (data: unknown) => unknown;
+  /** Step 35: the element, for its fetches' trace entries; `causes` hands over what changed its request. */
+  trace?: { component: string; id?: string; at?: SourceLocation; causes?: () => Cause[] };
+}
+
+/** Step 35: one fetch (its attempts share the span). */
+interface FetchTrace {
+  context: TraceContext;
+  causes: Cause[];
+  attempts: number;
 }
 
 export interface LoaderEvents {
@@ -67,6 +79,10 @@ export class Loader {
   private wasFetching = false;
   /** The events of the current render (the component updates them). */
   events: LoaderEvents = {};
+  /** Step 35: the trace of each fetch, by its abort signal (query-core gives each fetch one). */
+  private readonly fetchTraces = new WeakMap<AbortSignal, FetchTrace>();
+  /** Step 35: the fetch whose result or error was published last (later renders name it as their cause). */
+  private lastFetch: Cause | undefined;
 
   constructor(options: LoaderOptions) {
     this.options = options;
@@ -141,11 +157,21 @@ export class Loader {
       queryKey: this.keyOf(request),
       enabled: options.enabled && request !== undefined,
       queryFn: async ({ signal }) => {
+        const traced = tracing ? this.fetchTrace(signal, options) : undefined;
         // Step 33: an open circuit fails at once; every attempt's outcome moves the breaker.
-        breaker?.check(where());
+        try {
+          breaker?.check(where());
+        } catch (error) {
+          if (traced && tracing) this.traceCircuitOpen(traced, where(), options);
+          throw error;
+        }
         let result: HttpResult;
         try {
-          result = await sendRequest(request!, signal);
+          result = await sendRequest(
+            request!,
+            signal,
+            traced && options.trace ? { component: options.trace.component, ...this.owner(options), context: traced.context, causes: traced.attempts === 1 ? traced.causes : [], attempt: traced.attempts } : undefined,
+          );
         } catch (error) {
           if (isDataError(error)) breaker?.failed();
           throw error;
@@ -166,6 +192,39 @@ export class Loader {
         }
       },
     };
+  }
+
+  /** Step 35: this fetch's span, made at its first attempt from what changed the request (or the running handler). */
+  private fetchTrace(signal: AbortSignal, options: LoaderOptions): FetchTrace {
+    let traced = this.fetchTraces.get(signal);
+    if (!traced) {
+      const causes = options.trace?.causes?.() ?? [];
+      traced = { context: fetchContext({ component: "", causes }), causes, attempts: 0 };
+      this.fetchTraces.set(signal, traced);
+    }
+    traced.attempts++;
+    this.lastFetch = { traceId: traced.context.traceId, spanId: traced.context.spanId };
+    return traced;
+  }
+
+  private owner(options: LoaderOptions): { id?: string; at?: SourceLocation } {
+    const trace = options.trace;
+    return { ...(trace?.id !== undefined ? { id: trace.id } : {}), ...(trace?.at ? { at: trace.at } : {}) };
+  }
+
+  private traceCircuitOpen(traced: FetchTrace, where: { method: string; url: string }, options: LoaderOptions): void {
+    emit({
+      kind: "fetch",
+      phase: "end",
+      ...traceFields(traced.context),
+      ...(options.trace?.at ? { at: options.trace.at } : {}),
+      method: where.method,
+      url: where.url,
+      ...(options.trace ? { owner: { component: options.trace.component, ...(options.trace.id !== undefined ? { id: options.trace.id } : {}) } } : {}),
+      attempt: traced.attempts,
+      durationMs: 0,
+      outcome: "circuit-open",
+    });
   }
 
   private keyOf(request: RequestSpec | undefined): readonly unknown[] {
@@ -216,7 +275,11 @@ export class Loader {
       lastCancelReason: this.cancelled?.reason ?? this.stateSignal.peek().lastCancelReason,
       responseHeaders: raw?.headers,
     };
-    if (!sameState(this.stateSignal.peek(), next)) this.stateSignal.set(Object.freeze(next));
+    if (!sameState(this.stateSignal.peek(), next)) {
+      // Step 35: renders that read the new state name the fetch as their cause.
+      if (tracing && this.lastFetch) markWrite(this.stateSignal, this.lastFetch);
+      this.stateSignal.set(Object.freeze(next));
+    }
   }
 }
 

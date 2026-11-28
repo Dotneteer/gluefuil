@@ -24,7 +24,7 @@ export default defineConfig({
       // Production build served under a strict CSP (step 12): no compiler, no eval.
       // Prerendered (step 13): every hello spec here runs after a takeover.
       name: "hello-build",
-      testMatch: [HELLO_SPECS, /build\.spec\.ts/, /ssg\.spec\.ts/],
+      testMatch: [HELLO_SPECS, /build\.spec\.ts/, /ssg\.spec\.ts/, /trace-build\.spec\.ts/],
       use: { ...chrome, baseURL: "http://localhost:5176" },
     },
     { name: "standalone", testMatch: /standalone\.spec\.ts/, use: chrome },
@@ -39,7 +39,7 @@ export default defineConfig({
     // The same app built under base /app/ (step 21, part 2): the router's basename.
     { name: "routing-base-build", testMatch: /routing-base\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5185" } },
     // The manual-testing playground: every scenario still opens (smoke); the App shell and layout demos.
-    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout|overlays|structure|list|table|tree|remaining|files|errors|i18n)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
+    { name: "playground", testMatch: /(playground(-scenarios)?|app-shell|layout|overlays|structure|list|table|tree|remaining|files|errors|i18n|trace)\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5180" } },
     // Data binding (step 20): the same app and specs against the mock backend in two hosts.
     { name: "data-worker", testMatch: /data\.spec\.ts/, use: { ...chrome, baseURL: "http://localhost:5182" } },
     // One backend in the dev server for all tests: they run one after another (each resets it).

@@ -15,6 +15,11 @@
 
 import { reportRuntimeError, scheduleMicrotask, type ErrorSource } from "../errors";
 import { batch, endBatch, startBatch } from "../reactivity/signals";
+import { activeTrace, childSpan, emit, setActiveTrace, traceFields, traceNow, tracing, type ActiveTrace } from "../trace/core";
+import type { HandlerOutcome } from "../trace/entries";
+import type { SourceLocation } from "../trace/location";
+import { MASK, preview } from "../trace/preview";
+import { traceError } from "../trace/emitters";
 
 export type CancelReason = "user" | "supersede" | "timeout" | "unmount";
 
@@ -61,7 +66,8 @@ export class Invocation {
   private readonly listeners = new Set<(reason: CancelReason) => void>();
   readonly cancel: CancellationToken;
 
-  constructor() {
+  /** Step 35: this call's trace (set only while tracing). */
+  constructor(readonly trace?: ActiveTrace) {
     const self = this;
     this.cancel = Object.freeze({
       get aborted() {
@@ -108,18 +114,25 @@ export class Invocation {
   open(): void {
     if (this.cancelReason !== undefined) throw new HandlerCancelledError(this.cancelReason);
     startBatch();
-    current = this;
+    setCurrent(this);
   }
 
   /** Before an `await`, or at the end of a function that resumed: closes the segment's batch. */
   close(): void {
-    if (current === this) current = undefined;
+    if (current === this) setCurrent(undefined);
     endBatch();
   }
 }
 
 /** The invocation whose code is running synchronously right now (for cancel-aware services). */
 let current: Invocation | undefined;
+
+/** `current`, and the trace's view of it (step 35). */
+function setCurrent(invocation: Invocation | undefined): void {
+  current = invocation;
+  // Only while tracing (disableTrace clears it): off, a handler call does no trace work.
+  if (tracing) setActiveTrace(invocation?.trace);
+}
 
 export function currentInvocation(): Invocation | undefined {
   return current;
@@ -154,6 +167,18 @@ export interface HandlerErrorOptions {
   source?: ErrorSource;
 }
 
+/** Step 35: what the trace says about a slot's calls. */
+export interface HandlerTraceInfo {
+  /** The event (`click`, `mount`). */
+  event?: string;
+  /** The element. */
+  at?: SourceLocation;
+  /** The element's id. */
+  id?: string;
+  /** A password input: arguments and the writes of its handlers are masked. */
+  sensitive?: boolean;
+}
+
 /**
  * The running and queued invocations of one handler of one element instance,
  * applying its policy.
@@ -169,6 +194,7 @@ export class HandlerSlot {
     private readonly policy: HandlerPolicy = "parallel",
     private readonly timeoutMs?: number,
     private readonly errors: HandlerErrorOptions = {},
+    private readonly info: HandlerTraceInfo = {},
   ) {}
 
   /** Called by the component on each event. Errors are reported (`reportRuntimeError`). */
@@ -195,6 +221,7 @@ export class HandlerSlot {
     switch (this.policy) {
       case "drop-while-running":
         if (this.running.size > 0) {
+          if (tracing) this.traceCall(childSpan(activeTrace()?.context), traceNow(), "dropped", args);
           settle?.resolve(undefined);
           return;
         }
@@ -231,8 +258,30 @@ export class HandlerSlot {
     return this.running.size;
   }
 
+  /** Step 35: the handler entry of one call. */
+  private traceCall(context: ActiveTrace["context"], start: number, outcome: HandlerOutcome, args: unknown[], detail?: unknown): void {
+    const info = this.info;
+    emit({
+      kind: "handler",
+      ...traceFields(context),
+      ...(info.at ? { at: info.at } : {}),
+      event: info.event ?? "handler",
+      ...(info.id !== undefined ? { id: info.id } : {}),
+      ...(this.policy !== "parallel" ? { policy: this.policy } : {}),
+      outcome,
+      ...(outcome === "cancelled" && detail instanceof HandlerCancelledError ? { reason: detail.reason } : {}),
+      ...(outcome === "error" ? { error: detail instanceof Error ? `${detail.name}: ${detail.message}` : String(detail) } : {}),
+      start,
+      durationMs: traceNow() - start,
+      ...(args.length > 0 ? { args: info.sensitive ? args.map(() => MASK) : args.map(preview) } : {}),
+    });
+  }
+
   private start(args: unknown[], caller?: Settle): void {
-    const invocation = new Invocation();
+    // Step 35: a call inside another handler's segment is a span of its trace; else a new trace.
+    const trace: ActiveTrace | undefined = tracing ? { context: childSpan(activeTrace()?.context), at: this.info.at, sensitive: this.info.sensitive } : undefined;
+    const started = trace ? traceNow() : 0;
+    const invocation = new Invocation(trace);
     this.running.add(invocation);
     const timeoutMs = this.timeoutMs ?? defaultTimeout;
     let settle = caller;
@@ -252,14 +301,16 @@ export class HandlerSlot {
       settled = true;
       if (timer !== undefined) clearTimeout(timer);
       this.running.delete(invocation);
-      if (!failed) settle?.resolve(value);
-      else if (value instanceof HandlerCancelledError) settle?.resolve(undefined);
-      else if (this.errors.onError) {
-        // Step 33: the element's onError handles it (a waiting caller gets undefined).
-        settle?.resolve(undefined);
-        if (settle || caller === undefined) this.errors.onError(value);
-      } else if (settle) settle.reject(value);
-      else if (caller === undefined) reportRuntimeError(value, this.errors.source ?? "handler");
+      if (trace) {
+        if (tracing) this.traceCall(trace.context, started, !failed ? "ok" : value instanceof HandlerCancelledError ? "cancelled" : "error", args, value);
+        // Errors are reported in the call's trace.
+        const outerTrace = setActiveTrace(trace);
+        try {
+          this.settleCall(failed, value, settle, caller);
+        } finally {
+          setActiveTrace(outerTrace);
+        }
+      } else this.settleCall(failed, value, settle, caller);
       const next = this.queued.shift();
       if (next) scheduleMicrotask(next.run);
     };
@@ -267,13 +318,13 @@ export class HandlerSlot {
     // The first synchronous run is one batch; later runs batch themselves.
     const outer = current;
     try {
-      current = invocation;
+      setCurrent(invocation);
       result = batch(() => this.handler(invocation)(...args));
     } catch (error) {
       done(true, error ?? new Error("A handler threw undefined"));
       return;
     } finally {
-      current = outer;
+      setCurrent(outer);
     }
     if (isThenable(result)) {
       result.then(
@@ -283,6 +334,21 @@ export class HandlerSlot {
     } else {
       done(false, result);
     }
+  }
+
+  /** Resolves or rejects the caller, or hands the error to `onError` or the pipeline. */
+  private settleCall(failed: boolean, value: unknown, settle: Settle | undefined, caller: Settle | undefined): void {
+    if (!failed) settle?.resolve(value);
+      else if (value instanceof HandlerCancelledError) settle?.resolve(undefined);
+    else if (this.errors.onError) {
+      // Step 33: the element's onError handles it (a waiting caller gets undefined).
+      settle?.resolve(undefined);
+      if (settle || caller === undefined) {
+        if (tracing) traceError(value, "action", "onError");
+        this.errors.onError(value);
+      }
+    } else if (settle) settle.reject(value);
+    else if (caller === undefined) reportRuntimeError(value, this.errors.source ?? "handler");
   }
 }
 

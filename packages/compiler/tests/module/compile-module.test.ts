@@ -22,12 +22,13 @@ describe("module shape", () => {
   test("esm: imports from the runtime and the components package, exports Main", () => {
     const { code } = compileModule(markup);
     expect(code.split("\n")).toEqual([
-      'import { createElement as $$h, Bound as $$Bound, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, When as $$When, BoundUser as $$BoundUser, Slot as $$Slot, useComponent as $$useComponent, Fragment as $$Fragment, GlobalScope as $$GlobalScope, useContextScope as $$useContextScope, scriptGlobals as $$g, scriptRuntime as $$r, deferredValue as $$deferred, optionItems as $$optionItems, OptionContent as $$OptionContent, usePerChildScope as $$usePerChildScope, actionHandler as $$action } from "@gluefuil/runtime";',
+      'import { createElement as $$h, Bound as $$Bound, locations as $$locations, TextNode as $$TextNode, createAppScope as $$createAppScope, useScope as $$useScope, useFileScope as $$useFileScope, When as $$When, BoundUser as $$BoundUser, Slot as $$Slot, useComponent as $$useComponent, Fragment as $$Fragment, GlobalScope as $$GlobalScope, useContextScope as $$useContextScope, scriptGlobals as $$g, scriptRuntime as $$r, deferredValue as $$deferred, optionItems as $$optionItems, OptionContent as $$OptionContent, usePerChildScope as $$usePerChildScope, actionHandler as $$action } from "@gluefuil/runtime";',
       'import { App as $$C_App, Text as $$C_Text } from "@gluefuil/components";',
       "const $$scope = $$createAppScope();",
+      'const $$L = $$locations("Main.gui", ["Text",1,6]);',
       'const $$b0 = { "value": ($$s) => 1 + 2 };',
       "function Main() {",
-      "  return $$h($$C_App, null, $$h($$Bound, { type: $$C_Text, props: null, bindings: $$b0, scope: $$scope }));",
+      "  return $$h($$C_App, null, $$h($$Bound, { type: $$C_Text, props: null, bindings: $$b0, at: $$L[0], scope: $$scope }));",
       "}",
       "export default Main;",
       "",
@@ -43,7 +44,7 @@ describe("module shape", () => {
   test("function: reads $$imports and returns Main; valid as a function body", () => {
     const { code } = compileModule(markup, { format: "function" });
     expect(code.split("\n").slice(0, 2)).toEqual([
-      "const { createElement: $$h, Bound: $$Bound, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, useFileScope: $$useFileScope, When: $$When, BoundUser: $$BoundUser, Slot: $$Slot, useComponent: $$useComponent, Fragment: $$Fragment, GlobalScope: $$GlobalScope, useContextScope: $$useContextScope, scriptGlobals: $$g, scriptRuntime: $$r, deferredValue: $$deferred, optionItems: $$optionItems, OptionContent: $$OptionContent, usePerChildScope: $$usePerChildScope, actionHandler: $$action } = $$imports.runtime;",
+      "const { createElement: $$h, Bound: $$Bound, locations: $$locations, TextNode: $$TextNode, createAppScope: $$createAppScope, useScope: $$useScope, useFileScope: $$useFileScope, When: $$When, BoundUser: $$BoundUser, Slot: $$Slot, useComponent: $$useComponent, Fragment: $$Fragment, GlobalScope: $$GlobalScope, useContextScope: $$useContextScope, scriptGlobals: $$g, scriptRuntime: $$r, deferredValue: $$deferred, optionItems: $$optionItems, OptionContent: $$OptionContent, usePerChildScope: $$usePerChildScope, actionHandler: $$action } = $$imports.runtime;",
       "const { App: $$C_App, Text: $$C_Text } = $$imports.components;",
     ]);
     expect(code.trimEnd().endsWith("return Main;")).toBe(true);
@@ -62,7 +63,7 @@ describe("elements and attributes", () => {
     // Constant and bound props on one element.
     [
       '<App><Stack gap="4px" orientation="{\'hor\' + \'izontal\'}"/></App>',
-      '$$h($$C_App, null, $$h($$Bound, { type: $$C_Stack, props: { "gap": "4px" }, bindings: $$b0, scope: $$scope }))',
+      '$$h($$C_App, null, $$h($$Bound, { type: $$C_Stack, props: { "gap": "4px" }, bindings: $$b0, at: $$L[0], scope: $$scope }))',
     ],
   ])("%s", (markup, expected) => {
     expect(body(markup)).toBe(expected);
@@ -89,7 +90,7 @@ describe("text content", () => {
     ["<App><Text><![CDATA[{x}   y]]></Text></App>", '$$h($$C_App, null, $$h($$C_Text, null, "{x}   y"))'],
     ["<App><!-- a comment --><Text/></App>", "$$h($$C_App, null, $$h($$C_Text, null))"],
     // Text with an expression becomes a bound TextNode.
-    ["<App><Text>Sum: {1 + 2}</Text></App>", "$$h($$C_App, null, $$h($$C_Text, null, $$h($$Bound, { type: $$TextNode, bindings: $$b0, scope: $$scope })))"],
+    ["<App><Text>Sum: {1 + 2}</Text></App>", "$$h($$C_App, null, $$h($$C_Text, null, $$h($$Bound, { type: $$TextNode, bindings: $$b0, at: $$L[0], scope: $$scope })))"],
   ])("%j", (markup, expected) => {
     expect(body(markup)).toBe(expected);
   });

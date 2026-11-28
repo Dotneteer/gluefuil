@@ -13,6 +13,8 @@
 // to the console only.
 //
 // This module must not import the reactivity store (the store reports through it).
+import { tracing } from "../trace/core";
+import { traceDiagnostic, traceError, type DiagnosticDetails } from "../trace/emitters";
 import { AppError } from "./app-error";
 
 export type ErrorReporter = (error: unknown) => void;
@@ -51,6 +53,8 @@ const sinks: ErrorSink[] = [];
 export function reportRuntimeError(error: unknown, source: ErrorSource = "internal"): void {
   try {
     const sink = sinks[sinks.length - 1];
+    // Step 35: the error entry, in the running trace.
+    if (tracing) traceError(error, source, sink ? "app" : "console");
     if (sink) sink(AppError.from(error), error, source);
     else reporter(error);
   } catch {
@@ -67,9 +71,14 @@ export function reportToConsole(error: unknown): void {
   }
 }
 
-/** A developer diagnostic: the console only (a warning), never the app's error handling. Never throws. */
-export function reportDiagnostic(problem: unknown): void {
+/**
+ * A developer diagnostic: the console only (a warning), never the app's error
+ * handling. Never throws. Step 35: also a trace entry, with an optional category
+ * and the element's position.
+ */
+export function reportDiagnostic(problem: unknown, details?: DiagnosticDetails): void {
   try {
+    if (tracing) traceDiagnostic(problem, details);
     diagnosticReporter(problem);
   } catch {
     // ignore
