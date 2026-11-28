@@ -1,3 +1,4 @@
+import { useLocaleProfile } from "@gluefuil/runtime";
 // Value (step 30, decision 4): a read-only typed value, and the rendering the
 // Table's typed cells share. XMLUI: xmlui/src/components/Value/ValueReact.tsx.
 // The types and formatting are React-free in value-types.ts.
@@ -7,8 +8,8 @@ import { useLayout, type LayoutProps } from "./layout";
 import { clampLines, formatValue, inlineMarkdown, normalizeValueType, type NormalizedValueType } from "./value-types";
 
 /** A value rendered for its type (the read-only rendering; the Table makes checkbox, switch and color interactive). */
-export function renderValue(value: unknown, type: NormalizedValueType, extra?: { className?: string; style?: CSSProperties; attributes?: Record<string, string> }): ReactNode {
-  const model = formatValue(value, type);
+export function renderValue(value: unknown, type: NormalizedValueType, extra?: { className?: string; style?: CSSProperties; attributes?: Record<string, string>; locale?: string }): ReactNode {
+  const model = formatValue(value, type, extra?.locale === undefined ? {} : { locale: extra.locale });
   const className = extra?.className ? `gfui-Value ${extra.className}` : "gfui-Value";
   const common = { "data-value-kind": model.kind, ...extra?.attributes, style: extra?.style };
   const lines = clampLines(type);
@@ -77,6 +78,7 @@ export type ValueProps = LayoutProps & { value?: unknown; type?: unknown; typeOp
 /** A read-only value with type-aware formatting (XMLUI Value). */
 export function Value(props: ValueProps) {
   const layout = useLayout(props);
+  const { locale } = useLocaleProfile();
   const type = useMemo(() => normalizeValueType(props.type ?? "text", props.typeOptions).type, [props.type, props.typeOptions]);
-  return renderValue(props.value, type, { style: layout.style, attributes: layout.attributes });
+  return renderValue(props.value, type, { style: layout.style, attributes: layout.attributes, locale });
 }

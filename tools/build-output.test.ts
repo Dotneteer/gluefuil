@@ -99,7 +99,7 @@ describe("a production build (no source maps)", () => {
     const source = String(html.source);
     // The stylesheet (React 19 hoisted <style>) comes first, then the themed App.
     expect(source).toContain('<div id="root" data-gfui-prerendered="xs" data-gfui-path="/"><style data-precedence="gfui" data-href="gfui-mantine gfui-base">');
-    expect(source).toMatch(/<div class="gfui-App" data-tone="light" data-mantine-color-scheme="light" style="--gfui-/);
+    expect(source).toMatch(/<div class="gfui-App" dir="ltr" data-tone="light" data-mantine-color-scheme="light" style="--gfui-/);
     expect(source).toContain('<span class="gfui-Text">Count: 0</span>');
     expect(source).toContain('<span class="gfui-Text">Todo #1: Write tests</span>');
     // Rendered for xs: the compact text, not the wide one.

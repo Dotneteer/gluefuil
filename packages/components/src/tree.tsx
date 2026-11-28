@@ -14,7 +14,7 @@
 // writes at once (step 30 found APIs that read stale React state). Its changes
 // re-render the component through `notify`.
 import { createTree, hotkeysCoreFeature, syncDataLoaderFeature, type FeatureImplementation, type TreeInstance } from "@headless-tree/core";
-import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
+import { pointerData, reportDiagnostic, reportRuntimeError, useComponentApi, type RegisterApi, type TemplateRenderer, useFrameworkText } from "@gluefuil/runtime";
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { DataUrl, isDataUrl } from "./data";
 import { Spinner } from "./display";
@@ -507,6 +507,7 @@ function hasOwnHeight(props: TreeProps): boolean {
 const SCROLL_STYLES = new Set(["overlay", "whenMouseOver", "whenScrolling"]);
 
 function TreeView(props: TreeProps) {
+  const t = useFrameworkText();
   const layout = useLayout(props);
   const scope = useMultipleScope();
   const [, rerender] = useReducer((n: number) => n + 1, 0);
@@ -922,7 +923,7 @@ function TreeView(props: TreeProps) {
       <div
         ref={setRoot}
         role="tree"
-        aria-label="Tree navigation"
+        aria-label={t("gfui.aria.treeNavigation")}
         aria-multiselectable={false}
         className="gfui-Tree-scroll"
         data-scroll-style={styled ? String(props.scrollStyle) : undefined}

@@ -72,7 +72,8 @@
     { path: '/timers', step: '32', title: 'Timers, queues and listeners', description: 'Timer, a debounced ChangeListener, named sources, a Queue with feedback toasts.' },
     { path: '/focus-tone', step: '32', title: 'Focus, tone and announcements', description: 'SkipLink, LiveRegion, FocusScope, ToneSwitch, Logo, NoResult, Redirect.' },
     { path: '/files', step: '32B', title: 'Files and uploads', description: 'FileInput in a Form (multipart), CSV and JSON parsing, drop and paste, upload, cancel, download.' },
-    { path: '/errors', step: '33', title: 'Errors and recovery', description: 'RetryPolicy and a circuit breaker, Fallback, onError on an element and on App, App.errors.' }
+    { path: '/errors', step: '33', title: 'Errors and recovery', description: 'RetryPolicy and a circuit breaker, Fallback, onError on an element and on App, App.errors.' },
+    { path: '/languages', step: '34', title: 'Languages and formats', description: 'Locale files, setLocale, I18n with plurals and slots, formatters, Locale scopes, RTL.' }
   ]}"
   global.quietErrors="{false}"
   onError="(error, event) => { if (quietErrors) event.preventDefault(); }"
@@ -173,6 +174,7 @@
     <Page url="/focus-tone"><VStack><FocusToneScenario/><ScenarioSource file="FocusToneScenario"/></VStack></Page>
     <Page url="/files"><VStack><FilesScenario/><ScenarioSource file="FilesScenario"/></VStack></Page>
     <Page url="/errors"><VStack><ErrorsScenario/><ScenarioSource file="ErrorsScenario"/></VStack></Page>
+    <Page url="/languages"><VStack><LanguagesScenario/><ScenarioSource file="LanguagesScenario"/></VStack></Page>
     <Page url="/layout"><VStack><LayoutScenario/><ScenarioSource file="LayoutScenario"/></VStack></Page>
     <Page url="/app-shell"><VStack><AppShellScenario/><ScenarioSource file="AppShellScenario"/><ScenarioSource file="LayoutDemoLinks"/><ScenarioSource file="LayoutDemoPages"/></VStack></Page>
   </Pages>

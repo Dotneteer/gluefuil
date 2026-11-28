@@ -11,7 +11,7 @@ export default defineConfig({
   // Pre-bundled at startup: otherwise the first page load discovers them,
   // and Vite reloads the page mid-test (a cold cache).
   // Step 23: Lucide (every app), and the Markdown chunk's parser (found only on its dynamic import: a mid-test reload otherwise).
-  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "react-dropzone", "papaparse", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
+  optimizeDeps: { include: ["@mantine/core", "@mantine/notifications", "react", "react-dom/client", "react/jsx-runtime", "intl-messageformat", "lucide-react", "@tanstack/react-virtual", "@headless-tree/core", "uqr", "react-dropzone", "papaparse", "mdast-util-from-markdown", "mdast-util-gfm", "micromark-extension-gfm", "mdast-util-to-string"] },
   // prerender: a build renders Main.gui into index.html (step 13).
   plugins: [gfui({ prerender: true }), react()],
   // React, ReactDOM, Mantine and every built-in: one ~920 kB chunk after step 32, known (.ai/docs/inputs.md § Size).

@@ -1,0 +1,10 @@
+{
+  "demo": {
+    "greeting": "مرحبا يا {name}!",
+    "inbox": "{count, plural, zero {ليس لديك رسائل} one {لديك رسالة واحدة} two {لديك رسالتان} few {لديك # رسائل} many {لديك # رسالة} other {لديك # رسالة}}",
+    "place": "حللت في المركز {place}",
+    "terms": "بالحفظ، أنت توافق على <link>شروط الاستخدام</link>.",
+    "today": "اليوم هو {day, date, full}."
+  },
+  "gfui": { "form": { "save": "حفظ", "cancel": "إلغاء" } }
+}

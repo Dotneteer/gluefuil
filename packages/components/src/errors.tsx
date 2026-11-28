@@ -24,7 +24,7 @@ import {
   type RegisterApi,
   type RetryPolicy as RetryPolicyValue,
   type RetryPolicySpec,
-  type TemplateRenderer,
+  type TemplateRenderer, useFrameworkText
 } from "@gluefuil/runtime";
 import { Component, createContext, Suspense, useContext, useMemo, useState, type ReactNode } from "react";
 
@@ -75,12 +75,13 @@ const reportRender = (error: AppError) => queueMicrotask(() => reportRuntimeErro
 
 /** The panel a built-in boundary shows: the message and "Try again". */
 function ErrorPanel({ error, reset }: { error: AppError; reset: () => void }) {
+  const t = useFrameworkText();
   return (
     <div className="gfui-ErrorPanel" role="alert">
-      <strong className="gfui-ErrorPanel-title">Something went wrong</strong>
-      <span className="gfui-ErrorPanel-message">{error.message || "An error occurred while rendering this part of the page."}</span>
+      <strong className="gfui-ErrorPanel-title">{t("gfui.error.title")}</strong>
+      <span className="gfui-ErrorPanel-message">{error.message || t("gfui.error.render")}</span>
       <button type="button" className="gfui-ErrorPanel-retry" onClick={reset}>
-        Try again
+        {t("gfui.error.retry")}
       </button>
     </div>
   );

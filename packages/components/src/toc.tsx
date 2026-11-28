@@ -12,7 +12,7 @@
 // TableOfContents reads it back from its own prerendered DOM (found by
 // `useId`) as useSyncExternalStore's server snapshot, then switches to the
 // live registry.
-import { requestServerRender, staticRenderInfo, useComponentApi, type RegisterApi, type StaticRenderInfo } from "@gluefuil/runtime";
+import { requestServerRender, staticRenderInfo, useComponentApi, type RegisterApi, type StaticRenderInfo, useFrameworkText } from "@gluefuil/runtime";
 import {
   createContext,
   useCallback,
@@ -199,6 +199,7 @@ type TableOfContentsProps = LayoutProps & {
  * and moves focus there; the one at the top of the view is marked.
  */
 export function TableOfContents(props: TableOfContentsProps) {
+  const t = useFrameworkText();
   const { maxHeadingLevel, omitH1, smoothScrolling, scrollStyle, showScrollerFade, onContextMenu } = props;
   const layout = useLayout(props);
   const registry = useContext(HeadingRegistryContext);
@@ -287,7 +288,7 @@ export function TableOfContents(props: TableOfContentsProps) {
   return (
     <nav
       className="gfui-TableOfContents"
-      aria-label="Table of Contents"
+      aria-label={t("gfui.aria.tableOfContents")}
       data-toc={uid}
       data-fade-top={fade && !edges.top ? "" : undefined}
       data-fade-bottom={fade && !edges.bottom ? "" : undefined}

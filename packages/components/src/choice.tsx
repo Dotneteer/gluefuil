@@ -5,7 +5,7 @@
 // and are matched as strings (XMLUI); a single value is "" when empty, several
 // are an array.
 import { CheckIcon, Combobox, InputBase, Pill, PillsInput, useCombobox } from "@mantine/core";
-import { wrapComponent, type WrapConfig } from "@gluefuil/runtime";
+import { wrapComponent, type WrapConfig, useFrameworkText } from "@gluefuil/runtime";
 import { Fragment, createElement, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type FocusEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Glyph } from "./icons";
 import { enabledToDisabled, focusApi, validationStatus, FOCUS_EVENTS } from "./inputs";
@@ -142,6 +142,7 @@ export interface ChoiceProps {
 
 /** Select and AutoComplete: Mantine's Combobox with a button, a search input or pills as the target. */
 export function ChoiceNative(props: ChoiceProps) {
+  const t = useFrameworkText();
   const { kind, multi, onChange, disabled, ref } = props;
   const readOnly = isTrue(props.readOnly);
   const searchable = kind === "AutoComplete" || isTrue(props.searchable);
@@ -312,7 +313,7 @@ export function ChoiceNative(props: ChoiceProps) {
   const label = props.label === undefined || props.label === null || props.label === "" ? undefined : String(props.label);
   const placeholder = props.placeholder === undefined || props.placeholder === null ? undefined : String(props.placeholder);
   const clearable = !readOnly && !disabled && values.length > 0 && (kind === "AutoComplete" || isTrue(props.clearable));
-  const clearButton = clearable ? <Combobox.ClearButton onClear={clear} aria-label="Clear" /> : undefined;
+  const clearButton = clearable ? <Combobox.ClearButton onClear={clear} aria-label={t("gfui.aria.clear")} /> : undefined;
   const chevron = <Combobox.Chevron />;
   const rightSection = clearButton ?? chevron;
   const common = {

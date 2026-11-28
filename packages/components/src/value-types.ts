@@ -203,8 +203,9 @@ const numberOption = (type: NormalizedValueType, key: string) => {
 };
 
 /** A value as its render model for a type (XMLUI value-formatting.ts). `now` is for relative times (tests). */
-export function formatValue(value: unknown, type: NormalizedValueType, options: { now?: Date } = {}): ValueRenderModel {
-  const locale = stringOption(type, "locale");
+export function formatValue(value: unknown, type: NormalizedValueType, options: { now?: Date; locale?: string } = {}): ValueRenderModel {
+  // Step 34: typeOptions.locale, else the active (or nearest Locale's) locale.
+  const locale = stringOption(type, "locale") ?? options.locale;
   if (value === null || value === undefined) return type.name === "json" ? { kind: "json", text: "null" } : { kind: "empty", text: "" };
   switch (type.name) {
     case "text":

@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.23",
     "@gluefuil/components": "0.0.0"
   }
 }

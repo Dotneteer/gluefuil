@@ -83,6 +83,8 @@ export interface RenderedRoute {
   attributes: Record<string, string>;
   /** A PageMetaTitle's title (step 32). */
   title?: string;
+  /** Step 34: the App's locale and direction. */
+  document?: { lang: string; dir: string };
 }
 
 const escapeText = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -95,6 +97,14 @@ const escapeText = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "
  */
 export function clientRenderedSections(html: string): number {
   return html.split("<!--$!-->").length - 1;
+}
+
+/** Step 34: sets `lang` and `dir` on `<html>` (replacing them, or adding them). */
+export function injectDocumentAttributes(html: string, attributes: { lang: string; dir: string }): string {
+  return html.replace(/<html\b([^>]*)>/i, (_match, rest: string) => {
+    const kept = rest.replace(/\s(lang|dir)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+    return `<html${kept} lang="${escapeAttribute(attributes.lang)}" dir="${escapeAttribute(attributes.dir)}">`;
+  });
 }
 
 /** Step 32: sets the document's `<title>` (replacing the first one, or added at the end of `<head>`). */

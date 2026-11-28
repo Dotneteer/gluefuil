@@ -31,7 +31,7 @@ import {
   setNavPanelCollapsed,
   useComputed,
   useSignal,
-  type TemplateRenderer,
+  type TemplateRenderer, useFrameworkText
 } from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { RenderBoundary } from "./errors";
@@ -250,12 +250,13 @@ export function NavPanel({
   footerTemplate?: TemplateRenderer;
   children?: ReactNode;
 } & Record<string, unknown>) {
+  const t = useFrameworkText();
   const shell = useContext(ShellContext);
   const where = typeof placement === "string" ? placement : "header";
   // The logo shows in the nav when the nav holds the top-left corner.
   const logo = shell?.config.nav?.placement === "side" && shell.config.nav.fullHeight ? (logoTemplate ? logoTemplate({}) : shell.logo) : null;
   return (
-    <nav className="gfui-NavPanel" id={shell?.navId} data-placement={where} data-sticky={isFalse(sticky) ? undefined : ""} aria-label="Main">
+    <nav className="gfui-NavPanel" id={shell?.navId} data-placement={where} data-sticky={isFalse(sticky) ? undefined : ""} aria-label={t("gfui.aria.main")}>
       {logo ? <div className="gfui-NavPanel-logo">{logo}</div> : null}
       <div className="gfui-NavPanel-items">{children}</div>
       {footerTemplate ? <div className="gfui-NavPanel-footer">{footerTemplate({})}</div> : null}

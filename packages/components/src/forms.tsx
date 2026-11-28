@@ -24,7 +24,7 @@ import {
   DEFAULT_FIELD_OPTIONS,
   confirm,
   toast,
-  watch as watchSignal,
+  watch as watchSignal, useFrameworkText
 } from "@gluefuil/runtime";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isDataUrl, useDataUrlState } from "./data";
@@ -194,16 +194,17 @@ function ErrorSummary({ store }: { store: FormStore }) {
 }
 
 function ButtonRow({ store, props, dialog }: { store: FormStore; props: FormProps; dialog: DialogHost | null }) {
+  const t = useFrameworkText();
   const { submitting, enabled, data } = useComputed(
     () => ({ submitting: store.submitting.get(), enabled: store.enabledProp.get() && !store.loading.get(), data: props.buttonRowTemplate ? store.data.get() : undefined }),
     [store, props.buttonRowTemplate],
   );
   if (props.buttonRowTemplate) return <div className="gfui-Form-buttons">{props.buttonRowTemplate({ $data: data })}</div>;
-  const saveLabel = submitting ? (props.saveInProgressLabel ?? "Saving...") : (props.saveLabel ?? "Save");
+  const saveLabel = submitting ? (props.saveInProgressLabel ?? t("gfui.form.saving")) : (props.saveLabel ?? t("gfui.form.save"));
   return (
     <div className="gfui-Form-buttons">
       <Button
-        label={props.cancelLabel ?? "Cancel"}
+        label={props.cancelLabel ?? t("gfui.form.cancel")}
         enabled={enabled && !submitting}
         onClick={async () => {
           await props.onCancel?.();
@@ -225,6 +226,7 @@ function ButtonRow({ store, props, dialog }: { store: FormStore; props: FormProp
  * on the inputs; a cancelled one ends quietly.
  */
 function useSubmit(store: FormStore, latest: { current: FormProps }, caller: ApiCaller, dataUrl: string | undefined, dialog: DialogHost | null) {
+  const t = useFrameworkText();
   return useMemo(
     () => async (): Promise<void> => {
       if (store.submitting.peek() || !store.enabled.peek()) return;
@@ -241,10 +243,10 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
       const warnings = Object.values(result.warnings).flat();
       if (warnings.length > 0) {
         const proceed = await confirm({
-          title: "Are you sure want to move forward?",
-          message: `The following warnings were found during validation. Please make sure you are willing to move forward despite these issues.\n\n${warnings.map((w) => `• ${w}`).join("\n")}`,
-          actionLabel: "Yes, proceed",
-          cancelLabel: "No",
+          title: t("gfui.form.warningsTitle"),
+          message: `${t("gfui.form.warningsMessage")}\n\n${warnings.map((w) => `• ${w}`).join("\n")}`,
+          actionLabel: t("gfui.form.warningsProceed"),
+          cancelLabel: t("gfui.form.warningsCancel"),
           actionThemeColor: "primary",
         });
         if (!proceed) return;
@@ -309,7 +311,7 @@ function useSubmit(store: FormStore, latest: { current: FormProps }, caller: Api
         store.submitting.set(false);
       }
     },
-    [store, latest, caller, dataUrl, dialog],
+    [store, latest, caller, dataUrl, dialog, t],
   );
 }
 

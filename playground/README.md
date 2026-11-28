@@ -16,7 +16,7 @@ the nav is a drawer, opened from the header.
 
 ## The scenarios
 
-One or more per concept of proof-of-concept steps 2–33
+One or more per concept of proof-of-concept steps 2–34
 (`.ai/plan/poc-steps.md`):
 
 | Step | Scenario | Shows |
@@ -72,6 +72,7 @@ One or more per concept of proof-of-concept steps 2–33
 | 32 | Focus, tone and announcements | Tab from the top: the skip link; a live region; a FocusScope that keeps Tab inside and gives focus back; ToneSwitch; Logo (empty: the playground's App has no logo); NoResult; a Redirect to the table of contents |
 | 32B | Files and uploads | A form whose attachments go to the mock backend as multipart (it answers with what arrived); CSV (dynamicTyping) and JSON parsed into a table; a drop zone for up to 3 images that also takes a pasted screenshot, uploads it with an inline FileUpload and shows it with Image data; an upload of 1.5 s you can cancel; a download of people.csv |
 | 33 | Errors and recovery | A RetryPolicy (4 attempts, exponential) around a DataSource that fails twice or five times, with the attempts and the reference; a circuit breaker that opens after three failures; a report in a Fallback with Try again; a component that throws inside a Fallback; handler errors: the toast, a button's own onError, App onError keeping it quiet (a switch); App.errors |
+| 34 | Languages and formats | Locale files (`src/locales/*.json`; English eager, the others lazy) switched with `App.setLocale`: I18n with a name, a plural (Polish and Arabic categories), an ordinal and a link slot; a missing key; the formatters, `Value` and a `DateInput` in the locale; a Form's Save and its required message translated; `Locale` scopes (Swiss German separators, an Arabic block in RTL); Arabic mirrors the whole playground |
 
 Steps 11–13 (standalone mode, build-time compilation, prerendering) are how
 the playground itself is delivered: `npm run playground:preview` serves the

@@ -24,7 +24,7 @@ import {
   type ConfirmRequest,
   type RegisterApi,
   type TemplateRenderer,
-  type Toast,
+  type Toast, useFrameworkText, frameworkText
 } from "@gluefuil/runtime";
 import { Button as MantineButton, Drawer as MantineDrawer, Menu, Modal, Tooltip as MantineTooltip, type FloatingPosition } from "@mantine/core";
 import { createNotificationsStore, hideNotification, Notifications, showNotification, updateNotification, type NotificationData } from "@mantine/notifications";
@@ -91,6 +91,7 @@ export type ModalDialogProps = LayoutProps & {
  * content unmounts when it closes, so it starts fresh on the next open.
  */
 export function ModalDialog(props: ModalDialogProps) {
+  const t = useFrameworkText();
   const latest = useRef(props);
   latest.current = props;
   const [state] = useState(() => ({
@@ -127,10 +128,10 @@ export function ModalDialog(props: ModalDialogProps) {
           if ((await p.onWillClose()) === false) return;
         } else if (isDirty() && !isTrue(p.skipDirtyConfirmation)) {
           const ok = await confirm({
-            title: text(p.confirmCloseTitle) ?? "Unsaved changes",
-            message: text(p.canCloseMessage) ?? "You have unsaved changes. Are you sure you want to close this dialog?",
-            actionLabel: text(p.confirmCloseLabel) ?? "Close",
-            cancelLabel: text(p.cancelCloseLabel) ?? "Cancel",
+            title: text(p.confirmCloseTitle) ?? t("gfui.dialog.unsavedTitle"),
+            message: text(p.canCloseMessage) ?? t("gfui.dialog.unsavedMessage"),
+            actionLabel: text(p.confirmCloseLabel) ?? t("gfui.dialog.close"),
+            cancelLabel: text(p.cancelCloseLabel) ?? t("gfui.dialog.cancel"),
           });
           if (!ok) return;
         }
@@ -184,7 +185,7 @@ export function ModalDialog(props: ModalDialogProps) {
       onClose={() => void host.dialog.requestClose()}
       title={title}
       withCloseButton={!isFalse(props.closeButtonVisible)}
-      closeButtonProps={{ "aria-label": "Close" }}
+      closeButtonProps={{ "aria-label": t("gfui.dialog.close") }}
       closeOnClickOutside={!isFalse(props.closeOnClickAway)}
       closeOnEscape={topmost}
       fullScreen={isTrue(props.fullScreen)}
@@ -222,6 +223,7 @@ const DRAWER_POSITIONS = new Set(["left", "right", "top", "bottom"]);
 
 /** A panel sliding in from an edge (XMLUI Drawer): open(), close(), isOpen. */
 export function Drawer(props: DrawerProps) {
+  const t = useFrameworkText();
   const latest = useRef(props);
   latest.current = props;
   const [open] = useState(() => signal(isTrue(props.initiallyOpen)));
@@ -258,7 +260,7 @@ export function Drawer(props: DrawerProps) {
       size={position === "left" || position === "right" ? "var(--gfui-width-Drawer)" : "var(--gfui-height-Drawer)"}
       title={props.headerTemplate ? props.headerTemplate({}) : undefined}
       withCloseButton={!isFalse(props.closeButtonVisible)}
-      closeButtonProps={{ "aria-label": "Close" }}
+      closeButtonProps={{ "aria-label": t("gfui.dialog.close") }}
       withOverlay={backdrop}
       closeOnClickOutside={backdrop && !isFalse(props.closeOnClickAway)}
       closeOnEscape={topmost}
@@ -646,7 +648,7 @@ function notification(toast: Toast): NotificationData {
     loading: toast.kind === "loading",
     autoClose: toast.duration,
     withCloseButton: true,
-    closeButtonProps: { "aria-label": "Close" },
+    closeButtonProps: { "aria-label": frameworkText("gfui.dialog.close") },
     className: "gfui-Toast",
     "data-kind": toast.kind,
     role: toast.kind === "error" ? "alert" : "status",
@@ -658,6 +660,7 @@ function notification(toast: Toast): NotificationData {
 
 /** The pending `confirm()`s, one at a time (the runtime queue). */
 function ConfirmHost() {
+  const t = useFrameworkText();
   const queue = useSignal(confirmQueue);
   const request = queue[0];
   // The last request stays on screen while the dialog fades out.
@@ -676,7 +679,7 @@ function ConfirmHost() {
       withinPortal={false}
       closeOnEscape={topmost}
       closeOnClickOutside={false}
-      closeButtonProps={{ "aria-label": "Close" }}
+      closeButtonProps={{ "aria-label": t("gfui.dialog.close") }}
       size={view?.width ?? "auto"}
       padding={0}
       transitionProps={{ duration: 150 }}

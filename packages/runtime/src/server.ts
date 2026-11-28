@@ -7,7 +7,7 @@ import { resetDataState } from "./data/client";
 import { BASE_ATTRIBUTE, PATH_ATTRIBUTE, PRERENDERED_ATTRIBUTE } from "./render/mount";
 import { getBasename, getServerPath, resetRouter, setBasename, setServerPath } from "./render/router";
 import { resetShellState } from "./render/shell-state";
-import { inStaticRender, staticTitle } from "./render/static-render";
+import { inStaticRender, staticDocument, staticTitle } from "./render/static-render";
 import { resetThemeState } from "./render/theme-state";
 import { BREAKPOINT_NAMES, breakpointFromName, setServerBreakpoint, type BreakpointName } from "./render/visibility";
 
@@ -36,6 +36,8 @@ export interface RenderStaticResult {
   attributes: Record<string, string>;
   /** The page title a PageMetaTitle rendered (step 32), for the document's `<title>`. */
   title?: string;
+  /** Step 34: the App's locale and direction, for `<html lang dir>`. */
+  document?: { lang: string; dir: string };
 }
 
 /**
@@ -60,7 +62,8 @@ export function renderStatic(app: ReactNode | ComponentType, options: RenderStat
   const attributes: Record<string, string> = { [PRERENDERED_ATTRIBUTE]: name, [PATH_ATTRIBUTE]: getServerPath() };
   if (getBasename() !== "") attributes[BASE_ATTRIBUTE] = getBasename();
   const title = staticTitle();
-  return title === undefined ? { html, attributes } : { html, attributes, title };
+  const document = staticDocument();
+  return { html, attributes, ...(title === undefined ? {} : { title }), ...(document === undefined ? {} : { document }) };
 }
 
 /**

@@ -15,7 +15,7 @@ import {
   Textarea,
   TextInput,
 } from "@mantine/core";
-import { wrapComponent, type WrapConfig } from "@gluefuil/runtime";
+import { wrapComponent, type WrapConfig, useFrameworkText } from "@gluefuil/runtime";
 import {
   createContext,
   createElement,
@@ -131,6 +131,7 @@ type TextNativeProps = Record<string, unknown> & {
 
 /** A text input, or Mantine's PasswordInput for `type="password"` (with its toggle only when asked). */
 function TextNative({ type, showPasswordToggle, passwordVisibleIcon, passwordHiddenIcon, ...rest }: TextNativeProps) {
+  const t = useFrameworkText();
   if (type === "password") {
     const visible = typeof passwordVisibleIcon === "string" ? passwordVisibleIcon : "eye";
     const hidden = typeof passwordHiddenIcon === "string" ? passwordHiddenIcon : "eye-off";
@@ -139,7 +140,7 @@ function TextNative({ type, showPasswordToggle, passwordVisibleIcon, passwordHid
       // Without the toggle: no right section (Mantine shows its toggle for an undefined one).
       ...(isTrue(showPasswordToggle) ? {} : { rightSection: rest.rightSection ?? false }),
       visibilityToggleIcon: ({ reveal }: { reveal: boolean }) => <Glyph name={reveal ? hidden : visible} />,
-      visibilityToggleButtonProps: { "aria-label": "Show the password" },
+      visibilityToggleButtonProps: { "aria-label": t("gfui.aria.showPassword") },
     });
   }
   return createElement(TextInput, { ...rest, type: type === "search" || type === "email" ? type : "text" });

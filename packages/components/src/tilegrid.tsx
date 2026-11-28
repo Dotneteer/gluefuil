@@ -11,7 +11,7 @@
 // Static mode (the server render, jsdom, no width yet): the first tiles in a CSS
 // grid (`repeat(auto-fill, itemWidth)`), laid out without knowing the width. XMLUI
 // renders nothing until it knows the width.
-import { pointerData, useComponentApi, type RegisterApi, type TemplateRenderer } from "@gluefuil/runtime";
+import { pointerData, useComponentApi, type RegisterApi, type TemplateRenderer, useFrameworkText } from "@gluefuil/runtime";
 import { Checkbox } from "@mantine/core";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { DataUrl, isDataUrl } from "./data";
@@ -97,6 +97,7 @@ const ACTIONS = [
 ] as const;
 
 function TileGridView(props: TileGridProps) {
+  const t = useFrameworkText();
   const layout = useLayout(props);
   const scope = useMultipleScope();
   const latest = useRef(props);
@@ -357,7 +358,7 @@ function TileGridView(props: TileGridProps) {
       className="gfui-TileGrid"
       data-scroll={own ? "own" : "outside"}
       role="grid"
-      aria-label="Tile grid"
+      aria-label={t("gfui.aria.tileGrid")}
       aria-multiselectable={selectable && multi ? true : undefined}
       tabIndex={keyboard ? 0 : undefined}
       onKeyDown={onKeyDown}

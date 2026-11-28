@@ -9,7 +9,33 @@
 > system), step 20 (data binding and the mock backend), and step 23 (text and
 > display components; 2026-11-25), and after steps 24–28 (2026-11-26) and
 > steps 29 and 30 (2026-11-26), and after step 31 (2026-11-26), and after
-> step 32 and 32B (2026-11-27), and after step 33 (2026-11-27).
+> step 32 and 32B (2026-11-27), and after step 33 (2026-11-27), and after step 34 (2026-11-28).
+
+## Next step
+
+**Step 35: observability** (`plan/poc-steps.md` row 35: a trace stream
+emitted only when enabled, pointing at markup lines). XMLUI reference:
+`website/content/docs/pages/managed-react/observability-substrate.md` (and
+`audit-grade-observability.md`; its source: `xmlui/src/components-core/inspector/`,
+`components-core/audit/`). What it builds on here:
+
+- step 33's error pipeline (`runtime/src/errors/report.ts`: `ErrorSource`,
+  sinks, `reportDiagnostic`; "step 35 will give them a trace" in
+  `plan/poc-33-errors.md`);
+- step 34's i18n diagnostics (missing keys, load failures);
+- source maps (step 9, `docs/source-maps.md`): how a trace can point at a
+  `.gui` line;
+- the handler runtime (`render/handlers.ts`) and the data layer
+  (`data/http.ts`), the likely emitters.
+
+The kickoff routine (as for steps 33 and 34):
+
+1. delete the merged branch (`poc/34-i18n`);
+2. create `poc/35-observability`;
+3. write `plan/poc-35-observability.md`, citing XMLUI by path; measure open
+   library or rendering choices in `.tmp/vproto/`; ask the open decisions with
+   `AskUserQuestion`;
+4. implement only after the user accepts the plan.
 
 ## State
 
@@ -50,7 +76,13 @@
   125 files, 302 E2E tests. `AppError` everywhere, `App onError`/`App.errors`,
   a per-element `onError`, `Fallback`, boundaries around Pages and the App
   content, `RetryPolicy` with a circuit breaker. Next: step 34 (i18n).
-- **`master` holds steps 0–33, merged.** `origin/master`
+- **Step 34 (internationalization) is done and merged into master.** Plan and findings:
+  [`plan/poc-34-i18n.md`](plan/poc-34-i18n.md); reference:
+  [`docs/i18n.md`](docs/i18n.md). `npm run check`: 3,579 unit tests in
+  130 files, 308 E2E tests. ICU messages on `intl-messageformat`, locale files,
+  `App.setLocale`, `I18n`, `Locale`, `gfui.*` framework strings, RTL. Next:
+  step 35 (observability).
+- **`master` holds steps 0–34, merged.** `origin/master`
   (as last fetched) is at the rename after step 22B; the later merges are not
   pushed. Pushing is the user's decision.
 - **Step 28 (structure) is done and merged into master.** Plan and findings:
@@ -296,6 +328,13 @@
   `setErrorReporter` (the console stage) and, for developer warnings
   (duplicate ids, an unbound input), `setDiagnosticReporter`. A test that
   clicks a throwing button must await the click before it ends.
+- **i18n (step 34):** in jsdom `navigator.languages` is `["en-US"]`, so an app
+  with an `en` bundle resolves `en-US`. Tests that set a locale call
+  `resetI18nState()` and `localStorage.clear()` after. A new dependency of
+  the runtime (here `intl-messageformat`) goes into every fixture's
+  `optimizeDeps.include`. Don't re-render the App (or anything above a lazy
+  Suspense boundary) right after a takeover for a change that shows nothing:
+  React drops a still-dehydrated boundary's HTML.
 - **Render errors in tests:** `{null.x}` doesn't throw (null-safe member
   access); use `JSON.parse('{oops')`.
 

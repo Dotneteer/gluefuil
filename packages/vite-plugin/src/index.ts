@@ -14,7 +14,8 @@ import { existsSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
 import { AppGlobals, ComponentFolder, GLOBALS_FILE, importSpecifier, readCodeBehind } from "./components";
-import { addRootAttributes, basenameOf, clientRenderedSections, injectPrerendered, injectTitle, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
+import { appLocaleOf, localeFileErrors, localeFiles, localeRegistrationCode } from "./locales";
+import { addRootAttributes, basenameOf, clientRenderedSections, injectDocumentAttributes, injectPrerendered, injectTitle, previewRewrite, renderEntry, resolvePrerender, routeFileName, type PrerenderOptions } from "./prerender";
 
 export { basenameOf, injectPrerendered, type BreakpointName, type PrerenderOptions } from "./prerender";
 export { gfuiMockBackend, type MockBackendOptions } from "./mock";
@@ -141,14 +142,15 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
         }
         routePages = [];
         let index = html;
-        for (const [path, { html: inner, attributes, title }] of rendered) {
+        for (const [path, { html: inner, attributes, title, document }] of rendered) {
           const failed = clientRenderedSections(inner);
           if (failed > 0) {
             config.logger.warn(
               `gfui prerender: ${path}: ${failed} section${failed === 1 ? "" : "s"} failed to render on the server (a Fallback caught a render error); the browser renders ${failed === 1 ? "it" : "them"}`,
             );
           }
-          const page = injectPrerendered(title === undefined ? html : injectTitle(html, title), prerender.rootId, inner, attributes);
+          const titled = title === undefined ? html : injectTitle(html, title);
+          const page = injectPrerendered(document === undefined ? titled : injectDocumentAttributes(titled, document), prerender.rootId, inner, attributes);
           if (path === "/") index = page;
           else routePages.push({ fileName: routeFileName(path), source: page });
         }
@@ -178,7 +180,9 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
       // A component file (or code-behind) appearing or disappearing changes what
       // other files compile to: recompile every .gui module and reload.
       const changed = (path: string) => {
-        if (!path.endsWith(".gui") && !path.endsWith(".gui.xs") && basename(path) !== GLOBALS_FILE) return;
+        // Step 34: a locale file appearing or disappearing too (the entry registers them).
+        const isLocaleFile = path.endsWith(".json") && basename(dirname(path)) === "locales";
+        if (!path.endsWith(".gui") && !path.endsWith(".gui.xs") && basename(path) !== GLOBALS_FILE && !isLocaleFile) return;
         for (const [id, module] of server.moduleGraph.idToModuleMap) {
           if (gfuiFilePath(id)) server.moduleGraph.invalidateModule(module);
         }
@@ -255,7 +259,18 @@ export function gfui(options: GfuiPluginOptions = {}): Plugin {
           frame: codeFrame(source, lineMap, first.start),
         });
       }
-      return { code, map: map ?? { mappings: "" } };
+      // Step 34: the entry registers the locale files (src/locales/*.json), checked as ICU MessageFormat.
+      let locales = "";
+      if (isEntry) {
+        const files = localeFiles(file);
+        for (const { file: localeFile } of files) this.addWatchFile(localeFile);
+        const problems = localeFileErrors(files);
+        if (problems.length > 0) {
+          this.error({ message: problems.map((p) => p.message).join("\n"), id: problems[0]!.file });
+        }
+        locales = localeRegistrationCode(files, appLocaleOf(source), (localeFile) => importSpecifier(dirname(file), localeFile));
+      }
+      return { code: code + locales, map: map ?? { mappings: "" } };
     },
   };
 }

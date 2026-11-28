@@ -20,6 +20,7 @@ export interface StaticRenderInfo {
 
 let current: StaticRenderInfo | undefined;
 let title: string | undefined;
+let documentAttributes: { lang: string; dir: string } | undefined;
 let passes = 0;
 let last: { pass: number; path: string; app: unknown; waited: boolean } | undefined;
 
@@ -33,6 +34,16 @@ export function setStaticTitle(value: string): void {
   if (current) title = value;
 }
 
+/** Step 34 (App): the document's `lang` and `dir` a static pass rendered; the prerender writes them on `<html>`. */
+export function setStaticDocument(lang: string, dir: string): void {
+  if (current) documentAttributes = { lang, dir };
+}
+
+/** The `lang` and `dir` the last static pass set (undefined: no App). */
+export function staticDocument(): { lang: string; dir: string } | undefined {
+  return documentAttributes;
+}
+
 /** The title the last static pass set (undefined: none). */
 export function staticTitle(): string | undefined {
   return title;
@@ -44,6 +55,7 @@ export function inStaticRender<T>(path: string, app: unknown, fn: () => T): T {
   const pass = ++passes;
   const loadsBefore = serverLoadCount();
   title = undefined;
+  documentAttributes = undefined;
   const continues = last !== undefined && last.pass === pass - 1 && last.path === path && last.app === app;
   current = Object.freeze({ pass, path, previous: continues ? Object.freeze({ pass: last!.pass, waited: last!.waited }) : undefined });
   try {

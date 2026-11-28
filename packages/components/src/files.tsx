@@ -3,7 +3,7 @@
 // (decision E). FileInput is wrapped like the other inputs (wrapComponent's
 // value API: bindTo, required, validationStatus, setValue, focus events);
 // `parseAs="csv"` loads papaparse in a lazy chunk (files-parse.ts).
-import { lazyResource, signal, wrapComponent } from "@gluefuil/runtime";
+import { lazyResource, signal, wrapComponent, useFrameworkText } from "@gluefuil/runtime";
 import { Button as MantineButton, TextInput } from "@mantine/core";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type FocusEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
@@ -140,6 +140,7 @@ type FileInputViewProps = {
 };
 
 function FileInputView(props: FileInputViewProps) {
+  const t = useFrameworkText();
   const { value, onChange, disabled, error, placeholder, wrapperProps, onParseError, onFocus, onBlur, ref } = props;
   const readOnly = isTrue(props.readOnly);
   const parseAs = props.parseAs === "csv" || props.parseAs === "json" ? props.parseAs : undefined;
@@ -232,7 +233,7 @@ function FileInputView(props: FileInputViewProps) {
       onClick={openDialog}
       {...(iconNode ? (props.buttonIconPosition === "end" ? { rightSection: iconNode } : { leftSection: iconNode }) : {})}
     >
-      {text(props.buttonLabel) ?? "Browse"}
+      {text(props.buttonLabel) ?? t("gfui.files.browse")}
     </MantineButton>
   );
   const root = getRootProps({ className: `gfui-FileInput${props.className ? ` ${props.className}` : ""}`, onFocus: focusIn, onBlur: focusOut });
@@ -308,6 +309,7 @@ type DropZoneProps = LayoutProps & {
  * (type, more than `maxFiles`) fire nothing, as in XMLUI.
  */
 export function FileUploadDropZone(props: DropZoneProps) {
+  const t = useFrameworkText();
   const { acceptedFileTypes, maxFiles, allowPaste, enabled, icon, onUpload, registerApi, children } = props;
   const layout = useLayout(props);
   const rules = useMemo(() => acceptRules(acceptedFileTypes), [acceptedFileTypes]);
@@ -344,7 +346,7 @@ export function FileUploadDropZone(props: DropZoneProps) {
     const target = event.target as HTMLElement;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable) event.stopPropagation();
   };
-  const label = text(props.text) ?? "Drop files here";
+  const label = text(props.text) ?? t("gfui.files.drop");
   const placeholder = (
     <div className="gfui-FileUploadDropZone-placeholder">
       <Icon name={text(icon) ?? "upload"} fallback="upload" />

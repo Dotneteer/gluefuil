@@ -4,7 +4,7 @@
 // from theme variables only (styles.ts DISPLAY); Mantine's own variables are
 // overridden there by unlayered rules.
 import { Avatar as MantineAvatar, Badge as MantineBadge, Divider, Image as MantineImage, Loader, Progress } from "@mantine/core";
-import { pointerData, useComponentApi, type RegisterApi } from "@gluefuil/runtime";
+import { pointerData, useComponentApi, type RegisterApi, useFrameworkText } from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { layoutCss } from "./layout-metadata";
 import { Stack, useLayout, type LayoutProps } from "./layout";
@@ -217,6 +217,7 @@ export function ProgressBar(props: LayoutProps & { value?: unknown }) {
  * server renders nothing (the client shows it after hydration).
  */
 export function Spinner(props: LayoutProps & { delay?: unknown; fullScreen?: unknown }) {
+  const t = useFrameworkText();
   const layout = useLayout(props);
   const delay = Math.max(0, toNumber(props.delay) ?? 400);
   const [visible, setVisible] = useState(delay === 0);
@@ -226,7 +227,7 @@ export function Spinner(props: LayoutProps & { delay?: unknown; fullScreen?: unk
     return () => clearTimeout(timer);
   }, [delay]);
   if (!visible) return null;
-  const spinner = <Loader className="gfui-Spinner" aria-label="Loading" role="status" {...layout.attributes} style={layout.style} />;
+  const spinner = <Loader className="gfui-Spinner" aria-label={t("gfui.aria.loading")} role="status" {...layout.attributes} style={layout.style} />;
   return isTrue(props.fullScreen) ? <div className="gfui-Spinner-fullScreen">{spinner}</div> : spinner;
 }
 

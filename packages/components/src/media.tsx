@@ -4,7 +4,7 @@
 // window or a DOM event (the sandbox invariant): IFrame has no
 // getContentWindow/getContentDocument, and MediaPlayer's events carry frozen
 // snapshots of the playback state.
-import { signal, useComponentApi, type RegisterApi } from "@gluefuil/runtime";
+import { signal, useComponentApi, type RegisterApi, useFrameworkText } from "@gluefuil/runtime";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { encode } from "uqr";
 import { useLayout, type LayoutProps } from "./layout";
@@ -70,6 +70,7 @@ type QRCodeProps = LayoutProps & {
 
 /** `QRCode`: `value` encoded at `level` (default L), `size` px wide (default the `size-QRCode` theme variable, 256). */
 export function QRCode(props: QRCodeProps) {
+  const t = useFrameworkText();
   const { value, size, level, color, backgroundColor, title, onInit } = props;
   const layout = useLayout(props);
   useInit(onInit);
@@ -103,7 +104,7 @@ export function QRCode(props: QRCodeProps) {
           <path d={path.d} fill="currentColor" />
         </svg>
       ) : (
-        <div className="gfui-QRCode-error" role="img" aria-label="The value is too long for a QR code" />
+        <div className="gfui-QRCode-error" role="img" aria-label={t("gfui.aria.qrTooLong")} />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 // Package boundary rules (see .ai/plan/poc-steps.md, step 0):
 //
-//   compiler   -> may import only relative files and @gluefuil/components/metadata
+//   compiler   -> may import only relative files, @gluefuil/components/metadata
+//                 and the third-party packages in COMPILER_PACKAGES
 //                 (no React, no runtime, no Node built-ins: it also runs in the browser)
 //   runtime    -> must not import the compiler or components
 //   components -> must not import the compiler
@@ -84,6 +85,13 @@ export function relativeClosure(files: SourceFiles, entry: string): string[] {
   return [...seen];
 }
 
+/**
+ * Third-party packages the compiler may import: each one a conscious decision.
+ * Step 34: the ICU MessageFormat parser, to check locale bundles at build time
+ * (the runtime formats with intl-messageformat, which depends on it).
+ */
+export const COMPILER_PACKAGES: readonly string[] = ["@formatjs/icu-messageformat-parser"];
+
 const startsWithAny = (specifier: string, prefixes: readonly string[]) =>
   prefixes.some((p) => specifier === p || specifier.startsWith(`${p}/`));
 
@@ -97,7 +105,8 @@ export function checkBoundaries(files: SourceFiles): Violation[] {
     for (const specifier of collectImports(files.get(file)!)) {
       if (isRelative(specifier)) continue;
       if (specifier === "@gluefuil/components/metadata") continue;
-      report(file, specifier, "compiler may only import relative files and @gluefuil/components/metadata");
+      if (startsWithAny(specifier, COMPILER_PACKAGES)) continue;
+      report(file, specifier, "compiler may only import relative files, @gluefuil/components/metadata and COMPILER_PACKAGES");
     }
   }
 

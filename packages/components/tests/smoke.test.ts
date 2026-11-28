@@ -11,7 +11,7 @@ test("every component has metadata, and the metadata entry point loads on its ow
     "APICall", "App", "AppHeader", "AppState", "AutoComplete", "Avatar", "Badge", "Bookmark", "Button", "CHStack", "CVStack", "Card",
     "ChangeListener", "Checkbox", "ColorPicker", "Column", "ContentSeparator", "ContextMenu", "DataSource", "DateInput", "DatePicker", "Drawer",
     "DropdownMenu", "ExpandableItem", "Fallback", "FileDownload", "FileInput", "FileUpload", "FileUploadDropZone", "FlowLayout", "FocusScope", "Footer", "Form",
-    "H1", "H2", "H3", "H4", "H5", "H6", "HSplitter", "HStack", "Heading", "IFrame", "Icon", "Image", "Items", "Link", "List", "LiveRegion", "Logo",
+    "H1", "H2", "H3", "H4", "H5", "H6", "HSplitter", "HStack", "Heading", "I18n", "IFrame", "Icon", "Image", "Items", "Link", "List", "LiveRegion", "Locale", "Logo",
     "Markdown", "MediaPlayer", "MenuItem", "MenuSeparator", "MessageListener", "ModalDialog", "NavGroup", "NavLink", "NavPanel",
     "NavPanelCollapseButton", "NoResult", "NumberBox", "Option", "Page", "PageMetaTitle", "Pages", "Pagination", "PasswordInput", "ProgressBar",
     "QRCode", "Queue", "RadioGroup", "Redirect", "ResponsiveBar", "RetryPolicy", "ScrollViewer", "Select", "SkipLink", "Slider", "SpaceFiller", "Spinner",

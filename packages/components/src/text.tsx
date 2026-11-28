@@ -2,7 +2,7 @@
 // Heading.md). Text variants render the semantic element where one exists;
 // all styling comes from theme variables (styles.ts). Step 23 added the text
 // overflow props (shared with Link) and the APIs.
-import { pointerData, useComponentApi, type PointerData, type RegisterApi } from "@gluefuil/runtime";
+import { pointerData, useComponentApi, type PointerData, type RegisterApi, useFrameworkText } from "@gluefuil/runtime";
 import { createElement, useMemo, useRef, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { useLayout, type LayoutProps } from "./layout";
 import { useTocEntry } from "./toc";
@@ -184,6 +184,7 @@ type HeadingProps = LayoutProps &
   };
 
 export function Heading(props: HeadingProps) {
+  const t = useFrameworkText();
   const { value, level, showAnchor, registerApi, children } = props;
   const layout = useLayout(props);
   const overflow = textOverflow(props);
@@ -211,7 +212,7 @@ export function Heading(props: HeadingProps) {
     text,
     anchor === undefined
       ? null
-      : createElement("a", { className: "gfui-Heading-anchor", href: `#${anchor}`, onClick: scrollToHeading, "aria-label": "Link to this heading", key: "anchor" }, "#"),
+      : createElement("a", { className: "gfui-Heading-anchor", href: `#${anchor}`, onClick: scrollToHeading, "aria-label": t("gfui.aria.headingLink"), key: "anchor" }, "#"),
   );
 }
 

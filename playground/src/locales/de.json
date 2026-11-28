@@ -1,0 +1,13 @@
+{
+  "demo": {
+    "greeting": "Hallo, {name}!",
+    "inbox": "{count, plural, =0 {Sie haben keine Nachrichten} one {Sie haben # Nachricht} other {Sie haben # Nachrichten}}",
+    "place": "Sie wurden {place}.",
+    "terms": "Mit dem Speichern akzeptieren Sie die <link>Nutzungsbedingungen</link>.",
+    "today": "Heute ist {day, date, full}."
+  },
+  "gfui": {
+    "form": { "save": "Speichern", "cancel": "Abbrechen" },
+    "validation": { "required": "Dieses Feld ist erforderlich" }
+  }
+}
